@@ -89,6 +89,8 @@ The API has no login, so `server/src/middleware/security.ts` makes sure only the
 - **`originGuard`**: rejects requests from other websites (foreign `Origin`, or `Sec-Fetch-Site: cross-site`), including simple POSTs that CORS alone wouldn't stop.
 - **`apiTokenGuard`**: desktop app only. `electron/main.ts` generates a random token per launch (`FLYBUDGET_API_TOKEN`) and sets it as an HttpOnly, SameSite=Strict cookie, so other programs and users on the machine can't use the API.
 - **`securityHeaders`** (helmet): a strict CSP (only `'self'` plus Plaid Link's script and iframe), `nosniff`, no framing, `no-referrer`, and a same-origin CORP. **Loading anything from a new external origin means updating the CSP.** Fonts are self-hosted (`@fontsource/inter`), so the app never calls Google.
+- **Electron window** (`electron/main.ts`): sandboxed, no Node in the page, DevTools only in dev, and every permission request denied. The window can't navigate away from the app, and `shell.openExternal` is only ever called with `https:` URLs (never pass it arbitrary URLs).
+- **Packaging** (`electron-builder.json`): the app ships in `app.asar` with embedded integrity validation (a modified file makes the app refuse to start), and Electron fuses disable `ELECTRON_RUN_AS_NODE`, `NODE_OPTIONS` and `--inspect`. `better-sqlite3` is unpacked from the asar because it's a native module.
 
 ### Key conventions
 

@@ -16,6 +16,27 @@ const PORT = 58342;
 // users on the machine can't use the API even though they can reach the port.
 const API_TOKEN = IS_DEV ? undefined : randomBytes(32).toString('hex');
 
+// Dev loads the Vite server; the packaged app is served by the embedded server so
+// the page is same-origin with the API.
+const APP_URL = IS_DEV ? 'http://localhost:5173/' : `http://localhost:${PORT}/`;
+const APP_ORIGIN = new URL(APP_URL).origin;
+
+function isAppUrl(url: string): boolean {
+  try {
+    return new URL(url).origin === APP_ORIGIN;
+  } catch {
+    return false;
+  }
+}
+
+function openExternalIfSafe(url: string): void {
+  try {
+    if (new URL(url).protocol === 'https:') void shell.openExternal(url);
+  } catch {
+    /* not a valid URL — ignore */
+  }
+}
+
 // Set ALL env vars BEFORE requiring any server code so db/index.ts picks them up
 if (!IS_DEV) {
   const userData = app.getPath('userData');
@@ -59,26 +80,66 @@ function createWindow(): void {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: true,
+      webSecurity: true,
+      allowRunningInsecureContent: false,
+      // DevTools would let anyone at the keyboard run code with the page's API access
+      devTools: IS_DEV,
+      // Chromium's spellchecker downloads dictionaries from Google
+      spellcheck: false,
     },
   });
 
+  // Links that open a new window (target="_blank") go to the system browser, but only
+  // for https. Passing arbitrary URLs to openExternal is a known code-execution vector
+  // (file://, ms-msdt:, custom protocol handlers).
   win.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
+    openExternalIfSafe(url);
     return { action: 'deny' };
   });
 
-  if (IS_DEV) {
-    win.loadURL('http://localhost:5173');
-    win.webContents.openDevTools();
-  } else {
-    // Served by the embedded server so the page is same-origin with the API
-    win.loadURL(`http://localhost:${PORT}/`);
-  }
+  // The window may only ever show the app itself.
+  const keepInApp = (event: Electron.Event, url: string) => {
+    if (isAppUrl(url)) return;
+    event.preventDefault();
+    openExternalIfSafe(url);
+  };
+  win.webContents.on('will-navigate', keepInApp);
+  win.webContents.on('will-redirect', keepInApp);
+
+  win.loadURL(APP_URL);
+  if (IS_DEV) win.webContents.openDevTools();
 }
 
 Menu.setApplicationMenu(null);
 
+// Only one instance: a second one would fail to bind the port and show a blank window
+const isPrimaryInstance = app.requestSingleInstanceLock();
+if (!isPrimaryInstance) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    const [win] = BrowserWindow.getAllWindows();
+    if (!win) return;
+    if (win.isMinimized()) win.restore();
+    win.focus();
+  });
+}
+
+// Defense in depth for any web contents, including ones created by libraries
+app.on('web-contents-created', (_event, contents) => {
+  contents.on('will-attach-webview', (event) => event.preventDefault());
+});
+
 app.whenReady().then(async () => {
+  if (!isPrimaryInstance) return;
+
+  // FlyBudget needs no camera, microphone, location, notifications, etc.
+  session.defaultSession.setPermissionRequestHandler((_wc, _permission, callback) =>
+    callback(false),
+  );
+  session.defaultSession.setPermissionCheckHandler(() => false);
+
   if (!IS_DEV) {
     // server.js is in the same directory as main.js (electron/dist/)
     const { startServer } = require(path.join(__dirname, 'server.js')) as {

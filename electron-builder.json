@@ -1,7 +1,8 @@
 {
   "appId": "com.flybudget.app",
   "productName": "FlyBudget",
-  "asar": false,
+  "asar": true,
+  "asarUnpack": ["**/better-sqlite3/**"],
   "directories": {
     "output": "dist-electron"
   },
@@ -36,5 +37,14 @@
   },
   "nsis": {
     "artifactName": "FlyBudget-Setup-${version}.${ext}"
+  },
+  "electronFuses": {
+    "runAsNode": false,
+    "enableNodeOptionsEnvironmentVariable": false,
+    "enableNodeCliInspectArguments": false,
+    "enableCookieEncryption": true,
+    "enableEmbeddedAsarIntegrityValidation": true,
+    "onlyLoadAppFromAsar": true,
+    "grantFileProtocolExtraPrivileges": false
   }
 }
