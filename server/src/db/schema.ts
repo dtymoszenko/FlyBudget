@@ -1,5 +1,20 @@
-import { sqliteTable, text, integer, uniqueIndex, index } from 'drizzle-orm/sqlite-core';
+import {
+  sqliteTable,
+  text,
+  integer,
+  uniqueIndex,
+  index,
+  customType,
+} from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
+import { secretCipher } from './secretCrypto.js';
+
+/** TEXT column encrypted at rest when a key is configured (see secretCrypto.ts). Can't be queried by value. */
+const encryptedText = customType<{ data: string; driverData: string }>({
+  dataType: () => 'text',
+  toDriver: (value) => secretCipher.encrypt(value),
+  fromDriver: (value) => secretCipher.decrypt(value),
+});
 
 export const accounts = sqliteTable('accounts', {
   id: text('id').primaryKey(),
@@ -226,7 +241,7 @@ export const goals = sqliteTable('goals', {
 
 export const simplefinConnections = sqliteTable('simplefin_connections', {
   id: text('id').primaryKey(),
-  accessUrl: text('access_url').notNull(),
+  accessUrl: encryptedText('access_url').notNull(),
   connectionName: text('connection_name').notNull(),
   syncStatus: text('sync_status').notNull().default('good'),
   syncError: text('sync_error'),
@@ -262,7 +277,7 @@ export const simplefinAccountMappings = sqliteTable(
 export const plaidConfig = sqliteTable('plaid_config', {
   id: text('id').primaryKey(),
   clientId: text('client_id').notNull(),
-  secret: text('secret').notNull(),
+  secret: encryptedText('secret').notNull(),
   environment: text('environment').notNull().default('development'),
   createdAt: text('created_at')
     .notNull()
@@ -277,7 +292,7 @@ export const plaidItems = sqliteTable('plaid_items', {
   plaidItemId: text('plaid_item_id').notNull(),
   institutionId: text('institution_id').notNull(),
   institutionName: text('institution_name').notNull(),
-  accessToken: text('access_token').notNull(),
+  accessToken: encryptedText('access_token').notNull(),
   cursor: text('cursor'),
   lastSyncedAt: text('last_synced_at'),
   syncStatus: text('sync_status').notNull().default('good'),

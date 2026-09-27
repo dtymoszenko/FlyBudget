@@ -21,6 +21,7 @@ import { goalsRouter } from './routes/goals.js';
 import { plaidRouter } from './routes/plaid.js';
 import { simplefinRouter } from './routes/simplefin.js';
 import { syncAllItems } from './services/plaidSyncService.js';
+import { encryptStoredCredentials } from './services/credentialEncryption.js';
 import { isPlaidConfigured } from './services/plaidService.js';
 import { syncAllSimplefinConnections } from './services/simplefinSyncService.js';
 import {
@@ -75,6 +76,10 @@ export async function startServer(port: number | string): Promise<void> {
   return new Promise((resolve) => {
     app.listen(Number(port), '127.0.0.1', () => {
       console.log(`Server running on http://localhost:${port}`);
+
+      const credentialsEncrypted = encryptStoredCredentials();
+      if (credentialsEncrypted > 0)
+        console.log(`Encrypted ${credentialsEncrypted} stored bank credential(s)`);
 
       // --- Schedule system startup ---
       const rulesMigrated = migrateRecurrenceRules();

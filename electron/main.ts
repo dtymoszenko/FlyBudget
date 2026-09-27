@@ -1,5 +1,6 @@
-import { app, BrowserWindow, Menu, session, shell } from 'electron';
+import { app, BrowserWindow, Menu, safeStorage, session, shell } from 'electron';
 import { randomBytes } from 'crypto';
+import fs from 'fs';
 import path from 'path';
 
 // electron/package.json sets "type": "commonjs", so both dev (main.ts via tsx/cjs)
@@ -51,6 +52,31 @@ if (!IS_DEV) {
   process.env.FLYBUDGET_API_TOKEN = API_TOKEN;
 }
 process.env.EXPRESS_PORT = String(PORT);
+
+/**
+ * The key that encrypts bank credentials inside budget.db (see
+ * server/src/db/secretCrypto.ts). It's stored in userData, itself encrypted by the
+ * OS (Windows DPAPI / macOS Keychain / Linux secret service), so it only works for
+ * this user on this machine. Returns undefined if OS encryption is unavailable, in
+ * which case credentials stay unencrypted as before.
+ */
+function loadCredentialKey(): string | undefined {
+  if (!safeStorage.isEncryptionAvailable()) {
+    console.warn('OS secure storage unavailable; bank credentials will not be encrypted');
+    return undefined;
+  }
+  const keyPath = path.join(app.getPath('userData'), 'credentials.key');
+  try {
+    if (fs.existsSync(keyPath)) return safeStorage.decryptString(fs.readFileSync(keyPath));
+    const key = randomBytes(32).toString('base64');
+    fs.writeFileSync(keyPath, safeStorage.encryptString(key), { mode: 0o600 });
+    return key;
+  } catch (err) {
+    // e.g. the profile moved to another machine: banks will need reconnecting
+    console.error('Could not load the credential encryption key:', err);
+    return undefined;
+  }
+}
 
 async function waitForServer(port: number, ms = 15000): Promise<void> {
   const deadline = Date.now() + ms;
@@ -141,10 +167,15 @@ app.whenReady().then(async () => {
   session.defaultSession.setPermissionCheckHandler(() => false);
 
   if (!IS_DEV) {
+    const dataKey = loadCredentialKey();
+    if (dataKey) process.env.FLYBUDGET_DATA_KEY = dataKey;
     // server.js is in the same directory as main.js (electron/dist/)
     const { startServer } = require(path.join(__dirname, 'server.js')) as {
       startServer: (port: number) => Promise<void>;
     };
+    // The server read its secrets on load; don't leave them in the environment
+    delete process.env.FLYBUDGET_DATA_KEY;
+    delete process.env.FLYBUDGET_API_TOKEN;
     await startServer(PORT);
     await waitForServer(PORT);
     // Session cookie (no expiry), SameSite=Strict so other sites can never send it
