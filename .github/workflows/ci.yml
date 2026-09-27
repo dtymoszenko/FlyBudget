@@ -29,6 +29,8 @@ jobs:
           cache: npm
           cache-dependency-path: server/package-lock.json
       - run: npm ci
+      # Every installed package must carry a valid npm registry signature
+      - run: npm audit signatures
       - run: npx tsc --noEmit
       - run: npm test
 
@@ -45,6 +47,7 @@ jobs:
           cache: npm
           cache-dependency-path: client/package-lock.json
       - run: npm ci
+      - run: npm audit signatures
       - run: npm run build
       - run: npm test
 
@@ -58,6 +61,7 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
       - run: npm ci
+      - run: npm audit signatures
       - run: npx tsc -p electron/tsconfig.json --noEmit
 
   website:

@@ -53,6 +53,12 @@ cd server && npm test   # src/**/*.test.ts — recurrence dates, rules engine
 
 Tests are property-based: they assert invariants over hundreds of generated inputs rather than fixed examples. Server tests run with `DB_PATH=:memory:` (see `server/vitest.config.ts`) so they never touch `budget.db`. To search harder locally, temporarily set `fc.configureGlobal({ numRuns: 20000 })`.
 
+**Supply chain:**
+
+- Every package (`/`, `client/`, `server/`, `website/`) has an `.npmrc` with `ignore-scripts=true`, so dependency install scripts never run. None are needed: Electron downloads its binary on first run, and `esbuild`/`@swc/core` ship platform binaries as optional dependencies. If a new dependency genuinely needs its install script, run it explicitly (e.g. `npm rebuild <pkg> --ignore-scripts=false`) rather than removing the setting.
+- CI runs `npm audit signatures` (root, client, server) to verify every package's registry signature. The website is skipped because npm can't verify Docusaurus's aliased `react-loadable`.
+- Dependabot waits 7 days (14 for majors) before proposing a new release (`cooldown` in `.github/dependabot.yml`). Security updates are not delayed.
+
 ---
 
 ## Architecture
