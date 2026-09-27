@@ -1,10 +1,11 @@
 import { app, BrowserWindow, Menu, shell } from 'electron';
 import path from 'path';
 
-// Both dev (tsx/cjs) and the build (tsc → CommonJS) run this as CommonJS, so the
-// built-in __dirname is available. Don't use import.meta here: it makes Node
-// re-parse the compiled CJS file as ESM, where `exports` is undefined and the app
-// crashes before opening a window.
+// electron/package.json sets "type": "commonjs", so both dev (main.ts via tsx/cjs)
+// and the build (tsc → CommonJS) run this as CommonJS and the built-in __dirname is
+// available. Don't use import.meta here: it makes Node re-parse the file as ESM,
+// where __dirname and `exports` are undefined and the app crashes before opening
+// a window.
 
 const IS_DEV = process.env.ELECTRON_DEV === 'true';
 const PORT = 58342;
