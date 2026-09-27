@@ -1,0 +1,45 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directories:
+      - "/"
+      - "/client"
+      - "/server"
+      - "/website"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: build
+      include: scope
+    groups:
+      # Native / Electron-coupled deps can pass type-checking and still break at
+      # runtime, so they get their own PRs and are never auto-merged.
+      electron-native:
+        patterns:
+          - "electron"
+          - "electron-*"
+          - "@electron/*"
+          - "better-sqlite3"
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+        exclude-patterns:
+          - "electron"
+          - "electron-*"
+          - "@electron/*"
+          - "better-sqlite3"
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: ci
+    groups:
+      actions:
+        patterns:
+          - "*"
