@@ -10,7 +10,7 @@
     "db:seed-rich": "tsx src/db/seed-rich.ts"
   },
   "dependencies": {
-    "better-sqlite3": "^12.9.0",
+    "better-sqlite3": "^13.0.3",
     "cors": "^2.8.6",
     "date-fns": "^4.1.0",
     "drizzle-orm": "^0.45.2",
