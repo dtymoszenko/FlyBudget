@@ -34,7 +34,7 @@ export function createSecretCipher(keyBase64: string | undefined): SecretCipher 
     },
 
     decrypt(stored) {
-      // Rows written before encryption was enabled are migrated on startup
+      // Startup (encryptStoredCredentials) ensures every stored credential is encrypted
       if (!isEncrypted(stored)) return stored;
       if (!key) {
         throw new Error(

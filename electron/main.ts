@@ -67,13 +67,22 @@ function loadCredentialKey(): string | undefined {
   }
   const keyPath = path.join(app.getPath('userData'), 'credentials.key');
   try {
-    if (fs.existsSync(keyPath)) return safeStorage.decryptString(fs.readFileSync(keyPath));
+    // Read directly rather than checking existence first (avoids a check-then-use race)
+    return safeStorage.decryptString(fs.readFileSync(keyPath));
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
+      // e.g. the profile moved to another machine: banks will need reconnecting
+      console.error('Could not load the credential encryption key:', err);
+      return undefined;
+    }
+  }
+  try {
     const key = randomBytes(32).toString('base64');
-    fs.writeFileSync(keyPath, safeStorage.encryptString(key), { mode: 0o600 });
+    // 'wx' fails if the file appeared in the meantime, so an existing key is never overwritten
+    fs.writeFileSync(keyPath, safeStorage.encryptString(key), { mode: 0o600, flag: 'wx' });
     return key;
   } catch (err) {
-    // e.g. the profile moved to another machine: banks will need reconnecting
-    console.error('Could not load the credential encryption key:', err);
+    console.error('Could not create the credential encryption key:', err);
     return undefined;
   }
 }
