@@ -2,10 +2,10 @@ version: 2
 updates:
   - package-ecosystem: npm
     directories:
-      - "/"
-      - "/client"
-      - "/server"
-      - "/website"
+      - '/'
+      - '/client'
+      - '/server'
+      - '/website'
     schedule:
       interval: weekly
       day: monday
@@ -18,22 +18,22 @@ updates:
       # runtime, so they get their own PRs and are never auto-merged.
       electron-native:
         patterns:
-          - "electron"
-          - "electron-*"
-          - "@electron/*"
-          - "better-sqlite3"
+          - 'electron'
+          - 'electron-*'
+          - '@electron/*'
+          - 'better-sqlite3'
       minor-and-patch:
         update-types:
           - minor
           - patch
         exclude-patterns:
-          - "electron"
-          - "electron-*"
-          - "@electron/*"
-          - "better-sqlite3"
+          - 'electron'
+          - 'electron-*'
+          - '@electron/*'
+          - 'better-sqlite3'
 
   - package-ecosystem: github-actions
-    directory: "/"
+    directory: '/'
     schedule:
       interval: weekly
       day: monday
@@ -42,4 +42,4 @@ updates:
     groups:
       actions:
         patterns:
-          - "*"
+          - '*'

@@ -33,8 +33,9 @@ npm run db:seed      # seed default categories and data
 ```bash
 npm run electron:dev    # concurrent dev server + Electron
 npm run electron:build  # full build pipeline with electron-builder
-npm run rebuild:sqlite  # electron-rebuild for native modules
 ```
+
+`better-sqlite3` (v13+) ships Node-API prebuilds that load in both Node and Electron, so no native rebuild is needed when switching between `npm run dev` and Electron.
 
 **Type checking:**
 

@@ -14,12 +14,9 @@ if (!IS_DEV) {
   const userData = app.getPath('userData');
   process.env.DB_PATH = path.join(userData, 'budget.db');
   process.env.ELECTRON_PROD = 'true';
-  // __dirname in packaged app = .../resources/app/electron/dist/
-  // better-sqlite3 package is at .../resources/app/node_modules/better-sqlite3/
-  process.env.DB_NATIVE_BINDING = path.join(
-    __dirname,
-    '../../node_modules/better-sqlite3/build/Release/better_sqlite3.node',
-  );
+  // better-sqlite3 (>=13) ships Node-API prebuilds that work in both Node and
+  // Electron, and finds them in its own prebuilds/ folder — no rebuild or
+  // DB_NATIVE_BINDING needed.
   process.env.MIGRATIONS_PATH = path.join(process.resourcesPath, 'migrations');
   // client/dist/ is two levels up from electron/dist/
   process.env.CLIENT_DIST = path.join(__dirname, '../../client/dist');
