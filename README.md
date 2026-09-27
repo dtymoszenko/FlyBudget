@@ -8,6 +8,15 @@
   A fast and powerful open-source budgeting app that gives you complete control over your financial data.
 </p>
 
+<p align="center">
+  <a href="https://github.com/dtymoszenko/FlyBudget/actions/workflows/ci.yml"><img src="https://github.com/dtymoszenko/FlyBudget/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="https://github.com/dtymoszenko/FlyBudget/actions/workflows/github-code-scanning/codeql"><img src="https://github.com/dtymoszenko/FlyBudget/actions/workflows/github-code-scanning/codeql/badge.svg" alt="CodeQL" /></a>
+  <a href="https://scorecard.dev/viewer/?uri=github.com/dtymoszenko/FlyBudget"><img src="https://api.scorecard.dev/projects/github.com/dtymoszenko/FlyBudget/badge" alt="OpenSSF Scorecard" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/dtymoszenko/FlyBudget" alt="License: GPL-3.0" /></a>
+  <a href="https://github.com/dtymoszenko/FlyBudget/releases"><img src="https://img.shields.io/github/v/release/dtymoszenko/FlyBudget?include_prereleases&sort=semver" alt="Latest release" /></a>
+  <a href="https://github.com/dtymoszenko/FlyBudget/stargazers"><img src="https://img.shields.io/github/stars/dtymoszenko/FlyBudget?style=social" alt="GitHub stars" /></a>
+</p>
+
 ---
 
 ## Commit Message Guidelines
