@@ -1,4 +1,5 @@
-import { app, BrowserWindow, Menu, shell } from 'electron';
+import { app, BrowserWindow, Menu, session, shell } from 'electron';
+import { randomBytes } from 'crypto';
 import path from 'path';
 
 // electron/package.json sets "type": "commonjs", so both dev (main.ts via tsx/cjs)
@@ -9,6 +10,11 @@ import path from 'path';
 
 const IS_DEV = process.env.ELECTRON_DEV === 'true';
 const PORT = 58342;
+
+// Per-launch secret for the embedded API (see server/src/middleware/security.ts).
+// Only this app's window gets it, as an HttpOnly cookie, so other programs or
+// users on the machine can't use the API even though they can reach the port.
+const API_TOKEN = IS_DEV ? undefined : randomBytes(32).toString('hex');
 
 // Set ALL env vars BEFORE requiring any server code so db/index.ts picks them up
 if (!IS_DEV) {
@@ -21,6 +27,7 @@ if (!IS_DEV) {
   process.env.MIGRATIONS_PATH = path.join(process.resourcesPath, 'migrations');
   // client/dist/ is two levels up from electron/dist/
   process.env.CLIENT_DIST = path.join(__dirname, '../../client/dist');
+  process.env.FLYBUDGET_API_TOKEN = API_TOKEN;
 }
 process.env.EXPRESS_PORT = String(PORT);
 
@@ -79,6 +86,14 @@ app.whenReady().then(async () => {
     };
     await startServer(PORT);
     await waitForServer(PORT);
+    // Session cookie (no expiry), SameSite=Strict so other sites can never send it
+    await session.defaultSession.cookies.set({
+      url: `http://localhost:${PORT}`,
+      name: 'flybudget_token',
+      value: API_TOKEN!,
+      httpOnly: true,
+      sameSite: 'strict',
+    });
   }
 
   createWindow();

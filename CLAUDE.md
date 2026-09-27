@@ -81,6 +81,15 @@ budgeting-project/
 - **UI state** (selected month, sidebar): Zustand store at `client/src/store/appStore.ts`.
 - **Preferences** (currency symbol, display settings): Zustand store at `client/src/store/preferencesStore.ts`.
 
+### Security model
+
+The API has no login, so `server/src/middleware/security.ts` makes sure only the app itself can use it. Keep these in place when adding routes or external resources:
+
+- **`hostGuard`**: rejects any `Host` other than `localhost`/`127.0.0.1` on the server's port (blocks DNS rebinding).
+- **`originGuard`**: rejects requests from other websites (foreign `Origin`, or `Sec-Fetch-Site: cross-site`), including simple POSTs that CORS alone wouldn't stop.
+- **`apiTokenGuard`**: desktop app only. `electron/main.ts` generates a random token per launch (`FLYBUDGET_API_TOKEN`) and sets it as an HttpOnly, SameSite=Strict cookie, so other programs and users on the machine can't use the API.
+- **`securityHeaders`** (helmet): a strict CSP (only `'self'` plus Plaid Link's script and iframe), `nosniff`, no framing, `no-referrer`, and a same-origin CORP. **Loading anything from a new external origin means updating the CSP.** Fonts are self-hosted (`@fontsource/inter`), so the app never calls Google.
+
 ### Key conventions
 
 - **API layer**: `client/src/api/` contains thin fetch wrappers using `apiFetch` from `./client`. Types come from `client/src/types/index.ts`.

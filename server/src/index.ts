@@ -1,5 +1,12 @@
 import express from 'express';
 import cors from 'cors';
+import {
+  DEV_CLIENT_ORIGINS,
+  apiTokenGuard,
+  hostGuard,
+  originGuard,
+  securityHeaders,
+} from './middleware/security.js';
 import { accountsRouter } from './routes/accounts.js';
 import { categoriesRouter } from './routes/categories.js';
 import { transactionsRouter } from './routes/transactions.js';
@@ -26,13 +33,17 @@ import { format, addDays } from 'date-fns';
 
 const app = express();
 
-// Binding to 127.0.0.1 doesn't stop other sites open in the user's browser from
-// calling this API, so only the app's own origins may read responses. The Vite
-// dev server and the packaged Electron app (which serves the client from this
-// server, see startServer) are both same-origin already; this covers direct
+// Binding to 127.0.0.1 doesn't stop other sites open in the user's browser, or other
+// programs on the machine, from calling this API — see middleware/security.ts.
+app.disable('x-powered-by');
+app.use(hostGuard);
+app.use(originGuard);
+app.use(apiTokenGuard(process.env.FLYBUDGET_API_TOKEN));
+app.use(securityHeaders);
+// The Vite dev server and the packaged Electron app (which serves the client from
+// this server, see startServer) are same-origin already; this covers direct
 // cross-origin dev requests to :3001.
-const ALLOWED_ORIGINS = ['http://localhost:5173', 'http://127.0.0.1:5173'];
-app.use(cors({ origin: ALLOWED_ORIGINS }));
+app.use(cors({ origin: DEV_CLIENT_ORIGINS }));
 app.use(express.json());
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
