@@ -7,7 +7,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx src/db/seed.ts",
-    "db:seed-rich": "tsx src/db/seed-rich.ts"
+    "db:seed-rich": "tsx src/db/seed-rich.ts",
+    "test": "vitest run"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",
@@ -24,8 +25,10 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.0",
     "drizzle-kit": "^0.31.11",
+    "fast-check": "^4.10.2",
     "tsx": "^4.23.15",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.2"
   },
   "overrides": {
     "@esbuild-kit/core-utils": {

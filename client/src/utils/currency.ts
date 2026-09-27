@@ -6,8 +6,9 @@ export function centsToInput(cents: number): string {
 }
 
 export function parseCents(s: string): number {
-  const n = parseFloat(s);
-  return isNaN(n) ? 0 : Math.round(n * 100);
+  const cents = Math.round(parseFloat(s) * 100);
+  // NaN, Infinity (e.g. "1e400"), and amounts too large to store exactly are invalid
+  return Number.isSafeInteger(cents) ? cents : 0;
 }
 
 function getCurrencySymbol(): string {

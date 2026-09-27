@@ -62,11 +62,7 @@ export function buildRecurrenceRule(
     case 'biweekly':
       return { type: 'biweekly', anchorDay: dayOfWeek };
     case 'semimonthly':
-      return {
-        type: 'semimonthly',
-        day1: dayOfMonth,
-        day2: dayOfMonth <= 15 ? 15 : Math.min(dayOfMonth + 15, 28),
-      };
+      return { type: 'semimonthly', day1: dayOfMonth, day2: semimonthlyPairDay(dayOfMonth) };
     case 'monthly':
       return { type: 'monthly', interval: 1, anchorDay: dayOfMonth };
     case 'quarterly':
@@ -76,6 +72,16 @@ export function buildRecurrenceRule(
     case 'yearly':
       return { type: 'yearly', anchorMonth: month, anchorDay: dayOfMonth };
   }
+}
+
+// The second day of a semi-monthly schedule. Must differ from the start day, or
+// the schedule collapses to monthly: the 15th pairs with month-end (31, clamped),
+// the 28th with the 13th.
+function semimonthlyPairDay(dayOfMonth: number): number {
+  if (dayOfMonth < 15) return 15;
+  if (dayOfMonth === 15) return 31;
+  if (dayOfMonth === 28) return 13;
+  return 28;
 }
 
 function clampDay(year: number, month: number, day: number): Date {
@@ -221,6 +227,8 @@ export function computeOccurrenceDates(
         const d1 = clampDay(year, month, day1);
         const d2 = clampDay(year, month, day2);
         const dates = day1 <= day2 ? [d1, d2] : [d2, d1];
+        // Both days can clamp to the same date in short months (e.g. 29th & 30th in February)
+        if (dates[0].getTime() === dates[1].getTime()) dates.pop();
         let allPast = true;
         for (const d of dates) {
           if (isAfter(d, effectiveEnd)) return results;

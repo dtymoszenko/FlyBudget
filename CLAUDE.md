@@ -44,7 +44,14 @@ cd client && npx tsc --noEmit
 cd server && npx tsc --noEmit
 ```
 
-No test suite currently exists.
+**Tests** (Vitest + fast-check property-based tests, run in CI):
+
+```bash
+cd client && npm test   # src/**/*.test.ts — currency helpers
+cd server && npm test   # src/**/*.test.ts — recurrence dates, rules engine
+```
+
+Tests are property-based: they assert invariants over hundreds of generated inputs rather than fixed examples. Server tests run with `DB_PATH=:memory:` (see `server/vitest.config.ts`) so they never touch `budget.db`. To search harder locally, temporarily set `fc.configureGlobal({ numRuns: 20000 })`.
 
 ---
 
