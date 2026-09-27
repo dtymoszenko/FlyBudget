@@ -21,6 +21,8 @@ if (!IS_DEV) {
     '../../node_modules/better-sqlite3/build/Release/better_sqlite3.node',
   );
   process.env.MIGRATIONS_PATH = path.join(process.resourcesPath, 'migrations');
+  // client/dist/ is two levels up from electron/dist/
+  process.env.CLIENT_DIST = path.join(__dirname, '../../client/dist');
 }
 process.env.EXPRESS_PORT = String(PORT);
 
@@ -64,8 +66,8 @@ function createWindow(): void {
     win.loadURL('http://localhost:5173');
     win.webContents.openDevTools();
   } else {
-    // client/dist/ is two levels up from electron/dist/
-    win.loadFile(path.join(__dirname, '../../client/dist/index.html'));
+    // Served by the embedded server so the page is same-origin with the API
+    win.loadURL(`http://localhost:${PORT}/`);
   }
 }
 

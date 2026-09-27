@@ -26,8 +26,13 @@ import { format, addDays } from 'date-fns';
 
 const app = express();
 
-// origin: true reflects the request origin — safe because we bind only to 127.0.0.1
-app.use(cors({ origin: true }));
+// Binding to 127.0.0.1 doesn't stop other sites open in the user's browser from
+// calling this API, so only the app's own origins may read responses. The Vite
+// dev server and the packaged Electron app (which serves the client from this
+// server, see startServer) are both same-origin already; this covers direct
+// cross-origin dev requests to :3001.
+const ALLOWED_ORIGINS = ['http://localhost:5173', 'http://127.0.0.1:5173'];
+app.use(cors({ origin: ALLOWED_ORIGINS }));
 app.use(express.json());
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
@@ -50,6 +55,11 @@ export async function startServer(port: number | string): Promise<void> {
     const { migrate } = await import('drizzle-orm/better-sqlite3/migrator');
     const { db } = await import('./db/index.js');
     migrate(db, { migrationsFolder: process.env.MIGRATIONS_PATH! });
+  }
+  // Electron serves the built client from this server so the page is same-origin
+  // with the API (a file:// page would send Origin: null, which can't be allowlisted safely).
+  if (process.env.CLIENT_DIST) {
+    app.use(express.static(process.env.CLIENT_DIST));
   }
   return new Promise((resolve) => {
     app.listen(Number(port), '127.0.0.1', () => {
