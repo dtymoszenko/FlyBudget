@@ -8,7 +8,7 @@ const arbCents = fc.integer({ min: -10_000_000_000_00, max: 10_000_000_000_00 })
 // Undo formatCurrency's "-$1,234.56" formatting to get cents back
 const unformat = (s: string) => {
   const negative = s.startsWith('-');
-  const digits = s.replace(/^-/, '').replace('$', '').replace(/,/g, '');
+  const digits = s.replace(/[-$,]/g, '');
   const cents = Math.round(parseFloat(digits) * 100);
   return negative ? -cents : cents;
 };
