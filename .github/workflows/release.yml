@@ -1,8 +1,9 @@
 name: Release
 
-# Pushing a tag like v0.1.0 (or v0.1.0-beta.1 for a pre-release) builds the
-# Windows installer, signs it with Sigstore (keyless, via GitHub OIDC), attaches
-# SLSA build provenance, and publishes a GitHub release.
+# Pushing a version tag like v1.0.0 builds the Windows installer, signs it with
+# Sigstore (keyless, via GitHub OIDC), attaches SLSA build provenance, and
+# publishes a GitHub release. Tags with a suffix (e.g. v1.1.0-beta.1) are marked
+# as betas ("pre-release" on GitHub).
 #
 # Manual runs and PRs that touch packaging only build (and, for manual runs,
 # sign) — they never publish anything.
@@ -112,6 +113,6 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           flags=(--generate-notes --title "FlyBudget $TAG")
-          # Tags with a suffix (v0.1.0-beta.1) are published as pre-releases
+          # v1.0.0 → normal release; tags with a suffix (v1.1.0-beta.1) → marked as a beta
           [[ "$TAG" == *-* ]] && flags+=(--prerelease)
           gh release create "$TAG" installer/* --repo "$GITHUB_REPOSITORY" "${flags[@]}"
