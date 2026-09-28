@@ -27,10 +27,16 @@ const selfOrigins = (port: number) => LOCAL_HOSTNAMES.map((h) => `http://${h}:${
 export const hostGuard: RequestHandler = (req, res, next) => {
   if (serverMode) {
     // Any host by default (a login is required anyway), or only the configured ones.
-    // Entries may be "host" or "host:port".
+    // Entries may be "host" or "host:port". localhost always works (health checks,
+    // and a DNS rebinding attack can't make a browser send it).
     const host = (req.headers.host ?? '').toLowerCase();
     const hostname = host.replace(/:\d+$/, '');
-    if (allowedHosts.length && !allowedHosts.includes(host) && !allowedHosts.includes(hostname)) {
+    if (
+      allowedHosts.length &&
+      !LOCAL_HOSTNAMES.includes(hostname) &&
+      !allowedHosts.includes(host) &&
+      !allowedHosts.includes(hostname)
+    ) {
       res.status(403).json({ error: 'Forbidden host' });
       return;
     }

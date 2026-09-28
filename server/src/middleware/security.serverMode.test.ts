@@ -44,6 +44,11 @@ describe('request guards in server mode', () => {
     expect(await request('192.168.1.20:3001')).toBe(200);
   });
 
+  it('always accepts localhost (container health checks)', async () => {
+    expect(await request(`localhost:${port}`)).toBe(200);
+    expect(await request(`127.0.0.1:${port}`)).toBe(200);
+  });
+
   it('rejects hosts that are not on the allowlist', async () => {
     expect(await request('evil.example')).toBe(403);
     expect(await request('192.168.1.20:9999')).toBe(403);
