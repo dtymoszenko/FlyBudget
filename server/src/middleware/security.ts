@@ -144,7 +144,8 @@ export const apiNotFound: RequestHandler = (_req, res) => {
 export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
   if (res.headersSent) return next(err);
   const status = typeof err?.status === 'number' && err.status >= 400 ? err.status : 500;
-  if (status >= 500) console.error(`Error on ${req.method} ${req.path}:`, err);
+  // Fixed format string, and the path JSON-escaped so it can't forge log lines
+  if (status >= 500) console.error('Error on %s %s:', req.method, JSON.stringify(req.path), err);
   const message =
     err?.type === 'entity.parse.failed'
       ? 'Invalid JSON'
