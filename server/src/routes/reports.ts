@@ -24,12 +24,15 @@ function monthRange(from: string, to: string): string[] {
   return months;
 }
 
-function dayRange(from: string, to: string): string[] {
+export function dayRange(from: string, to: string): string[] {
   const days: string[] = [];
   const d = new Date(from + 'T00:00:00');
   const end = new Date(to + 'T00:00:00');
   while (d <= end) {
-    days.push(d.toISOString().slice(0, 10));
+    // Local date parts: toISOString() is UTC, which is the previous day east of UTC
+    days.push(
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
+    );
     d.setDate(d.getDate() + 1);
   }
   return days;
@@ -244,26 +247,31 @@ reportsRouter.get('/income-by-category', (req, res) => {
 });
 
 reportsRouter.get('/spending-trends', (req, res) => {
-  const { category_ids, from, to } = req.query as Record<string, string>;
+  const { category_ids, from, to, granularity } = req.query as Record<string, string>;
   if (!category_ids) return res.json([]);
 
   const ids = category_ids.split(',');
   const conditions = [];
   if (from) conditions.push(gte(transactions.date, monthBounds(from).from));
   if (to) conditions.push(lte(transactions.date, monthBounds(to).to));
+  // Daily totals (for short ranges) put the date (yyyy-MM-dd) in `month`
+  const period =
+    granularity === 'daily'
+      ? sql<string>`${transactions.date}`
+      : sql<string>`strftime('%Y-%m', ${transactions.date})`;
 
   const rows = db
     .select({
       categoryId: transactions.categoryId,
       categoryName: categories.name,
       categoryIcon: categories.icon,
-      month: sql<string>`strftime('%Y-%m', ${transactions.date})`,
+      month: period,
       total: sql<number>`coalesce(sum(${transactions.amount}), 0)`,
     })
     .from(transactions)
     .leftJoin(categories, eq(transactions.categoryId, categories.id))
     .where(conditions.length ? and(...conditions) : undefined)
-    .groupBy(transactions.categoryId, sql`strftime('%Y-%m', ${transactions.date})`)
+    .groupBy(transactions.categoryId, period)
     .all();
 
   res.json(

@@ -28,9 +28,15 @@ export const getSpendingByCategory = (from: string, to: string) =>
 export const getIncomeByCategory = (from: string, to: string) =>
   apiFetch<IncomeByCategoryItem[]>(`/reports/income-by-category${toQueryString(from, to)}`);
 
-export const getSpendingTrends = (categoryIds: string[], from: string, to: string) =>
+/** `daily` puts the date (yyyy-MM-dd) in each point's `month`. */
+export const getSpendingTrends = (
+  categoryIds: string[],
+  from: string,
+  to: string,
+  granularity?: 'daily' | 'monthly',
+) =>
   apiFetch<SpendingTrendPoint[]>(
-    `/reports/spending-trends?category_ids=${categoryIds.join(',')}&from=${from}&to=${to}`,
+    `/reports/spending-trends?category_ids=${categoryIds.join(',')}&from=${from}&to=${to}${granularity ? `&granularity=${granularity}` : ''}`,
   );
 
 export const getSpendingComparison = (mode: string) =>

@@ -149,6 +149,11 @@ function DonutView({ data }: { data: Extract<CustomReportData, { mode: 'total' }
   );
 }
 
+/** A line or area needs two points; with only one, draw bars so the value is still readable. */
+function singlePointType(type: CustomReportConfig['chartType'], points: number) {
+  return points === 1 && (type === 'line' || type === 'area') ? 'bar' : type;
+}
+
 function TotalChartView({
   config,
   data,
@@ -158,6 +163,7 @@ function TotalChartView({
 }) {
   const chartData = useMemo(() => withColors(data.data), [data]);
   const total = useMemo(() => chartData.reduce((s, d) => s + d.value, 0), [chartData]);
+  const chartType = singlePointType(config.chartType, chartData.length);
   // Month groups arrive as "2025-06"; show them like the other charts ("Jun 25"). Checking the
   // format, not just groupBy, because data from the previous grouping can still be showing
   const labels = useMemo(
@@ -166,7 +172,7 @@ function TotalChartView({
   );
   const xAxis = useXAxisLayout({
     labels,
-    kind: config.chartType === 'line' || config.chartType === 'area' ? 'point' : 'band',
+    kind: chartType === 'line' || chartType === 'area' ? 'point' : 'band',
     // Totals are sorted by amount, even when grouped by month, so every bar keeps its label
     ordered: false,
     inset: INSET,
@@ -174,7 +180,7 @@ function TotalChartView({
   if (!chartData.length) return <EmptyState />;
 
   const ChartComponent =
-    config.chartType === 'line' ? LineChart : config.chartType === 'area' ? AreaChart : BarChart;
+    chartType === 'line' ? LineChart : chartType === 'area' ? AreaChart : BarChart;
 
   return (
     <div ref={xAxis.ref} className="w-full h-full">
@@ -188,8 +194,8 @@ function TotalChartView({
             tickLine={false}
             tickFormatter={formatCentsAxis}
           />
-          <Tooltip content={<ShareTooltip total={total} noSwatch={config.chartType !== 'bar'} />} />
-          {config.chartType === 'area' ? (
+          <Tooltip content={<ShareTooltip total={total} noSwatch={chartType !== 'bar'} />} />
+          {chartType === 'area' ? (
             <Area
               type="monotone"
               dataKey="value"
@@ -198,7 +204,7 @@ function TotalChartView({
               fill={chartColors.brand}
               fillOpacity={0.15}
             />
-          ) : config.chartType === 'line' ? (
+          ) : chartType === 'line' ? (
             <Line
               type="monotone"
               dataKey="value"
@@ -231,10 +237,11 @@ function TimeChartView({
     () => data.data.map((d) => ({ ...d, month: monthLabel(d.month as string) })),
     [data],
   );
+  const chartType = singlePointType(config.chartType, chartData.length);
   const labels = useMemo(() => chartData.map((d) => String(d.month)), [chartData]);
   const xAxis = useXAxisLayout({
     labels,
-    kind: config.chartType === 'line' || config.chartType === 'area' ? 'point' : 'band',
+    kind: chartType === 'line' || chartType === 'area' ? 'point' : 'band',
     ordered: true,
     inset: INSET,
   });
@@ -242,7 +249,7 @@ function TimeChartView({
 
   const groups = data.groups;
 
-  if (config.chartType === 'stacked-bar') {
+  if (chartType === 'stacked-bar') {
     return (
       <div ref={xAxis.ref} className="w-full h-full">
         <ResponsiveContainer width="100%" height="100%">
@@ -271,8 +278,7 @@ function TimeChartView({
     );
   }
 
-  const ChartComp =
-    config.chartType === 'area' ? AreaChart : config.chartType === 'line' ? LineChart : BarChart;
+  const ChartComp = chartType === 'area' ? AreaChart : chartType === 'line' ? LineChart : BarChart;
 
   return (
     <div ref={xAxis.ref} className="w-full h-full">
@@ -290,7 +296,7 @@ function TimeChartView({
           <Legend wrapperStyle={{ fontSize: 11 }} />
           {groups.map((g, i) => {
             const color = EXPENSE_COLORS[i % EXPENSE_COLORS.length];
-            if (config.chartType === 'area')
+            if (chartType === 'area')
               return (
                 <Area
                   key={g}
@@ -301,7 +307,7 @@ function TimeChartView({
                   fillOpacity={0.1}
                 />
               );
-            if (config.chartType === 'line')
+            if (chartType === 'line')
               return (
                 <Line
                   key={g}

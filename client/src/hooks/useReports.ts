@@ -1,11 +1,25 @@
 import { useQuery } from '@tanstack/react-query';
+import { format, parseISO, subDays } from 'date-fns';
 import * as reportsApi from '../api/reports';
+import { DAILY_MAX_MONTHS, dayBounds, monthCount } from '../utils/dateRange';
 
 export const useNetWorth = (from: string, to: string, granularity?: 'daily' | 'monthly') =>
   useQuery({
     queryKey: ['reports', 'net-worth', from, to, granularity],
     queryFn: () => reportsApi.getNetWorth(from, to, granularity),
   });
+
+/**
+ * Net worth for a yyyy-MM range as the reports show it: a point per day for short ranges (up to
+ * DAILY_MAX_MONTHS), starting at the previous month's close so the change covers the whole
+ * range; a point per month otherwise.
+ */
+export function useNetWorthSeries(from: string, to: string) {
+  const daily = monthCount(from, to) <= DAILY_MAX_MONTHS;
+  const days = dayBounds(from, to);
+  const start = format(subDays(parseISO(days.from), 1), 'yyyy-MM-dd');
+  return useNetWorth(daily ? start : from, daily ? days.to : to, daily ? 'daily' : undefined);
+}
 
 export const useIncomeVsExpenses = (from: string, to: string) =>
   useQuery({
@@ -31,10 +45,15 @@ export const useIncomeByCategory = (from: string, to: string) =>
     queryFn: () => reportsApi.getIncomeByCategory(from, to),
   });
 
-export const useSpendingTrends = (categoryIds: string[], from: string, to: string) =>
+export const useSpendingTrends = (
+  categoryIds: string[],
+  from: string,
+  to: string,
+  granularity?: 'daily' | 'monthly',
+) =>
   useQuery({
-    queryKey: ['reports', 'spending-trends', categoryIds.join(','), from, to],
-    queryFn: () => reportsApi.getSpendingTrends(categoryIds, from, to),
+    queryKey: ['reports', 'spending-trends', categoryIds.join(','), from, to, granularity],
+    queryFn: () => reportsApi.getSpendingTrends(categoryIds, from, to, granularity),
     enabled: categoryIds.length > 0,
   });
 

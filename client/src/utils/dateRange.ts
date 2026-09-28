@@ -1,4 +1,13 @@
-import { format, parseISO, startOfYear, endOfYear, subMonths, subYears } from 'date-fns';
+import {
+  addMonths,
+  endOfMonth,
+  format,
+  parseISO,
+  startOfYear,
+  endOfYear,
+  subMonths,
+  subYears,
+} from 'date-fns';
 import type { DatePresetCustom, ReportDateRange } from '../types';
 
 /** Live presets roll forward with today; 'custom' is a frozen range with fixed dates. */
@@ -100,4 +109,36 @@ export function formatDateRange(range: ReportDateRange): string {
   return range.from === range.to
     ? fmtMonth(range.from)
     : `${fmtMonth(range.from)} – ${fmtMonth(range.to)}`;
+}
+
+/** Month ranges up to this long plot a point per day instead of per month. */
+export const DAILY_MAX_MONTHS = 3;
+
+/** How many months a yyyy-MM range covers (0 when `to` is before `from`). */
+export function monthCount(from: string, to: string): number {
+  const [fy, fm] = from.split('-').map(Number);
+  const [ty, tm] = to.split('-').map(Number);
+  return Math.max(0, ty * 12 + tm - (fy * 12 + fm) + 1);
+}
+
+/** Every month (yyyy-MM) from `from` to `to`, inclusive. */
+export function monthsBetween(from: string, to: string): string[] {
+  const start = parseISO(`${from}-01`);
+  return Array.from({ length: monthCount(from, to) }, (_, i) =>
+    format(addMonths(start, i), 'yyyy-MM'),
+  );
+}
+
+/**
+ * The days (yyyy-MM-dd) a yyyy-MM range covers so far: its first day to its last, or to today
+ * if that's earlier. `to` is before `from` when the range hasn't started yet.
+ */
+export function dayBounds(
+  from: string,
+  to: string,
+  now: Date = new Date(),
+): { from: string; to: string } {
+  const last = format(endOfMonth(parseISO(`${to}-01`)), 'yyyy-MM-dd');
+  const today = format(now, 'yyyy-MM-dd');
+  return { from: `${from}-01`, to: today < last ? today : last };
 }

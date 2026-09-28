@@ -9,6 +9,9 @@ import {
   encodeRangeParam,
   resolveDateRange,
   widgetDateRange,
+  monthCount,
+  monthsBetween,
+  dayBounds,
 } from './dateRange';
 import type { DatePresetCustom, ReportDateRange } from '../types';
 
@@ -126,6 +129,54 @@ describe('date range helpers (property-based)', () => {
         const stale = { preset, from: '1999-01', to: '1999-06' };
         expect(resolveDateRange(stale, now)).toEqual({ preset, ...computeDateRange(preset, now) });
       }),
+    );
+  });
+});
+
+describe('short-range helpers (property-based)', () => {
+  // Months from 2000-01 to 2099-12 as an index
+  const arbMonthIndex = fc.integer({ min: 0, max: 1199 });
+  const ym = (i: number) => `${2000 + Math.floor(i / 12)}-${String((i % 12) + 1).padStart(2, '0')}`;
+
+  it('monthsBetween lists each month once, in order, and monthCount matches', () => {
+    fc.assert(
+      fc.property(arbMonthIndex, fc.integer({ min: 0, max: 60 }), (start, length) => {
+        const months = monthsBetween(ym(start), ym(start + length));
+        expect(months).toEqual(Array.from({ length: length + 1 }, (_, i) => ym(start + i)));
+        expect(monthCount(ym(start), ym(start + length))).toBe(length + 1);
+      }),
+    );
+  });
+
+  it('monthCount is 0 for a backwards range', () => {
+    fc.assert(
+      fc.property(arbMonthIndex, fc.integer({ min: 1, max: 60 }), (start, back) => {
+        expect(monthCount(ym(start), ym(start - back))).toBe(0);
+      }),
+    );
+  });
+
+  it('dayBounds runs from the first day to the last day, or today if earlier', () => {
+    fc.assert(
+      fc.property(
+        arbMonthIndex,
+        fc.integer({ min: 0, max: 3 }),
+        fc.date({ min: new Date(2000, 0, 1), max: new Date(2099, 11, 31), noInvalidDate: true }),
+        (start, length, now) => {
+          const from = ym(start);
+          const to = ym(start + length);
+          const b = dayBounds(from, to, now);
+          expect(b.from).toBe(`${from}-01`);
+          const today = format(now, 'yyyy-MM-dd');
+          expect(b.to <= today).toBe(true);
+          expect(b.to.slice(0, 7) <= to).toBe(true);
+          // It stops early only at today; otherwise it's the last day of `to`
+          if (b.to !== today)
+            expect(
+              format(new Date(`${b.to}T00:00:00`).getTime() + 86_400_000, 'yyyy-MM') > to,
+            ).toBe(true);
+        },
+      ),
     );
   });
 });

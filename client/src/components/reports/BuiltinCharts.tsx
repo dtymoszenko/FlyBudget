@@ -16,7 +16,7 @@ import {
   Cell,
 } from 'recharts';
 import {
-  useNetWorth,
+  useNetWorthSeries,
   useIncomeVsExpenses,
   useSpendingByCategory,
   useSpendingTrends,
@@ -25,6 +25,8 @@ import { useCategories } from '../../hooks/useCategories';
 import { usePreferencesStore } from '../../store/preferencesStore';
 import { formatCentsAxis, formatCurrency } from '../../utils/currency';
 import { niceStep, valueAxis } from '../../utils/valueAxis';
+import { dayBounds, monthCount, monthsBetween } from '../../utils/dateRange';
+import { eachDayOfInterval, format, parseISO } from 'date-fns';
 import { chartColors, CATEGORY_COLORS } from '../../utils/chartColors';
 import { formatDateAxisLabels, formatDateLabel } from '../../utils/chartTicks';
 import {
@@ -106,7 +108,7 @@ export function NetWorthChart({
   to: string;
   headline?: boolean;
 }) {
-  const { data = [], isLoading } = useNetWorth(from, to);
+  const { data = [], isLoading } = useNetWorthSeries(from, to);
   const dateLabels = useMemo(() => formatDateAxisLabels(data.map((d) => d.month)), [data]);
   const xAxis = useXAxisLayout({
     labels: dateLabels,
@@ -359,7 +361,14 @@ export function SpendingTrendsChart({
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const activeIds = compact && topCategoryIds?.length ? topCategoryIds : selectedIds;
   const { data: groups = [] } = useCategories();
-  const { data: trendData = [], isLoading } = useSpendingTrends(activeIds, from, to);
+  // A single month shows each category's running total by day; longer ranges, totals by month
+  const daily = monthCount(from, to) === 1;
+  const { data: trendData = [], isLoading } = useSpendingTrends(
+    activeIds,
+    from,
+    to,
+    daily ? 'daily' : undefined,
+  );
 
   const expenseCategories = useMemo(
     () => (groups as any[]).filter((g: any) => g.isIncome === 0).flatMap((g: any) => g.categories),
@@ -368,21 +377,36 @@ export function SpendingTrendsChart({
 
   const chartData = useMemo(() => {
     if (!trendData.length) return [];
-    const monthSet = new Set(trendData.map((r) => r.month));
-    const months = [...monthSet].sort();
-    return months.map((month) => {
-      const row: Record<string, string | number> = { month: monthLabel(month) };
-      for (const point of trendData) {
-        if (point.month === month) {
-          const key = point.categoryName
-            ? `${showCategoryIcons && point.categoryIcon ? point.categoryIcon + ' ' : ''}${point.categoryName}`
-            : point.categoryId;
-          row[key] = point.total;
-        }
-      }
-      return row;
-    });
-  }, [trendData, showCategoryIcons]);
+    const keyOf = (p: (typeof trendData)[number]) =>
+      p.categoryName
+        ? `${showCategoryIcons && p.categoryIcon ? p.categoryIcon + ' ' : ''}${p.categoryName}`
+        : p.categoryId;
+    const byPeriod = new Map<string, Record<string, number>>();
+    for (const p of trendData) {
+      const row = byPeriod.get(p.month) ?? {};
+      row[keyOf(p)] = (row[keyOf(p)] ?? 0) + p.total;
+      byPeriod.set(p.month, row);
+    }
+    const keys = [...new Set(trendData.map(keyOf))];
+
+    if (daily) {
+      const { from: first, to: last } = dayBounds(from, to);
+      if (last < first) return [];
+      const running: Record<string, number> = Object.fromEntries(keys.map((k) => [k, 0]));
+      return eachDayOfInterval({ start: parseISO(first), end: parseISO(last) }).map((d) => {
+        const day = format(d, 'yyyy-MM-dd');
+        for (const [k, v] of Object.entries(byPeriod.get(day) ?? {})) running[k] += v;
+        return { month: day, ...running };
+      });
+    }
+    // Every month from the first with spending, so a month with none shows as $0, not a gap
+    const firstMonth = [...byPeriod.keys()].sort()[0];
+    return monthsBetween(firstMonth > from ? firstMonth : from, to).map((month) => ({
+      month: monthLabel(month),
+      ...Object.fromEntries(keys.map((k) => [k, 0])),
+      ...byPeriod.get(month),
+    }));
+  }, [trendData, showCategoryIcons, daily, from, to]);
 
   const selectedNames = useMemo(() => {
     return activeIds.map((id) => {
@@ -390,8 +414,23 @@ export function SpendingTrendsChart({
       return cat ? `${showCategoryIcons && cat.icon ? cat.icon + ' ' : ''}${cat.name}` : id;
     });
   }, [activeIds, expenseCategories, showCategoryIcons]);
-  const monthLabels = useMemo(() => chartData.map((d) => String(d.month)), [chartData]);
-  const xAxis = useXAxisLayout({ labels: monthLabels, kind: 'point', ordered: true, inset: INSET });
+  const single = chartData.length === 1;
+  const monthLabels = useMemo(
+    () =>
+      daily
+        ? formatDateAxisLabels(chartData.map((d) => String(d.month)))
+        : chartData.map((d) => String(d.month)),
+    [chartData, daily],
+  );
+  const xAxis = useXAxisLayout({
+    labels: monthLabels,
+    // One point can't make a line, so it shows as bars
+    kind: single ? 'band' : 'point',
+    ordered: true,
+    inset: INSET,
+  });
+
+  const TrendChart = single ? BarChart : LineChart;
 
   function toggleCategory(id: string) {
     setSelectedIds((prev) =>
@@ -437,32 +476,55 @@ export function SpendingTrendsChart({
         ) : !chartData.length ? (
           <EmptyState />
         ) : (
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 4, right: 16, left: 16, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
-              <XAxis dataKey="month" axisLine={false} tickLine={false} {...xAxis.axisProps} />
-              <YAxis
-                tickFormatter={formatCentsAxis}
-                tick={{ fontSize: 11, fill: chartColors.axis }}
-                axisLine={false}
-                tickLine={false}
-                width={60}
-              />
-              <Tooltip content={<CurrencyTooltip />} />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
-              {selectedNames.map((name, i) => (
-                <Line
-                  key={name}
-                  type="monotone"
-                  dataKey={name}
-                  stroke={EXPENSE_COLORS[i % EXPENSE_COLORS.length]}
-                  strokeWidth={2}
-                  dot={false}
-                  connectNulls
-                />
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
+          <div className="h-full flex flex-col">
+            {daily && (
+              <p className="text-[11px] text-text-tertiary px-1 pb-1 shrink-0">
+                Running total this month
+              </p>
+            )}
+            <div className="flex-1 min-h-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <TrendChart data={chartData} margin={{ top: 4, right: 16, left: 16, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+                  <XAxis dataKey="month" axisLine={false} tickLine={false} {...xAxis.axisProps} />
+                  <YAxis
+                    tickFormatter={formatCentsAxis}
+                    tick={{ fontSize: 11, fill: chartColors.axis }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={60}
+                  />
+                  <Tooltip
+                    content={<CurrencyTooltip />}
+                    labelFormatter={daily ? formatDateLabel : undefined}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  {selectedNames.map((name, i) => {
+                    const color = EXPENSE_COLORS[i % EXPENSE_COLORS.length];
+                    return single ? (
+                      <Bar
+                        key={name}
+                        dataKey={name}
+                        fill={color}
+                        radius={[4, 4, 0, 0]}
+                        maxBarSize={48}
+                      />
+                    ) : (
+                      <Line
+                        key={name}
+                        type={daily ? 'stepAfter' : 'monotone'}
+                        dataKey={name}
+                        stroke={color}
+                        strokeWidth={2}
+                        dot={false}
+                        connectNulls
+                      />
+                    );
+                  })}
+                </TrendChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         )}
       </div>
     </div>

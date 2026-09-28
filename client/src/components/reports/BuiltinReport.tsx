@@ -1,5 +1,10 @@
 import { useMemo } from 'react';
-import { useNetWorth, useIncomeVsExpenses, useSpendingByCategory } from '../../hooks/useReports';
+import {
+  useNetWorth,
+  useNetWorthSeries,
+  useIncomeVsExpenses,
+  useSpendingByCategory,
+} from '../../hooks/useReports';
 import { usePreferencesStore } from '../../store/preferencesStore';
 import { formatCurrency } from '../../utils/currency';
 import { downloadCsv } from '../../utils/exportCsv';
@@ -138,7 +143,7 @@ export function BuiltinReportStats({
   to: string;
 }) {
   const summary = useSummaryCards(from, to);
-  const { data: nwData = [] } = useNetWorth(from, to);
+  const { data: nwData = [] } = useNetWorthSeries(from, to);
   const { data: ieData = [] } = useIncomeVsExpenses(from, to);
   const { data: spData = [] } = useSpendingByCategory(from, to);
 
