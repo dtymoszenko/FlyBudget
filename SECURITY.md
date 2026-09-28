@@ -36,9 +36,8 @@ times are best-effort.
 
 ## Scope
 
-FlyBudget runs entirely on your own machine: the API binds to `127.0.0.1`, and
-your data lives in a local SQLite file. Bank-sync credentials (Plaid and SimpleFIN
-tokens) are stored in that database.
+FlyBudget runs entirely on your own machine. See [How FlyBudget protects your
+data](#how-flybudget-protects-your-data) below for the full model.
 
 Especially in scope:
 
@@ -55,3 +54,84 @@ Out of scope:
   should be reported to them
 - outdated dependencies with no demonstrated impact on FlyBudget (Dependabot
   already tracks these)
+
+## How FlyBudget protects your data
+
+FlyBudget is local-first: there is no FlyBudget server, account, telemetry, or
+crash reporting. Your data never leaves your computer except when bank sync
+talks to Plaid or SimpleFIN on your behalf.
+
+### What is stored, and where
+
+| Data                               | Location (desktop app)                     | Protection                                                                                        |
+| ---------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| Budget, accounts, transactions     | `budget.db` in the app's data folder       | Your OS user account (not encrypted by FlyBudget; see below)                                      |
+| Plaid secret and access tokens     | `budget.db`                                | AES-256-GCM, with a key protected by the OS (Windows DPAPI, macOS Keychain, Linux secret service) |
+| SimpleFIN access URL (credentials) | `budget.db`                                | Same as above                                                                                     |
+| Encryption key for the above       | `credentials.key` in the app's data folder | Encrypted by the OS; only usable by your user account on that machine                             |
+| Display preferences                | Browser storage inside the app             | Not sensitive                                                                                     |
+
+A copied or backed-up `budget.db` therefore does **not** give bank access.
+Access tokens are never sent to the app's own UI, logs, or backup exports.
+
+### Network
+
+- **Local API.** The embedded server listens only on `127.0.0.1`. It accepts
+  requests only from the app's own window: other websites (including DNS
+  rebinding and cross-site requests) are rejected, and in the desktop app every
+  request needs a random per-launch secret held in an HttpOnly cookie, so other
+  programs and users on the same machine can't read your data.
+- **Outbound.** The only external services contacted are Plaid (the
+  `plaid.com` API and the Plaid Link window) and your SimpleFIN bridge, always
+  over HTTPS. SimpleFIN URLs are restricted to public HTTPS addresses (checked at
+  connection time), redirects are re-validated, and requests time out. Apart from
+  Plaid Link's own script, fonts and all other assets are bundled with the app.
+- **Content Security Policy.** The UI can only run code shipped with the app
+  (plus Plaid Link's script) and can only send data to itself and Plaid.
+
+### Bank connections
+
+- **Plaid:** you use your own Plaid API keys. Disconnecting a bank revokes its
+  access token at Plaid (`/item/remove`); if Plaid can't be reached, the
+  connection is kept so you can retry.
+- **SimpleFIN:** SimpleFIN has no revoke API. Disconnecting deletes FlyBudget's
+  copy of the access URL; to revoke access completely, also remove the app in
+  your [SimpleFIN Bridge](https://bridge.simplefin.org) account.
+- Data from banks is treated as untrusted: it is validated, amounts are converted
+  exactly, and exported CSV files are protected against formula injection.
+
+### The desktop app
+
+- Sandboxed renderer with no Node.js access, DevTools disabled in releases, all
+  permission requests (camera, microphone, location, notifications) denied, and
+  the window can't navigate away from the app. Links open in your browser only
+  if they are `https://`.
+- Electron fuses disable `ELECTRON_RUN_AS_NODE`, `NODE_OPTIONS`, and `--inspect`,
+  and the app refuses to start if its files have been modified (asar integrity).
+- Releases are built by GitHub Actions and signed with Sigstore, with SLSA build
+  provenance. Verify a download with:
+  `gh attestation verify FlyBudget-Setup-<version>.exe -R dtymoszenko/FlyBudget`
+
+### Development and supply chain
+
+- Every change runs CI (type checks, builds, property-based tests) and CodeQL
+  (extended security queries); `main` requires CI to pass.
+- npm install scripts are disabled in every package, CI verifies registry
+  signatures, and Dependabot waits 7 days before adopting new releases
+  (security fixes are not delayed). GitHub Actions are pinned to commit SHAs.
+- Secret scanning with push protection is enabled on the repository.
+
+### What you should do
+
+FlyBudget can't protect against someone who controls your user account. To keep
+your financial data safe:
+
+- Use a strong OS login and turn on full-disk encryption (BitLocker on Windows,
+  FileVault on macOS), since `budget.db` itself is not encrypted.
+- Treat backup exports (`budget-backup-*.json`) and CSV exports as sensitive:
+  they contain your full financial history (but no bank credentials).
+- Only download FlyBudget from this repository's Releases page, and verify it
+  with the command above.
+- Keep your Plaid API keys private, and disconnect banks you no longer use.
+- `npm run dev` is for development: it has no per-launch secret, and bank
+  credentials are stored unencrypted. Use the desktop app for real accounts.

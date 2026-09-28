@@ -19,6 +19,15 @@
 
 ---
 
+## Security & privacy
+
+FlyBudget is local-first: your data stays on your computer, with no FlyBudget
+account, server, or telemetry. Bank credentials are encrypted with a key
+protected by your operating system, the local API only answers the app itself,
+and releases are signed so you can verify them. See [SECURITY.md](SECURITY.md)
+for the full security model, what you should do to protect your data, and how to
+report a vulnerability privately.
+
 ## Commit Message Guidelines
 
 | Type       | Description                                 |
