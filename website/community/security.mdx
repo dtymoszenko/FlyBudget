@@ -15,11 +15,11 @@ If you think you've found a security issue, no matter how small or unlikely, ple
 
 ## The short version
 
-- **Your data stays on your computer.** No FlyBudget account, no FlyBudget server, no tracking, and no crash reports.
-- **Your bank credentials are encrypted,** with a key protected by your operating system.
-- **You log in to your bank on your bank's or Plaid's own page,** never inside FlyBudget.
-- **Every release is signed,** so you can verify that the download is genuinely ours.
-- **Every change is checked automatically** for security problems before it can be merged.
+- **Your data stays on your computer.** No FlyBudget account, no online FlyBudget service, no tracking, and no crash reports.
+- **Your bank credentials are encrypted** in the desktop app, with a key protected by your operating system.
+- **You log in on Plaid's, SimpleFIN's, or your bank's own website,** never inside FlyBudget.
+- **Every release comes with a verifiable build signature,** so you can confirm the download is genuinely ours.
+- **Every change is automatically tested and scanned** for security problems.
 
 ## Our security ratings
 
@@ -36,7 +36,7 @@ The live score is always here:
 
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/dtymoszenko/FlyBudget/badge)](https://scorecard.dev/viewer/?uri=github.com/dtymoszenko/FlyBudget)
 
-The [OpenSSF Scorecard](https://openssf.org/projects/scorecard/) is an independent rating from the Open Source Security Foundation. FlyBudget scores a perfect 10 on 12 of its checks, including signed releases, pinned dependencies, least-privilege automation, dependency updates, fuzz testing, and having no known vulnerabilities. The points we don't have yet mostly come from being a young project with one maintainer, such as having a second person review every change. We're working on that.
+The [OpenSSF Scorecard](https://openssf.org/projects/scorecard/) is an independent rating from the Open Source Security Foundation. FlyBudget scores a perfect 10 on 12 of its checks, including signed releases, pinned dependencies, least-privilege automation, dependency updates, fuzz testing, and having no known vulnerabilities. The points we don't have yet mostly reflect how new FlyBudget is. For example, Scorecard wants a second person to review every change, which will come naturally as more contributors join the project.
 
 ## Your data stays yours
 
@@ -48,11 +48,11 @@ The only time FlyBudget talks to the internet is when bank sync connects to **Pl
 
 ### Plaid
 
-- **You log in on Plaid's own page, in your web browser.** When you connect a bank, FlyBudget opens Plaid's secure hosted page in your browser, the same browser you already trust with your bank, where your password manager works and banks that use OAuth (like Chase and Wells Fargo) work normally. Your bank password never passes through FlyBudget.
+- **You log in on Plaid's own page, in your web browser.** When you connect a bank, FlyBudget opens Plaid's secure hosted page in your browser, the same browser you already trust with your bank, where your password manager works and banks that use OAuth (like Chase and Wells Fargo) are supported. Your bank password never passes through FlyBudget.
 - **Tokens never reach the app's screen.** Plaid gives the built-in server a token for reading your transactions. It's exchanged and stored on the server side only, and the interface never sees it.
 - **Tokens are encrypted** before they're saved (see below).
 - **Disconnecting really disconnects.** When you remove a bank, FlyBudget tells Plaid to **revoke** access, not just forget it locally. We tested this against Plaid: after disconnecting, the old token is rejected. If Plaid can't be reached at that moment, FlyBudget keeps the connection and asks you to try again, rather than leaving a live token behind.
-- **You use your own Plaid keys,** so no third party sits between you and your bank data.
+- **You use your own Plaid keys,** so there's no FlyBudget service in the middle: it's just you, Plaid, and your bank.
 
 ### SimpleFIN
 
@@ -63,7 +63,7 @@ The only time FlyBudget talks to the internet is when bank sync connects to **Pl
 
 ## Encryption
 
-Your most sensitive secrets (your Plaid keys, your Plaid access tokens, and your SimpleFIN access) are encrypted with **AES-256-GCM**, the same standard used by banks and governments. The encryption key itself is protected by your operating system (Windows DPAPI, the macOS Keychain, or the Linux secret service), so it only works for your user account on your computer.
+Your most sensitive secrets (your Plaid keys, your Plaid access tokens, and your SimpleFIN access) are encrypted with **AES-256-GCM**, the same standard used by banks and governments. The encryption key itself is protected by your operating system (Windows DPAPI, the macOS Keychain, or the Linux secret service), so it only works for your user account on your computer. This applies to the FlyBudget desktop app; on a system without OS secure storage (for example some Linux setups without a keyring), credentials are stored without this extra layer.
 
 That means a copied or backed-up database file **does not** give anyone access to your bank accounts.
 
@@ -73,7 +73,7 @@ Your budget and transactions themselves are protected by your operating system a
 
 **The built-in server only answers FlyBudget.** Other websites you have open can't read your data or quietly make changes, even though the server is running on your computer. In the desktop app, every request also needs a secret that's created fresh each time you open FlyBudget, so other programs and other users on the same computer can't get in either.
 
-**A strict Content Security Policy.** The app is only allowed to run its own code and only allowed to talk to its own server. No third-party scripts, fonts, trackers, or frames are loaded at all, even the fonts are bundled with the app.
+**A strict Content Security Policy.** In the desktop app, the page is only allowed to run FlyBudget's own code and only allowed to talk to its own server. No third-party scripts, fonts, trackers, or frames are loaded at all, even the fonts are bundled with the app.
 
 **A locked-down desktop app.** The FlyBudget window:
 
@@ -84,7 +84,7 @@ Your budget and transactions themselves are protected by your operating system a
 - disables developer tools in releases, and
 - refuses to start if its own files have been tampered with.
 
-**Careful with your files.** Exported spreadsheets are protected against "formula injection," where a booby-trapped merchant name could run something when you open the file in Excel. Error messages never reveal details about your computer.
+**Careful with your files.** Exported spreadsheets are protected against "formula injection," where a booby-trapped merchant name could run something when you open the file in Excel. Error messages don't reveal internal details like file paths.
 
 ## Verifying your download
 
@@ -96,16 +96,18 @@ gh attestation verify FlyBudget-Setup-<version>.exe -R dtymoszenko/FlyBudget
 
 If the file was modified in any way, even by a single byte, verification fails. Only download FlyBudget from our [GitHub Releases page](https://github.com/dtymoszenko/FlyBudget/releases).
 
+The installer isn't Windows code-signed yet, so Windows may show an "unknown publisher" warning the first time you run it. Code signing is next on our list; until then, the command above is the way to confirm your download is genuine.
+
 ## How we build FlyBudget
 
-Security isn't a one-time checklist, so these run on every single change:
+Security isn't a one-time checklist, so these run automatically, all the time:
 
-- **Automated tests** on every pull request, including property-based tests that try hundreds of random inputs against each rule for the money math, the bank-data handling, and the security protections.
-- **CodeQL** scans the code with GitHub's extended security rules.
+- **Automated tests** on every pull request, including property-based tests that check each rule against many randomly generated inputs, covering the money math, the bank-data handling, and the security protections.
+- **CodeQL** scans every pull request and every update to the main branch with GitHub's extended security rules.
 - **Dependabot** watches every dependency for known vulnerabilities and opens fixes automatically.
-- **Supply-chain protection:** new package versions wait 7 days before we adopt them (hijacked releases are usually caught within days), install scripts from packages are blocked entirely, and every package's registry signature is verified.
-- **Pinned automation:** every GitHub Action is pinned to an exact, reviewed version, with the minimum permissions it needs.
-- **Protected main branch:** nothing is merged unless the full test suite passes.
+- **Supply-chain protection:** Dependabot waits 7 days before proposing a brand-new package version (hijacked releases are usually caught within days), install scripts from packages are blocked entirely, and the registry signature of every package the app uses is verified.
+- **Pinned automation:** every GitHub Action is pinned to an exact version, with the minimum permissions it needs.
+- **Protected main branch:** pull requests can't be merged until the full test suite passes.
 - **Secret scanning with push protection** blocks accidental commits of keys or passwords.
 
 ## What you can do
@@ -123,7 +125,7 @@ FlyBudget can protect you from a lot, but not from someone who already controls 
 No software can promise to be perfectly secure, and we'd rather be upfront than overpromise:
 
 - Anyone who can log in to your computer as you can see your budget. Full-disk encryption and a strong login password are your best protection.
-- FlyBudget is maintained by a small team. Independent audits and more reviewers are on our wish list.
+- FlyBudget is a young project, built by one developer today and growing. As more contributors join, we look forward to adding more reviewers and, down the road, independent security audits.
 - Plaid and SimpleFIN are separate services with their own security. Issues with them should be reported to them directly.
 
 ## Report a vulnerability
