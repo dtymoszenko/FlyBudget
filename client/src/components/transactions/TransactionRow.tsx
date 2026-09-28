@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { ChevronRight, ChevronDown, ArrowLeftRight, ArrowRight, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useUpdateTransaction } from '../../hooks/useTransactions';
+import { useUpdatePayee } from '../../hooks/usePayees';
 import { CategoryPicker } from './CategoryPicker';
 import { PayeePicker } from './PayeePicker';
 import { PayeeIcon } from '../payees/PayeeIcon';
@@ -45,6 +46,7 @@ export function TransactionRow({
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showPayeePicker, setShowPayeePicker] = useState(false);
   const updateTx = useUpdateTransaction();
+  const updatePayee = useUpdatePayee();
   const navigate = useNavigate();
   const showCategoryIcons = usePreferencesStore((s) => s.showCategoryIcons);
 
@@ -54,8 +56,8 @@ export function TransactionRow({
   const canEditPayee = !tx.reconciled && !isTransfer;
 
   const payeeName = tx.payeeName || (isTransfer ? 'Transfer' : '—');
-  const payeeLogo = useMemo(
-    () => (tx.payeeId ? payees.find((p) => p.id === tx.payeeId)?.logo : null),
+  const payee = useMemo(
+    () => (tx.payeeId ? payees.find((p) => p.id === tx.payeeId) : undefined),
     [payees, tx.payeeId],
   );
 
@@ -82,7 +84,12 @@ export function TransactionRow({
       >
         {/* Payee */}
         <div className="group/payee flex items-center gap-1 flex-[3] min-w-0 relative mr-3">
-          <PayeeIcon name={payeeName} logo={payeeLogo} transfer={isTransfer} />
+          <PayeeIcon
+            name={payeeName}
+            logo={payee?.logo}
+            transfer={isTransfer}
+            onLogoChange={payee ? (logo) => updatePayee.mutate({ id: payee.id, logo }) : undefined}
+          />
           {canEditPayee ? (
             <button
               className="flex-1 flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-all group-hover/payee:border group-hover/payee:border-border group-hover/payee:bg-surface cursor-pointer border border-transparent min-w-0"
