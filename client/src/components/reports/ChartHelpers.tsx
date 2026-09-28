@@ -6,16 +6,77 @@ export const EXPENSE_COLORS = CATEGORY_COLORS;
 
 export const monthLabel = (month: string) => format(parseISO(`${month}-01`), 'MMM yy');
 
-export function CurrencyTooltip({ active, payload, label }: any) {
+export interface TooltipSummary {
+  label: string;
+  value: number;
+}
+
+/** `summary` for CurrencyTooltip: the sum of every series at the hovered point. */
+export const sumSeries = (payload: any[]): TooltipSummary | null =>
+  payload.length > 1
+    ? { label: 'Total', value: payload.reduce((s, p) => s + (Number(p.value) || 0), 0) }
+    : null;
+
+const TOOLTIP_CLASS = 'bg-surface border border-border rounded-md shadow-hover px-3 py-2';
+
+/**
+ * One line per series at the hovered point. `summary` adds a bold line below them (e.g. a total
+ * or net); `hideZero` drops series with no value, for charts with many stacked groups.
+ */
+export function CurrencyTooltip({
+  active,
+  payload,
+  label,
+  labelFormatter,
+  summary,
+  hideZero,
+}: any) {
   if (!active || !payload?.length) return null;
+  const rows = hideZero ? payload.filter((p: any) => Number(p.value) !== 0) : payload;
+  const extra: TooltipSummary | null = summary ? summary(payload) : null;
   return (
-    <div className="bg-surface border border-border rounded-md shadow-hover px-3 py-2">
-      <p className="text-xs text-text-tertiary mb-1">{label}</p>
-      {payload.map((p: any) => (
+    <div className={TOOLTIP_CLASS}>
+      <p className="text-xs text-text-tertiary mb-1">
+        {labelFormatter ? labelFormatter(label, payload) : label}
+      </p>
+      {rows.map((p: any) => (
         <p key={p.name} className="text-xs font-medium" style={{ color: p.color }}>
           {p.name}: {formatCurrency(p.value)}
         </p>
       ))}
+      {extra && (
+        <p className="text-xs font-semibold text-text mt-1 pt-1 border-t border-border-light">
+          {extra.label}: {formatCurrency(extra.value)}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * For part-of-whole charts (donut, totals by group): the hovered item's name, amount and share
+ * of `total`. Items can carry `fullName` (untruncated label) and `color` (hidden by `noSwatch`,
+ * for single-color line and area charts).
+ */
+export function ShareTooltip({ active, payload, label, total, noSwatch }: any) {
+  if (!active || !payload?.length) return null;
+  const p = payload[0];
+  const item = p.payload ?? {};
+  const value = Number(p.value) || 0;
+  const name = String(item.fullName ?? item.name ?? label ?? p.name);
+  const color = noSwatch ? undefined : (item.color ?? p.color);
+  return (
+    <div className={TOOLTIP_CLASS}>
+      <p className="flex items-center gap-1.5 text-xs text-text-secondary mb-0.5">
+        {color && <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />}
+        {/^\d{4}-\d{2}$/.test(name) ? monthLabel(name) : name}
+      </p>
+      <p className="text-sm font-semibold text-text tabular-nums">{formatCurrency(value)}</p>
+      {total > 0 && (
+        <p className="text-xs text-text-tertiary tabular-nums">
+          {((value / total) * 100).toFixed(1)}% of {formatCurrency(total)}
+        </p>
+      )}
     </div>
   );
 }

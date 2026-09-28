@@ -22,11 +22,12 @@ import {
 } from '../../hooks/useReports';
 import { useCategories } from '../../hooks/useCategories';
 import { usePreferencesStore } from '../../store/preferencesStore';
-import { formatCurrency, formatCentsAxis } from '../../utils/currency';
+import { formatCentsAxis } from '../../utils/currency';
 import { chartColors, CATEGORY_COLORS } from '../../utils/chartColors';
 import { formatDateAxisLabels, formatDateLabel } from '../../utils/chartTicks';
 import {
   CurrencyTooltip,
+  ShareTooltip,
   ChartSkeleton,
   EmptyState,
   EXPENSE_COLORS,
@@ -152,7 +153,13 @@ export function IncomeExpensesChart({ from, to }: { from: string; to: string }) 
             tickLine={false}
             width={60}
           />
-          <Tooltip content={<CurrencyTooltip />} />
+          <Tooltip
+            content={
+              <CurrencyTooltip
+                summary={(payload: any[]) => ({ label: 'Net', value: payload[0].payload.net })}
+              />
+            }
+          />
           <Bar
             dataKey="income"
             name="Income"
@@ -181,12 +188,19 @@ export function SpendingChart({ from, to }: { from: string; to: string }) {
       [...data]
         .sort((a, b) => b.totalSpent - a.totalSpent)
         .slice(0, 10)
-        .map((d) => {
+        .map((d, i) => {
           const full = `${showCategoryIcons && d.categoryIcon ? d.categoryIcon + ' ' : ''}${d.categoryName ?? 'Uncategorized'}`;
-          return { name: full.length > 22 ? full.slice(0, 21) + '…' : full, value: d.totalSpent };
+          return {
+            name: full.length > 22 ? full.slice(0, 21) + '…' : full,
+            fullName: full,
+            value: d.totalSpent,
+            color: CATEGORY_COLORS[i % CATEGORY_COLORS.length],
+          };
         }),
     [data, showCategoryIcons],
   );
+  // Shares are of all spending, not just the ten categories drawn
+  const total = useMemo(() => data.reduce((s, d) => s + d.totalSpent, 0), [data]);
 
   if (isLoading) return <ChartSkeleton />;
   if (!chartData.length) return <EmptyState />;
@@ -215,21 +229,10 @@ export function SpendingChart({ from, to }: { from: string; to: string }) {
           width={160}
           interval={0}
         />
-        <Tooltip
-          content={({ active, payload, label }) =>
-            active && payload?.length ? (
-              <div className="bg-surface border border-border rounded-md shadow-hover px-3 py-2">
-                <p className="text-xs text-text-tertiary mb-0.5">{label}</p>
-                <p className="text-xs font-medium text-brand-600">
-                  {formatCurrency(payload[0].value as number)}
-                </p>
-              </div>
-            ) : null
-          }
-        />
+        <Tooltip content={<ShareTooltip total={total} />} />
         <Bar dataKey="value" name="Spent" radius={[0, 3, 3, 0]} maxBarSize={20}>
-          {chartData.map((_, i) => (
-            <Cell key={i} fill={CATEGORY_COLORS[i % CATEGORY_COLORS.length]} />
+          {chartData.map((d, i) => (
+            <Cell key={i} fill={d.color} />
           ))}
         </Bar>
       </BarChart>

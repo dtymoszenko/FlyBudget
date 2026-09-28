@@ -9,6 +9,7 @@ import {
   PieChart,
   Pie,
   Cell,
+  Sector,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -20,6 +21,8 @@ import { formatCentsAxis } from '../../utils/currency';
 import { chartColors } from '../../utils/chartColors';
 import {
   CurrencyTooltip,
+  ShareTooltip,
+  sumSeries,
   ChartSkeleton,
   EmptyState,
   EXPENSE_COLORS,
@@ -30,6 +33,7 @@ import { useXAxisLayout } from '../../hooks/useXAxisLayout';
 
 // Plot insets for the charts below: left margin (16) + default y-axis width (60), right margin (16)
 const INSET = { left: 76, right: 16 };
+import type { PieSectorDataItem } from 'recharts';
 import type { CustomReportConfig, CustomReportData } from '../../types';
 
 interface Props {
@@ -58,9 +62,66 @@ export default function ReportChartArea({ config, data, isLoading }: Props) {
   return <TimeChartView config={config} data={data} />;
 }
 
+/** Totals as positive amounts, each with the color its slice or bar is drawn in. */
+function withColors(rows: Extract<CustomReportData, { mode: 'total' }>['data']) {
+  return rows.map((d, i) => ({
+    ...d,
+    value: Math.abs(d.value),
+    color: EXPENSE_COLORS[i % EXPENSE_COLORS.length],
+  }));
+}
+
+/** The hovered slice: pushed out a little past the others. */
+function ActiveSlice({
+  cx,
+  cy,
+  innerRadius,
+  outerRadius = 0,
+  startAngle,
+  endAngle,
+  fill,
+}: PieSectorDataItem) {
+  return (
+    <Sector
+      cx={cx}
+      cy={cy}
+      innerRadius={innerRadius}
+      outerRadius={outerRadius + 8}
+      startAngle={startAngle}
+      endAngle={endAngle}
+      fill={fill}
+    />
+  );
+}
+
+/** Every other slice while one is hovered: faded so the hovered one stands out. */
+function InactiveSlice({
+  cx,
+  cy,
+  innerRadius,
+  outerRadius,
+  startAngle,
+  endAngle,
+  fill,
+}: PieSectorDataItem) {
+  return (
+    <Sector
+      cx={cx}
+      cy={cy}
+      innerRadius={innerRadius}
+      outerRadius={outerRadius}
+      startAngle={startAngle}
+      endAngle={endAngle}
+      fill={fill}
+      fillOpacity={0.35}
+    />
+  );
+}
+
 function DonutView({ data }: { data: Extract<CustomReportData, { mode: 'total' }> }) {
-  const chartData = data.data.map((d) => ({ ...d, value: Math.abs(d.value) }));
+  const chartData = withColors(data.data);
   if (!chartData.length) return <EmptyState />;
+  const total = chartData.reduce((s, d) => s + d.value, 0);
 
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -74,12 +135,14 @@ function DonutView({ data }: { data: Extract<CustomReportData, { mode: 'total' }
           innerRadius="40%"
           outerRadius="75%"
           paddingAngle={2}
+          activeShape={ActiveSlice}
+          inactiveShape={InactiveSlice}
         >
-          {chartData.map((_, i) => (
-            <Cell key={i} fill={EXPENSE_COLORS[i % EXPENSE_COLORS.length]} />
+          {chartData.map((d, i) => (
+            <Cell key={i} fill={d.color} />
           ))}
         </Pie>
-        <Tooltip content={<CurrencyTooltip />} />
+        <Tooltip content={<ShareTooltip total={total} />} />
         <Legend wrapperStyle={{ fontSize: 12 }} />
       </PieChart>
     </ResponsiveContainer>
@@ -93,10 +156,8 @@ function TotalChartView({
   config: CustomReportConfig;
   data: Extract<CustomReportData, { mode: 'total' }>;
 }) {
-  const chartData = useMemo(
-    () => data.data.map((d) => ({ ...d, value: Math.abs(d.value) })),
-    [data],
-  );
+  const chartData = useMemo(() => withColors(data.data), [data]);
+  const total = useMemo(() => chartData.reduce((s, d) => s + d.value, 0), [chartData]);
   // Month groups arrive as "2025-06"; show them like the other charts ("Jun 25"). Checking the
   // format, not just groupBy, because data from the previous grouping can still be showing
   const labels = useMemo(
@@ -127,7 +188,7 @@ function TotalChartView({
             tickLine={false}
             tickFormatter={formatCentsAxis}
           />
-          <Tooltip content={<CurrencyTooltip />} />
+          <Tooltip content={<ShareTooltip total={total} noSwatch={config.chartType !== 'bar'} />} />
           {config.chartType === 'area' ? (
             <Area
               type="monotone"
@@ -148,8 +209,8 @@ function TotalChartView({
             />
           ) : (
             <Bar dataKey="value" name="Amount" radius={[4, 4, 0, 0]} maxBarSize={48}>
-              {chartData.map((_, i) => (
-                <Cell key={i} fill={EXPENSE_COLORS[i % EXPENSE_COLORS.length]} />
+              {chartData.map((d, i) => (
+                <Cell key={i} fill={d.color} />
               ))}
             </Bar>
           )}
@@ -194,7 +255,7 @@ function TimeChartView({
               tickLine={false}
               tickFormatter={formatCentsAxis}
             />
-            <Tooltip content={<CurrencyTooltip />} />
+            <Tooltip content={<CurrencyTooltip summary={sumSeries} hideZero />} />
             <Legend wrapperStyle={{ fontSize: 11 }} />
             {groups.map((g, i) => (
               <Bar
@@ -225,7 +286,7 @@ function TimeChartView({
             tickLine={false}
             tickFormatter={formatCentsAxis}
           />
-          <Tooltip content={<CurrencyTooltip />} />
+          <Tooltip content={<CurrencyTooltip summary={sumSeries} />} />
           <Legend wrapperStyle={{ fontSize: 11 }} />
           {groups.map((g, i) => {
             const color = EXPENSE_COLORS[i % EXPENSE_COLORS.length];

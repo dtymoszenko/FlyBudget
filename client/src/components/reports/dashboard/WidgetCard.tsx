@@ -116,7 +116,9 @@ export default function WidgetCard({ widget, report, pages, dashboardRange, edit
           <RowMenu items={menu} />
         </Isolate>
       </div>
-      <div className="flex-1 min-h-0 overflow-hidden pointer-events-none">
+      {/* Charts show their tooltips on hover; a click still bubbles up and opens the report.
+          In edit mode the chart ignores the pointer so the whole card drags. */}
+      <div className={`flex-1 min-h-0 overflow-hidden ${editing ? 'pointer-events-none' : ''}`}>
         {isCustom ? (
           report ? (
             <CustomReportBody report={report} range={range} />
