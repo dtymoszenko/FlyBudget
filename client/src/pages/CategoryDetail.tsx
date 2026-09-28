@@ -20,6 +20,7 @@ import { formatCurrency } from '../utils/currency';
 import { chartColors } from '../utils/chartColors';
 import { TransactionTable } from '../components/transactions/TransactionTable';
 import type { Transaction } from '../types';
+import { useXAxisLayout } from '../hooks/useXAxisLayout';
 
 function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
@@ -62,6 +63,13 @@ function HistoryChart({
 
   const hasData = chartData.some((d) => d.amount > 0);
   const barColor = isIncome ? chartColors.positive : chartColors.negative;
+  const monthLabels = useMemo(() => chartData.map((d) => d.label), [chartData]);
+  const xAxis = useXAxisLayout({
+    labels: monthLabels,
+    kind: 'band',
+    ordered: true,
+    inset: { left: 50, right: 8 },
+  });
 
   return (
     <div
@@ -70,52 +78,49 @@ function HistoryChart({
     >
       <h2 className="text-sm font-semibold text-text mb-3">Spending History</h2>
       {hasData ? (
-        <ResponsiveContainer width="100%" height={200}>
-          <BarChart data={chartData} margin={{ top: 16, right: 8, left: 0, bottom: 0 }}>
-            <XAxis
-              dataKey="label"
-              tick={{ fontSize: 11, fill: chartColors.axis }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              tick={{ fontSize: 10, fill: chartColors.axis }}
-              axisLine={false}
-              tickLine={false}
-              width={50}
-              domain={[0, 'auto']}
-              tickFormatter={(v: number) => (v >= 1000 ? `$${(v / 1000).toFixed(1)}k` : `$${v}`)}
-            />
-            <Tooltip content={<ChartTooltip />} cursor={false} />
-            <Bar
-              dataKey="amount"
-              fill={barColor}
-              radius={[3, 3, 0, 0]}
-              className="cursor-pointer"
-              onClick={(entry: any, _index: number, e: React.MouseEvent) => {
-                e.stopPropagation();
-                const clickedMonth = entry.rawMonth as string;
-                onBarClick(clickedMonth === selectedBarMonth ? null : clickedMonth);
-              }}
-            >
-              {chartData.map((entry) => (
-                <Cell
-                  key={entry.rawMonth}
-                  fill={barColor}
-                  fillOpacity={
-                    selectedBarMonth == null || entry.rawMonth === selectedBarMonth ? 1 : 0.35
-                  }
-                />
-              ))}
-              <LabelList
-                dataKey="amount"
-                position="top"
-                formatter={(v: any) => `$${Math.round(Number(v))}`}
-                style={{ fontSize: 10, fontWeight: 600, fill: chartColors.label }}
+        <div ref={xAxis.ref}>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={chartData} margin={{ top: 16, right: 8, left: 0, bottom: 0 }}>
+              <XAxis dataKey="label" axisLine={false} tickLine={false} {...xAxis.axisProps} />
+              <YAxis
+                tick={{ fontSize: 10, fill: chartColors.axis }}
+                axisLine={false}
+                tickLine={false}
+                width={50}
+                domain={[0, 'auto']}
+                tickFormatter={(v: number) => (v >= 1000 ? `$${(v / 1000).toFixed(1)}k` : `$${v}`)}
               />
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+              <Tooltip content={<ChartTooltip />} cursor={false} />
+              <Bar
+                dataKey="amount"
+                fill={barColor}
+                radius={[3, 3, 0, 0]}
+                className="cursor-pointer"
+                onClick={(entry: any, _index: number, e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  const clickedMonth = entry.rawMonth as string;
+                  onBarClick(clickedMonth === selectedBarMonth ? null : clickedMonth);
+                }}
+              >
+                {chartData.map((entry) => (
+                  <Cell
+                    key={entry.rawMonth}
+                    fill={barColor}
+                    fillOpacity={
+                      selectedBarMonth == null || entry.rawMonth === selectedBarMonth ? 1 : 0.35
+                    }
+                  />
+                ))}
+                <LabelList
+                  dataKey="amount"
+                  position="top"
+                  formatter={(v: any) => `$${Math.round(Number(v))}`}
+                  style={{ fontSize: 10, fontWeight: 600, fill: chartColors.label }}
+                />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       ) : (
         <div className="h-[200px] flex items-center justify-center">
           <p className="text-sm text-text-disabled">No history available</p>

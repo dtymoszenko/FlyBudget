@@ -13,6 +13,7 @@ import { useSpendingComparison } from '../../hooks/useReports';
 import { formatCurrency } from '../../utils/currency';
 import { Card } from '../ui/Card';
 import { chartColors } from '../../utils/chartColors';
+import { useXAxisLayout } from '../../hooks/useXAxisLayout';
 
 type Mode =
   | 'week_vs_last_week'
@@ -84,12 +85,15 @@ export default function SpendingComparison() {
     return Object.values(merged).sort((a, b) => a.day - b.day);
   }, [data]);
 
-  const tickInterval = useMemo(() => {
-    if (!data) return 1;
-    if (data.maxDays <= 7) return 0;
-    if (data.maxDays <= 31) return 1;
-    return Math.floor(data.maxDays / 12);
-  }, [data]);
+  const labels = useMemo(() => chartData.map((d) => d.label), [chartData]);
+  // Inset: y-axis width (50) on the left, chart margin (8) on the right
+  const xAxis = useXAxisLayout({
+    labels,
+    kind: 'point',
+    ordered: true,
+    fontSize: 10,
+    inset: { left: 50, right: 8 },
+  });
 
   if (isLoading || !data) {
     return (
@@ -129,7 +133,7 @@ export default function SpendingComparison() {
       </div>
 
       {chartData.length > 0 ? (
-        <div className="mt-2">
+        <div className="mt-2" ref={xAxis.ref}>
           <ResponsiveContainer width="100%" height={192}>
             <AreaChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
               <defs>
@@ -138,13 +142,7 @@ export default function SpendingComparison() {
                   <stop offset="95%" stopColor={chartColors.brand} stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <XAxis
-                dataKey="label"
-                tick={{ fontSize: 10, fill: chartColors.axis }}
-                axisLine={false}
-                tickLine={false}
-                interval={tickInterval}
-              />
+              <XAxis dataKey="label" axisLine={false} tickLine={false} {...xAxis.axisProps} />
               <YAxis
                 tick={{ fontSize: 10, fill: chartColors.axis }}
                 axisLine={false}

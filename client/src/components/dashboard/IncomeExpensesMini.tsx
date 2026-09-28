@@ -6,6 +6,7 @@ import { useIncomeVsExpenses } from '../../hooks/useReports';
 import { formatCurrency } from '../../utils/currency';
 import { Card } from '../ui/Card';
 import { chartColors } from '../../utils/chartColors';
+import { useXAxisLayout } from '../../hooks/useXAxisLayout';
 
 function CurrencyTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
@@ -33,6 +34,14 @@ export default function IncomeExpensesMini({ sixMonthsAgo, currentMonth }: Props
     () => data.map((d) => ({ ...d, month: format(parseISO(`${d.month}-01`), 'MMM yy') })),
     [data],
   );
+  const monthLabels = useMemo(() => chartData.map((d) => d.month), [chartData]);
+  const xAxis = useXAxisLayout({
+    labels: monthLabels,
+    kind: 'band',
+    ordered: true,
+    fontSize: 10,
+    inset: { left: 4, right: 4 },
+  });
 
   const latestNet = data.length > 0 ? data[data.length - 1].net : 0;
 
@@ -67,15 +76,10 @@ export default function IncomeExpensesMini({ sixMonthsAgo, currentMonth }: Props
       </p>
 
       {chartData.length > 0 ? (
-        <div>
+        <div ref={xAxis.ref}>
           <ResponsiveContainer width="100%" height={192}>
             <BarChart data={chartData} margin={{ top: 4, right: 4, left: 4, bottom: 0 }} barGap={2}>
-              <XAxis
-                dataKey="month"
-                tick={{ fontSize: 10, fill: chartColors.axis }}
-                axisLine={false}
-                tickLine={false}
-              />
+              <XAxis dataKey="month" axisLine={false} tickLine={false} {...xAxis.axisProps} />
               <Tooltip content={<CurrencyTooltip />} cursor={{ fill: 'rgba(37,99,235,0.1)' }} />
               <Legend iconSize={8} wrapperStyle={{ fontSize: 11, color: chartColors.axis }} />
               <Bar

@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo } from 'react';
 import {
   AreaChart,
   Area,
@@ -24,12 +24,7 @@ import { useCategories } from '../../hooks/useCategories';
 import { usePreferencesStore } from '../../store/preferencesStore';
 import { formatCurrency, formatCentsAxis } from '../../utils/currency';
 import { chartColors, CATEGORY_COLORS } from '../../utils/chartColors';
-import {
-  computeChartTicks,
-  parseDates,
-  formatDateLabel,
-  useChartWidth,
-} from '../../utils/chartTicks';
+import { formatDateAxisLabels, formatDateLabel } from '../../utils/chartTicks';
 import {
   CurrencyTooltip,
   ChartSkeleton,
@@ -37,28 +32,22 @@ import {
   EXPENSE_COLORS,
   monthLabel,
 } from './ChartHelpers';
+import { useXAxisLayout } from '../../hooks/useXAxisLayout';
+
+// Plot insets for charts with 16px margins and a 60px y-axis
+const INSET = { left: 76, right: 16 };
 
 // The built-in reports. Each takes a month range (yyyy-MM) and fills its container.
 
 export function NetWorthChart({ from, to }: { from: string; to: string }) {
   const { data = [], isLoading } = useNetWorth(from, to);
-  const chartRef = useRef<HTMLDivElement>(null);
-  const chartWidth = useChartWidth(chartRef);
-
-  const rawMonths = useMemo(() => data.map((d) => d.month), [data]);
-  const dates = useMemo(() => parseDates(rawMonths), [rawMonths]);
-  const tickResult = useMemo(
-    () =>
-      computeChartTicks({
-        dates,
-        rawStrings: rawMonths,
-        chartWidth,
-        labelSpacingPx: 140,
-        minTicks: 4,
-        maxTicks: 12,
-      }),
-    [dates, rawMonths, chartWidth],
-  );
+  const dateLabels = useMemo(() => formatDateAxisLabels(data.map((d) => d.month)), [data]);
+  const xAxis = useXAxisLayout({
+    labels: dateLabels,
+    kind: 'point',
+    ordered: true,
+    inset: { left: 76, right: 24 },
+  });
 
   const yDomain = useMemo(() => {
     if (data.length === 0) return [0, 'auto'] as [number, string];
@@ -79,7 +68,7 @@ export function NetWorthChart({ from, to }: { from: string; to: string }) {
   if (!hasData) return <EmptyState />;
 
   return (
-    <div ref={chartRef} className="w-full h-full">
+    <div ref={xAxis.ref} className="w-full h-full">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 4, right: 24, left: 16, bottom: 4 }}>
           <defs>
@@ -97,15 +86,7 @@ export function NetWorthChart({ from, to }: { from: string; to: string }) {
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
-          <XAxis
-            dataKey="month"
-            ticks={tickResult.ticks}
-            tickFormatter={tickResult.formatTick}
-            tick={{ fontSize: 11, fill: chartColors.axis }}
-            axisLine={false}
-            tickLine={false}
-            padding={{ left: 8, right: 8 }}
-          />
+          <XAxis dataKey="month" axisLine={false} tickLine={false} {...xAxis.axisProps} />
           <YAxis
             tickFormatter={formatCentsAxis}
             tick={{ fontSize: 11, fill: chartColors.axis }}
@@ -151,45 +132,44 @@ export function NetWorthChart({ from, to }: { from: string; to: string }) {
 export function IncomeExpensesChart({ from, to }: { from: string; to: string }) {
   const { data = [], isLoading } = useIncomeVsExpenses(from, to);
   const chartData = useMemo(() => data.map((d) => ({ ...d, month: monthLabel(d.month) })), [data]);
+  const monthLabels = useMemo(() => chartData.map((d) => d.month), [chartData]);
+  const xAxis = useXAxisLayout({ labels: monthLabels, kind: 'band', ordered: true, inset: INSET });
 
   if (isLoading) return <ChartSkeleton />;
   const hasData = chartData.length > 0 && data.some((d) => d.income !== 0 || d.expenses !== 0);
   if (!hasData) return <EmptyState />;
 
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={chartData} margin={{ top: 4, right: 16, left: 16, bottom: 0 }} barGap={2}>
-        <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
-        <XAxis
-          dataKey="month"
-          tick={{ fontSize: 11, fill: chartColors.axis }}
-          axisLine={false}
-          tickLine={false}
-        />
-        <YAxis
-          tickFormatter={formatCentsAxis}
-          tick={{ fontSize: 11, fill: chartColors.axis }}
-          axisLine={false}
-          tickLine={false}
-          width={60}
-        />
-        <Tooltip content={<CurrencyTooltip />} />
-        <Bar
-          dataKey="income"
-          name="Income"
-          fill={chartColors.positive}
-          radius={[3, 3, 0, 0]}
-          maxBarSize={32}
-        />
-        <Bar
-          dataKey="expenses"
-          name="Expenses"
-          fill={chartColors.negativeLight}
-          radius={[3, 3, 0, 0]}
-          maxBarSize={32}
-        />
-      </BarChart>
-    </ResponsiveContainer>
+    <div ref={xAxis.ref} className="w-full h-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={chartData} margin={{ top: 4, right: 16, left: 16, bottom: 0 }} barGap={2}>
+          <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
+          <XAxis dataKey="month" axisLine={false} tickLine={false} {...xAxis.axisProps} />
+          <YAxis
+            tickFormatter={formatCentsAxis}
+            tick={{ fontSize: 11, fill: chartColors.axis }}
+            axisLine={false}
+            tickLine={false}
+            width={60}
+          />
+          <Tooltip content={<CurrencyTooltip />} />
+          <Bar
+            dataKey="income"
+            name="Income"
+            fill={chartColors.positive}
+            radius={[3, 3, 0, 0]}
+            maxBarSize={32}
+          />
+          <Bar
+            dataKey="expenses"
+            name="Expenses"
+            fill={chartColors.negativeLight}
+            radius={[3, 3, 0, 0]}
+            maxBarSize={32}
+          />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
   );
 }
 
@@ -303,6 +283,8 @@ export function SpendingTrendsChart({
       return cat ? `${showCategoryIcons && cat.icon ? cat.icon + ' ' : ''}${cat.name}` : id;
     });
   }, [activeIds, expenseCategories, showCategoryIcons]);
+  const monthLabels = useMemo(() => chartData.map((d) => String(d.month)), [chartData]);
+  const xAxis = useXAxisLayout({ labels: monthLabels, kind: 'point', ordered: true, inset: INSET });
 
   function toggleCategory(id: string) {
     setSelectedIds((prev) =>
@@ -340,7 +322,7 @@ export function SpendingTrendsChart({
         </div>
       )}
 
-      <div className="flex-1 min-h-0">
+      <div ref={xAxis.ref} className="flex-1 min-h-0">
         {activeIds.length === 0 ? (
           <EmptyState message="Select categories above to compare trends." />
         ) : isLoading ? (
@@ -351,12 +333,7 @@ export function SpendingTrendsChart({
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 4, right: 16, left: 16, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
-              <XAxis
-                dataKey="month"
-                tick={{ fontSize: 11, fill: chartColors.axis }}
-                axisLine={false}
-                tickLine={false}
-              />
+              <XAxis dataKey="month" axisLine={false} tickLine={false} {...xAxis.axisProps} />
               <YAxis
                 tickFormatter={formatCentsAxis}
                 tick={{ fontSize: 11, fill: chartColors.axis }}

@@ -4,6 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, LabelList, ResponsiveContainer } from 'rec
 import { useCategoryHistory } from '../../hooks/useBudget';
 import { formatCurrency } from '../../utils/currency';
 import { chartColors } from '../../utils/chartColors';
+import { useXAxisLayout } from '../../hooks/useXAxisLayout';
 
 interface BudgetEditPopoverProps {
   categoryId: string;
@@ -42,6 +43,13 @@ export function BudgetEditPopover({
 
   const hasData = chartData.some((d) => d.amount > 0);
   const barColor = isIncome ? chartColors.positive : chartColors.negative;
+  const xAxis = useXAxisLayout({
+    labels: chartData.map((d) => d.month),
+    kind: 'band',
+    ordered: true,
+    fontSize: 10,
+    inset: { left: 30, right: 2 },
+  });
 
   return (
     <div
@@ -68,32 +76,31 @@ export function BudgetEditPopover({
 
       <div className="bg-surface-alt rounded-lg p-3 mb-3">
         {hasData ? (
-          <ResponsiveContainer width="100%" height={90}>
-            <BarChart data={chartData} margin={{ top: 14, right: 2, left: -10, bottom: 0 }}>
-              <XAxis
-                dataKey="month"
-                tick={{ fontSize: 10, fill: chartColors.axis }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                tick={{ fontSize: 9, fill: chartColors.axis }}
-                axisLine={false}
-                tickLine={false}
-                width={40}
-                domain={[0, 'auto']}
-                tickFormatter={(v: number) => (v >= 1000 ? `$${(v / 1000).toFixed(1)}k` : `$${v}`)}
-              />
-              <Bar dataKey="amount" fill={barColor} radius={[3, 3, 0, 0]}>
-                <LabelList
-                  dataKey="amount"
-                  position="top"
-                  formatter={(v) => `$${Math.round(Number(v))}`}
-                  style={{ fontSize: 9, fontWeight: 600, fill: chartColors.label }}
+          <div ref={xAxis.ref}>
+            <ResponsiveContainer width="100%" height={90}>
+              <BarChart data={chartData} margin={{ top: 14, right: 2, left: -10, bottom: 0 }}>
+                <XAxis dataKey="month" axisLine={false} tickLine={false} {...xAxis.axisProps} />
+                <YAxis
+                  tick={{ fontSize: 9, fill: chartColors.axis }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={40}
+                  domain={[0, 'auto']}
+                  tickFormatter={(v: number) =>
+                    v >= 1000 ? `$${(v / 1000).toFixed(1)}k` : `$${v}`
+                  }
                 />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+                <Bar dataKey="amount" fill={barColor} radius={[3, 3, 0, 0]}>
+                  <LabelList
+                    dataKey="amount"
+                    position="top"
+                    formatter={(v) => `$${Math.round(Number(v))}`}
+                    style={{ fontSize: 9, fontWeight: 600, fill: chartColors.label }}
+                  />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         ) : (
           <p className="text-xs text-text-disabled text-center py-6">No history available</p>
         )}
