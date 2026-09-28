@@ -8,34 +8,22 @@ import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { formatCurrency } from '../utils/currency';
 import NetWorthMini from '../components/dashboard/NetWorthMini';
-import type { Account } from '../types';
-import { ACCOUNT_TYPES } from '../types';
+import { ACCOUNT_GROUPS, type Account, type AccountGroup } from '../types';
 import { AccountIcon } from '../components/accounts/AccountIcon';
-
-const TYPE_LABELS: Record<string, string> = {
-  checking: 'Cash',
-  savings: 'Cash',
-  cash: 'Cash',
-  credit: 'Credit Cards',
-  investment: 'Investments',
-};
-
-const ACCOUNT_TYPE_LABEL: Record<string, string> = Object.fromEntries(
-  ACCOUNT_TYPES.map((t) => [t.value, t.label]),
-);
+import { accountTypeInfo, accountTypeLabel } from '../utils/accountTypes';
 
 function groupAccountsByType(accounts: Account[]) {
-  const groups = new Map<string, Account[]>();
+  const groups = new Map<AccountGroup, Account[]>();
   for (const a of accounts) {
-    const label = TYPE_LABELS[a.type] ?? a.type;
-    const list = groups.get(label) ?? [];
+    const group = accountTypeInfo(a.type).group;
+    const list = groups.get(group) ?? [];
     list.push(a);
-    groups.set(label, list);
+    groups.set(group, list);
   }
-  const order = ['Cash', 'Credit Cards', 'Investments'];
-  return order
-    .filter((label) => groups.has(label))
-    .map((label) => ({ label, accounts: groups.get(label)! }));
+  return ACCOUNT_GROUPS.filter((g) => groups.has(g.value)).map((g) => ({
+    label: g.label,
+    accounts: groups.get(g.value)!,
+  }));
 }
 
 interface AccountGroupProps {
@@ -77,7 +65,7 @@ function AccountGroup({ label, accounts, balancesAgo }: AccountGroupProps) {
           <span className="text-xs text-text-tertiary">past month</span>
         </div>
         <span
-          className={`text-base font-semibold tabular-nums ${label === 'Credit Cards' ? 'text-negative' : 'text-text'}`}
+          className={`text-base font-semibold tabular-nums ${groupTotal < 0 ? 'text-negative' : 'text-text'}`}
         >
           {formatCurrency(groupTotal)}
         </span>
@@ -92,11 +80,18 @@ function AccountGroup({ label, accounts, balancesAgo }: AccountGroupProps) {
             >
               <div className="min-w-0">
                 <div className="flex items-center gap-3 min-w-0">
-                  <AccountIcon name={account.name} type={account.type} logo={account.logo} size="md" />
+                  <AccountIcon
+                    name={account.name}
+                    type={account.type}
+                    logo={account.logo}
+                    size="md"
+                  />
                   <div className="min-w-0">
-                    <span className="text-sm font-medium text-text truncate block">{account.name}</span>
+                    <span className="text-sm font-medium text-text truncate block">
+                      {account.name}
+                    </span>
                     <span className="text-xs text-text-tertiary mt-0.5 block">
-                      {ACCOUNT_TYPE_LABEL[account.type] ?? account.type}
+                      {accountTypeLabel(account.type)}
                     </span>
                   </div>
                 </div>

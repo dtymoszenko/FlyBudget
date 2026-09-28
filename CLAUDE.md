@@ -162,7 +162,7 @@ The desktop app and `npm run dev` have no login, so `server/src/middleware/secur
 
 > **Pending legacy cleanup:** migration `0011_unified_schedules` copied `recurring_transactions` into `schedules` but intentionally kept the old table and `transactions.recurring_transaction_id`. The drizzle snapshot still records them, so `db:generate` will propose dropping both — review that as its own migration rather than letting it ride along with unrelated schema changes.
 
-- `accounts` — type: `checking | savings | credit | cash | investment`; `isOffBudget` excludes from budget calculations; `closedAt` for soft-delete; `logo` (nullable PNG/JPEG/WebP data URL, cropped client-side to 128px) replaces the colored initials in `AccountIcon`, which is hidden entirely when the "Account icons" preference is off
+- `accounts` — `type` is one of 17 types in six groups (cash: `checking`/`savings`/`cash`; credit: `credit`/`line_of_credit`; investments: `investment`/`retirement`/`crypto`; property: `real_estate`/`vehicle`/`valuables`; loans: `mortgage`/`auto_loan`/`student_loan`/`loan`; other: `other_asset`/`other_liability`). The list lives in `server/src/utils/accountTypes.ts` and `ACCOUNT_TYPES` in `client/src/types/index.ts` (keep them in sync; helpers in `client/src/utils/accountTypes.ts`). Liability types hold negative balances and count as liabilities in net worth; only cash and credit types default to on budget. Non-spending accounts get an "Update value" button (`UpdateValueModal`) that adds a dated adjustment transaction; `isOffBudget` excludes from budget calculations; `closedAt` for soft-delete; `logo` (nullable PNG/JPEG/WebP data URL, cropped client-side to 128px) replaces the colored initials in `AccountIcon`, which is hidden entirely when the "Account icons" preference is off
 - `category_groups` — `isIncome=1` marks income groups (affects budget math and report filtering)
 - `categories` — belong to a group; used as budget envelopes
 - `transactions` — `payeeName` (denormalized string) + `payeeId` (FK, nullable); `reconciled=-1` means excluded from balance
@@ -281,5 +281,5 @@ Use conventional commit prefixes:
 
 ## Future Considerations
 
-- **Asset Tracking**: Car value tracking and house/real estate tracking for more accurate net worth calculations. Would need new account types or asset tables beyond the current financial account model.
+- **Asset Tracking**: Automatic valuations for property and vehicle accounts (values are updated by hand today).
 - **Goal Tracking**: Save targets per category (e.g., "save $X by date Y").

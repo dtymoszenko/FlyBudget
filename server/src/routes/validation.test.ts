@@ -7,6 +7,7 @@ import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import { db } from '../db/index.js';
 import { apiNotFound, errorHandler } from '../middleware/security.js';
 import { accountsRouter } from './accounts.js';
+import { ACCOUNT_TYPES, defaultOffBudget } from '../utils/accountTypes.js';
 import { escapeCsv } from './export.js';
 import { goalsRouter } from './goals.js';
 import { rulesRouter } from './rules.js';
@@ -79,6 +80,31 @@ describe('input validation', () => {
   beforeAll(async () => {
     const res = await post('/accounts', { name: 'Checking', type: 'checking' });
     accountId = (await res.json()).id;
+  });
+
+  it('every account type can be created, off budget by default unless it is for spending', async () => {
+    for (const type of ACCOUNT_TYPES) {
+      const res = await post('/accounts', { name: type, type, startingBalance: -500 });
+      expect(res.status, type).toBe(201);
+      const account = await res.json();
+      expect(account.isOffBudget, type).toBe(defaultOffBudget(type));
+      expect(account.balance, type).toBe(-500);
+    }
+    // An explicit choice wins over the type's default
+    const res = await post('/accounts', { name: 'House', type: 'real_estate', isOffBudget: 0 });
+    expect((await res.json()).isOffBudget).toBe(0);
+  });
+
+  it('rejects unknown account types', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.string().filter((t) => !(ACCOUNT_TYPES as readonly string[]).includes(t)),
+        async (type) => {
+          expect((await post('/accounts', { name: 'x', type })).status).toBe(400);
+        },
+      ),
+      { numRuns: 25 },
+    );
   });
 
   it('CSV import rejects rows with invalid dates and accepts valid ones', async () => {

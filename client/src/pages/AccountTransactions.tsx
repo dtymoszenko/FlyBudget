@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { CheckSquare, ChevronRight, Pencil } from 'lucide-react';
+import { CheckSquare, ChevronRight, Pencil, RefreshCw } from 'lucide-react';
 import { useAccounts } from '../hooks/useAccounts';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
@@ -8,6 +8,8 @@ import { formatCurrency } from '../utils/currency';
 import { TransactionTable } from '../components/transactions/TransactionTable';
 import { AccountIcon } from '../components/accounts/AccountIcon';
 import { EditAccountModal } from '../components/accounts/EditAccountModal';
+import { UpdateValueModal } from '../components/accounts/UpdateValueModal';
+import { accountTypeInfo } from '../utils/accountTypes';
 
 export default function AccountTransactionsPage() {
   const { id } = useParams<{ id: string }>();
@@ -15,8 +17,10 @@ export default function AccountTransactionsPage() {
   const { data: accounts = [] } = useAccounts();
   const account = accounts.find((a) => a.id === id);
   const [editOpen, setEditOpen] = useState(false);
+  const [updateValueOpen, setUpdateValueOpen] = useState(false);
 
   if (!account) return null;
+  const typeInfo = accountTypeInfo(account.type);
 
   return (
     <div className="flex flex-col h-full">
@@ -43,18 +47,29 @@ export default function AccountTransactionsPage() {
             <Button variant="secondary" size="sm" onClick={() => setEditOpen(true)}>
               <Pencil size={13} /> Edit
             </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => navigate(`/accounts/${account.id}/reconcile`)}
-            >
-              <CheckSquare size={13} /> Reconcile
-            </Button>
+            {/* Investments, property and loans are usually tracked by value, not transactions */}
+            {!typeInfo.onBudget && (
+              <Button variant="secondary" size="sm" onClick={() => setUpdateValueOpen(true)}>
+                <RefreshCw size={13} /> {typeInfo.liability ? 'Update balance' : 'Update value'}
+              </Button>
+            )}
+            {typeInfo.group !== 'property' && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => navigate(`/accounts/${account.id}/reconcile`)}
+              >
+                <CheckSquare size={13} /> Reconcile
+              </Button>
+            )}
           </div>
         </div>
       </div>
       <TransactionTable accountId={account.id} />
       <EditAccountModal account={editOpen ? account : null} onClose={() => setEditOpen(false)} />
+      {updateValueOpen && (
+        <UpdateValueModal account={account} onClose={() => setUpdateValueOpen(false)} />
+      )}
     </div>
   );
 }

@@ -35,12 +35,16 @@ describe('mapPlaidAccountType', () => {
     ['depository', 'hsa', 'savings'],
     ['depository', 'cash management', 'checking'],
     ['credit', 'credit card', 'credit'],
-    ['investment', 'ira', 'investment'],
-    ['investment', '401k', 'investment'],
-    ['loan', 'student', 'credit'],
-    ['loan', 'mortgage', 'credit'],
-    ['loan', 'auto', 'credit'],
-    ['loan', 'home equity', 'credit'],
+    ['investment', 'ira', 'retirement'],
+    ['investment', '401k', 'retirement'],
+    ['investment', 'brokerage', 'investment'],
+    ['investment', 'crypto exchange', 'crypto'],
+    ['investment', null, 'investment'],
+    ['loan', 'student', 'student_loan'],
+    ['loan', 'mortgage', 'mortgage'],
+    ['loan', 'auto', 'auto_loan'],
+    ['loan', 'home equity', 'line_of_credit'],
+    ['loan', 'consumer', 'loan'],
   ])('%s/%s -> %s', (type, subtype, expected) => {
     expect(mapPlaidAccountType(type, subtype)).toBe(expected);
   });

@@ -1,8 +1,34 @@
 import { Configuration, PlaidApi, PlaidEnvironments, Products, CountryCode } from 'plaid';
 import { db } from '../db/index.js';
 import { plaidConfig } from '../db/schema.js';
+import type { AccountType } from '../utils/accountTypes.js';
 
-type AccountType = 'checking' | 'savings' | 'credit' | 'cash' | 'investment';
+// Plaid investment subtypes that are tax-advantaged retirement accounts
+const RETIREMENT_SUBTYPES = new Set([
+  '401a',
+  '401k',
+  '403b',
+  '457b',
+  'ira',
+  'keogh',
+  'lif',
+  'lira',
+  'lrif',
+  'lrsp',
+  'pension',
+  'prif',
+  'retirement',
+  'roth',
+  'roth 401k',
+  'rrif',
+  'rrsp',
+  'sarsep',
+  'sep ira',
+  'simple ira',
+  'sipp',
+  'tfsa',
+  'thrift savings plan',
+]);
 
 let plaidClient: PlaidApi | null = null;
 
@@ -294,10 +320,20 @@ export function mapPlaidAccountType(type: string, subtype: string | null): Accou
       return 'savings';
     return 'checking';
   }
-  // Loans (mortgage, student, auto, HELOC) are debts: 'credit' is the closest
-  // account type, and plaidBalanceToCents already stores their balance as negative
-  if (type === 'credit' || type === 'loan') return 'credit';
-  if (type === 'investment' || type === 'brokerage') return 'investment';
+  // Loans are debts: plaidBalanceToCents stores their balance as negative
+  if (type === 'loan') {
+    if (subtype === 'mortgage') return 'mortgage';
+    if (subtype === 'auto') return 'auto_loan';
+    if (subtype === 'student') return 'student_loan';
+    if (subtype === 'home equity' || subtype === 'line of credit') return 'line_of_credit';
+    return 'loan';
+  }
+  if (type === 'credit') return 'credit';
+  if (type === 'investment' || type === 'brokerage') {
+    if (subtype === 'crypto exchange' || subtype === 'non-custodial wallet') return 'crypto';
+    if (subtype && RETIREMENT_SUBTYPES.has(subtype)) return 'retirement';
+    return 'investment';
+  }
   return 'checking';
 }
 

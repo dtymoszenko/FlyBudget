@@ -1,11 +1,183 @@
-export type AccountType = 'checking' | 'savings' | 'credit' | 'cash' | 'investment';
+// Keep in sync with server/src/utils/accountTypes.ts
+export type AccountType =
+  | 'checking'
+  | 'savings'
+  | 'cash'
+  | 'credit'
+  | 'line_of_credit'
+  | 'investment'
+  | 'retirement'
+  | 'crypto'
+  | 'real_estate'
+  | 'vehicle'
+  | 'valuables'
+  | 'mortgage'
+  | 'auto_loan'
+  | 'student_loan'
+  | 'loan'
+  | 'other_asset'
+  | 'other_liability';
 
-export const ACCOUNT_TYPES: { value: AccountType; label: string }[] = [
-  { value: 'checking', label: 'Checking' },
-  { value: 'savings', label: 'Savings' },
-  { value: 'credit', label: 'Credit Card' },
+export type AccountGroup = 'cash' | 'credit' | 'investments' | 'property' | 'loans' | 'other';
+
+export interface AccountTypeInfo {
+  value: AccountType;
+  label: string;
+  group: AccountGroup;
+  /** Debts: the balance is what's owed, stored as a negative number */
+  liability: boolean;
+  /** Everyday spending accounts; the rest default to off budget */
+  onBudget: boolean;
+  /** Example shown under the type picker */
+  hint: string;
+}
+
+export const ACCOUNT_TYPES: AccountTypeInfo[] = [
+  {
+    value: 'checking',
+    label: 'Checking',
+    group: 'cash',
+    liability: false,
+    onBudget: true,
+    hint: 'Everyday bank account',
+  },
+  {
+    value: 'savings',
+    label: 'Savings',
+    group: 'cash',
+    liability: false,
+    onBudget: true,
+    hint: 'Savings, money market, CDs',
+  },
+  {
+    value: 'cash',
+    label: 'Cash',
+    group: 'cash',
+    liability: false,
+    onBudget: true,
+    hint: 'Wallet or petty cash',
+  },
+  {
+    value: 'credit',
+    label: 'Credit Card',
+    group: 'credit',
+    liability: true,
+    onBudget: true,
+    hint: 'Credit or charge card',
+  },
+  {
+    value: 'line_of_credit',
+    label: 'Line of Credit',
+    group: 'credit',
+    liability: true,
+    onBudget: true,
+    hint: 'Personal line of credit or HELOC',
+  },
+  {
+    value: 'investment',
+    label: 'Brokerage',
+    group: 'investments',
+    liability: false,
+    onBudget: false,
+    hint: 'Taxable investment account',
+  },
+  {
+    value: 'retirement',
+    label: 'Retirement',
+    group: 'investments',
+    liability: false,
+    onBudget: false,
+    hint: '401(k), IRA, Roth, pension',
+  },
+  {
+    value: 'crypto',
+    label: 'Crypto',
+    group: 'investments',
+    liability: false,
+    onBudget: false,
+    hint: 'Exchange account or wallet',
+  },
+  {
+    value: 'real_estate',
+    label: 'Real Estate',
+    group: 'property',
+    liability: false,
+    onBudget: false,
+    hint: 'Home, rental or land',
+  },
+  {
+    value: 'vehicle',
+    label: 'Vehicle',
+    group: 'property',
+    liability: false,
+    onBudget: false,
+    hint: 'Car, motorcycle, boat, RV',
+  },
+  {
+    value: 'valuables',
+    label: 'Valuables',
+    group: 'property',
+    liability: false,
+    onBudget: false,
+    hint: 'Jewelry, art, collectibles, precious metals',
+  },
+  {
+    value: 'mortgage',
+    label: 'Mortgage',
+    group: 'loans',
+    liability: true,
+    onBudget: false,
+    hint: 'Home loan',
+  },
+  {
+    value: 'auto_loan',
+    label: 'Auto Loan',
+    group: 'loans',
+    liability: true,
+    onBudget: false,
+    hint: 'Car or vehicle loan',
+  },
+  {
+    value: 'student_loan',
+    label: 'Student Loan',
+    group: 'loans',
+    liability: true,
+    onBudget: false,
+    hint: 'Federal or private student loan',
+  },
+  {
+    value: 'loan',
+    label: 'Other Loan',
+    group: 'loans',
+    liability: true,
+    onBudget: false,
+    hint: 'Personal, medical or family loan',
+  },
+  {
+    value: 'other_asset',
+    label: 'Other Asset',
+    group: 'other',
+    liability: false,
+    onBudget: false,
+    hint: 'Anything else you own',
+  },
+  {
+    value: 'other_liability',
+    label: 'Other Liability',
+    group: 'other',
+    liability: true,
+    onBudget: false,
+    hint: 'Anything else you owe',
+  },
+];
+
+export const ACCOUNT_GROUPS: { value: AccountGroup; label: string }[] = [
   { value: 'cash', label: 'Cash' },
-  { value: 'investment', label: 'Investment' },
+  { value: 'credit', label: 'Credit' },
+  { value: 'investments', label: 'Investments' },
+  { value: 'property', label: 'Property' },
+  { value: 'loans', label: 'Loans' },
+  { value: 'other', label: 'Other' },
 ];
 
 export interface Transaction {
@@ -279,7 +451,11 @@ export type RuleIdField = 'payee' | 'account' | 'category';
 export type RuleConditionField = RuleTextField | RuleIdField | 'amount' | 'direction' | 'date';
 
 export type RuleCondition =
-  | { field: RuleTextField; op: 'is' | 'is_not' | 'contains' | 'not_contains' | 'starts_with' | 'ends_with' | 'regex'; value: string }
+  | {
+      field: RuleTextField;
+      op: 'is' | 'is_not' | 'contains' | 'not_contains' | 'starts_with' | 'ends_with' | 'regex';
+      value: string;
+    }
   | { field: RuleTextField | RuleIdField; op: 'one_of' | 'not_one_of'; value: string[] }
   | { field: RuleTextField | RuleIdField; op: 'is_empty' | 'is_not_empty' }
   | { field: RuleIdField; op: 'is' | 'is_not'; value: string }
@@ -470,7 +646,14 @@ export interface RulePreviewItem {
 
 export interface RuleTestResult {
   count: number;
-  matches: Array<{ id: string; date: string; payeeName: string | null; amount: number; accountId: string; categoryId: string | null }>;
+  matches: Array<{
+    id: string;
+    date: string;
+    payeeName: string | null;
+    amount: number;
+    accountId: string;
+    categoryId: string | null;
+  }>;
 }
 
 // Goals

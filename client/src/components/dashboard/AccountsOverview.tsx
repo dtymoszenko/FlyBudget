@@ -3,42 +3,34 @@ import { Link } from 'react-router-dom';
 import { useAccounts } from '../../hooks/useAccounts';
 import { formatCurrency } from '../../utils/currency';
 import { Card } from '../ui/Card';
-import type { Account, AccountType } from '../../types';
-
-const TYPE_LABELS: Record<AccountType, string> = {
-  checking: 'Checking',
-  savings: 'Savings',
-  credit: 'Credit Cards',
-  cash: 'Cash',
-  investment: 'Investments',
-};
-
-const TYPE_ORDER: AccountType[] = ['checking', 'savings', 'cash', 'credit', 'investment'];
+import { accountTypeInfo, isLiabilityType } from '../../utils/accountTypes';
+import { ACCOUNT_GROUPS, type Account, type AccountGroup } from '../../types';
 
 export default function AccountsOverview() {
   const { data: accounts = [], isLoading } = useAccounts();
 
   const grouped = useMemo(() => {
     const open = accounts.filter((a) => !a.closedAt);
-    const groups = new Map<AccountType, Account[]>();
+    const groups = new Map<AccountGroup, Account[]>();
     for (const a of open) {
-      const list = groups.get(a.type) || [];
+      const group = accountTypeInfo(a.type).group;
+      const list = groups.get(group) || [];
       list.push(a);
-      groups.set(a.type, list);
+      groups.set(group, list);
     }
-    return TYPE_ORDER.filter((t) => groups.has(t)).map((t) => ({
-      type: t,
-      label: TYPE_LABELS[t],
-      accounts: groups.get(t)!,
+    return ACCOUNT_GROUPS.filter((g) => groups.has(g.value)).map((g) => ({
+      type: g.value,
+      label: g.label,
+      accounts: groups.get(g.value)!,
     }));
   }, [accounts]);
 
   const totals = useMemo(() => {
     const open = accounts.filter((a) => !a.closedAt);
-    const assets = open.filter((a) => a.type !== 'credit').reduce((s, a) => s + a.balance, 0);
+    const assets = open.filter((a) => !isLiabilityType(a.type)).reduce((s, a) => s + a.balance, 0);
     const liabilities = open
-      .filter((a) => a.type === 'credit')
-      .reduce((s, a) => s + Math.abs(a.balance), 0);
+      .filter((a) => isLiabilityType(a.type))
+      .reduce((s, a) => s - a.balance, 0);
     return { assets, liabilities };
   }, [accounts]);
 

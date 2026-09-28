@@ -4,6 +4,7 @@ import { plaidConfig, plaidItems, plaidAccountMappings, accounts } from '../db/s
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
+import { accountTypeSchema, defaultOffBudget } from '../utils/accountTypes.js';
 import {
   isPlaidConfigured,
   getPlaidEnvironment,
@@ -41,7 +42,7 @@ const mapAccountSchema = z.object({
       action: z.enum(['create', 'link', 'skip']),
       accountId: z.string().max(64).optional(),
       accountName: z.string().trim().max(200).optional(),
-      accountType: z.enum(['checking', 'savings', 'credit', 'cash', 'investment']).optional(),
+      accountType: accountTypeSchema.optional(),
       isOffBudget: z.number().int().min(0).max(1).optional(),
     }),
   ),
@@ -249,13 +250,14 @@ plaidRouter.post('/items/:itemId/map-accounts', (req, res) => {
       mapped++;
     } else if (m.action === 'create') {
       const accountId = nanoid();
+      const type = m.accountType || mapPlaidAccountType(mapping.plaidAccountType, null);
       db.insert(accounts)
         .values({
           id: accountId,
           name: m.accountName || mapping.plaidAccountName,
-          type: m.accountType || mapPlaidAccountType(mapping.plaidAccountType, null),
+          type,
           startingBalance: 0,
-          isOffBudget: m.isOffBudget ?? 0,
+          isOffBudget: m.isOffBudget ?? defaultOffBudget(type),
           sortOrder: 0,
           closedAt: null,
           createdAt: new Date().toISOString(),

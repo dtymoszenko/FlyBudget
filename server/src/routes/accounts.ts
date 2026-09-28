@@ -5,14 +5,15 @@ import { eq, inArray, isNull, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
 import { logoSchema } from '../utils/logo.js';
+import { accountTypeSchema, defaultOffBudget } from '../utils/accountTypes.js';
 
 export const accountsRouter = Router();
 
 const createSchema = z.object({
   name: z.string().min(1),
-  type: z.enum(['checking', 'savings', 'credit', 'cash', 'investment']),
+  type: accountTypeSchema,
   startingBalance: z.number().int().default(0),
-  isOffBudget: z.number().int().min(0).max(1).default(0),
+  isOffBudget: z.number().int().min(0).max(1).optional(),
 });
 
 const updateSchema = createSchema.partial().extend({ logo: logoSchema.optional() });
@@ -79,6 +80,8 @@ accountsRouter.post('/', (req, res) => {
   const account = {
     id: nanoid(),
     ...parsed.data,
+    // Homes, cars, investments and loans stay off budget unless asked otherwise
+    isOffBudget: parsed.data.isOffBudget ?? defaultOffBudget(parsed.data.type),
     sortOrder: 0,
     closedAt: null,
     createdAt: new Date().toISOString(),

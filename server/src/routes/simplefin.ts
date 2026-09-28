@@ -4,6 +4,7 @@ import { simplefinConnections, simplefinAccountMappings, accounts } from '../db/
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
+import { accountTypeSchema, defaultOffBudget } from '../utils/accountTypes.js';
 import {
   claimAccessUrl,
   fetchAccounts,
@@ -29,7 +30,7 @@ const mapAccountSchema = z.object({
       action: z.enum(['create', 'link', 'skip']),
       accountId: z.string().optional(),
       accountName: z.string().optional(),
-      accountType: z.enum(['checking', 'savings', 'credit', 'cash', 'investment']).optional(),
+      accountType: accountTypeSchema.optional(),
       isOffBudget: z.number().int().min(0).max(1).optional(),
     }),
   ),
@@ -129,13 +130,14 @@ simplefinRouter.post('/connections/:id/map-accounts', (req, res) => {
       mapped++;
     } else if (m.action === 'create') {
       const accountId = nanoid();
+      const type = m.accountType || 'checking';
       db.insert(accounts)
         .values({
           id: accountId,
           name: m.accountName || mapping.simplefinAccountName,
-          type: m.accountType || 'checking',
+          type,
           startingBalance: 0,
-          isOffBudget: m.isOffBudget ?? 0,
+          isOffBudget: m.isOffBudget ?? defaultOffBudget(type),
           sortOrder: 0,
           closedAt: null,
           createdAt: new Date().toISOString(),

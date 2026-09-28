@@ -3,8 +3,9 @@ import { Modal } from '../ui/Modal';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { CurrencyInput } from '../ui/CurrencyInput';
 import { useUpdateAccount, useCloseAccount } from '../../hooks/useAccounts';
-import { ACCOUNT_TYPES, type Account, type AccountType } from '../../types';
+import type { Account, AccountType } from '../../types';
 import { AccountIcon } from './AccountIcon';
+import { AccountTypeSelect } from './AccountTypeSelect';
 import { fileToSquareDataUrl } from '../../utils/imageResize';
 import { usePreferencesStore } from '../../store/preferencesStore';
 
@@ -100,13 +101,24 @@ export function EditAccountModal({ account, onClose }: Props) {
                   )}
                 </div>
                 <p className={`text-xs ${logoError ? 'text-negative' : 'text-text-tertiary'}`}>
-                  {logoError ?? (logo ? 'Cropped to a square.' : 'Showing initials. Upload a bank logo or any image.')}
+                  {logoError ??
+                    (logo
+                      ? 'Cropped to a square.'
+                      : 'Showing initials. Upload a bank logo or any image.')}
                 </p>
                 {!showAccountIcons && (
-                  <p className="text-xs text-caution">Account icons are turned off in Settings → Preferences.</p>
+                  <p className="text-xs text-caution">
+                    Account icons are turned off in Settings → Preferences.
+                  </p>
                 )}
               </div>
-              <input ref={fileRef} type="file" accept="image/*" onChange={handleLogoFile} className="hidden" />
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                onChange={handleLogoFile}
+                className="hidden"
+              />
             </div>
           </div>
 
@@ -123,28 +135,13 @@ export function EditAccountModal({ account, onClose }: Props) {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">
-              Account Type
-            </label>
-            <select
-              value={type}
-              onChange={(e) => setType(e.target.value as AccountType)}
-              className="block w-full rounded-lg border border-border px-3 py-2 text-sm bg-surface text-text focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-            >
-              {ACCOUNT_TYPES.map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          <AccountTypeSelect value={type} onChange={setType} />
 
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-1">
               Starting Balance
             </label>
-            <CurrencyInput value={startingBalance} onChange={setStartingBalance} />
+            <CurrencyInput value={startingBalance} onChange={setStartingBalance} allowNegative />
           </div>
 
           <label className="flex items-center gap-3 cursor-pointer">

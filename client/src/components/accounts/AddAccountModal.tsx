@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { Modal } from '../ui/Modal';
 import { CurrencyInput } from '../ui/CurrencyInput';
 import { useCreateAccount } from '../../hooks/useAccounts';
-import { ACCOUNT_TYPES, type AccountType } from '../../types';
+import type { AccountType } from '../../types';
+import { accountTypeInfo } from '../../utils/accountTypes';
+import { AccountTypeSelect } from './AccountTypeSelect';
 
 interface Props {
   isOpen: boolean;
@@ -12,22 +14,47 @@ interface Props {
 export function AddAccountModal({ isOpen, onClose }: Props) {
   const [name, setName] = useState('');
   const [type, setType] = useState<AccountType>('checking');
-  const [startingBalance, setStartingBalance] = useState(0);
+  const [amount, setAmount] = useState(0);
+  const [isOffBudget, setIsOffBudget] = useState(false);
   const createAccount = useCreateAccount();
+  const info = accountTypeInfo(type);
 
   function handleClose() {
     setName('');
     setType('checking');
-    setStartingBalance(0);
+    setAmount(0);
+    setIsOffBudget(false);
     onClose();
+  }
+
+  function handleTypeChange(next: AccountType) {
+    setType(next);
+    setIsOffBudget(!accountTypeInfo(next).onBudget);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
-    await createAccount.mutateAsync({ name: name.trim(), type, startingBalance });
+    await createAccount.mutateAsync({
+      name: name.trim(),
+      type,
+      // Debts are entered as the amount owed and stored as a negative balance
+      startingBalance: info.liability ? -Math.abs(amount) : amount,
+      isOffBudget: isOffBudget ? 1 : 0,
+    });
     handleClose();
   }
+
+  const amountLabel = info.liability
+    ? 'Amount Owed'
+    : info.group === 'property'
+      ? 'Current Value'
+      : 'Current Balance';
+  const amountHint = info.liability
+    ? 'What you owe as of today.'
+    : info.group === 'property'
+      ? "What it's worth today. You can update it any time from the account page."
+      : 'Enter your balance as of today.';
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Add Account" size="sm">
@@ -38,34 +65,44 @@ export function AddAccountModal({ isOpen, onClose }: Props) {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Chase Checking"
+            placeholder={
+              info.group === 'property' ? 'e.g. 2021 Honda Civic' : 'e.g. Chase Checking'
+            }
             autoFocus
             className="block w-full rounded-lg border border-border px-3 py-2 text-sm bg-surface text-text placeholder-text-tertiary focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-text-secondary mb-1">Account Type</label>
-          <select
-            value={type}
-            onChange={(e) => setType(e.target.value as AccountType)}
-            className="block w-full rounded-lg border border-border px-3 py-2 text-sm bg-surface text-text focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-          >
-            {ACCOUNT_TYPES.map((t) => (
-              <option key={t.value} value={t.value}>
-                {t.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <AccountTypeSelect value={type} onChange={handleTypeChange} />
 
         <div>
           <label className="block text-sm font-medium text-text-secondary mb-1">
-            Current Balance
+            {amountLabel}
           </label>
-          <CurrencyInput value={startingBalance} onChange={setStartingBalance} placeholder="0.00" />
-          <p className="mt-1 text-xs text-text-secondary">Enter your balance as of today.</p>
+          <CurrencyInput
+            value={amount}
+            onChange={setAmount}
+            placeholder="0.00"
+            allowNegative={!info.liability}
+          />
+          <p className="mt-1 text-xs text-text-secondary">{amountHint}</p>
         </div>
+
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={isOffBudget}
+            onChange={(e) => setIsOffBudget(e.target.checked)}
+            className="mt-0.5 h-4 w-4 rounded border-border text-brand-600 focus:ring-brand-500"
+          />
+          <span className="text-sm text-text-secondary">
+            Off budget
+            <span className="block text-xs text-text-tertiary">
+              Counts toward net worth but not your budget. Recommended for investments, property and
+              loans.
+            </span>
+          </span>
+        </label>
 
         <div className="flex justify-end gap-3 pt-2">
           <button

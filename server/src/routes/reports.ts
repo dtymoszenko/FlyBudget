@@ -3,6 +3,7 @@ import { db } from '../db/index.js';
 import { transactions, accounts, categories, categoryGroups, payees } from '../db/schema.js';
 import { eq, and, gte, lte, sql, inArray, lt } from 'drizzle-orm';
 import { monthBounds } from '../utils/date.js';
+import { isLiabilityType } from '../utils/accountTypes.js';
 
 export const reportsRouter = Router();
 
@@ -103,7 +104,7 @@ reportsRouter.get('/net-worth', (req, res) => {
       liabilities = 0;
     for (const acct of allAccounts) {
       const balance = balanceAt(acct.id, period, acct.startingBalance);
-      if (acct.type === 'credit') liabilities += Math.abs(Math.min(balance, 0));
+      if (isLiabilityType(acct.type)) liabilities += Math.abs(Math.min(balance, 0));
       else assets += Math.max(balance, 0);
     }
     return { month: period, assets, liabilities, netWorth: assets - liabilities };
@@ -179,8 +180,12 @@ reportsRouter.get('/income-vs-expenses', (req, res) => {
   const result = months.map((month) => {
     const d = dataMap[month] ?? empty();
     return {
-      month, income: d.income, expenses: d.expenses, net: d.income - d.expenses,
-      expenseNet: d.expenseNet, expenseCount: d.expenseCount,
+      month,
+      income: d.income,
+      expenses: d.expenses,
+      net: d.income - d.expenses,
+      expenseNet: d.expenseNet,
+      expenseCount: d.expenseCount,
     };
   });
 
