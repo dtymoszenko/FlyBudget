@@ -242,7 +242,11 @@ export default function GoalsPage() {
             <StatCardRow
               variant="hero"
               cards={[
-                { label: 'Saved', value: formatCurrency(totalSaved), sub: `${overallPct}% of target` },
+                {
+                  label: 'Saved',
+                  value: formatCurrency(totalSaved),
+                  sub: `${overallPct}% of target`,
+                },
                 { label: 'Target', value: formatCurrency(totalTarget) },
                 { label: 'Left to save', value: formatCurrency(leftToSave) },
                 {
