@@ -66,3 +66,4 @@ report a vulnerability privately.
 - FIRE Calculator
 - Supported Hosting plans for ease of access
 - Support for enevelope budgeting
+- MCP Support
