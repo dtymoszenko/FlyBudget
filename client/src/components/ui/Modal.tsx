@@ -64,26 +64,27 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: Props) 
   if (!mounted) return null;
 
   return createPortal(
-    <div
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${closing ? 'pointer-events-none' : ''}`}
-    >
+    <div className={`fixed inset-0 z-50 overflow-y-auto ${closing ? 'pointer-events-none' : ''}`}>
       <div
-        className={`absolute inset-0 bg-black/30 backdrop-blur-sm cursor-pointer ${closing ? 'animate-fade-out' : 'animate-fade-in'}`}
+        className={`fixed inset-0 bg-black/30 backdrop-blur-sm cursor-pointer ${closing ? 'animate-fade-out' : 'animate-fade-in'}`}
         onClick={onClose}
       />
-      <div
-        className={`relative w-full ${sizeClasses[size]} bg-surface rounded-lg shadow-modal ${closing ? 'animate-dialog-out' : 'animate-dialog-in'}`}
-      >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <h2 className="text-base font-semibold text-text">{shown.current.title}</h2>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-md text-text-tertiary hover:text-text-secondary hover:bg-surface-alt transition-colors"
-          >
-            <X size={18} />
-          </button>
+      {/* Tall dialogs scroll with the page instead of getting cut off */}
+      <div className="relative min-h-full flex items-center justify-center p-4 pointer-events-none">
+        <div
+          className={`relative w-full ${sizeClasses[size]} bg-surface rounded-lg shadow-modal ${closing ? 'animate-dialog-out' : 'pointer-events-auto animate-dialog-in'}`}
+        >
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+            <h2 className="text-base font-semibold text-text">{shown.current.title}</h2>
+            <button
+              onClick={onClose}
+              className="p-1 rounded-md text-text-tertiary hover:text-text-secondary hover:bg-surface-alt transition-colors"
+            >
+              <X size={18} />
+            </button>
+          </div>
+          <div className="px-6 py-5">{shown.current.children}</div>
         </div>
-        <div className="px-6 py-5">{shown.current.children}</div>
       </div>
     </div>,
     document.body,
