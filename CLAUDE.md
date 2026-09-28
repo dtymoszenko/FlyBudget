@@ -181,7 +181,7 @@ The report builder at `/reports/custom` supports:
 
 ### Report Dashboards
 
-`/reports` is a set of dashboards (tabs), each a grid of widgets, loosely following Actual Budget's reports dashboard.
+`/reports` is a set of dashboards (tabs), each a grid of widgets.
 
 - **Widgets**: built-in `summary`, `net-worth`, `income-expenses`, `spending`, `spending-trends` (charts in `components/reports/BuiltinCharts.tsx`, registry in `BuiltinReport.tsx`) plus `custom-report`. Add them from "Add widget"; ⋮ menu has rename, date range, freeze/unfreeze, move to another dashboard, remove (undoable).
 - **Date ranges**: each dashboard has a range picker, and widgets follow it unless `meta.dateRange` gives them their own (a live preset, or frozen months). Unfreezing just removes `meta.dateRange`. `ReportDateRange` (`utils/dateRange.ts`) is live (preset recomputed from today by `resolveDateRange`) or frozen (`preset: 'custom'`); `widgetDateRange` picks a widget's effective range. Custom report widgets work the same way and pass their range to the builder as `?range=` (`encodeRangeParam`). Server validates ranges with `dateRangeSchema` in `services/dashboardService.ts`.

@@ -24,7 +24,7 @@ export const BUILTIN_REPORTS: Record<BuiltinWidgetType, { label: string; descrip
 
 export const BUILTIN_TYPES = Object.keys(BUILTIN_REPORTS) as BuiltinWidgetType[];
 
-/** Signed totals, colored by sign like Actual Budget: >0 green, <0 red, 0 neutral. */
+/** Signed totals, colored by sign: >0 green, <0 red, 0 neutral. */
 export function useSummaryCards(from: string, to: string): StatCard[] {
   const { data: ieData = [] } = useIncomeVsExpenses(from, to);
   return useMemo(() => {
