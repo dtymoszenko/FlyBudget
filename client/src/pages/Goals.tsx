@@ -1,176 +1,278 @@
-import { useState } from 'react';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Plus, ChevronDown, ChevronRight } from 'lucide-react';
+import { differenceInCalendarDays, differenceInCalendarMonths, format, parseISO } from 'date-fns';
 import { useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal } from '../hooks/useGoals';
+import { useAccounts } from '../hooks/useAccounts';
 import { GoalFormModal } from '../components/goals/GoalFormModal';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { Button } from '../components/ui/Button';
+import { Card } from '../components/ui/Card';
+import { StatCardRow } from '../components/reports/ChartHelpers';
+import RowMenu from '../components/recurring/RowMenu';
 import { formatCurrency } from '../utils/currency';
 import { usePreferencesStore } from '../store/preferencesStore';
-import { format, parseISO, differenceInDays } from 'date-fns';
 import type { Goal } from '../types';
 
-function GoalCard({
+function progressOf(goal: Goal) {
+  const pct =
+    goal.targetAmount > 0 ? Math.min(100, (goal.currentAmount / goal.targetAmount) * 100) : 0;
+  return { pct, remaining: Math.max(0, goal.targetAmount - goal.currentAmount) };
+}
+
+/** Target date status, plus the monthly amount needed to get there on time (Monarch-style). */
+function scheduleOf(goal: Goal, remaining: number) {
+  if (!goal.targetDate) return null;
+  const target = parseISO(goal.targetDate);
+  const today = new Date();
+  const days = differenceInCalendarDays(target, today);
+  const date = format(target, 'MMM d, yyyy');
+  if (remaining === 0) return { date, overdue: false, perMonth: null };
+  if (days < 0) return { date, overdue: true, perMonth: null };
+  const months = Math.max(1, differenceInCalendarMonths(target, today));
+  // Rounded up to whole dollars, so following it always gets there on time
+  return { date, overdue: false, perMonth: Math.ceil(remaining / months / 100) * 100 };
+}
+
+function GoalIcon({ goal }: { goal: Goal }) {
+  const showIcons = usePreferencesStore((s) => s.showCategoryIcons);
+  return (
+    <div className="w-9 h-9 rounded-lg bg-surface-alt border border-border-light flex items-center justify-center shrink-0">
+      {showIcons ? (
+        <span className="text-lg leading-none">{goal.icon}</span>
+      ) : (
+        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: goal.color }} />
+      )}
+    </div>
+  );
+}
+
+function GoalRow({
   goal,
+  accountName,
   onEdit,
   onDelete,
 }: {
   goal: Goal;
-  onEdit: (g: Goal) => void;
-  onDelete: (id: string) => void;
+  accountName: string | null;
+  onEdit: () => void;
+  onDelete: () => void;
 }) {
-  const showCategoryIcons = usePreferencesStore((s) => s.showCategoryIcons);
-  const pct =
-    goal.targetAmount > 0
-      ? Math.min(100, Math.round((goal.currentAmount / goal.targetAmount) * 100))
-      : 0;
-  const remaining = goal.targetAmount - goal.currentAmount;
-  const isComplete = goal.currentAmount >= goal.targetAmount;
-
-  let dateLabel: string | null = null;
-  if (goal.targetDate) {
-    const days = differenceInDays(parseISO(goal.targetDate), new Date());
-    if (days < 0) dateLabel = 'Past due';
-    else if (days === 0) dateLabel = 'Due today';
-    else if (days <= 30) dateLabel = `${days} day${days !== 1 ? 's' : ''} left`;
-    else dateLabel = format(parseISO(goal.targetDate), 'MMM d, yyyy');
-  }
+  const { pct, remaining } = progressOf(goal);
+  const complete = remaining === 0 && goal.targetAmount > 0;
+  const schedule = scheduleOf(goal, remaining);
+  const details = [schedule && `Target ${schedule.date}`, accountName].filter(Boolean).join(' · ');
 
   return (
-    <div className="bg-surface rounded-lg border border-border-light shadow-card hover:shadow-hover transition-shadow group">
-      <div className="px-5 py-4">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-2.5">
-            {showCategoryIcons && <span className="text-2xl leading-none">{goal.icon}</span>}
-            <div>
-              <h3 className="text-sm font-semibold text-text">{goal.name}</h3>
-              {dateLabel && (
-                <p
-                  className={`text-xs mt-0.5 ${goal.targetDate && differenceInDays(parseISO(goal.targetDate), new Date()) < 0 ? 'text-negative' : 'text-text-tertiary'}`}
-                >
-                  {dateLabel}
-                </p>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button
-              onClick={() => onEdit(goal)}
-              className="p-1 text-text-tertiary hover:text-brand-600 rounded transition-colors"
-            >
-              <Pencil size={13} />
-            </button>
-            <button
-              onClick={() => onDelete(goal.id)}
-              className="p-1 text-text-tertiary hover:text-negative rounded transition-colors"
-            >
-              <Trash2 size={13} />
-            </button>
-          </div>
+    <div
+      onClick={onEdit}
+      className="px-5 py-4 hover:bg-hover cursor-pointer transition-colors last:rounded-b-lg"
+    >
+      <div className="flex items-center gap-3">
+        <GoalIcon goal={goal} />
+        <div className="min-w-0 flex-1">
+          <span className="text-sm font-medium text-text truncate block">{goal.name}</span>
+          {details && <span className="text-xs text-text-tertiary mt-0.5 block">{details}</span>}
         </div>
-
-        <div className="mb-2">
-          <div className="flex items-baseline justify-between mb-1.5">
-            <span className="text-lg font-semibold text-text tabular-nums">
-              {formatCurrency(goal.currentAmount)}
-            </span>
-            <span className="text-sm text-text-tertiary tabular-nums">
-              of {formatCurrency(goal.targetAmount)}
-            </span>
-          </div>
-          <div className="h-2 rounded-full bg-surface-alt overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all"
-              style={{
-                width: `${pct}%`,
-                backgroundColor: isComplete ? '#059669' : goal.color,
-              }}
-            />
-          </div>
+        <div className="text-right shrink-0">
+          <span className="text-sm font-medium tabular-nums text-text block">
+            {formatCurrency(goal.currentAmount)}
+          </span>
+          <span className="text-xs text-text-tertiary tabular-nums block mt-0.5">
+            of {formatCurrency(goal.targetAmount)}
+          </span>
         </div>
+        <div onClick={(e) => e.stopPropagation()}>
+          <RowMenu
+            items={[
+              { label: 'Edit goal', onClick: onEdit },
+              { label: 'Delete goal', onClick: onDelete, danger: true },
+            ]}
+          />
+        </div>
+      </div>
 
-        <div className="flex items-center justify-between">
-          <span
-            className={`text-xs font-medium ${isComplete ? 'text-positive' : 'text-text-secondary'}`}
-          >
-            {isComplete ? 'Goal reached!' : `${formatCurrency(remaining)} to go`}
+      <div className="mt-3 pl-12">
+        <div className="h-1.5 rounded-full bg-surface-alt overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all ${complete ? 'bg-positive' : ''}`}
+            style={complete ? { width: '100%' } : { width: `${pct}%`, backgroundColor: goal.color }}
+          />
+        </div>
+        <div className="flex items-center justify-between mt-1.5 text-xs">
+          <span className={complete ? 'text-positive font-medium' : 'text-text-secondary'}>
+            {complete ? (
+              'Goal reached'
+            ) : schedule?.overdue ? (
+              <span className="text-negative">
+                Past target date · {formatCurrency(remaining)} to go
+              </span>
+            ) : (
+              <>
+                {formatCurrency(remaining)} to go
+                {schedule?.perMonth != null && (
+                  <span className="text-text-tertiary">
+                    {' '}
+                    · {formatCurrency(schedule.perMonth)}/mo to reach it on time
+                  </span>
+                )}
+              </>
+            )}
           </span>
-          <span
-            className={`text-xs font-semibold tabular-nums ${isComplete ? 'text-positive' : 'text-text-tertiary'}`}
-          >
-            {pct}%
-          </span>
+          <span className="tabular-nums text-text-tertiary">{Math.floor(pct)}%</span>
         </div>
       </div>
     </div>
   );
 }
 
+function GoalGroup({
+  label,
+  goals,
+  accountNames,
+  onEdit,
+  onDelete,
+  defaultCollapsed = false,
+}: {
+  label: string;
+  goals: Goal[];
+  accountNames: Map<string, string>;
+  onEdit: (g: Goal) => void;
+  onDelete: (g: Goal) => void;
+  defaultCollapsed?: boolean;
+}) {
+  const [collapsed, setCollapsed] = useState(defaultCollapsed);
+  const saved = goals.reduce((s, g) => s + g.currentAmount, 0);
+
+  return (
+    <Card padding="none">
+      <button
+        onClick={() => setCollapsed(!collapsed)}
+        className={`w-full flex items-center justify-between px-5 py-3.5 hover:bg-hover transition-colors ${
+          collapsed ? 'rounded-lg' : 'rounded-t-lg border-b border-border'
+        }`}
+      >
+        <div className="flex items-center gap-2.5">
+          <span className="text-text-tertiary">
+            {collapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+          </span>
+          <span className="text-base font-semibold text-text">{label}</span>
+          <span className="text-xs text-text-tertiary">
+            {goals.length} goal{goals.length !== 1 ? 's' : ''}
+          </span>
+        </div>
+        <span className="text-base font-semibold tabular-nums text-text">
+          {formatCurrency(saved)}
+        </span>
+      </button>
+      {!collapsed && (
+        <div className="divide-y divide-border-light">
+          {goals.map((goal) => (
+            <GoalRow
+              key={goal.id}
+              goal={goal}
+              accountName={goal.accountId ? (accountNames.get(goal.accountId) ?? null) : null}
+              onEdit={() => onEdit(goal)}
+              onDelete={() => onDelete(goal)}
+            />
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}
+
 export default function GoalsPage() {
   const { data: goals = [], isLoading } = useGoals();
+  const { data: accounts = [] } = useAccounts();
   const createGoal = useCreateGoal();
   const updateGoal = useUpdateGoal();
   const deleteGoal = useDeleteGoal();
 
   const [addOpen, setAddOpen] = useState(false);
   const [editGoal, setEditGoal] = useState<Goal | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<Goal | null>(null);
 
+  const accountNames = useMemo(() => new Map(accounts.map((a) => [a.id, a.name])), [accounts]);
+  const inProgress = goals.filter((g) => progressOf(g).remaining > 0 || g.targetAmount <= 0);
+  const completed = goals.filter((g) => progressOf(g).remaining === 0 && g.targetAmount > 0);
+
+  const totalSaved = goals.reduce((s, g) => s + g.currentAmount, 0);
   const totalTarget = goals.reduce((s, g) => s + g.targetAmount, 0);
-  const totalCurrent = goals.reduce((s, g) => s + g.currentAmount, 0);
-  const overallPct = totalTarget > 0 ? Math.round((totalCurrent / totalTarget) * 100) : 0;
+  const leftToSave = goals.reduce((s, g) => s + progressOf(g).remaining, 0);
+  const overallPct = totalTarget > 0 ? Math.floor((totalSaved / totalTarget) * 100) : 0;
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col h-full bg-surface">
+        <div className="px-6 py-4 border-b border-border shrink-0">
+          <div className="h-5 w-32 bg-surface-alt rounded animate-pulse" />
+        </div>
+        <div className="p-6 space-y-2">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="h-12 bg-surface-alt rounded animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full bg-surface">
-      <div className="px-6 py-4 border-b border-border shrink-0">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-semibold text-text">Goals</h1>
-            {goals.length > 0 && (
-              <p className="text-xs text-text-tertiary mt-0.5">
-                {formatCurrency(totalCurrent)} saved of {formatCurrency(totalTarget)} total (
-                {overallPct}%)
-              </p>
-            )}
-          </div>
-          <Button size="sm" onClick={() => setAddOpen(true)}>
-            <Plus size={13} /> Add Goal
-          </Button>
-        </div>
+      <div className="px-6 py-4 border-b border-border shrink-0 flex items-center justify-between">
+        <h1 className="text-lg font-semibold text-text">Goals</h1>
+        <Button size="sm" onClick={() => setAddOpen(true)}>
+          <Plus size={14} /> Add Goal
+        </Button>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
-        {isLoading ? (
-          <div className="flex items-center justify-center h-32 text-sm text-text-tertiary">
-            Loading...
-          </div>
-        ) : goals.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 gap-3">
-            <span className="text-4xl">🎯</span>
-            <p className="text-sm text-text-secondary">
-              No goals yet. Set a savings target to get started.
+      {goals.length === 0 ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-text-tertiary mb-4">
+              No goals yet. Set a savings target to start tracking your progress.
             </p>
-            <button
-              onClick={() => setAddOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-brand-600 border border-brand-200 rounded-md hover:bg-brand-50 transition-colors"
-            >
-              <Plus size={13} /> Add your first goal
-            </button>
+            <Button onClick={() => setAddOpen(true)}>
+              <Plus size={14} /> Add Goal
+            </Button>
           </div>
-        ) : (
-          <div className="p-6 max-w-3xl mx-auto">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {goals.map((goal) => (
-                <GoalCard
-                  key={goal.id}
-                  goal={goal}
-                  onEdit={(g) => setEditGoal(g)}
-                  onDelete={(id) => setDeleteId(id)}
-                />
-              ))}
-            </div>
+        </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto">
+          <div className="px-6 pt-5 pb-6 space-y-4">
+            <StatCardRow
+              variant="hero"
+              cards={[
+                { label: 'Saved', value: formatCurrency(totalSaved), sub: `${overallPct}% of target` },
+                { label: 'Target', value: formatCurrency(totalTarget) },
+                { label: 'Left to save', value: formatCurrency(leftToSave) },
+                {
+                  label: 'Goals reached',
+                  value: `${completed.length} of ${goals.length}`,
+                  tone: completed.length > 0 ? 'positive' : undefined,
+                },
+              ]}
+            />
+            {inProgress.length > 0 && (
+              <GoalGroup
+                label="In progress"
+                goals={inProgress}
+                accountNames={accountNames}
+                onEdit={setEditGoal}
+                onDelete={setDeleting}
+              />
+            )}
+            {completed.length > 0 && (
+              <GoalGroup
+                label="Completed"
+                goals={completed}
+                accountNames={accountNames}
+                onEdit={setEditGoal}
+                onDelete={setDeleting}
+              />
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <GoalFormModal
         isOpen={addOpen}
@@ -188,13 +290,13 @@ export default function GoalsPage() {
       )}
 
       <ConfirmModal
-        isOpen={deleteId !== null}
-        onClose={() => setDeleteId(null)}
+        isOpen={deleting !== null}
+        onClose={() => setDeleting(null)}
         onConfirm={() => {
-          if (deleteId) deleteGoal.mutate(deleteId);
+          if (deleting) deleteGoal.mutate(deleting.id);
         }}
         title="Delete Goal"
-        message="Delete this goal? This cannot be undone."
+        message={`Delete "${deleting?.name ?? ''}"? This cannot be undone.`}
         confirmLabel="Delete"
         danger
       />
