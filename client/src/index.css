@@ -173,3 +173,13 @@ body {
 .recharts-active-dot circle {
   stroke: none;
 }
+
+/* Report dashboards (react-grid-layout): brand-colored drop placeholder and resize handle */
+.react-grid-item.react-grid-placeholder {
+  background: var(--color-brand-500);
+  opacity: 0.15;
+  border-radius: 8px;
+}
+.react-grid-item > .react-resizable-handle::after {
+  border-color: var(--color-brand-500);
+}

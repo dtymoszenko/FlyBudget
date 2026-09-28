@@ -26,17 +26,26 @@ export function useCreateSavedReport() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: api.createSavedReport,
-    onSuccess: (created) => {
-      qc.invalidateQueries({ queryKey: ['custom-reports'] });
+    onSuccess: (created, { dashboardPageId }) => {
+      // Saving a new report also adds it to a dashboard
+      const refresh = () => {
+        qc.invalidateQueries({ queryKey: ['custom-reports'] });
+        qc.invalidateQueries({ queryKey: ['dashboards'] });
+      };
+      refresh();
       useUndoStore.getState().push({
         description: `Create report "${created.name}"`,
         undo: async () => {
           await api.deleteSavedReport(created.id);
-          qc.invalidateQueries({ queryKey: ['custom-reports'] });
+          refresh();
         },
         redo: async () => {
-          await api.createSavedReport({ name: created.name, config: created.config });
-          qc.invalidateQueries({ queryKey: ['custom-reports'] });
+          await api.createSavedReport({
+            name: created.name,
+            config: created.config,
+            dashboardPageId,
+          });
+          refresh();
         },
       });
     },
@@ -86,6 +95,8 @@ export function useDeleteSavedReport() {
     },
     onSuccess: (snapshot) => {
       qc.invalidateQueries({ queryKey: ['custom-reports'] });
+      // Deleting a report removes its dashboard widgets
+      qc.invalidateQueries({ queryKey: ['dashboards'] });
       if (!snapshot) return;
       useUndoStore.getState().push({
         description: `Delete report "${snapshot.name}"`,

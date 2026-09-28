@@ -23,7 +23,12 @@ export const getSavedReports = () => apiFetch<SavedCustomReport[]>('/custom-repo
 
 export const getSavedReport = (id: string) => apiFetch<SavedCustomReport>(`/custom-reports/${id}`);
 
-export const createSavedReport = (data: { name: string; config: CustomReportConfig }) =>
+export const createSavedReport = (data: {
+  name: string;
+  config: CustomReportConfig;
+  /** Dashboard to add the new report to; the server uses the first one if omitted */
+  dashboardPageId?: string;
+}) =>
   apiFetch<SavedCustomReport>('/custom-reports', { method: 'POST', body: JSON.stringify(data) });
 
 export const updateSavedReport = (

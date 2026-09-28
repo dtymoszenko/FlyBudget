@@ -9,6 +9,7 @@ import BudgetPage from './pages/Budget';
 import TransactionsPage from './pages/Transactions';
 import ReportsPage from './pages/Reports';
 import CustomReportBuilder from './pages/CustomReportBuilder';
+import ReportWidgetView from './pages/ReportWidgetView';
 import PayeesPage from './pages/Payees';
 import RulesPage from './pages/Rules';
 import ReconcilePage from './pages/ReconcilePage';
@@ -42,6 +43,7 @@ export default function App() {
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/reports/custom" element={<CustomReportBuilder />} />
             <Route path="/reports/custom/:id" element={<CustomReportBuilder />} />
+            <Route path="/reports/widget/:id" element={<ReportWidgetView />} />
             <Route path="/payees" element={<PayeesPage />} />
             <Route path="/rules" element={<RulesPage />} />
             <Route path="/settings" element={<SettingsPage />} />

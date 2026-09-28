@@ -7,6 +7,7 @@ import '@fontsource/inter/400.css';
 import '@fontsource/inter/500.css';
 import '@fontsource/inter/600.css';
 import '@fontsource/inter/700.css';
+import 'react-grid-layout/css/styles.css';
 import './index.css';
 import { initTheme } from './utils/applyTheme';
 

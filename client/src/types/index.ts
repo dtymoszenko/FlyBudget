@@ -190,14 +190,21 @@ export type ChartType = 'bar' | 'stacked-bar' | 'line' | 'area' | 'donut' | 'tab
 export type ReportMode = 'total' | 'time';
 export type ReportGroupBy = 'category' | 'categoryGroup' | 'payee' | 'account' | 'month';
 export type BalanceType = 'expense' | 'income' | 'net';
-export type DatePresetCustom = '3m' | '6m' | '12m' | 'ytd' | 'last-year' | 'all' | 'custom';
+export type DatePresetCustom = '1m' | '3m' | '6m' | '12m' | 'ytd' | 'last-year' | 'all' | 'custom';
+
+/** `preset: 'custom'` is frozen to `from`/`to`; other presets are live, relative to today. */
+export interface ReportDateRange {
+  preset: DatePresetCustom;
+  from: string;
+  to: string;
+}
 
 export interface CustomReportConfig {
   chartType: ChartType;
   mode: ReportMode;
   groupBy: ReportGroupBy;
   balanceType: BalanceType;
-  dateRange: { preset: DatePresetCustom; from: string; to: string };
+  dateRange: ReportDateRange;
   filters: { accountIds: string[]; categoryIds: string[]; categoryGroupIds: string[] };
 }
 
@@ -222,6 +229,42 @@ export interface CustomReportTimeData {
 }
 
 export type CustomReportData = CustomReportTotalData | CustomReportTimeData;
+
+// Report dashboards
+export interface DashboardPage {
+  id: string;
+  name: string;
+  sortOrder: number;
+  createdAt: string;
+}
+
+export type BuiltinWidgetType =
+  'summary' | 'net-worth' | 'income-expenses' | 'spending' | 'spending-trends';
+
+interface WidgetBase {
+  id: string;
+  pageId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  createdAt: string;
+}
+
+export interface BuiltinWidget extends WidgetBase {
+  type: BuiltinWidgetType;
+  customReportId: null;
+  meta: { name?: string; dateRange: ReportDateRange };
+}
+
+export interface CustomReportWidget extends WidgetBase {
+  type: 'custom-report';
+  customReportId: string;
+  meta: Record<string, never>;
+}
+
+export type DashboardWidget = BuiltinWidget | CustomReportWidget;
+export type WidgetType = DashboardWidget['type'];
 
 export interface RuleCondition {
   field: 'payee_name' | 'amount' | 'notes';

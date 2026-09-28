@@ -1,4 +1,4 @@
-import { format, subMonths, startOfYear, endOfYear, subYears } from 'date-fns';
+import { computeDateRange, DATE_PRESETS } from '../../utils/dateRange';
 import ChartTypeSelector from './ChartTypeSelector';
 import AccountMultiSelect from './AccountMultiSelect';
 import CategoryTreePicker from './CategoryTreePicker';
@@ -34,40 +34,6 @@ const BALANCE_OPTIONS: { id: BalanceType; label: string }[] = [
   { id: 'net', label: 'Net' },
 ];
 
-const DATE_PRESETS: { id: DatePresetCustom; label: string }[] = [
-  { id: '3m', label: '3M' },
-  { id: '6m', label: '6M' },
-  { id: '12m', label: '12M' },
-  { id: 'ytd', label: 'YTD' },
-  { id: 'last-year', label: 'Last Year' },
-  { id: 'all', label: 'All' },
-  { id: 'custom', label: 'Custom' },
-];
-
-function computeDateRange(preset: DatePresetCustom): { from: string; to: string } {
-  const now = new Date();
-  const to = format(now, 'yyyy-MM');
-  switch (preset) {
-    case '3m':
-      return { from: format(subMonths(now, 2), 'yyyy-MM'), to };
-    case '6m':
-      return { from: format(subMonths(now, 5), 'yyyy-MM'), to };
-    case '12m':
-      return { from: format(subMonths(now, 11), 'yyyy-MM'), to };
-    case 'ytd':
-      return { from: format(startOfYear(now), 'yyyy-MM'), to };
-    case 'last-year':
-      return {
-        from: format(startOfYear(subYears(now, 1)), 'yyyy-MM'),
-        to: format(endOfYear(subYears(now, 1)), 'yyyy-MM'),
-      };
-    case 'all':
-      return { from: '2020-01', to };
-    default:
-      return { from: format(subMonths(now, 5), 'yyyy-MM'), to };
-  }
-}
-
 function set<K extends keyof CustomReportConfig>(
   config: CustomReportConfig,
   key: K,
@@ -99,6 +65,17 @@ export default function ReportBuilderSidebar({ config, onChange }: Props) {
       const range = computeDateRange(preset);
       onChange(set(config, 'dateRange', { preset, ...range }));
     }
+  }
+
+  // Keeps the range valid: a cleared input is ignored and the other end follows if they cross
+  function handleMonthChange(end: 'from' | 'to', value: string) {
+    if (!value) return;
+    const next = { ...config.dateRange, [end]: value };
+    if (next.from > next.to) {
+      if (end === 'from') next.to = value;
+      else next.from = value;
+    }
+    onChange(set(config, 'dateRange', next));
   }
 
   return (
@@ -182,21 +159,22 @@ export default function ReportBuilderSidebar({ config, onChange }: Props) {
             <input
               type="month"
               value={config.dateRange.from}
-              onChange={(e) =>
-                onChange(set(config, 'dateRange', { ...config.dateRange, from: e.target.value }))
-              }
+              onChange={(e) => handleMonthChange('from', e.target.value)}
               className="flex-1 rounded-md border border-border text-xs py-1 px-2 bg-surface text-text focus:border-brand-600 focus:outline-none"
             />
             <input
               type="month"
               value={config.dateRange.to}
-              onChange={(e) =>
-                onChange(set(config, 'dateRange', { ...config.dateRange, to: e.target.value }))
-              }
+              onChange={(e) => handleMonthChange('to', e.target.value)}
               className="flex-1 rounded-md border border-border text-xs py-1 px-2 bg-surface text-text focus:border-brand-600 focus:outline-none"
             />
           </div>
         )}
+        <p className="text-[11px] text-text-tertiary mt-1.5">
+          {config.dateRange.preset === 'custom'
+            ? 'Frozen: these dates stay fixed.'
+            : 'Live: moves forward with the current month.'}
+        </p>
       </Section>
 
       <Section label="Accounts">
