@@ -9,6 +9,7 @@ const express = (await import('express')).default;
 const { migrate } = await import('drizzle-orm/better-sqlite3/migrator');
 const { db } = await import('../db/index.js');
 const { authRouter, requireSession } = await import('./auth.js');
+const { setupCode } = await import('../auth/setupCode.js');
 
 let server: Server;
 let base: string;
@@ -52,11 +53,24 @@ describe('server mode login', () => {
   });
 
   it('rejects passwords shorter than 8 characters', async () => {
-    expect((await post('/auth/setup', { password: 'short' })).status).toBe(400);
+    expect((await post('/auth/setup', { password: 'short', setupCode: setupCode() })).status).toBe(
+      400,
+    );
+  });
+
+  it('setup requires the setup code from the server log', async () => {
+    expect((await post('/auth/setup', { password: 'attacker password' })).status).toBe(403);
+    expect(
+      (await post('/auth/setup', { password: 'attacker password', setupCode: 'AAAA-BBBB' })).status,
+    ).toBe(403);
+    expect((await get('/auth/status')).status).toBe(200);
+    expect(setupCode()).toMatch(/^[A-Z2-9]{4}(-[A-Z2-9]{4}){3}$/);
   });
 
   it('first visit sets the password and signs in with a secure cookie', async () => {
-    const res = await post('/auth/setup', { password: 'first password 123' });
+    // Case, spaces and dashes in the code don't matter
+    const code = setupCode().toLowerCase().replace(/-/g, ' ');
+    const res = await post('/auth/setup', { password: 'first password 123', setupCode: code });
     expect(res.status).toBe(204);
     const setCookie = res.headers.get('set-cookie') ?? '';
     expect(setCookie).toMatch(/^flybudget_session=[A-Za-z0-9_-]{43};/);
@@ -67,7 +81,9 @@ describe('server mode login', () => {
   });
 
   it('setup can only happen once', async () => {
-    expect((await post('/auth/setup', { password: 'attacker password' })).status).toBe(409);
+    expect(
+      (await post('/auth/setup', { password: 'attacker password', setupCode: 'anything' })).status,
+    ).toBe(409);
   });
 
   it('stores only hashes: no plaintext password or session token in the database', () => {

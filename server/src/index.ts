@@ -3,7 +3,8 @@ import cors from 'cors';
 import path from 'path';
 import { listenHost, serverMode, trustProxy } from './config.js';
 import { secretCipher } from './db/secretCrypto.js';
-import { deleteExpiredSessions } from './auth/sessions.js';
+import { deleteExpiredSessions, isPasswordSet } from './auth/sessions.js';
+import { setupCode } from './auth/setupCode.js';
 import { authRouter, requireSession } from './routes/auth.js';
 import {
   DEV_CLIENT_ORIGINS,
@@ -14,6 +15,7 @@ import {
   hostGuard,
   originGuard,
   securityHeaders,
+  hstsWhenSecure,
 } from './middleware/security.js';
 import { accountsRouter } from './routes/accounts.js';
 import { categoriesRouter } from './routes/categories.js';
@@ -56,7 +58,7 @@ app.disable('x-powered-by');
 app.use(hostGuard);
 app.use(originGuard);
 app.use(apiTokenGuard(process.env.FLYBUDGET_API_TOKEN));
-app.use(securityHeaders);
+app.use(securityHeaders, hstsWhenSecure);
 // The Vite dev server and the packaged Electron app (which serves the client from
 // this server, see startServer) are same-origin already; this covers direct
 // cross-origin dev requests to :3001.
@@ -119,6 +121,7 @@ export async function startServer(port: number | string): Promise<void> {
       );
       if (serverMode) {
         console.log('Server mode: login required.');
+        if (!isPasswordSet()) setupCode();
         deleteExpiredSessions();
         setInterval(deleteExpiredSessions, 60 * 60 * 1000).unref();
       }

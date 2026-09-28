@@ -12,7 +12,17 @@ const KEY_LEN = 64;
 export const MIN_PASSWORD_LENGTH = 8;
 export const MAX_PASSWORD_LENGTH = 256;
 
+// Each hash uses ~128 MB. Run them one at a time, so a burst of login attempts
+// can't exhaust memory on a small server (e.g. a Raspberry Pi).
+let queue: Promise<unknown> = Promise.resolve();
+
 function derive(password: string, salt: Buffer, opts: ScryptOptions): Promise<Buffer> {
+  const run = queue.then(() => deriveNow(password, salt, opts));
+  queue = run.catch(() => {});
+  return run;
+}
+
+function deriveNow(password: string, salt: Buffer, opts: ScryptOptions): Promise<Buffer> {
   return new Promise((resolve, reject) =>
     scrypt(
       password.normalize('NFKC'),

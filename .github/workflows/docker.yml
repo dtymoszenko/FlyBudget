@@ -8,6 +8,9 @@ name: Docker
 # Tags: the exact version (0.2.0, 0.2.0-beta.1), major.minor for stable releases,
 # and "latest" for stable releases (and every release before 1.0).
 #
+# Images are also scanned for known vulnerabilities (Grype) on main, on tags and
+# weekly; results appear under Security → Code scanning.
+#
 # Verify an image with:
 #   gh attestation verify oci://ghcr.io/dtymoszenko/flybudget:<version> -R dtymoszenko/FlyBudget
 
@@ -16,6 +19,8 @@ on:
     branches: [main]
     tags: ['v*']
   pull_request:
+  schedule:
+    - cron: '0 6 * * 1' # weekly vulnerability scan of the image
 
 permissions: {}
 
@@ -31,6 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      security-events: write # upload the vulnerability scan
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -53,7 +59,10 @@ jobs:
       - name: Smoke test
         run: |
           set -euo pipefail
+          # The key setup from the self-hosting guide
           openssl rand -base64 32 > flybudget_data_key.txt
+          sudo chown 1000:1000 flybudget_data_key.txt
+          sudo chmod 400 flybudget_data_key.txt
           # --wait also requires the image's health check to report healthy
           docker compose up -d --wait --wait-timeout 180
 
@@ -67,14 +76,19 @@ jobs:
           J=(-H 'Origin: http://localhost:3001' -H 'Content-Type: application/json')
           URL=http://localhost:3001
           PASSWORD='{"password":"correct horse battery"}'
+          # The setup code the server prints to its log
+          setup_code() { docker compose logs | grep -oE '[A-Z2-9]{4}(-[A-Z2-9]{4}){3}' | tail -1; }
+          setup_body() { printf '{"password":"correct horse battery","setupCode":"%s"}' "$(setup_code)"; }
 
           test "$(docker exec flybudget id -u)" = 1000
           curl -sf $URL/api/auth/status | grep -q '"needsSetup":true'
           expect 401 $URL/api/accounts
           expect 200 $URL/budget
           expect 403 -H 'Origin: https://evil.example' -H 'Content-Type: application/json' \
-            -d "$PASSWORD" $URL/api/auth/setup
-          expect 204 -c cookies "${J[@]}" -d "$PASSWORD" $URL/api/auth/setup
+            -d "$(setup_body)" $URL/api/auth/setup
+          # Without the setup code from the log, nobody can claim the server
+          expect 403 "${J[@]}" -d "$PASSWORD" $URL/api/auth/setup
+          expect 204 -c cookies "${J[@]}" -d "$(setup_body)" $URL/api/auth/setup
           expect 409 "${J[@]}" -d '{"password":"another password"}' $URL/api/auth/setup
           expect 201 -b cookies "${J[@]}" \
             -d '{"name":"Checking","type":"checking","startingBalance":12345}' $URL/api/accounts
@@ -112,8 +126,25 @@ jobs:
         if: always()
         run: docker compose logs
 
+      - name: Scan for vulnerabilities
+        id: scan
+        if: github.event_name != 'pull_request'
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        with:
+          image: ${{ env.IMAGE }}:latest
+          fail-build: false
+          only-fixed: true
+          output-format: sarif
+
+      - name: Upload scan results
+        if: github.event_name != 'pull_request'
+        uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        with:
+          sarif_file: ${{ steps.scan.outputs.sarif }}
+          category: docker-image
+
   publish:
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     needs: test
     runs-on: ubuntu-latest
     permissions:
@@ -157,7 +188,11 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
+          # Release images are built from scratch (no shared build cache that a
+          # PR could have influenced), with an SBOM and full build provenance
+          no-cache: true
+          sbom: true
+          provenance: mode=max
 
       - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:

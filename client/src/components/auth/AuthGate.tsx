@@ -89,6 +89,7 @@ function AuthScreen({
 }
 
 function PasswordForm({ mode, onDone }: { mode: 'setup' | 'login'; onDone: () => void }) {
+  const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -104,7 +105,7 @@ function PasswordForm({ mode, onDone }: { mode: 'setup' | 'login'; onDone: () =>
     if (isSetup && password !== confirm) return setError("The passwords don't match.");
     setBusy(true);
     try {
-      await (isSetup ? authApi.setupPassword(password) : authApi.login(password));
+      await (isSetup ? authApi.setupPassword(password, code) : authApi.login(password));
       onDone();
     } catch (err) {
       setError((err as Error).message);
@@ -125,6 +126,30 @@ function PasswordForm({ mode, onDone }: { mode: 'setup' | 'login'; onDone: () =>
       }
     >
       <form onSubmit={submit} className="space-y-4">
+        {isSetup && (
+          <div>
+            <label
+              htmlFor="setup-code"
+              className="block text-sm font-medium text-text-secondary mb-1"
+            >
+              Setup code
+            </label>
+            <input
+              id="setup-code"
+              autoComplete="off"
+              spellCheck={false}
+              autoFocus
+              placeholder="XXXX-XXXX-XXXX-XXXX"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              className={`${inputClass} font-mono uppercase`}
+            />
+            <p className="text-xs text-text-tertiary mt-1">
+              Printed in the server log. With Docker, run{' '}
+              <code className="font-mono">docker logs flybudget</code>.
+            </p>
+          </div>
+        )}
         <div>
           <label htmlFor="password" className="block text-sm font-medium text-text-secondary mb-1">
             {isSetup ? 'New password' : 'Password'}
@@ -133,7 +158,7 @@ function PasswordForm({ mode, onDone }: { mode: 'setup' | 'login'; onDone: () =>
             id="password"
             type="password"
             autoComplete={isSetup ? 'new-password' : 'current-password'}
-            autoFocus
+            autoFocus={!isSetup}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className={inputClass}
@@ -155,7 +180,7 @@ function PasswordForm({ mode, onDone }: { mode: 'setup' | 'login'; onDone: () =>
           </div>
         )}
         {error && <p className="text-xs text-negative">{error}</p>}
-        <Button type="submit" className="w-full" disabled={busy || !password}>
+        <Button type="submit" className="w-full" disabled={busy || !password || (isSetup && !code)}>
           {busy ? <Loader2 size={14} className="animate-spin" /> : <Lock size={14} />}
           {isSetup ? 'Create password' : 'Sign in'}
         </Button>

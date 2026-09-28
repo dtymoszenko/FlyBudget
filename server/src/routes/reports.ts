@@ -179,8 +179,12 @@ reportsRouter.get('/income-vs-expenses', (req, res) => {
   const result = months.map((month) => {
     const d = dataMap[month] ?? empty();
     return {
-      month, income: d.income, expenses: d.expenses, net: d.income - d.expenses,
-      expenseNet: d.expenseNet, expenseCount: d.expenseCount,
+      month,
+      income: d.income,
+      expenses: d.expenses,
+      net: d.income - d.expenses,
+      expenseNet: d.expenseNet,
+      expenseCount: d.expenseCount,
     };
   });
 

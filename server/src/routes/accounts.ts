@@ -18,7 +18,10 @@ const createSchema = z.object({
 const logoSchema = z
   .string()
   .max(200_000)
-  .regex(/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/, 'Logo must be a PNG, JPEG, or WebP data URL')
+  .regex(
+    /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/,
+    'Logo must be a PNG, JPEG, or WebP data URL',
+  )
   .nullable();
 
 const updateSchema = createSchema.partial().extend({ logo: logoSchema.optional() });

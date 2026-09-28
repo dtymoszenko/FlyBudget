@@ -18,13 +18,15 @@ The desktop app doesn't need any of this. Self-hosting is for when you want to r
 You need [Docker](https://docs.docker.com/get-docker/) with Docker Compose.
 
 1. Create a folder for FlyBudget and download the example [`docker-compose.yml`](https://github.com/dtymoszenko/FlyBudget/blob/main/docker-compose.yml) into it.
-2. Create the encryption key that protects your stored bank credentials:
+2. Create the encryption key that protects your stored bank credentials, and make it readable only by FlyBudget (which runs as user id 1000). If you're logged in as root, leave out `sudo`.
 
    ```bash
    openssl rand -base64 32 > flybudget_data_key.txt
+   sudo chown 1000:1000 flybudget_data_key.txt
+   sudo chmod 400 flybudget_data_key.txt
    ```
 
-   Keep a copy of this file somewhere safe (a password manager works well). Without it, FlyBudget can't read your saved bank connections, and you'd have to connect your banks again.
+   Keep a copy of the key somewhere safe (a password manager works well), separate from your backups. Without it, FlyBudget can't read your saved bank connections, and you'd have to connect your banks again.
 
 3. Start FlyBudget:
 
@@ -32,13 +34,25 @@ You need [Docker](https://docs.docker.com/get-docker/) with Docker Compose.
    docker compose up -d
    ```
 
-4. Open `http://<your-server>:3001` in a browser. The first visit asks you to **create a password**. Do this right away: until a password is set, anyone who can reach the server could set it.
+4. Open `http://<your-server>:3001` in a browser and **create your password**. FlyBudget also asks for a **setup code**, which only appears in the server's log:
+
+   ```bash
+   docker logs flybudget
+   ```
+
+   The code makes sure only someone with access to the server can set the password, not whoever happens to open the page first.
 
 That's it. Your budget is stored in a Docker volume.
 
 :::note[FlyBudget won't start?]
 
-Check `docker compose logs`. If it can't read the key file, make sure `flybudget_data_key.txt` is readable by the container (`chmod 644 flybudget_data_key.txt`); FlyBudget runs as user id 1000, not root. The key must be 32 random bytes in base64, which is exactly what the `openssl` command above creates.
+Check `docker logs flybudget`. If it can't read the key file, make sure `flybudget_data_key.txt` belongs to user id 1000 (step 2). The key must be 32 random bytes in base64, which is exactly what the `openssl` command above creates.
+
+:::
+
+:::warning[Docker bypasses your firewall]
+
+Docker opens published ports on every network interface, and firewalls like `ufw` don't block them. If FlyBudget sits behind a reverse proxy on the same machine, publish it only locally by changing the port line in `docker-compose.yml` to `'127.0.0.1:3001:3001'`.
 
 :::
 
@@ -47,6 +61,7 @@ Check `docker compose logs`. If it can't read the key file, make sure `flybudget
 ```bash
 docker run -d --name flybudget -p 3001:3001 \
   -v flybudget-data:/data \
+  --read-only --tmpfs /tmp --cap-drop ALL --security-opt no-new-privileges:true \
   -v "$PWD/flybudget_data_key.txt:/run/secrets/flybudget_data_key:ro" \
   -e FLYBUDGET_DATA_KEY_FILE=/run/secrets/flybudget_data_key \
   --restart unless-stopped \
@@ -105,7 +120,7 @@ environment:
   docker exec flybudget node reset-password.cjs
   ```
 
-  Then open FlyBudget **right away** and create a new password. Until you do, anyone who can reach the server could set it.
+  Then open FlyBudget and create a new password, using the new setup code from `docker logs flybudget`.
 
 ## Backups
 
@@ -142,9 +157,11 @@ Database updates are applied automatically when the new version starts. Back up 
 
 - It runs as an unprivileged user, never as root.
 - The example Compose file makes the container's filesystem read-only, drops all Linux capabilities, and blocks privilege escalation.
+- Setting the first password needs a one-time setup code from the server log, so nobody else can claim a freshly started server.
 - Passwords are stored as scrypt hashes, never in plain text. Login sessions are random 256-bit tokens, stored only as hashes, in a cookie scripts can't read, and they expire after 30 days.
+- Behind HTTPS, FlyBudget tells browsers to always use HTTPS for your address (HSTS).
 - Bank credentials (Plaid and SimpleFIN) are encrypted with your key, which is kept outside the database.
-- Every image is built by GitHub Actions from the public source code, for both `amd64` and `arm64`, with a signed build attestation. You can check an image really came from this repository:
+- Every image is built by GitHub Actions from the public source code, for both `amd64` and `arm64`, with a software bill of materials (SBOM) and a signed build attestation, and is scanned for known vulnerabilities every week. You can check an image really came from this repository:
 
   ```bash
   gh attestation verify oci://ghcr.io/dtymoszenko/flybudget:latest -R dtymoszenko/FlyBudget

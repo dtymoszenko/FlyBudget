@@ -15,6 +15,7 @@ import {
   isValidSession,
   setInitialPassword,
 } from '../auth/sessions.js';
+import { checkSetupCode, clearSetupCode, setupCode } from '../auth/setupCode.js';
 
 // Login for server mode (Docker / self-hosted). Modeled on Actual Budget's server:
 // the first visitor creates the server password, and everything else requires a
@@ -50,24 +51,34 @@ function startSession(req: Request, res: Response) {
 }
 
 authRouter.get('/status', (req, res) => {
+  const needsSetup = serverMode && !isPasswordSet();
+  // Make sure a setup code has been printed to the log (e.g. after reset-password)
+  if (needsSetup) setupCode();
   res.json({
     enabled: serverMode,
-    needsSetup: serverMode && !isPasswordSet(),
+    needsSetup,
     authenticated: !serverMode || isValidSession(sessionToken(req)),
   });
 });
 
 authRouter.post('/setup', authRateLimit, async (req, res) => {
   if (!serverMode) return res.status(404).json({ error: 'Not found' });
-  const parsed = z.object({ password }).safeParse(req.body);
+  const parsed = z
+    .object({ password, setupCode: z.string().max(100).optional() })
+    .safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({
       error: `Password must be ${MIN_PASSWORD_LENGTH}-${MAX_PASSWORD_LENGTH} characters`,
     });
   }
-  if (isPasswordSet() || !(await setInitialPassword(parsed.data.password))) {
+  if (isPasswordSet()) return res.status(409).json({ error: 'A password has already been set' });
+  if (!checkSetupCode(parsed.data.setupCode)) {
+    return res.status(403).json({ error: 'Incorrect setup code' });
+  }
+  if (!(await setInitialPassword(parsed.data.password))) {
     return res.status(409).json({ error: 'A password has already been set' });
   }
+  clearSetupCode();
   startSession(req, res);
   res.status(204).send();
 });

@@ -21,7 +21,11 @@ export const isEncrypted = (stored: string) => stored.startsWith(PREFIX);
 
 export function createSecretCipher(keyBase64: string | undefined): SecretCipher {
   const key = keyBase64 ? Buffer.from(keyBase64, 'base64') : undefined;
-  if (key && key.length !== 32) throw new Error('Credential encryption key must be 32 bytes');
+  if (key && key.length !== 32) {
+    throw new Error(
+      'The credential encryption key must be 32 bytes, base64-encoded. Create one with: openssl rand -base64 32',
+    );
+  }
 
   return {
     enabled: key !== undefined,
@@ -63,7 +67,15 @@ export function createSecretCipher(keyBase64: string | undefined): SecretCipher 
 function loadDataKey(): string | undefined {
   if (process.env.FLYBUDGET_DATA_KEY) return process.env.FLYBUDGET_DATA_KEY;
   const file = process.env.FLYBUDGET_DATA_KEY_FILE;
-  return file ? readFileSync(file, 'utf8').trim() : undefined;
+  if (!file) return undefined;
+  try {
+    return readFileSync(file, 'utf8').trim();
+  } catch (err) {
+    throw new Error(
+      `Can't read the encryption key file ${file} (${(err as NodeJS.ErrnoException).code}). ` +
+        'It must exist and be readable by the user FlyBudget runs as (user id 1000 in Docker).',
+    );
+  }
 }
 
 export const secretCipher = createSecretCipher(loadDataKey());

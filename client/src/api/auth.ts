@@ -11,8 +11,11 @@ export interface AuthStatus {
 
 export const getAuthStatus = () => apiFetch<AuthStatus>('/auth/status');
 
-export const setupPassword = (password: string) =>
-  apiFetch<void>('/auth/setup', { method: 'POST', body: JSON.stringify({ password }) });
+export const setupPassword = (password: string, setupCode: string) =>
+  apiFetch<void>('/auth/setup', {
+    method: 'POST',
+    body: JSON.stringify({ password, setupCode }),
+  });
 
 export const login = (password: string) =>
   apiFetch<void>('/auth/login', { method: 'POST', body: JSON.stringify({ password }) });

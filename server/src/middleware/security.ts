@@ -148,6 +148,16 @@ export const securityHeaders = helmet({
 });
 
 /**
+ * Server mode behind HTTPS: tell browsers to only ever use HTTPS for this site, so
+ * a network attacker can't downgrade a later visit to plain HTTP. (Not sent over
+ * HTTP, where browsers ignore it, or for the desktop app on localhost.)
+ */
+export const hstsWhenSecure: RequestHandler = (req, res, next) => {
+  if (serverMode && req.secure) res.setHeader('Strict-Transport-Security', 'max-age=31536000');
+  next();
+};
+
+/**
  * Caps bank-sync actions (connect, sync, disconnect) at a pace no person clicking
  * would hit, so a bug or runaway loop can't hammer Plaid/SimpleFIN (Plaid bills
  * per call and may lock the account). Read-only GETs are not limited.

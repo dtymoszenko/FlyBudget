@@ -14,8 +14,11 @@ WORKDIR /src
 # Dependencies first so Docker can cache them. The .npmrc files block install scripts.
 COPY client/.npmrc client/package.json client/package-lock.json client/
 COPY server/.npmrc server/package.json server/package-lock.json server/
+# Every package must also carry a valid npm registry signature.
 RUN npm ci --prefix client --no-audit --no-fund \
- && npm ci --prefix server --no-audit --no-fund
+ && npm ci --prefix server --no-audit --no-fund \
+ && (cd client && npm audit signatures) \
+ && (cd server && npm audit signatures)
 
 COPY client/ client/
 COPY server/ server/

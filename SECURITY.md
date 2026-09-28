@@ -68,7 +68,10 @@ You can also host FlyBudget yourself with Docker ("server mode", see
 lives on your server, and:
 
 - a password protects every API route (scrypt hash; 10 failed attempts per 15
-  minutes, then blocked)
+  minutes, then blocked). Setting the first password also needs a one-time setup
+  code printed only in the server log, so whoever reaches a fresh server first
+  (or a website using DNS rebinding) can't claim it
+- behind HTTPS (`FLYBUDGET_TRUST_PROXY`), responses carry HSTS
 - sessions are random 256-bit tokens, stored server-side only as SHA-256
   hashes, sent in an HttpOnly, SameSite=Strict cookie (Secure over HTTPS),
   expiring after 30 days; changing the password ends every other session
@@ -77,8 +80,10 @@ lives on your server, and:
   database
 - the container runs as an unprivileged user; the example Compose file adds a
   read-only filesystem, drops all capabilities and sets `no-new-privileges`
-- images are built in GitHub Actions for amd64 and arm64, base images are
-  pinned by digest, and each image has signed SLSA build provenance
+- images are built in GitHub Actions for amd64 and arm64 without a shared build
+  cache, base images are pinned by digest, npm registry signatures are verified
+  during the build, each image has an SBOM and signed SLSA build provenance, and
+  images are scanned for known vulnerabilities (Grype) weekly
   (`gh attestation verify oci://ghcr.io/dtymoszenko/flybudget:<version> -R dtymoszenko/FlyBudget`)
 
 Run it behind an HTTPS reverse proxy before exposing it to the internet.
