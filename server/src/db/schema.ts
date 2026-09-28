@@ -221,6 +221,36 @@ export const customReports = sqliteTable('custom_reports', {
     .default(sql`(datetime('now'))`),
 });
 
+export const dashboardPages = sqliteTable('dashboard_pages', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  sortOrder: integer('sort_order').notNull().default(0),
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+// A report widget on a dashboard page. `meta` is a JSON string whose shape depends on
+// `type`; custom report widgets point at their report so deleting it removes the widget.
+export const dashboardWidgets = sqliteTable('dashboard_widgets', {
+  id: text('id').primaryKey(),
+  pageId: text('page_id')
+    .notNull()
+    .references(() => dashboardPages.id, { onDelete: 'cascade' }),
+  type: text('type').notNull(),
+  customReportId: text('custom_report_id').references(() => customReports.id, {
+    onDelete: 'cascade',
+  }),
+  x: integer('x').notNull().default(0),
+  y: integer('y').notNull().default(0),
+  width: integer('width').notNull().default(6),
+  height: integer('height').notNull().default(4),
+  meta: text('meta').notNull().default('{}'),
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
 export const goals = sqliteTable('goals', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),

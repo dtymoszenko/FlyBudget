@@ -4,6 +4,11 @@ import { customReports } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
+import {
+  addCustomReportWidget,
+  dateRangeSchema,
+  ensureDefaultDashboard,
+} from '../services/dashboardService.js';
 
 export const customReportsRouter = Router();
 
@@ -12,11 +17,7 @@ const configSchema = z.object({
   mode: z.enum(['total', 'time']),
   groupBy: z.enum(['category', 'categoryGroup', 'payee', 'account', 'month']),
   balanceType: z.enum(['expense', 'income', 'net']),
-  dateRange: z.object({
-    preset: z.enum(['3m', '6m', '12m', 'ytd', 'last-year', 'all', 'custom']),
-    from: z.string(),
-    to: z.string(),
-  }),
+  dateRange: dateRangeSchema,
   filters: z.object({
     accountIds: z.array(z.string()),
     categoryIds: z.array(z.string()),
@@ -28,6 +29,9 @@ const createSchema = z.object({
   name: z.string().min(1),
   config: configSchema,
 });
+
+// A new report is also added to a dashboard: the one it was created from, or the first one
+const createWithDashboardSchema = createSchema.extend({ dashboardPageId: z.string().optional() });
 
 function parseRow(r: typeof customReports.$inferSelect) {
   return { ...r, config: JSON.parse(r.config) };
@@ -45,9 +49,11 @@ customReportsRouter.get('/:id', (req, res) => {
 });
 
 customReportsRouter.post('/', (req, res) => {
-  const parsed = createSchema.safeParse(req.body);
+  const parsed = createWithDashboardSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
+  // Before inserting, so a first-ever default dashboard doesn't add this report twice
+  ensureDefaultDashboard();
   const now = new Date().toISOString();
   const row = {
     id: nanoid(),
@@ -57,7 +63,10 @@ customReportsRouter.post('/', (req, res) => {
     createdAt: now,
     updatedAt: now,
   };
-  db.insert(customReports).values(row).run();
+  db.transaction((tx) => {
+    tx.insert(customReports).values(row).run();
+    addCustomReportWidget(tx, row.id, parsed.data.dashboardPageId);
+  });
   res.status(201).json(parseRow(row));
 });
 
