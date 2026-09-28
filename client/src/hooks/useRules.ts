@@ -1,9 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as rulesApi from '../api/rules';
 import { useUndoStore } from '../store/undoStore';
-import type { Rule, RuleCondition, RuleAction } from '../types';
+import type { Rule, RuleInput } from '../types';
 
 const QK = ['rules'];
+
+const toInput = (r: Rule): RuleInput => ({
+  conditionsOp: r.conditionsOp,
+  conditions: r.conditions,
+  actions: r.actions,
+  enabled: r.enabled,
+  sortOrder: r.sortOrder,
+});
 
 export function useRules() {
   return useQuery({ queryKey: QK, queryFn: rulesApi.getRules });
@@ -12,25 +20,18 @@ export function useRules() {
 export function useCreateRule() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: {
-      conditions: RuleCondition[];
-      actions: RuleAction[];
-      sortOrder?: number;
-    }) => rulesApi.createRule(data),
+    mutationFn: (data: RuleInput) => rulesApi.createRule(data),
     onSuccess: (created) => {
       qc.invalidateQueries({ queryKey: QK });
+      let current = created;
       useUndoStore.getState().push({
         description: `Create rule`,
         undo: async () => {
-          await rulesApi.deleteRule(created.id);
+          await rulesApi.deleteRule(current.id);
           qc.invalidateQueries({ queryKey: QK });
         },
         redo: async () => {
-          await rulesApi.createRule({
-            conditions: created.conditions,
-            actions: created.actions,
-            sortOrder: created.sortOrder,
-          });
+          current = await rulesApi.createRule(toInput(created));
           qc.invalidateQueries({ queryKey: QK });
         },
       });
@@ -41,14 +42,8 @@ export function useCreateRule() {
 export function useUpdateRule() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      id,
-      ...data
-    }: {
-      id: string;
-      conditions?: RuleCondition[];
-      actions?: RuleAction[];
-    }) => rulesApi.updateRule(id, data),
+    mutationFn: ({ id, ...data }: { id: string } & Partial<RuleInput>) =>
+      rulesApi.updateRule(id, data),
     onMutate: async ({ id }) => {
       const rules = qc.getQueryData<Rule[]>(QK);
       return { old: rules?.find((r) => r.id === id) };
@@ -56,14 +51,13 @@ export function useUpdateRule() {
     onSuccess: (_, { id, ...data }, ctx) => {
       qc.invalidateQueries({ queryKey: QK });
       if (!ctx?.old) return;
-      const snapshot = ctx.old;
+      const snapshot = toInput(ctx.old);
       useUndoStore.getState().push({
-        description: `Edit rule`,
+        description: data.enabled !== undefined && Object.keys(data).length === 1
+          ? `${data.enabled ? 'Enable' : 'Disable'} rule`
+          : `Edit rule`,
         undo: async () => {
-          await rulesApi.updateRule(id, {
-            conditions: snapshot.conditions,
-            actions: snapshot.actions,
-          });
+          await rulesApi.updateRule(id, snapshot);
           qc.invalidateQueries({ queryKey: QK });
         },
         redo: async () => {
@@ -86,17 +80,15 @@ export function useDeleteRule() {
     onSuccess: (snapshot) => {
       qc.invalidateQueries({ queryKey: QK });
       if (!snapshot) return;
+      let current = snapshot;
       useUndoStore.getState().push({
         description: `Delete rule`,
         undo: async () => {
-          await rulesApi.createRule({
-            conditions: snapshot.conditions,
-            actions: snapshot.actions,
-            sortOrder: snapshot.sortOrder,
-          });
+          current = await rulesApi.createRule(toInput(snapshot));
           qc.invalidateQueries({ queryKey: QK });
         },
         redo: async () => {
+          await rulesApi.deleteRule(current.id);
           qc.invalidateQueries({ queryKey: QK });
         },
       });
@@ -129,13 +121,16 @@ export function useReorderRules() {
   });
 }
 
-export function useRunRules() {
+/** Apply rules to existing transactions (the ones ticked in the preview) */
+export function useApplyRules() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: rulesApi.runRules,
+    mutationFn: rulesApi.applyRules,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['transactions'] });
       qc.invalidateQueries({ queryKey: ['budget'] });
+      qc.invalidateQueries({ queryKey: ['payees'] });
+      qc.invalidateQueries({ queryKey: ['reports'] });
     },
   });
 }

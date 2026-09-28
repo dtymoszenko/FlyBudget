@@ -1,25 +1,20 @@
 import { apiFetch } from './client';
-import type { Rule, RuleCondition, RuleAction, RunRulesPreviewItem } from '../types';
+import type { Rule, RuleApplyScope, RuleCondition, RuleInput, RulePreviewItem, RuleTestResult } from '../types';
 
-type RulePayload = { conditions: RuleCondition[]; actions: RuleAction[]; sortOrder?: number };
+/** Which rules to run over existing transactions: every enabled rule, or just `ruleIds` */
+export type RuleRunTarget = { ruleIds?: string[]; scope: RuleApplyScope };
 
 export const getRules = () => apiFetch<Rule[]>('/rules');
-export const createRule = (data: RulePayload) =>
+export const createRule = (data: RuleInput) =>
   apiFetch<Rule>('/rules', { method: 'POST', body: JSON.stringify(data) });
-export const updateRule = (id: string, data: Partial<RulePayload>) =>
+export const updateRule = (id: string, data: Partial<RuleInput>) =>
   apiFetch<Rule>(`/rules/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteRule = (id: string) => apiFetch<void>(`/rules/${id}`, { method: 'DELETE' });
 export const reorderRules = (ids: string[]) =>
   apiFetch<{ ok: boolean }>('/rules/reorder', { method: 'PUT', body: JSON.stringify({ ids }) });
-export const previewRules = () => apiFetch<RunRulesPreviewItem[]>('/rules/preview');
-export const runRules = () => apiFetch<{ updated: number }>('/rules/run', { method: 'POST' });
-export const testConditions = (conditions: RuleCondition[]) =>
-  apiFetch<
-    Array<{
-      id: string;
-      date: string;
-      payeeName: string | null;
-      amount: number;
-      categoryId: string | null;
-    }>
-  >('/rules/test', { method: 'POST', body: JSON.stringify({ conditions }) });
+export const testConditions = (conditionsOp: Rule['conditionsOp'], conditions: RuleCondition[]) =>
+  apiFetch<RuleTestResult>('/rules/test', { method: 'POST', body: JSON.stringify({ conditionsOp, conditions }) });
+export const previewRules = (target: RuleRunTarget) =>
+  apiFetch<RulePreviewItem[]>('/rules/preview', { method: 'POST', body: JSON.stringify(target) });
+export const applyRules = (target: RuleRunTarget & { transactionIds: string[] }) =>
+  apiFetch<{ updated: number }>('/rules/apply', { method: 'POST', body: JSON.stringify(target) });

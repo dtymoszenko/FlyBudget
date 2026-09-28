@@ -104,7 +104,7 @@ describe('input validation', () => {
   it('rules reject invalid or oversized regexes but accept normal ones', async () => {
     const rule = (value: string) => ({
       conditions: [{ field: 'payee_name', op: 'regex', value }],
-      actions: [{ field: 'notes', value: 'x' }],
+      actions: [{ type: 'set_notes', value: 'x' }],
     });
     expect((await post('/rules', rule('^star(bucks)?'))).status).toBe(201);
     expect((await post('/rules', rule('(unclosed'))).status).toBe(400);

@@ -22,6 +22,8 @@ export interface Transaction {
   isParent: number;
   parentTransactionId: string | null;
   importedId: string | null;
+  /** Raw payee text from the bank or CSV (null for manual entries) */
+  importedPayee: string | null;
   scheduleId: string | null;
   createdAt: string;
   children?: Transaction[];
@@ -271,24 +273,49 @@ export interface CustomReportWidget extends WidgetBase {
 export type DashboardWidget = BuiltinWidget | CustomReportWidget;
 export type WidgetType = DashboardWidget['type'];
 
-export interface RuleCondition {
-  field: 'payee_name' | 'amount' | 'notes';
-  op: 'contains' | 'starts_with' | 'ends_with' | 'exact' | 'regex';
-  value: string;
+// --- Rules (mirrors server/src/services/rulesEngine.ts) ---
+export type RuleTextField = 'payee_name' | 'imported_payee' | 'notes';
+export type RuleIdField = 'payee' | 'account' | 'category';
+export type RuleConditionField = RuleTextField | RuleIdField | 'amount' | 'direction' | 'date';
+
+export type RuleCondition =
+  | { field: RuleTextField; op: 'is' | 'is_not' | 'contains' | 'not_contains' | 'starts_with' | 'ends_with' | 'regex'; value: string }
+  | { field: RuleTextField | RuleIdField; op: 'one_of' | 'not_one_of'; value: string[] }
+  | { field: RuleTextField | RuleIdField; op: 'is_empty' | 'is_not_empty' }
+  | { field: RuleIdField; op: 'is' | 'is_not'; value: string }
+  /** Absolute value in cents; `direction` tells inflow from outflow */
+  | { field: 'amount'; op: 'is' | 'is_not' | 'gt' | 'gte' | 'lt' | 'lte' | 'approx'; value: number }
+  | { field: 'amount'; op: 'between'; value: [number, number] }
+  | { field: 'direction'; op: 'is'; value: 'inflow' | 'outflow' }
+  | { field: 'date'; op: 'is' | 'before' | 'after'; value: string }
+  | { field: 'date'; op: 'between'; value: [string, string] };
+
+export type RuleConditionOp = RuleCondition['op'];
+
+export interface RuleSplitPart {
+  kind: 'fixed' | 'percent' | 'remainder';
+  /** cents for fixed, 0–100 for percent, unused for remainder */
+  value: number;
+  categoryId: string | null;
+  notes: string | null;
 }
 
-export interface RuleAction {
-  field: 'category_id' | 'payee_id' | 'notes';
-  value: string;
-}
+export type RuleAction =
+  | { type: 'set_category' | 'set_payee'; value: string }
+  | { type: 'set_notes' | 'prepend_notes' | 'append_notes'; value: string }
+  | { type: 'split'; parts: RuleSplitPart[] };
 
 export interface Rule {
   id: string;
+  conditionsOp: 'and' | 'or';
   conditions: RuleCondition[];
   actions: RuleAction[];
+  enabled: boolean;
   sortOrder: number;
   createdAt: string;
 }
+
+export type RuleInput = Omit<Rule, 'id' | 'createdAt' | 'sortOrder'> & { sortOrder?: number };
 
 export interface PayeeWithCount extends Payee {
   transactionCount: number;
@@ -424,13 +451,26 @@ export interface MatchSuggestion {
   }[];
 }
 
-export interface RunRulesPreviewItem {
+export type RuleApplyScope = 'uncategorized' | 'all';
+
+/** One transaction that running rules would change */
+export interface RulePreviewItem {
   transactionId: string;
   date: string;
-  payeeName: string | null;
+  accountId: string;
   amount: number;
-  newCategoryName: string | null;
-  actions: RuleAction[];
+  payeeName: string | null;
+  changes: {
+    payee?: { from: string | null; to: string | null };
+    category?: { from: string | null; to: string | null };
+    notes?: { from: string | null; to: string | null };
+    split?: Array<{ amount: number; categoryId: string | null; notes: string | null }>;
+  };
+}
+
+export interface RuleTestResult {
+  count: number;
+  matches: Array<{ id: string; date: string; payeeName: string | null; amount: number; accountId: string; categoryId: string | null }>;
 }
 
 // Goals

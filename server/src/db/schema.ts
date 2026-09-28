@@ -86,6 +86,8 @@ export const transactions = sqliteTable(
     isParent: integer('is_parent').notNull().default(0),
     parentTransactionId: text('parent_transaction_id'),
     importedId: text('imported_id'),
+    /** Raw payee text from the bank or CSV, kept so rules can match it after a rename */
+    importedPayee: text('imported_payee'),
     scheduleId: text('schedule_id').references(() => schedules.id, { onDelete: 'set null' }),
     createdAt: text('created_at')
       .notNull()
@@ -118,6 +120,9 @@ export const rules = sqliteTable('rules', {
   id: text('id').primaryKey(),
   conditions: text('conditions').notNull(),
   actions: text('actions').notNull(),
+  /** 'and' = every condition must match, 'or' = any one */
+  conditionsOp: text('conditions_op').notNull().default('and'),
+  enabled: integer('enabled').notNull().default(1),
   sortOrder: integer('sort_order').notNull().default(0),
   createdAt: text('created_at')
     .notNull()

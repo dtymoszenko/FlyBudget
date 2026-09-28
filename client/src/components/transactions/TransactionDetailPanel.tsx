@@ -1,18 +1,20 @@
 import { useState, useEffect } from 'react';
-import { X, ArrowLeftRight, Lock, Trash2, Repeat, Unlink } from 'lucide-react';
+import { X, ArrowLeftRight, Lock, Trash2, Repeat, Unlink, Wand2 } from 'lucide-react';
 import { useUpdateTransaction, useDeleteTransaction } from '../../hooks/useTransactions';
 import { useSchedules, useUnmatchByTransaction } from '../../hooks/useSchedules';
 import { CategoryPicker } from './CategoryPicker';
 import { PayeeCombobox } from './PayeeCombobox';
 import { Button } from '../ui/Button';
 import { ConfirmModal } from '../ui/ConfirmModal';
+import { useModalValue } from '../ui/Modal';
+import { RuleEditorFlow } from '../rules/RuleEditorFlow';
 import { PayeeIcon } from '../payees/PayeeIcon';
 import { useUpdatePayee } from '../../hooks/usePayees';
 import { usePreferencesStore } from '../../store/preferencesStore';
 import { AccountIcon } from '../accounts/AccountIcon';
 import { formatCurrency } from '../../utils/currency';
 import { RECURRENCE_TYPE_LABELS } from '../../types';
-import type { Transaction, CategoryGroup, Payee, Account } from '../../types';
+import type { Transaction, CategoryGroup, Payee, Account, RuleCondition, RuleInput } from '../../types';
 
 interface Props {
   transaction: Transaction;
@@ -51,6 +53,8 @@ export function TransactionDetailPanel({
   const [localPayee, setLocalPayee] = useState({ id: tx.payeeId, name: tx.payeeName ?? '' });
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [ruleDraft, setRuleDraft] = useState<RuleInput | null>(null);
+  const ruleModal = useModalValue(ruleDraft);
 
   useEffect(() => {
     setLocalDate(tx.date);
@@ -61,11 +65,11 @@ export function TransactionDetailPanel({
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape' && !showCategoryPicker && !showDeleteConfirm) onClose();
+      if (e.key === 'Escape' && !showCategoryPicker && !showDeleteConfirm && !ruleDraft) onClose();
     }
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
-  }, [onClose, showCategoryPicker, showDeleteConfirm]);
+  }, [onClose, showCategoryPicker, showDeleteConfirm, ruleDraft]);
 
   const isReconciled = tx.reconciled === 1;
   const isTransfer = !!tx.transferTransactionId;
@@ -108,6 +112,19 @@ export function TransactionDetailPanel({
   function handleCategoryChange(catId: string | null) {
     updateTx.mutate({ id: tx.id, data: { categoryId: catId } });
     setShowCategoryPicker(false);
+  }
+
+  /** A rule matching this transaction's payee that sets its current category */
+  function startRule() {
+    const condition: RuleCondition = tx.payeeId
+      ? { field: 'payee', op: 'is', value: tx.payeeId }
+      : { field: 'payee_name', op: 'is', value: tx.payeeName ?? '' };
+    setRuleDraft({
+      conditionsOp: 'and',
+      conditions: [condition],
+      actions: [{ type: 'set_category', value: tx.categoryId ?? '' }],
+      enabled: true,
+    });
   }
 
   function handleDelete() {
@@ -281,13 +298,28 @@ export function TransactionDetailPanel({
         )}
       </div>
 
-      {!isReconciled && (
-        <div className="px-5 py-4 border-t border-border">
+      <div className="px-5 py-4 border-t border-border space-y-2">
+        {!isTransfer && (
+          <Button variant="secondary" onClick={startRule} className="w-full">
+            <Wand2 size={14} />
+            Create rule
+          </Button>
+        )}
+        {!isReconciled && (
           <Button variant="danger" onClick={() => setShowDeleteConfirm(true)} className="w-full">
             <Trash2 size={14} />
             Delete Transaction
           </Button>
-        </div>
+        )}
+      </div>
+
+      {ruleModal.value && (
+        <RuleEditorFlow
+          isOpen={ruleModal.isOpen}
+          onClose={() => setRuleDraft(null)}
+          initial={ruleModal.value}
+          title="New rule from transaction"
+        />
       )}
 
       <ConfirmModal

@@ -4,7 +4,8 @@ import { transactions, payees, accounts, categories } from '../db/schema.js';
 import { eq, and, like, gte, lte, sql, isNull, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
-import { resolvePayee, inferCategory } from '../services/transactionHelpers.js';
+import { resolvePayee } from '../services/transactionHelpers.js';
+import { buildRuleContext, insertNewTransaction, loadRules } from '../services/ruleService.js';
 
 export const transactionsRouter = Router();
 
@@ -130,10 +131,10 @@ transactionsRouter.post('/', (req, res) => {
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
   const { payeeName, payeeId, splits, ...rest } = parsed.data;
-  const payee = resolvePayee(payeeName, payeeId);
-  let finalPayeeId = payee.payeeId;
 
   if (splits && splits.length > 0) {
+    const payee = resolvePayee(payeeName, payeeId);
+    const finalPayeeId = payee.payeeId;
     const splitSum = splits.reduce((sum, s) => sum + s.amount, 0);
     if (splitSum !== rest.amount) {
       return res.status(400).json({ error: 'Split amounts must equal transaction total' });
@@ -176,25 +177,25 @@ transactionsRouter.post('/', (req, res) => {
     return res.status(201).json({ ...parent, children: childRows });
   }
 
-  const auto = inferCategory(finalPayeeId, payee.payeeName, rest.amount, rest.notes ?? null);
-  const resolvedCategoryId = rest.categoryId ?? auto.categoryId;
-  finalPayeeId = auto.payeeId;
-
-  const transaction = {
-    id: nanoid(),
-    ...rest,
-    categoryId: resolvedCategoryId,
-    payeeId: finalPayeeId,
-    payeeName: payee.payeeName,
-    reconciled: 0,
-    isParent: 0,
-    transferTransactionId: null,
-    parentTransactionId: null,
-    importedId: null,
-    createdAt: new Date().toISOString(),
-  };
-  db.insert(transactions).values(transaction).run();
-  res.status(201).json(transaction);
+  // Rules run on manual entries too, but never replace a category or notes the user entered
+  const name =
+    payeeName ??
+    (payeeId ? (db.select().from(payees).where(eq(payees.id, payeeId)).get()?.name ?? null) : null);
+  const { transaction, children } = insertNewTransaction(
+    {
+      accountId: rest.accountId,
+      date: rest.date,
+      amount: rest.amount,
+      payeeId: payeeId ?? null,
+      payeeName: name,
+      importedPayee: null,
+      notes: rest.notes ?? null,
+      categoryId: rest.categoryId ?? null,
+      importedId: null,
+    },
+    { keepUserCategory: true, keepUserNotes: true },
+  );
+  res.status(201).json(children.length ? { ...transaction, children } : transaction);
 });
 
 // POST /transactions/transfer — creates linked pair in two accounts
@@ -282,6 +283,7 @@ transactionsRouter.post('/import/confirm', (req, res) => {
 
   const { accountId, rows } = parsed.data;
   let imported = 0;
+  const ruleOpts = { rules: loadRules(), ctx: buildRuleContext() };
 
   for (const row of rows) {
     const dup = db
@@ -293,27 +295,20 @@ transactionsRouter.post('/import/confirm', (req, res) => {
       .get();
     if (dup) continue;
 
-    const payee = resolvePayee(row.payeeName, null);
-    const auto = inferCategory(payee.payeeId, payee.payeeName, row.amount, row.notes ?? null);
-
-    db.insert(transactions)
-      .values({
-        id: nanoid(),
+    insertNewTransaction(
+      {
         accountId,
         date: row.date,
         amount: row.amount,
-        payeeId: auto.payeeId,
-        payeeName: payee.payeeName,
-        categoryId: auto.categoryId,
+        payeeId: null,
+        payeeName: row.payeeName || null,
+        importedPayee: row.payeeName || null,
         notes: row.notes ?? null,
-        reconciled: 0,
-        isParent: 0,
-        transferTransactionId: null,
-        parentTransactionId: null,
+        categoryId: null,
         importedId: row.importedId,
-        createdAt: new Date().toISOString(),
-      })
-      .run();
+      },
+      ruleOpts,
+    );
     imported++;
   }
 

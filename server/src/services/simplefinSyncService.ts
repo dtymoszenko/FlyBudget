@@ -6,13 +6,12 @@ import {
   accounts,
 } from '../db/schema.js';
 import { eq, and, sql } from 'drizzle-orm';
-import { nanoid } from 'nanoid';
 import {
   fetchAccounts,
   simpleFinAmountToCents,
   simpleFinBalanceToCents,
 } from './simplefinService.js';
-import { resolvePayee, inferCategory } from './transactionHelpers.js';
+import { buildRuleContext, insertNewTransaction, loadRules } from './ruleService.js';
 
 export interface SimplefinSyncResult {
   connectionId: string;
@@ -53,6 +52,7 @@ export async function syncSimplefinConnection(connectionId: string): Promise<Sim
 
     const mappingBySfId = new Map(mappings.map((m) => [m.simplefinAccountId, m]));
 
+    const ruleOpts = { rules: loadRules(), ctx: buildRuleContext() };
     for (const sfAccount of data.accounts) {
       const mapping = mappingBySfId.get(sfAccount.id);
       if (!mapping || !mapping.accountId || !mapping.isEnabled) continue;
@@ -84,27 +84,20 @@ export async function syncSimplefinConnection(connectionId: string): Promise<Sim
             .replace(/[\u0000-\u001f\u007f]/g, ' ')
             .trim()
             .slice(0, 200) || 'Unknown';
-        const payee = resolvePayee(payeeName, null);
-        const auto = inferCategory(payee.payeeId, payee.payeeName, amount, null);
-
-        db.insert(transactions)
-          .values({
-            id: nanoid(),
+        insertNewTransaction(
+          {
             accountId: mapping.accountId,
             date,
             amount,
-            payeeId: auto.payeeId,
-            payeeName: payee.payeeName,
-            categoryId: auto.categoryId,
+            payeeId: null,
+            payeeName,
+            importedPayee: payeeName,
             notes: null,
-            reconciled: 0,
-            isParent: 0,
-            transferTransactionId: null,
-            parentTransactionId: null,
+            categoryId: null,
             importedId,
-            createdAt: new Date().toISOString(),
-          })
-          .run();
+          },
+          ruleOpts,
+        );
 
         result.added++;
       }

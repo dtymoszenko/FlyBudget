@@ -1,9 +1,8 @@
 import { db } from '../db/index.js';
 import { plaidItems, plaidAccountMappings, transactions, accounts } from '../db/schema.js';
 import { eq, and, sql } from 'drizzle-orm';
-import { nanoid } from 'nanoid';
 import { syncTransactions, plaidAmountToCents, plaidBalanceToCents } from './plaidService.js';
-import { resolvePayee, inferCategory } from './transactionHelpers.js';
+import { buildRuleContext, insertNewTransaction, loadRules } from './ruleService.js';
 
 export interface SyncResult {
   itemId: string;
@@ -43,6 +42,7 @@ export async function syncPlaidItem(plaidItemId: string): Promise<SyncResult> {
       .all();
 
     const mappingByPlaidId = new Map(mappings.map((m) => [m.plaidAccountId, m]));
+    const ruleOpts = { rules: loadRules(), ctx: buildRuleContext() };
 
     for (const tx of syncData.added) {
       const mapping = mappingByPlaidId.get(tx.accountId);
@@ -61,29 +61,21 @@ export async function syncPlaidItem(plaidItemId: string): Promise<SyncResult> {
         .get();
       if (existing) continue;
 
-      const amount = plaidAmountToCents(tx.amount);
-      const payeeName = tx.merchantName || tx.name;
-      const payee = resolvePayee(payeeName, null);
-      const auto = inferCategory(payee.payeeId, payee.payeeName, amount, null);
-
-      db.insert(transactions)
-        .values({
-          id: nanoid(),
+      insertNewTransaction(
+        {
           accountId: mapping.accountId,
           date: tx.date,
-          amount,
-          payeeId: auto.payeeId,
-          payeeName: payee.payeeName,
-          categoryId: auto.categoryId,
+          amount: plaidAmountToCents(tx.amount),
+          payeeId: null,
+          payeeName: tx.merchantName || tx.name,
+          // Plaid's `name` is the original bank description; `merchantName` its cleaned-up guess
+          importedPayee: tx.name || null,
           notes: null,
-          reconciled: 0,
-          isParent: 0,
-          transferTransactionId: null,
-          parentTransactionId: null,
+          categoryId: null,
           importedId,
-          createdAt: new Date().toISOString(),
-        })
-        .run();
+        },
+        ruleOpts,
+      );
 
       result.added++;
     }

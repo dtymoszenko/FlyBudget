@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { GripVertical, Pencil, Trash2, Plus, Play } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Copy, GripVertical, Pencil, Play, Plus, Search, Trash2, Wand2 } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
@@ -17,204 +17,133 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import {
-  useRules,
-  useCreateRule,
-  useUpdateRule,
-  useDeleteRule,
-  useReorderRules,
-  useRunRules,
-} from '../hooks/useRules';
-import { useCategories } from '../hooks/useCategories';
-import { usePreferencesStore } from '../store/preferencesStore';
-import { usePayees } from '../hooks/usePayees';
-import { previewRules } from '../api/rules';
-import { formatCurrency } from '../utils/currency';
-import { format, parseISO } from 'date-fns';
-import { AddRuleModal } from '../components/rules/AddRuleModal';
+import { useRules, useDeleteRule, useReorderRules, useUpdateRule } from '../hooks/useRules';
+import { RuleEditorFlow } from '../components/rules/RuleEditorFlow';
+import { ApplyRulesModal } from '../components/rules/ApplyRulesModal';
+import { useRuleLookups } from '../components/rules/useRuleLookups';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
-import { Modal, useModalValue } from '../components/ui/Modal';
+import { useModalValue } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
-import type { Rule, RuleCondition, RuleAction, RunRulesPreviewItem } from '../types';
+import { actionText, conditionText, ruleSearchText, type RuleLookups } from '../utils/ruleFormat';
+import type { Rule, RuleInput } from '../types';
 
-function conditionSummary(conditions: RuleCondition[]): string {
-  if (!conditions.length) return 'No conditions';
-  const c = conditions[0];
-  const fieldLabel = c.field === 'payee_name' ? 'Payee' : c.field === 'amount' ? 'Amount' : 'Notes';
-  const opLabel = c.op.replace('_', ' ');
-  const summary = `${fieldLabel} ${opLabel} "${c.value}"`;
-  return conditions.length > 1 ? `${summary} +${conditions.length - 1} more` : summary;
-}
+type Editing = { key: string; rule?: Rule; initial?: RuleInput; title?: string };
+type Applying = { key: string; ruleIds?: string[]; title: string; scope: 'uncategorized' | 'all' };
 
-function actionSummary(actions: RuleAction[], categories: any[], payees: any[], showCategoryIcons = true): string {
-  if (!actions.length) return 'No actions';
-  const a = actions[0];
-  let val = a.value;
-  if (a.field === 'category_id') {
-    const cat = categories.find((c: any) => c.id === a.value);
-    val = cat ? `${showCategoryIcons && cat.icon ? cat.icon + ' ' : ''}${cat.name}` : a.value;
-  } else if (a.field === 'payee_id') {
-    val = payees.find((p: any) => p.id === a.value)?.name ?? a.value;
-  }
-  const label = a.field === 'category_id' ? 'Category' : a.field === 'payee_id' ? 'Payee' : 'Notes';
-  const summary = `Set ${label} → ${val}`;
-  return actions.length > 1 ? `${summary} +${actions.length - 1} more` : summary;
-}
-
-function RunRulesPreviewModal({
-  isOpen,
-  items,
-  onConfirm,
-  onClose,
-  running,
-}: {
-  isOpen: boolean;
-  items: RunRulesPreviewItem[];
-  onConfirm: () => void;
-  onClose: () => void;
-  running: boolean;
-}) {
-  const shown = items.slice(0, 10);
-  const extra = items.length - shown.length;
-
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Run Rules Preview" size="lg">
-      <div>
-        {items.length === 0 ? (
-          <p className="text-sm text-text-secondary py-4 text-center">
-            No uncategorized transactions match any rules.
-          </p>
-        ) : (
-          <>
-            <p className="text-sm text-text-secondary mb-3">
-              <span className="font-semibold text-text">{items.length}</span> transaction
-              {items.length !== 1 ? 's' : ''} will be updated:
-            </p>
-            <div className="rounded-md border border-border-light overflow-hidden mb-3">
-              <table className="w-full">
-                <thead className="bg-surface-alt border-b border-border-light">
-                  <tr>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-text-tertiary">
-                      Date
-                    </th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-text-tertiary">
-                      Payee
-                    </th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-text-tertiary">
-                      Amount
-                    </th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-text-tertiary">
-                      New category
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border-light">
-                  {shown.map((item) => (
-                    <tr key={item.transactionId}>
-                      <td className="px-3 py-2 text-xs text-text-tertiary">
-                        {format(parseISO(item.date), 'MMM d')}
-                      </td>
-                      <td className="px-3 py-2 text-xs text-text max-w-[140px] truncate">
-                        {item.payeeName ?? '—'}
-                      </td>
-                      <td className="px-3 py-2 text-xs text-text tabular-nums">
-                        {formatCurrency(item.amount)}
-                      </td>
-                      <td className="px-3 py-2 text-xs font-medium text-positive">
-                        {item.newCategoryName ?? '—'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {extra > 0 && (
-                <div className="px-3 py-2 bg-surface-alt text-xs text-text-tertiary border-t border-border-light">
-                  + {extra} more
-                </div>
-              )}
-            </div>
-          </>
-        )}
-      </div>
-      <div className="flex justify-end gap-3 pt-4">
-        <Button variant="secondary" onClick={onClose}>
-          Cancel
-        </Button>
-        {items.length > 0 && (
-          <Button onClick={onConfirm} disabled={running}>
-            {running
-              ? 'Applying...'
-              : `Apply ${items.length} Change${items.length !== 1 ? 's' : ''}`}
-          </Button>
-        )}
-      </div>
-    </Modal>
-  );
-}
-
-function SortableRuleRow({
+function RuleRow({
   rule,
-  categories,
-  payees,
+  lookups,
+  sortable,
+  onToggle,
   onEdit,
+  onDuplicate,
+  onApply,
   onDelete,
 }: {
   rule: Rule;
-  categories: any[];
-  payees: any[];
-  onEdit: (rule: Rule) => void;
-  onDelete: (id: string) => void;
+  lookups: RuleLookups;
+  sortable: boolean;
+  onToggle: () => void;
+  onEdit: () => void;
+  onDuplicate: () => void;
+  onApply: () => void;
+  onDelete: () => void;
 }) {
-  const showCategoryIcons = usePreferencesStore((s) => s.showCategoryIcons);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: rule.id,
+    disabled: !sortable,
   });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 10 : undefined,
-  };
+  const joiner = rule.conditionsOp === 'or' ? 'or' : 'and';
 
   return (
     <div
       ref={setNodeRef}
-      style={style}
-      className="flex items-center gap-3 px-4 py-2.5 border-b border-border-light hover:bg-hover group transition-colors"
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+        zIndex: isDragging ? 10 : undefined,
+      }}
+      className="group flex items-start gap-3 px-4 py-3 border-b border-border-light last:border-b-0 hover:bg-hover transition-colors"
     >
       <button
         {...attributes}
         {...listeners}
-        className="text-text-disabled hover:text-text-tertiary cursor-grab active:cursor-grabbing touch-none"
+        className={`mt-0.5 text-text-disabled hover:text-text-tertiary touch-none ${sortable ? 'cursor-grab active:cursor-grabbing' : 'invisible'}`}
         aria-label="Drag to reorder"
       >
         <GripVertical size={16} />
       </button>
 
-      <div className="flex-1 min-w-0 grid grid-cols-2 gap-x-4">
-        <div>
-          <p className="text-xs text-text-tertiary mb-0.5">If</p>
-          <p className="text-sm text-text truncate">{conditionSummary(rule.conditions)}</p>
-        </div>
-        <div>
-          <p className="text-xs text-text-tertiary mb-0.5">Then</p>
-          <p className="text-sm text-text truncate">
-            {actionSummary(rule.actions, categories, payees, showCategoryIcons)}
-          </p>
-        </div>
-      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={rule.enabled}
+        aria-label={rule.enabled ? 'Disable rule' : 'Enable rule'}
+        title={rule.enabled ? 'Enabled' : 'Disabled'}
+        onClick={onToggle}
+        className={`mt-0.5 relative w-8 h-[18px] rounded-full shrink-0 transition-colors cursor-pointer ${rule.enabled ? 'bg-brand-600' : 'bg-border'}`}
+      >
+        <span
+          className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white shadow-sm transition-transform ${rule.enabled ? 'translate-x-3.5' : ''}`}
+        />
+      </button>
 
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <button
+        type="button"
+        onClick={onEdit}
+        className={`flex-1 min-w-0 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1.5 text-left cursor-pointer ${rule.enabled ? '' : 'opacity-50'}`}
+      >
+        <div className="min-w-0">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-text-tertiary mb-1">If</p>
+          {rule.conditions.length ? (
+            <div className="flex flex-wrap items-center gap-1">
+              {rule.conditions.map((c, i) => (
+                <span key={i} className="contents">
+                  {i > 0 && <span className="text-[11px] text-text-tertiary">{joiner}</span>}
+                  <span className="px-2 py-0.5 rounded-md bg-surface-alt text-xs text-text break-all">
+                    {conditionText(c, lookups)}
+                  </span>
+                </span>
+              ))}
+            </div>
+          ) : (
+            <span className="text-xs text-text-secondary">Every transaction</span>
+          )}
+        </div>
+        <div className="min-w-0">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-text-tertiary mb-1">Then</p>
+          <div className="flex flex-wrap gap-1">
+            {rule.actions.map((a, i) => (
+              <span key={i} className="px-2 py-0.5 rounded-md bg-brand-50 text-xs text-brand-700 break-all">
+                {actionText(a, lookups)}
+              </span>
+            ))}
+          </div>
+        </div>
+      </button>
+
+      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+        {[
+          { icon: Play, label: 'Apply to existing transactions', onClick: onApply },
+          { icon: Copy, label: 'Duplicate', onClick: onDuplicate },
+          { icon: Pencil, label: 'Edit', onClick: onEdit },
+        ].map(({ icon: Icon, label, onClick }) => (
+          <button
+            key={label}
+            onClick={onClick}
+            title={label}
+            aria-label={label}
+            className="p-1.5 text-text-tertiary hover:text-brand-600 rounded transition-colors cursor-pointer"
+          >
+            <Icon size={14} />
+          </button>
+        ))}
         <button
-          onClick={() => onEdit(rule)}
-          className="p-1 text-text-tertiary hover:text-brand-600 rounded transition-colors"
-        >
-          <Pencil size={14} />
-        </button>
-        <button
-          onClick={() => onDelete(rule.id)}
-          className="p-1 text-text-tertiary hover:text-negative rounded transition-colors"
+          onClick={onDelete}
+          title="Delete"
+          aria-label="Delete"
+          className="p-1.5 text-text-tertiary hover:text-negative rounded transition-colors cursor-pointer"
         >
           <Trash2 size={14} />
         </button>
@@ -225,95 +154,78 @@ function SortableRuleRow({
 
 export default function RulesPage() {
   const { data: rulesData = [], isLoading } = useRules();
-  const { data: groups = [] } = useCategories();
-  const { data: payees = [] } = usePayees();
-  const createRule = useCreateRule();
   const updateRule = useUpdateRule();
   const deleteRule = useDeleteRule();
   const reorderRules = useReorderRules();
-  const runRules = useRunRules();
+  const { lookups } = useRuleLookups();
 
   const [localRules, setLocalRules] = useState<Rule[]>([]);
-  const [addOpen, setAddOpen] = useState(false);
-  const [editRule, setEditRule] = useState<Rule | null>(null);
+  const [search, setSearch] = useState('');
+  const [editing, setEditing] = useState<Editing | null>(null);
+  const [applying, setApplying] = useState<Applying | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [previewItems, setPreviewItems] = useState<RunRulesPreviewItem[] | null>(null);
-  const editModal = useModalValue(editRule);
-  const previewModal = useModalValue(previewItems);
-  const [previewing, setPreviewing] = useState(false);
+  const editModal = useModalValue(editing);
+  const applyModal = useModalValue(applying);
 
-  useEffect(() => {
-    setLocalRules(rulesData);
-  }, [rulesData]);
+  useEffect(() => setLocalRules(rulesData), [rulesData]);
 
-  const allCategories = (groups as any[]).flatMap((g: any) =>
-    g.categories.map((c: any) => ({ ...c, groupName: g.name })),
-  );
+  const shown = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return q ? localRules.filter((r) => ruleSearchText(r, lookups).includes(q)) : localRules;
+  }, [localRules, search, lookups]);
+  const enabledCount = localRules.filter((r) => r.enabled).length;
 
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
+  function handleDragEnd({ active, over }: DragEndEvent) {
     if (!over || active.id === over.id) return;
-
-    const oldIndex = localRules.findIndex((r) => r.id === active.id);
-    const newIndex = localRules.findIndex((r) => r.id === over.id);
-    const reordered = arrayMove(localRules, oldIndex, newIndex);
+    const reordered = arrayMove(
+      localRules,
+      localRules.findIndex((r) => r.id === active.id),
+      localRules.findIndex((r) => r.id === over.id),
+    );
     setLocalRules(reordered);
     reorderRules.mutate(reordered.map((r) => r.id));
   }
 
-  function handleSaveNew(conditions: RuleCondition[], actions: RuleAction[]) {
-    createRule.mutate({ conditions, actions, sortOrder: localRules.length });
-  }
-
-  function handleSaveEdit(conditions: RuleCondition[], actions: RuleAction[]) {
-    if (!editRule) return;
-    updateRule.mutate({ id: editRule.id, conditions, actions });
-    setEditRule(null);
-  }
-
-  async function handleRunRulesClick() {
-    setPreviewing(true);
-    try {
-      const items = await previewRules();
-      setPreviewItems(items);
-    } finally {
-      setPreviewing(false);
-    }
-  }
-
-  function handleConfirmRun() {
-    runRules.mutate(undefined, {
-      onSuccess: () => setPreviewItems(null),
-    });
-  }
+  const newRule = () => setEditing({ key: `new-${Date.now()}` });
 
   return (
     <div className="flex flex-col h-full bg-surface">
       <div className="px-6 py-4 border-b border-border shrink-0">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-lg font-semibold text-text">Rules</h1>
             <p className="text-xs text-text-tertiary mt-0.5">
-              Rules run automatically on new transactions and can be applied to existing ones.
+              Rules run on new and imported transactions, top to bottom. Each matching rule applies, and
+              a rule higher up wins when two set the same thing.
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {localRules.length > 0 && (
+              <div className="relative">
+                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-tertiary" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search rules…"
+                  className="w-44 pl-8 pr-3 py-1.5 text-sm border border-border rounded-full bg-surface text-text focus:outline-none focus:ring-1 focus:ring-brand-600 focus:border-brand-600"
+                />
+              </div>
+            )}
             <Button
               variant="secondary"
               size="sm"
-              onClick={handleRunRulesClick}
-              disabled={previewing || localRules.length === 0}
+              onClick={() => setApplying({ key: `all-${Date.now()}`, title: 'Run rules', scope: 'uncategorized' })}
+              disabled={enabledCount === 0}
             >
-              <Play size={12} />
-              {previewing ? 'Loading...' : 'Run Rules'}
+              <Play size={12} /> Run rules
             </Button>
-            <Button size="sm" onClick={() => setAddOpen(true)}>
-              <Plus size={13} /> Add Rule
+            <Button size="sm" onClick={newRule}>
+              <Plus size={13} /> Add rule
             </Button>
           </div>
         </div>
@@ -321,43 +233,60 @@ export default function RulesPage() {
 
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
-          <div className="flex items-center justify-center h-32 text-sm text-text-tertiary">
-            Loading...
-          </div>
+          <div className="flex items-center justify-center h-32 text-sm text-text-tertiary">Loading...</div>
         ) : localRules.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-40 gap-3">
-            <p className="text-sm text-text-tertiary">
-              No rules yet. Add one to start auto-categorizing transactions.
+          <div className="flex flex-col items-center justify-center text-center h-56 gap-3 px-6">
+            <Wand2 size={22} className="text-text-tertiary" />
+            <p className="text-sm text-text-secondary max-w-md">
+              Rules categorize, rename and split transactions for you as they come in. You can also make
+              one from any transaction.
             </p>
-            <button
-              onClick={() => setAddOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-brand-600 border border-brand-200 rounded-md hover:bg-brand-50 transition-colors"
-            >
+            <Button size="sm" variant="secondary" onClick={newRule}>
               <Plus size={13} /> Add your first rule
-            </button>
+            </Button>
           </div>
         ) : (
-          <div className="max-w-3xl mx-auto px-6 py-4">
+          <div className="max-w-5xl mx-auto px-6 py-4">
+            <p className="text-xs text-text-tertiary mb-2">
+              {search
+                ? `${shown.length} of ${localRules.length} rules`
+                : `${localRules.length} rule${localRules.length === 1 ? '' : 's'} · ${enabledCount} enabled`}
+            </p>
             <div className="bg-surface rounded-lg shadow-card border border-border-light overflow-hidden">
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext
-                  items={localRules.map((r) => r.id)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  {localRules.map((rule) => (
-                    <SortableRuleRow
+              {shown.length === 0 && (
+                <p className="px-4 py-6 text-sm text-text-tertiary text-center">No rules match your search.</p>
+              )}
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={shown.map((r) => r.id)} strategy={verticalListSortingStrategy}>
+                  {shown.map((rule) => (
+                    <RuleRow
                       key={rule.id}
                       rule={rule}
-                      categories={allCategories}
-                      payees={payees}
-                      onEdit={(r) => {
-                        setEditRule(r);
-                      }}
-                      onDelete={(id) => setDeleteId(id)}
+                      lookups={lookups}
+                      sortable={!search}
+                      onToggle={() => updateRule.mutate({ id: rule.id, enabled: !rule.enabled })}
+                      onEdit={() => setEditing({ key: rule.id, rule })}
+                      onDuplicate={() =>
+                        setEditing({
+                          key: `dup-${rule.id}-${Date.now()}`,
+                          title: 'Duplicate rule',
+                          initial: {
+                            conditionsOp: rule.conditionsOp,
+                            conditions: rule.conditions,
+                            actions: rule.actions,
+                            enabled: rule.enabled,
+                          },
+                        })
+                      }
+                      onApply={() =>
+                        setApplying({
+                          key: `rule-${rule.id}-${Date.now()}`,
+                          ruleIds: [rule.id],
+                          title: 'Apply rule to existing transactions',
+                          scope: 'all',
+                        })
+                      }
+                      onDelete={() => setDeleteId(rule.id)}
                     />
                   ))}
                 </SortableContext>
@@ -367,15 +296,25 @@ export default function RulesPage() {
         )}
       </div>
 
-      <AddRuleModal isOpen={addOpen} onClose={() => setAddOpen(false)} onSave={handleSaveNew} />
-
       {editModal.value && (
-        <AddRuleModal
-          key={editModal.value.id}
+        <RuleEditorFlow
+          key={editModal.value.key}
           isOpen={editModal.isOpen}
-          onClose={() => setEditRule(null)}
-          onSave={handleSaveEdit}
-          editRule={editModal.value}
+          onClose={() => setEditing(null)}
+          rule={editModal.value.rule}
+          initial={editModal.value.initial}
+          title={editModal.value.title}
+        />
+      )}
+
+      {applyModal.value && (
+        <ApplyRulesModal
+          key={applyModal.value.key}
+          isOpen={applyModal.isOpen}
+          onClose={() => setApplying(null)}
+          ruleIds={applyModal.value.ruleIds}
+          initialScope={applyModal.value.scope}
+          title={applyModal.value.title}
         />
       )}
 
@@ -385,21 +324,11 @@ export default function RulesPage() {
         onConfirm={() => {
           if (deleteId) deleteRule.mutate(deleteId);
         }}
-        title="Delete Rule"
-        message="Delete this rule? Transactions that were already categorized by it will not be changed."
+        title="Delete rule"
+        message="Delete this rule? Transactions it already changed stay as they are."
         confirmLabel="Delete"
         danger
       />
-
-      {previewModal.value && (
-        <RunRulesPreviewModal
-          isOpen={previewModal.isOpen}
-          items={previewModal.value}
-          onConfirm={handleConfirmRun}
-          onClose={() => setPreviewItems(null)}
-          running={runRules.isPending}
-        />
-      )}
     </div>
   );
 }

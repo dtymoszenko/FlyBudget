@@ -55,7 +55,7 @@ cd server && npx tsc --noEmit
 **Tests** (Vitest + fast-check property-based tests, run in CI):
 
 ```bash
-cd client && npm test   # src/**/*.test.ts — currency helpers
+cd client && npm test   # src/**/*.test.ts — currency helpers, rule editor helpers
 cd server && npm test   # src/**/*.test.ts — recurrence dates, rules engine
 ```
 
@@ -119,7 +119,13 @@ The desktop app and `npm run dev` have no login, so `server/src/middleware/secur
 
 - **API layer**: `client/src/api/` contains thin fetch wrappers using `apiFetch` from `./client`. Types come from `client/src/types/index.ts`.
 - **Route validation**: Server routes validate request bodies with Zod before touching the DB.
-- **Rules engine**: Rules are stored as JSON-serialized `conditions` and `actions` in the `rules` table. Conditions support operators: `contains`, `starts_with`, `ends_with`, `exact`, `regex` on fields `payee_name`, `amount`, `notes`. First matching rule wins.
+- **Rules engine**: pure logic in `server/src/services/rulesEngine.ts` (types, matching, actions, split math), database side in `ruleService.ts`. Rules are stored as JSON `conditions` and `actions` in the `rules` table, plus `conditions_op` (`and` = all match, `or` = any) and `enabled`. Rules saved in the original format (`{field, op: 'exact'}` conditions, `{field: 'category_id'}` actions) are converted on read (`normalizeConditions` / `normalizeActions`); never write that format.
+  - **Conditions**: text fields `payee_name`, `imported_payee` (raw bank/CSV text, falls back to the payee name), `notes` with `is`/`is_not`/`contains`/`not_contains`/`starts_with`/`ends_with`/`regex`/`one_of`/`not_one_of`/`is_empty`/`is_not_empty` (case-insensitive); id fields `payee`/`account`/`category` with `is`/`is_not`/`one_of`/`not_one_of`/`is_empty`/`is_not_empty`; `amount` (absolute cents: `is`/`is_not`/`gt`/`gte`/`lt`/`lte`/`between`/`approx` ±7.5%); `direction` (`inflow`/`outflow`); `date` (`is`/`before`/`after`/`between`).
+  - **Actions**: `set_category`, `set_payee` (also sets `payeeName`), `set_notes`, `prepend_notes`, `append_notes`, `split` (parts are `fixed` cents, `percent`, or `remainder`; leftover with no remainder part becomes an uncategorized child; `computeSplitAmounts` always sums to the total).
+  - **Order**: every enabled matching rule applies, top to bottom, each seeing the changes of the rules above it (rename, then categorize the new name). A field set by a higher rule is never overwritten by a lower one; prepend/append stack. Actions pointing at deleted payees/categories are skipped.
+  - **New transactions** all go through `insertNewTransaction` (manual add, CSV import, Plaid, SimpleFIN). Payees are created only after rules run (no junk payees from renamed bank text); the payee's `defaultCategoryId` applies if no rule set a category. Manual entries keep a category/notes the user typed (`keepUserCategory`/`keepUserNotes`).
+  - **Existing transactions**: `POST /rules/preview` (dry run) and `POST /rules/apply` (only the ticked `transactionIds`, recomputed server-side) for every enabled rule or given `ruleIds`, scope `uncategorized` or `all`. Reconciled, transfer and split transactions are never touched. Running every rule also fills payee default categories.
+  - **UI**: `components/rules/` (`RuleEditorModal` with live match preview via `POST /rules/test`, `ApplyRulesModal`, `RuleEditorFlow` = save then optionally apply), labels/summaries in `utils/ruleFormat.ts`. "Create rule" in the transaction detail panel prefills payee → category.
 - **Budget math**: `To Be Budgeted = income received + prior month carry-over − total budgeted`. Category balance = `budgeted + carry-over − spent`. Calculation logic lives in `server/src/routes/budget.ts`.
 - **Transfers**: Linked via `transferTransactionId` on both transaction rows — deleting one side nulls the link on the other.
 - **Custom reports**: Config stored as JSON blob in `custom_reports` table (same pattern as rules). Aggregation handled by a single flexible `GET /reports/custom` endpoint with dynamic SQL.
@@ -161,7 +167,7 @@ The desktop app and `npm run dev` have no login, so `server/src/middleware/secur
 - `categories` — belong to a group; used as budget envelopes
 - `transactions` — `payeeName` (denormalized string) + `payeeId` (FK, nullable); `reconciled=-1` means excluded from balance
 - `budget_months` — one row per category per month; stores the `budgeted` amount
-- `rules` — `conditions` and `actions` stored as JSON strings; ordered by `sortOrder`
+- `rules` — `conditions` and `actions` stored as JSON strings, `conditions_op` (`and`/`or`), `enabled`; ordered by `sortOrder`. `transactions.imported_payee` keeps the raw bank/CSV payee text for rules (migration `0017`)
 - `auth_config` / `sessions` — server mode only: the scrypt password hash (single row, `id='server'`) and hashed session tokens
 - `payees` — `defaultCategoryId` auto-applied when a payee is selected on a new transaction; `logo` (same format as account logos) replaces the colored initial in `PayeeIcon`. Pass `onLogoChange` to make the icon editable (hover shows a pencil, click uploads, × removes), as on the Payees page and transaction detail panel. Merging keeps a merged payee's logo if the kept one has none
 - `custom_reports` — `name` + `config` (JSON string of `CustomReportConfig`); stores saved custom report configurations
