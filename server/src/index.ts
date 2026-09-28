@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { listenHost, serverMode, trustProxy } from './config.js';
 import { secretCipher } from './db/secretCrypto.js';
 import { deleteExpiredSessions, isPasswordSet } from './auth/sessions.js';
@@ -96,11 +97,14 @@ export async function startServer(port: number | string): Promise<void> {
         '(or FLYBUDGET_DATA_KEY) to a 32-byte base64 key, e.g. from `openssl rand -base64 32`.',
     );
   }
-  // Packaged app (Electron) and Docker ship migrations and apply them on startup
-  if (process.env.MIGRATIONS_PATH) {
+  // Apply pending migrations on startup. The packaged app (Electron) and Docker ship them at
+  // MIGRATIONS_PATH; `npm run dev` uses the source folder, so a new budget.db gets its tables.
+  {
     const { migrate } = await import('drizzle-orm/better-sqlite3/migrator');
     const { db } = await import('./db/index.js');
-    migrate(db, { migrationsFolder: process.env.MIGRATIONS_PATH! });
+    const migrationsFolder =
+      process.env.MIGRATIONS_PATH ?? fileURLToPath(new URL('./db/migrations', import.meta.url));
+    migrate(db, { migrationsFolder });
   }
   // Electron serves the built client from this server so the page is same-origin
   // with the API (a file:// page would send Origin: null, which can't be allowlisted safely).
