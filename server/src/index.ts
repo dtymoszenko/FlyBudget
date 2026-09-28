@@ -33,6 +33,7 @@ import { plaidRouter } from './routes/plaid.js';
 import { simplefinRouter } from './routes/simplefin.js';
 import { syncAllItems } from './services/plaidSyncService.js';
 import { encryptStoredCredentials } from './services/credentialEncryption.js';
+import { seedDefaultCategories } from './db/defaultCategories.js';
 import { isPlaidConfigured } from './services/plaidService.js';
 import { syncAllSimplefinConnections } from './services/simplefinSyncService.js';
 import {
@@ -127,6 +128,9 @@ export async function startServer(port: number | string): Promise<void> {
         deleteExpiredSessions();
         setInterval(deleteExpiredSessions, 60 * 60 * 1000).unref();
       }
+
+      const categoriesSeeded = seedDefaultCategories();
+      if (categoriesSeeded > 0) console.log(`Created ${categoriesSeeded} default categories`);
 
       const credentialsEncrypted = encryptStoredCredentials();
       if (credentialsEncrypted > 0)

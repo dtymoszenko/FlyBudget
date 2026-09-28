@@ -25,7 +25,7 @@ cd server
 npm run dev          # tsx watch (hot reload)
 npm run db:generate  # drizzle-kit generate (after schema changes)
 npm run db:migrate   # drizzle-kit migrate (apply migrations)
-npm run db:seed      # seed default categories and data
+npm run db:seed      # add default categories (also runs automatically on server startup for a new budget)
 ```
 
 **Electron:**
