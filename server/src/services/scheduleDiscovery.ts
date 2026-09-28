@@ -12,15 +12,7 @@
  * Transactions already linked to a schedule, transfers, and split children are ignored,
  * as are payees that already have a non-canceled schedule.
  */
-import {
-  addDays,
-  differenceInCalendarDays,
-  format,
-  parseISO,
-  subDays,
-  subMonths,
-  subWeeks,
-} from 'date-fns';
+import { addDays, differenceInCalendarDays, format, parseISO, subDays, subMonths, subWeeks } from 'date-fns';
 import { and, eq, inArray, isNull, ne } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { db } from '../db/index.js';
@@ -79,8 +71,7 @@ export interface DiscoveredSchedule {
 /** Actual's getApproxNumberThreshold: 7.5% of the amount. */
 const threshold = (amount: number) => Math.round(Math.abs(amount) * 0.075);
 const fmt = (d: Date) => format(d, 'yyyy-MM-dd');
-const dayDiff = (a: string, b: string) =>
-  Math.abs(differenceInCalendarDays(parseISO(a), parseISO(b)));
+const dayDiff = (a: string, b: string) => Math.abs(differenceInCalendarDays(parseISO(a), parseISO(b)));
 const rankOf = (a: string, b: string) => 1 / (dayDiff(a, b) + 1);
 
 function payeeKeyOf(t: { payeeId: string | null; payeeName: string | null }): string {
@@ -97,22 +88,13 @@ function patternFor(recurrenceType: RecurrenceType, start: Date, lastDay = false
       return { recurrenceType, rule: { type: 'biweekly', anchorDay: start.getDay() } };
     default:
       // anchorDay 31 clamps to the last day of each month
-      return {
-        recurrenceType: 'monthly',
-        rule: { type: 'monthly', interval: 1, anchorDay: lastDay ? 31 : start.getDate() },
-      };
+      return { recurrenceType: 'monthly', rule: { type: 'monthly', interval: 1, anchorDay: lastDay ? 31 : start.getDate() } };
   }
 }
 
 /** First N occurrence dates of a pattern starting at `start` (Actual's takeDates). */
 function takeDates(pattern: Pattern, start: string, n = OCCURRENCES_TO_MATCH): string[] {
-  const def = {
-    startDate: start,
-    endDate: null,
-    recurrenceType: pattern.recurrenceType,
-    recurrenceRule: pattern.rule,
-    weekendAdjust: 'none' as const,
-  };
+  const def = { startDate: start, endDate: null, recurrenceType: pattern.recurrenceType, recurrenceRule: pattern.rule, weekendAdjust: 'none' as const };
   return computeOccurrenceDates(def, start, fmt(addDays(parseISO(start), 150)))
     .slice(0, n)
     .map((p) => p.scheduledDate);
@@ -123,11 +105,7 @@ function txNear(txs: Tx[], date: string): Tx[] {
 }
 
 /** Actual's matchSchedules: every transaction on the latest date seeds a candidate. */
-function matchCandidates(
-  occurs: { date: string; txs: Tx[] }[],
-  pattern: Pattern,
-  startDate: string,
-): Candidate[] {
+function matchCandidates(occurs: { date: string; txs: Tx[] }[], pattern: Pattern, startDate: string): Candidate[] {
   const [base, ...rest] = [...occurs].reverse();
   const found: Candidate[] = [];
   for (const trans of base.txs) {
@@ -178,9 +156,7 @@ function candidatesForAccount(txs: Tx[], latest: string): Candidate[] {
     ...scanPattern(txs, subWeeks(l, 4), 14, (s) => patternFor('weekly', s)),
     ...scanPattern(txs, subWeeks(l, 7), 14, (s) => patternFor('biweekly', s)),
     // Days > 28 aren't in every month; the last-day pattern covers month-end
-    ...scanPattern(txs, subMonths(l, 4), 62, (s) =>
-      s.getDate() > 28 ? false : patternFor('monthly', s),
-    ),
+    ...scanPattern(txs, subMonths(l, 4), 62, (s) => (s.getDate() > 28 ? false : patternFor('monthly', s))),
     ...scanPattern(txs, subMonths(l, 3), 1, (s) => patternFor('monthly', s, true)),
     ...scanPattern(txs, subMonths(l, 4), 1, (s) => patternFor('monthly', s, true)),
   ];
@@ -212,10 +188,7 @@ function matchingTxs(c: Candidate, txs: Tx[], occurrenceDates: string[]): Tx[] {
         Math.abs(t.amount - c.amount) <= th &&
         dayDiff(t.date, date) <= window,
     );
-    if (m) {
-      used.add(m.id);
-      out.push(m);
-    }
+    if (m) { used.add(m.id); out.push(m); }
   }
   return out;
 }
@@ -235,8 +208,7 @@ function findStartDate(c: Candidate, txs: Tx[]): string {
 /** Transactions already claimed by any occurrence (even if scheduleId was cleared). */
 function matchedTxIds(): Set<string> {
   return new Set(
-    db
-      .select({ id: scheduleOccurrences.matchedTransactionId })
+    db.select({ id: scheduleOccurrences.matchedTransactionId })
       .from(scheduleOccurrences)
       .all()
       .map((r) => r.id)
@@ -276,8 +248,7 @@ export function findSchedules(): DiscoveredSchedule[] {
 
   // Payees already covered by a live schedule are excluded
   const scheduledPayees = new Set(
-    db
-      .select({ payeeId: schedules.payeeId, name: schedules.name })
+    db.select({ payeeId: schedules.payeeId, name: schedules.name })
       .from(schedules)
       .where(ne(schedules.status, 'canceled'))
       .all()
@@ -307,21 +278,14 @@ export function findSchedules(): DiscoveredSchedule[] {
   for (const c of best.values()) {
     const txs = txsByAccount.get(c.accountId) ?? [];
     const startDate = findStartDate(c, txs);
-    const def = {
-      startDate,
-      endDate: null,
-      recurrenceType: c.pattern.recurrenceType,
-      recurrenceRule: c.pattern.rule,
-      weekendAdjust: 'none' as const,
-    };
+    const def = { startDate, endDate: null, recurrenceType: c.pattern.recurrenceType, recurrenceRule: c.pattern.rule, weekendAdjust: 'none' as const };
     const dates = computeOccurrenceDates(def, startDate, today).map((p) => p.scheduledDate);
     const matched = matchingTxs(c, txs, dates);
     const sample = matched[matched.length - 1] ?? txs.find((t) => t.payeeKey === c.payeeKey);
 
     // Most common category among the matched transactions
     const catCounts = new Map<string, number>();
-    for (const t of matched)
-      if (t.categoryId) catCounts.set(t.categoryId, (catCounts.get(t.categoryId) ?? 0) + 1);
+    for (const t of matched) if (t.categoryId) catCounts.set(t.categoryId, (catCounts.get(t.categoryId) ?? 0) + 1);
     const categoryId = [...catCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
 
     results.push({
@@ -358,47 +322,37 @@ export function createDiscoveredSchedules(items: DiscoveredSchedule[]): string[]
 
   for (const item of items) {
     const id = nanoid();
-    db.insert(schedules)
-      .values({
-        id,
-        name: item.payeeName,
-        amount: item.amount,
-        amountType: item.amountType,
-        recurrenceType: item.recurrenceType,
-        recurrenceRule: JSON.stringify(item.recurrenceRule),
-        startDate: item.startDate,
-        endDate: null,
-        weekendAdjust: 'none',
-        dateFlexibility: item.exactDate ? 1 : 3,
-        accountId: item.accountId,
-        transferAccountId: null,
-        categoryId: item.categoryId,
-        payeeId: item.payeeId,
-        notes: null,
-        status: 'active',
-        autoCreate: 0,
-        autoCreateFrom: null,
-        source: 'detected',
-        occurrenceHorizon: null,
-        createdAt: now,
-        updatedAt: now,
-      })
-      .run();
+    db.insert(schedules).values({
+      id,
+      name: item.payeeName,
+      amount: item.amount,
+      amountType: item.amountType,
+      recurrenceType: item.recurrenceType,
+      recurrenceRule: JSON.stringify(item.recurrenceRule),
+      startDate: item.startDate,
+      endDate: null,
+      weekendAdjust: 'none',
+      dateFlexibility: item.exactDate ? 1 : 3,
+      accountId: item.accountId,
+      transferAccountId: null,
+      categoryId: item.categoryId,
+      payeeId: item.payeeId,
+      notes: null,
+      status: 'active',
+      autoCreate: 0,
+      autoCreateFrom: null,
+      source: 'detected',
+      occurrenceHorizon: null,
+      createdAt: now,
+      updatedAt: now,
+    }).run();
     ensureOccurrences(id, horizon);
 
     // Link each discovered transaction to the nearest unmatched occurrence
-    const occs = db
-      .select()
-      .from(scheduleOccurrences)
-      .where(eq(scheduleOccurrences.scheduleId, id))
-      .all();
+    const occs = db.select().from(scheduleOccurrences).where(eq(scheduleOccurrences.scheduleId, id)).all();
     const txs = item.transactionIds.length
-      ? db
-          .select({ id: transactions.id, date: transactions.date })
-          .from(transactions)
-          .where(
-            and(inArray(transactions.id, item.transactionIds), isNull(transactions.scheduleId)),
-          )
+      ? db.select({ id: transactions.id, date: transactions.date }).from(transactions)
+          .where(and(inArray(transactions.id, item.transactionIds), isNull(transactions.scheduleId)))
           .all()
           .filter((t) => !claimed.has(t.id))
       : [];
@@ -408,8 +362,7 @@ export function createDiscoveredSchedules(items: DiscoveredSchedule[]): string[]
       for (const o of occs) {
         if (usedOcc.has(o.id) || o.status !== 'pending') continue;
         if (dayDiff(o.expectedDate, tx.date) > DATE_WINDOW + 1) continue;
-        if (!bestOcc || dayDiff(o.expectedDate, tx.date) < dayDiff(bestOcc.expectedDate, tx.date))
-          bestOcc = o;
+        if (!bestOcc || dayDiff(o.expectedDate, tx.date) < dayDiff(bestOcc.expectedDate, tx.date)) bestOcc = o;
       }
       if (bestOcc) {
         usedOcc.add(bestOcc.id);

@@ -1,4 +1,4 @@
-import { createHash, randomBytes, timingSafeEqual } from 'crypto';
+import { createHash, randomInt, timingSafeEqual } from 'crypto';
 
 // One-time setup code for server mode (like Jenkins' initial admin password).
 // Until a password is set, whoever reaches the server first could set it, including
@@ -19,8 +19,7 @@ const digest = (value: string) => createHash('sha256').update(value).digest();
 /** The current setup code, creating it (and printing it to the log) if needed. */
 export function setupCode(): string {
   if (!code) {
-    // 256 is a multiple of 32, so `byte % 32` picks every character equally
-    code = [...randomBytes(LENGTH)].map((b) => ALPHABET[b % ALPHABET.length]).join('');
+    code = Array.from({ length: LENGTH }, () => ALPHABET[randomInt(ALPHABET.length)]).join('');
     console.log(
       '\nFlyBudget needs a password. Open it in your browser and enter this setup code:\n\n' +
         `    ${formatSetupCode(code)}\n`,
