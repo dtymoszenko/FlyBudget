@@ -6,7 +6,8 @@ import { CategoryPicker } from './CategoryPicker';
 import { PayeeCombobox } from './PayeeCombobox';
 import { Button } from '../ui/Button';
 import { ConfirmModal } from '../ui/ConfirmModal';
-import { payeeColor } from '../../utils/transactionColors';
+import { PayeeIcon } from '../payees/PayeeIcon';
+import { useUpdatePayee } from '../../hooks/usePayees';
 import { usePreferencesStore } from '../../store/preferencesStore';
 import { AccountIcon } from '../accounts/AccountIcon';
 import { formatCurrency } from '../../utils/currency';
@@ -37,8 +38,8 @@ export function TransactionDetailPanel({
   onClose,
 }: Props) {
   const updateTx = useUpdateTransaction();
+  const updatePayee = useUpdatePayee();
   const deleteTx = useDeleteTransaction();
-  const showMerchantIcons = usePreferencesStore((s) => s.showMerchantIcons);
   const showCategoryIcons = usePreferencesStore((s) => s.showCategoryIcons);
   const { data: schedules = [] } = useSchedules();
   const unmatchByTx = useUnmatchByTransaction();
@@ -72,8 +73,7 @@ export function TransactionDetailPanel({
   const canEditCategory = !isReconciled && !isTransfer && !isSplitParent;
 
   const payeeName = tx.payeeName || (isTransfer ? 'Transfer' : '—');
-  const initial = payeeName.charAt(0).toUpperCase();
-  const bgColor = payeeColor(payeeName);
+  const payee = tx.payeeId ? payees.find((p) => p.id === tx.payeeId) : undefined;
   const categoryEntry = tx.categoryId ? (categoryMap.get(tx.categoryId) ?? null) : null;
 
   function saveDate() {
@@ -132,14 +132,13 @@ export function TransactionDetailPanel({
       <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            {showMerchantIcons && (
-              <div
-                className="w-12 h-12 rounded-full flex items-center justify-center text-white text-lg font-semibold shrink-0"
-                style={{ backgroundColor: bgColor }}
-              >
-                {isTransfer ? <ArrowLeftRight size={20} /> : initial}
-              </div>
-            )}
+            <PayeeIcon
+              name={payeeName}
+              logo={payee?.logo}
+              transfer={isTransfer}
+              size="lg"
+              onLogoChange={payee ? (logo) => updatePayee.mutate({ id: payee.id, logo }) : undefined}
+            />
             <div>
               <div className="text-base font-semibold text-text">{payeeName}</div>
               {accountName && (

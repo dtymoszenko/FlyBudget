@@ -46,6 +46,7 @@ export function useUpdatePayee() {
       id: string;
       name?: string;
       defaultCategoryId?: string | null;
+      logo?: string | null;
     }) => payeesApi.updatePayee(id, data),
     onMutate: async ({ id }) => {
       const payees = qc.getQueryData<PayeeWithCount[]>(QK);
@@ -61,6 +62,7 @@ export function useUpdatePayee() {
           await payeesApi.updatePayee(id, {
             name: snapshot.name,
             defaultCategoryId: snapshot.defaultCategoryId,
+            logo: snapshot.logo ?? null,
           });
           qc.invalidateQueries({ queryKey: QK });
         },

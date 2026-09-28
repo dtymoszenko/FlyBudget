@@ -126,7 +126,7 @@ export function PreferencesPanel() {
       <div className="bg-surface-alt rounded-lg p-5 space-y-5">
         <h3 className="text-sm font-medium text-text">Icons</h3>
         {([
-          { label: 'Merchant', description: 'Colored initials next to merchant names', value: showMerchantIcons, setter: setShowMerchantIcons },
+          { label: 'Merchant', description: 'Merchant logos (or colored initials) next to merchant names', value: showMerchantIcons, setter: setShowMerchantIcons },
           { label: 'Category', description: 'Emoji icons next to category names', value: showCategoryIcons, setter: setShowCategoryIcons },
           { label: 'Account', description: 'Account logos (or colored initials) next to account names', value: showAccountIcons, setter: setShowAccountIcons },
         ] as const).map((row) => (

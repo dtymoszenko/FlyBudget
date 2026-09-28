@@ -1,8 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Search, Check, Plus, CreditCard } from 'lucide-react';
 import { useCreatePayee } from '../../hooks/usePayees';
-import { payeeColor } from '../../utils/transactionColors';
-import { usePreferencesStore } from '../../store/preferencesStore';
+import { PayeeIcon } from '../payees/PayeeIcon';
 import type { PayeeWithCount } from '../../types';
 
 interface Props {
@@ -18,7 +17,6 @@ export function PayeePicker({ value, payeeName, onChange, payees, onClose }: Pro
   const containerRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const createPayee = useCreatePayee();
-  const showMerchantIcons = usePreferencesStore((s) => s.showMerchantIcons);
 
   useEffect(() => {
     searchRef.current?.focus();
@@ -92,7 +90,6 @@ export function PayeePicker({ value, payeeName, onChange, payees, onClose }: Pro
           Your merchants
         </div>
         {filtered.map((p) => {
-          const color = payeeColor(p.name);
           const isSelected = p.id === value;
           return (
             <button
@@ -102,14 +99,7 @@ export function PayeePicker({ value, payeeName, onChange, payees, onClose }: Pro
                 isSelected ? 'bg-brand-50 text-brand-700' : 'text-text'
               }`}
             >
-              {showMerchantIcons && (
-                <div
-                  className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0"
-                  style={{ backgroundColor: color }}
-                >
-                  {p.name.charAt(0).toUpperCase()}
-                </div>
-              )}
+              <PayeeIcon name={p.name} logo={p.logo} />
               <span className="truncate flex-1">{p.name}</span>
               <span className="flex items-center gap-1 text-xs text-text-tertiary shrink-0">
                 <CreditCard size={11} />

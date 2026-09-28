@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CreditCard, Plus } from 'lucide-react';
 import { usePayees, useCreatePayee } from '../../hooks/usePayees';
-import { payeeColor } from '../../utils/transactionColors';
-import { usePreferencesStore } from '../../store/preferencesStore';
+import { PayeeIcon } from '../payees/PayeeIcon';
 
 export const selectorInputClass =
   'block w-full rounded-md border border-border px-3 py-2 text-sm text-text bg-surface placeholder-text-disabled focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600';
@@ -24,7 +23,6 @@ interface Props {
  * isn't confirmed (picked or created) is cleared on blur.
  */
 export function MerchantSelect({ value, onChange, placeholder = 'Search merchants...' }: Props) {
-  const showMerchantIcons = usePreferencesStore((s) => s.showMerchantIcons);
   const { data: payees = [] } = usePayees();
   const createPayee = useCreatePayee();
   const [query, setQuery] = useState(value.name);
@@ -84,14 +82,7 @@ export function MerchantSelect({ value, onChange, placeholder = 'Search merchant
               onMouseDown={(e) => { e.preventDefault(); select(p.id, p.name); }}
               className="w-full text-left px-3 py-2 text-sm flex items-center gap-2.5 hover:bg-hover cursor-pointer"
             >
-              {showMerchantIcons && (
-                <div
-                  className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0"
-                  style={{ backgroundColor: payeeColor(p.name) }}
-                >
-                  {p.name.charAt(0).toUpperCase()}
-                </div>
-              )}
+              <PayeeIcon name={p.name} logo={p.logo} />
               <span className="truncate flex-1">{p.name}</span>
               <span className="flex items-center gap-1 text-xs text-text-tertiary shrink-0">
                 <CreditCard size={11} />

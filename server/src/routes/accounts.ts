@@ -4,6 +4,7 @@ import { accounts, transactions } from '../db/schema.js';
 import { eq, inArray, isNull, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
+import { logoSchema } from '../utils/logo.js';
 
 export const accountsRouter = Router();
 
@@ -13,13 +14,6 @@ const createSchema = z.object({
   startingBalance: z.number().int().default(0),
   isOffBudget: z.number().int().min(0).max(1).default(0),
 });
-
-// Logos are resized client-side to a small square; cap size defensively
-const logoSchema = z
-  .string()
-  .max(200_000)
-  .regex(/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/, 'Logo must be a PNG, JPEG, or WebP data URL')
-  .nullable();
 
 const updateSchema = createSchema.partial().extend({ logo: logoSchema.optional() });
 

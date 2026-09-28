@@ -24,7 +24,7 @@ npm run build        # tsc + vite build
 cd server
 npm run dev          # tsx watch (hot reload)
 npm run db:generate  # drizzle-kit generate (after schema changes)
-npm run db:migrate   # drizzle-kit migrate (apply migrations)
+npm run db:migrate   # drizzle-kit migrate (the server also applies pending migrations on startup)
 npm run db:seed      # add default categories (also runs automatically on server startup for a new budget)
 ```
 
@@ -163,7 +163,7 @@ The desktop app and `npm run dev` have no login, so `server/src/middleware/secur
 - `budget_months` — one row per category per month; stores the `budgeted` amount
 - `rules` — `conditions` and `actions` stored as JSON strings; ordered by `sortOrder`
 - `auth_config` / `sessions` — server mode only: the scrypt password hash (single row, `id='server'`) and hashed session tokens
-- `payees` — `defaultCategoryId` auto-applied when a payee is selected on a new transaction
+- `payees` — `defaultCategoryId` auto-applied when a payee is selected on a new transaction; `logo` (same format as account logos) replaces the colored initial in `PayeeIcon`. Pass `onLogoChange` to make the icon editable (hover shows a pencil, click uploads, × removes), as on the Payees page and transaction detail panel. Merging keeps a merged payee's logo if the kept one has none
 - `custom_reports` — `name` + `config` (JSON string of `CustomReportConfig`); stores saved custom report configurations
 - `dashboard_pages` / `dashboard_widgets` — report dashboards and their widgets (`type`, grid `x`/`y`/`width`/`height`, `meta` JSON). Pages have a `date_range` (null = last 6 months). Custom report widgets reference `custom_report_id` (cascade delete). Migrations `0014`/`0015` were hand-written because `db:generate` prompts about the pending legacy cleanup above
 - `recurring_transactions` — `frequency` (`weekly|biweekly|semimonthly|monthly|quarterly|semiannually|yearly`); `status` (`active|paused|canceled`); `autoCreate` auto-creates transactions on server startup; linked to transactions via `recurringTransactionId` FK

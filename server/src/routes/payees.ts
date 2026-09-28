@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { db } from '../db/index.js';
 import { payees, transactions } from '../db/schema.js';
-import { eq, inArray, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
+import { logoSchema } from '../utils/logo.js';
 
 export const payeesRouter = Router();
 
@@ -11,6 +12,8 @@ const createSchema = z.object({
   name: z.string().min(1),
   defaultCategoryId: z.string().nullable().optional(),
 });
+
+const updateSchema = createSchema.partial().extend({ logo: logoSchema.optional() });
 
 const mergeSchema = z.object({
   keepId: z.string(),
@@ -41,6 +44,7 @@ payeesRouter.post('/', (req, res) => {
     id: nanoid(),
     ...parsed.data,
     defaultCategoryId: parsed.data.defaultCategoryId ?? null,
+    logo: null,
     createdAt: new Date().toISOString(),
   };
   db.insert(payees).values(payee).run();
@@ -62,6 +66,16 @@ payeesRouter.post('/merge', (req, res) => {
     .where(inArray(transactions.payeeId, mergeIds))
     .run();
 
+  // Keep a logo from one of the merged payees if the keeper has none
+  if (!keeper.logo) {
+    const withLogo = db
+      .select({ logo: payees.logo })
+      .from(payees)
+      .where(and(inArray(payees.id, mergeIds), isNotNull(payees.logo)))
+      .get();
+    if (withLogo) db.update(payees).set({ logo: withLogo.logo }).where(eq(payees.id, keepId)).run();
+  }
+
   // Delete the merged payees
   db.delete(payees).where(inArray(payees.id, mergeIds)).run();
 
@@ -69,7 +83,7 @@ payeesRouter.post('/merge', (req, res) => {
 });
 
 payeesRouter.put('/:id', (req, res) => {
-  const parsed = createSchema.partial().safeParse(req.body);
+  const parsed = updateSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
   db.update(payees).set(parsed.data).where(eq(payees.id, req.params.id)).run();

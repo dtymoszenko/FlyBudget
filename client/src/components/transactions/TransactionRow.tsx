@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ChevronRight, ChevronDown, ArrowLeftRight, ArrowRight, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useUpdateTransaction } from '../../hooks/useTransactions';
 import { CategoryPicker } from './CategoryPicker';
 import { PayeePicker } from './PayeePicker';
-import { payeeColor } from '../../utils/transactionColors';
+import { PayeeIcon } from '../payees/PayeeIcon';
 import { formatCurrency } from '../../utils/currency';
 import { usePreferencesStore } from '../../store/preferencesStore';
 import { AccountIcon } from '../accounts/AccountIcon';
@@ -46,7 +46,6 @@ export function TransactionRow({
   const [showPayeePicker, setShowPayeePicker] = useState(false);
   const updateTx = useUpdateTransaction();
   const navigate = useNavigate();
-  const showMerchantIcons = usePreferencesStore((s) => s.showMerchantIcons);
   const showCategoryIcons = usePreferencesStore((s) => s.showCategoryIcons);
 
   const isTransfer = !!tx.transferTransactionId;
@@ -55,8 +54,10 @@ export function TransactionRow({
   const canEditPayee = !tx.reconciled && !isTransfer;
 
   const payeeName = tx.payeeName || (isTransfer ? 'Transfer' : '—');
-  const initial = payeeName.charAt(0).toUpperCase();
-  const bgColor = payeeColor(payeeName);
+  const payeeLogo = useMemo(
+    () => (tx.payeeId ? payees.find((p) => p.id === tx.payeeId)?.logo : null),
+    [payees, tx.payeeId],
+  );
 
   function handleCategoryChange(catId: string | null) {
     updateTx.mutate({ id: tx.id, data: { categoryId: catId } });
@@ -81,14 +82,7 @@ export function TransactionRow({
       >
         {/* Payee */}
         <div className="group/payee flex items-center gap-1 flex-[3] min-w-0 relative mr-3">
-          {showMerchantIcons && (
-            <div
-              className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[11px] font-semibold shrink-0"
-              style={{ backgroundColor: bgColor }}
-            >
-              {isTransfer ? <ArrowLeftRight size={12} /> : initial}
-            </div>
-          )}
+          <PayeeIcon name={payeeName} logo={payeeLogo} transfer={isTransfer} />
           {canEditPayee ? (
             <button
               className="flex-1 flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-all group-hover/payee:border group-hover/payee:border-border group-hover/payee:bg-surface cursor-pointer border border-transparent min-w-0"

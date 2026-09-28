@@ -5,6 +5,7 @@ import { useCategories } from '../hooks/useCategories';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { Modal, useModalValue } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
+import { PayeeIcon } from '../components/payees/PayeeIcon';
 import type { PayeeWithCount } from '../types';
 
 function MergeModal({
@@ -43,6 +44,7 @@ function MergeModal({
                 onChange={() => setKeepId(p.id)}
                 className="accent-brand-600"
               />
+              <PayeeIcon name={p.name} logo={p.logo} size="md" force />
               <div>
                 <p className="text-sm font-medium text-text">{p.name}</p>
                 <p className="text-xs text-text-tertiary">
@@ -210,27 +212,36 @@ export default function PayeesPage() {
                     />
                   </td>
                   <td className="px-4 py-2">
-                    {editingId === p.id ? (
-                      <input
-                        autoFocus
-                        value={editingName}
-                        onChange={(e) => setEditingName(e.target.value)}
-                        onBlur={() => commitEditName(p.id)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') commitEditName(p.id);
-                          if (e.key === 'Escape') setEditingId(null);
-                        }}
-                        className="text-sm border border-brand-500 rounded px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-brand-600 w-full max-w-xs"
+                    <div className="flex items-center gap-3">
+                      <PayeeIcon
+                        name={p.name}
+                        logo={p.logo}
+                        size="md"
+                        force
+                        onLogoChange={(logo) => updatePayee.mutate({ id: p.id, logo })}
                       />
-                    ) : (
-                      <span
-                        className="text-sm font-medium text-text cursor-text hover:text-brand-600 transition-colors"
-                        onDoubleClick={() => startEditName(p)}
-                        title="Double-click to rename"
-                      >
-                        {p.name}
-                      </span>
-                    )}
+                      {editingId === p.id ? (
+                        <input
+                          autoFocus
+                          value={editingName}
+                          onChange={(e) => setEditingName(e.target.value)}
+                          onBlur={() => commitEditName(p.id)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') commitEditName(p.id);
+                            if (e.key === 'Escape') setEditingId(null);
+                          }}
+                          className="text-sm border border-brand-500 rounded px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-brand-600 w-full max-w-xs"
+                        />
+                      ) : (
+                        <span
+                          className="text-sm font-medium text-text cursor-text hover:text-brand-600 transition-colors"
+                          onDoubleClick={() => startEditName(p)}
+                          title="Double-click to rename"
+                        >
+                          {p.name}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-2">
                     <select

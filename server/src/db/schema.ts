@@ -61,6 +61,8 @@ export const payees = sqliteTable('payees', {
   defaultCategoryId: text('default_category_id').references(() => categories.id, {
     onDelete: 'set null',
   }),
+  /** Custom logo as a small image data URL; null = colored initials */
+  logo: text('logo'),
   createdAt: text('created_at')
     .notNull()
     .default(sql`(datetime('now'))`),

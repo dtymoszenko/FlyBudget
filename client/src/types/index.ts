@@ -68,6 +68,8 @@ export interface Payee {
   id: string;
   name: string;
   defaultCategoryId: string | null;
+  /** Custom logo image (data URL); null = colored initials */
+  logo: string | null;
   createdAt: string;
 }
 
