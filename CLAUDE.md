@@ -142,7 +142,8 @@ The desktop app and `npm run dev` have no login, so `server/src/middleware/secur
 | `/accounts`               | Account overview cards                                                             |
 | `/accounts/:id`           | Single account transaction list                                                    |
 | `/accounts/:id/reconcile` | Account reconciliation flow                                                        |
-| `/reports`                | Reports (Net Worth, Income/Expenses, Cash Flow, Spending, Sankey, Spending Trends) |
+| `/reports`                | Report dashboards (`?dashboard=<id>` picks the tab): movable grid of widgets       |
+| `/reports/widget/:id`     | Full view of a built-in report widget (date range, CSV export, save to widget)     |
 | `/reports/custom`         | Custom Report Builder (configurable chart type, grouping, filtering)               |
 | `/reports/custom/:id`     | Saved custom report (loads saved config by ID)                                     |
 | `/recurring`              | Recurring transactions (bills, subscriptions, recurring income)                    |
@@ -163,6 +164,7 @@ The desktop app and `npm run dev` have no login, so `server/src/middleware/secur
 - `auth_config` / `sessions` — server mode only: the scrypt password hash (single row, `id='server'`) and hashed session tokens
 - `payees` — `defaultCategoryId` auto-applied when a payee is selected on a new transaction
 - `custom_reports` — `name` + `config` (JSON string of `CustomReportConfig`); stores saved custom report configurations
+- `dashboard_pages` / `dashboard_widgets` — report dashboards and their widgets (`type`, grid `x`/`y`/`width`/`height`, `meta` JSON). Custom report widgets reference `custom_report_id` (cascade delete). Migration `0014` was hand-written because `db:generate` prompts about the pending legacy cleanup above
 - `recurring_transactions` — `frequency` (`weekly|biweekly|semimonthly|monthly|quarterly|semiannually|yearly`); `status` (`active|paused|canceled`); `autoCreate` auto-creates transactions on server startup; linked to transactions via `recurringTransactionId` FK
 
 ### Custom Report Builder
@@ -173,9 +175,18 @@ The report builder at `/reports/custom` supports:
 - **Modes**: total (aggregated) or time (over months)
 - **Group by**: category, category group, payee, account, month
 - **Balance type**: expenses, income, net
-- **Filters**: date range presets (3M/6M/12M/YTD/Last Year/All/Custom), account selection, category tree selection
-- **Save/load**: reports persist to DB and can be opened via `/reports/custom/:id`
+- **Filters**: date range presets (1M/3M/6M/12M/YTD/Last Year/All/Custom), account selection, category tree selection
+- **Save/load**: reports persist to DB and can be opened via `/reports/custom/:id`. Saving a new report also adds it to a dashboard (`?dashboard=<id>`, else the first one)
 - **Live updates**: config changes debounced (300ms via `useDebounce`) and chart re-renders automatically
+
+### Report Dashboards
+
+`/reports` is a set of dashboards (tabs), each a grid of widgets, loosely following Actual Budget's reports dashboard.
+
+- **Widgets**: built-in `summary`, `net-worth`, `income-expenses`, `spending`, `spending-trends` (charts in `components/reports/BuiltinCharts.tsx`, registry in `BuiltinReport.tsx`) plus `custom-report`. Add them from "Add widget"; ⋮ menu has rename, date range, freeze, move to another dashboard, remove (undoable).
+- **Date ranges are per widget**, no page-wide picker: `ReportDateRange` (`utils/dateRange.ts`) is live (preset recomputed from today by `resolveDateRange`) or frozen (`preset: 'custom'`, fixed months). Custom report widgets use the report's own range. Server validates ranges with `dateRangeSchema` in `services/dashboardService.ts`.
+- **Layout**: `react-grid-layout` v2 (12 cols, 80px rows), drag/resize only in "Edit layout" mode on desktop; changed positions are saved on drag/resize stop (`PUT /api/dashboards/:id/layout`). Below 768px it's a single read-only column.
+- **API**: `/api/dashboards` (pages CRUD, `GET/POST /:id/widgets`, `PUT /:id/layout`, `GET/PATCH/DELETE /widgets/:widgetId`). The first `GET` creates an "Overview" dashboard with the built-ins and all existing custom reports; the last dashboard can't be deleted.
 
 ### Recurring Transactions
 
