@@ -3,15 +3,18 @@ import { Trash2, GitMerge, Search } from 'lucide-react';
 import { usePayees, useUpdatePayee, useDeletePayee, useMergePayees } from '../hooks/usePayees';
 import { useCategories } from '../hooks/useCategories';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
+import { Modal, useModalValue } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
 import type { PayeeWithCount } from '../types';
 
 function MergeModal({
+  isOpen,
   selected,
   payees,
   onMerge,
   onClose,
 }: {
+  isOpen: boolean;
   selected: string[];
   payees: PayeeWithCount[];
   onMerge: (keepId: string, mergeIds: string[]) => void;
@@ -21,58 +24,52 @@ function MergeModal({
   const selectedPayees = payees.filter((p) => selected.includes(p.id));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/30 cursor-pointer animate-fade-in" onClick={onClose} />
-      <div className="relative w-full max-w-sm bg-surface rounded-lg shadow-modal animate-dialog-in">
-        <div className="px-6 py-4 border-b border-border">
-          <h2 className="text-lg font-semibold text-text">Merge Payees</h2>
-        </div>
-        <div className="px-6 py-5 space-y-4">
-          <p className="text-sm text-text-secondary">
-            Choose which payee name to keep. All transactions will be moved to the selected payee.
-          </p>
-          <div className="space-y-2">
-            {selectedPayees.map((p) => (
-              <label
-                key={p.id}
-                className={`flex items-center gap-3 p-3 rounded-md border cursor-pointer transition-colors ${keepId === p.id ? 'border-brand-500 bg-brand-50' : 'border-border hover:bg-hover'}`}
-              >
-                <input
-                  type="radio"
-                  name="keepId"
-                  value={p.id}
-                  checked={keepId === p.id}
-                  onChange={() => setKeepId(p.id)}
-                  className="accent-brand-600"
-                />
-                <div>
-                  <p className="text-sm font-medium text-text">{p.name}</p>
-                  <p className="text-xs text-text-tertiary">
-                    {p.transactionCount} transaction{p.transactionCount !== 1 ? 's' : ''}
-                  </p>
-                </div>
-              </label>
-            ))}
-          </div>
-          <div className="flex justify-end gap-3 pt-1">
-            <Button variant="secondary" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                onMerge(
-                  keepId,
-                  selected.filter((id) => id !== keepId),
-                );
-                onClose();
-              }}
+    <Modal isOpen={isOpen} onClose={onClose} title="Merge Payees" size="sm">
+      <div className="space-y-4">
+        <p className="text-sm text-text-secondary">
+          Choose which payee name to keep. All transactions will be moved to the selected payee.
+        </p>
+        <div className="space-y-2">
+          {selectedPayees.map((p) => (
+            <label
+              key={p.id}
+              className={`flex items-center gap-3 p-3 rounded-md border cursor-pointer transition-colors ${keepId === p.id ? 'border-brand-500 bg-brand-50' : 'border-border hover:bg-hover'}`}
             >
-              Merge
-            </Button>
-          </div>
+              <input
+                type="radio"
+                name="keepId"
+                value={p.id}
+                checked={keepId === p.id}
+                onChange={() => setKeepId(p.id)}
+                className="accent-brand-600"
+              />
+              <div>
+                <p className="text-sm font-medium text-text">{p.name}</p>
+                <p className="text-xs text-text-tertiary">
+                  {p.transactionCount} transaction{p.transactionCount !== 1 ? 's' : ''}
+                </p>
+              </div>
+            </label>
+          ))}
+        </div>
+        <div className="flex justify-end gap-3 pt-1">
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              onMerge(
+                keepId,
+                selected.filter((id) => id !== keepId),
+              );
+              onClose();
+            }}
+          >
+            Merge
+          </Button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -89,6 +86,7 @@ export default function PayeesPage() {
   const [editingName, setEditingName] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showMerge, setShowMerge] = useState(false);
+  const mergeModal = useModalValue(showMerge);
 
   const allCategories = useMemo(
     () =>
@@ -266,8 +264,9 @@ export default function PayeesPage() {
         )}
       </div>
 
-      {showMerge && (
+      {mergeModal.value && (
         <MergeModal
+          isOpen={mergeModal.isOpen}
           selected={[...selected]}
           payees={payees}
           onMerge={handleMerge}

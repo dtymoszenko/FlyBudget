@@ -14,6 +14,27 @@ const sizeClasses = { sm: 'max-w-sm', md: 'max-w-md', lg: 'max-w-lg', xl: 'max-w
 // Matches --animate-dialog-out / --animate-fade-out in index.css
 const EXIT_MS = 120;
 
+/**
+ * For modals that only exist while there's something to show (e.g. the item being edited):
+ * keeps the last value around for the fade-out after it's cleared.
+ *
+ *   const edit = useModalValue(editGoal);
+ *   {edit.value && <GoalFormModal isOpen={edit.isOpen} editGoal={edit.value} … />}
+ */
+export function useModalValue<T>(value: T | null | undefined | false) {
+  const isOpen = value != null && value !== false;
+  const [last, setLast] = useState<T | null>(isOpen ? value : null);
+  if (isOpen && last !== value) setLast(value);
+
+  useEffect(() => {
+    if (isOpen) return;
+    const t = setTimeout(() => setLast(null), EXIT_MS);
+    return () => clearTimeout(t);
+  }, [isOpen]);
+
+  return { value: isOpen ? value : last, isOpen };
+}
+
 export function Modal({ isOpen, onClose, title, children, size = 'md' }: Props) {
   // Stay mounted briefly after closing so the dialog can fade out
   const [mounted, setMounted] = useState(isOpen);

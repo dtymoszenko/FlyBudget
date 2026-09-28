@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Pin, Snowflake } from 'lucide-react';
 import RowMenu from '../../recurring/RowMenu';
 import type { RowMenuItem } from '../../recurring/RowMenu';
-import { Modal } from '../../ui/Modal';
+import { Modal, useModalValue } from '../../ui/Modal';
 import { Button } from '../../ui/Button';
 import { DateRangeControl } from '../DateRangeControl';
 import ReportChartArea from '../ReportChartArea';
@@ -47,6 +47,8 @@ export default function WidgetCard({ widget, report, pages, dashboardRange, edit
   const [renameOpen, setRenameOpen] = useState(false);
 
   const isCustom = widget.type === 'custom-report';
+  const rangeModal = useModalValue(rangeOpen);
+  const renameModal = useModalValue(renameOpen && !isCustom);
   const { range, source } = widgetDateRange(widget.meta.dateRange, dashboardRange);
   const title = isCustom
     ? (report?.name ?? '')
@@ -127,8 +129,9 @@ export default function WidgetCard({ widget, report, pages, dashboardRange, edit
       </div>
 
       <Isolate>
-        {rangeOpen && (
+        {rangeModal.value && (
           <DateRangeModal
+            isOpen={rangeModal.isOpen}
             own={widget.meta.dateRange}
             dashboardRange={dashboardRange}
             onClose={() => setRangeOpen(false)}
@@ -138,8 +141,9 @@ export default function WidgetCard({ widget, report, pages, dashboardRange, edit
             }}
           />
         )}
-        {renameOpen && !isCustom && (
+        {renameModal.value && (
           <NameModal
+            isOpen={renameModal.isOpen}
             title="Rename widget"
             label="Name"
             initialName={title}
@@ -187,7 +191,9 @@ function DateRangeModal({
   dashboardRange,
   onClose,
   onSave,
+  isOpen = true,
 }: {
+  isOpen?: boolean;
   own: ReportDateRange | undefined;
   dashboardRange: ReportDateRange;
   onClose: () => void;
@@ -203,7 +209,7 @@ function DateRangeModal({
     }`;
 
   return (
-    <Modal isOpen onClose={onClose} title="Date range" size="md">
+    <Modal isOpen={isOpen} onClose={onClose} title="Date range" size="md">
       <div className="flex gap-2 mb-4">
         <button className={option(follow)} onClick={() => setFollow(true)}>
           <p className="font-medium">Follow dashboard</p>

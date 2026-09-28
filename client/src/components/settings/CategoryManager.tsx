@@ -33,6 +33,7 @@ import {
 import { getCategoryTransactionCount } from '../../api/categories';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { DeleteCategoryModal } from './DeleteCategoryModal';
+import { useModalValue } from '../ui/Modal';
 import { EditCategoryModal } from './EditCategoryModal';
 import type { Category, CategoryGroup } from '../../types';
 
@@ -536,6 +537,10 @@ export function CategoryManager() {
     name: string;
     count: number;
   } | null>(null);
+  // Categories with transactions ask where to move them; empty ones use the plain confirm
+  const deleteCatModal = useModalValue(
+    deleteCatState && deleteCatState.count > 0 && deleteCatState,
+  );
   const [editModalCategory, setEditModalCategory] = useState<Category | null>(null);
 
   useEffect(() => {
@@ -674,14 +679,15 @@ export function CategoryManager() {
         danger
       />
 
-      {deleteCatState && deleteCatState.count > 0 && (
+      {deleteCatModal.value && (
         <DeleteCategoryModal
-          isOpen
+          key={deleteCatModal.value.id}
+          isOpen={deleteCatModal.isOpen}
           onClose={() => setDeleteCatState(null)}
           onConfirm={(reassignTo) => handleConfirmDeleteCategory(reassignTo)}
-          categoryName={deleteCatState.name}
-          categoryId={deleteCatState.id}
-          transactionCount={deleteCatState.count}
+          categoryName={deleteCatModal.value.name}
+          categoryId={deleteCatModal.value.id}
+          transactionCount={deleteCatModal.value.count}
           groups={groups}
         />
       )}

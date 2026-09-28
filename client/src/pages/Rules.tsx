@@ -33,6 +33,7 @@ import { formatCurrency } from '../utils/currency';
 import { format, parseISO } from 'date-fns';
 import { AddRuleModal } from '../components/rules/AddRuleModal';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
+import { Modal, useModalValue } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
 import type { Rule, RuleCondition, RuleAction, RunRulesPreviewItem } from '../types';
 
@@ -61,11 +62,13 @@ function actionSummary(actions: RuleAction[], categories: any[], payees: any[], 
 }
 
 function RunRulesPreviewModal({
+  isOpen,
   items,
   onConfirm,
   onClose,
   running,
 }: {
+  isOpen: boolean;
   items: RunRulesPreviewItem[];
   onConfirm: () => void;
   onClose: () => void;
@@ -75,83 +78,77 @@ function RunRulesPreviewModal({
   const extra = items.length - shown.length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/30 cursor-pointer animate-fade-in" onClick={onClose} />
-      <div className="relative w-full max-w-lg bg-surface rounded-lg shadow-modal animate-dialog-in">
-        <div className="px-6 py-4 border-b border-border">
-          <h2 className="text-lg font-semibold text-text">Run Rules Preview</h2>
-        </div>
-        <div className="px-6 py-4">
-          {items.length === 0 ? (
-            <p className="text-sm text-text-secondary py-4 text-center">
-              No uncategorized transactions match any rules.
+    <Modal isOpen={isOpen} onClose={onClose} title="Run Rules Preview" size="lg">
+      <div>
+        {items.length === 0 ? (
+          <p className="text-sm text-text-secondary py-4 text-center">
+            No uncategorized transactions match any rules.
+          </p>
+        ) : (
+          <>
+            <p className="text-sm text-text-secondary mb-3">
+              <span className="font-semibold text-text">{items.length}</span> transaction
+              {items.length !== 1 ? 's' : ''} will be updated:
             </p>
-          ) : (
-            <>
-              <p className="text-sm text-text-secondary mb-3">
-                <span className="font-semibold text-text">{items.length}</span> transaction
-                {items.length !== 1 ? 's' : ''} will be updated:
-              </p>
-              <div className="rounded-md border border-border-light overflow-hidden mb-3">
-                <table className="w-full">
-                  <thead className="bg-surface-alt border-b border-border-light">
-                    <tr>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-text-tertiary">
-                        Date
-                      </th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-text-tertiary">
-                        Payee
-                      </th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-text-tertiary">
-                        Amount
-                      </th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-text-tertiary">
-                        New category
-                      </th>
+            <div className="rounded-md border border-border-light overflow-hidden mb-3">
+              <table className="w-full">
+                <thead className="bg-surface-alt border-b border-border-light">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-text-tertiary">
+                      Date
+                    </th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-text-tertiary">
+                      Payee
+                    </th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-text-tertiary">
+                      Amount
+                    </th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-text-tertiary">
+                      New category
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border-light">
+                  {shown.map((item) => (
+                    <tr key={item.transactionId}>
+                      <td className="px-3 py-2 text-xs text-text-tertiary">
+                        {format(parseISO(item.date), 'MMM d')}
+                      </td>
+                      <td className="px-3 py-2 text-xs text-text max-w-[140px] truncate">
+                        {item.payeeName ?? '—'}
+                      </td>
+                      <td className="px-3 py-2 text-xs text-text tabular-nums">
+                        {formatCurrency(item.amount)}
+                      </td>
+                      <td className="px-3 py-2 text-xs font-medium text-positive">
+                        {item.newCategoryName ?? '—'}
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border-light">
-                    {shown.map((item) => (
-                      <tr key={item.transactionId}>
-                        <td className="px-3 py-2 text-xs text-text-tertiary">
-                          {format(parseISO(item.date), 'MMM d')}
-                        </td>
-                        <td className="px-3 py-2 text-xs text-text max-w-[140px] truncate">
-                          {item.payeeName ?? '—'}
-                        </td>
-                        <td className="px-3 py-2 text-xs text-text tabular-nums">
-                          {formatCurrency(item.amount)}
-                        </td>
-                        <td className="px-3 py-2 text-xs font-medium text-positive">
-                          {item.newCategoryName ?? '—'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {extra > 0 && (
-                  <div className="px-3 py-2 bg-surface-alt text-xs text-text-tertiary border-t border-border-light">
-                    + {extra} more
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-border">
-          <Button variant="secondary" onClick={onClose}>
-            Cancel
-          </Button>
-          {items.length > 0 && (
-            <Button onClick={onConfirm} disabled={running}>
-              {running
-                ? 'Applying...'
-                : `Apply ${items.length} Change${items.length !== 1 ? 's' : ''}`}
-            </Button>
-          )}
-        </div>
+                  ))}
+                </tbody>
+              </table>
+              {extra > 0 && (
+                <div className="px-3 py-2 bg-surface-alt text-xs text-text-tertiary border-t border-border-light">
+                  + {extra} more
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
-    </div>
+      <div className="flex justify-end gap-3 pt-4">
+        <Button variant="secondary" onClick={onClose}>
+          Cancel
+        </Button>
+        {items.length > 0 && (
+          <Button onClick={onConfirm} disabled={running}>
+            {running
+              ? 'Applying...'
+              : `Apply ${items.length} Change${items.length !== 1 ? 's' : ''}`}
+          </Button>
+        )}
+      </div>
+    </Modal>
   );
 }
 
@@ -241,6 +238,8 @@ export default function RulesPage() {
   const [editRule, setEditRule] = useState<Rule | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [previewItems, setPreviewItems] = useState<RunRulesPreviewItem[] | null>(null);
+  const editModal = useModalValue(editRule);
+  const previewModal = useModalValue(previewItems);
   const [previewing, setPreviewing] = useState(false);
 
   useEffect(() => {
@@ -370,12 +369,13 @@ export default function RulesPage() {
 
       <AddRuleModal isOpen={addOpen} onClose={() => setAddOpen(false)} onSave={handleSaveNew} />
 
-      {editRule && (
+      {editModal.value && (
         <AddRuleModal
-          isOpen={!!editRule}
+          key={editModal.value.id}
+          isOpen={editModal.isOpen}
           onClose={() => setEditRule(null)}
           onSave={handleSaveEdit}
-          editRule={editRule}
+          editRule={editModal.value}
         />
       )}
 
@@ -391,9 +391,10 @@ export default function RulesPage() {
         danger
       />
 
-      {previewItems !== null && (
+      {previewModal.value && (
         <RunRulesPreviewModal
-          items={previewItems}
+          isOpen={previewModal.isOpen}
+          items={previewModal.value}
           onConfirm={handleConfirmRun}
           onClose={() => setPreviewItems(null)}
           running={runRules.isPending}

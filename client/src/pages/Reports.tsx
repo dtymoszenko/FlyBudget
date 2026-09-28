@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Check, LayoutGrid, Plus } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
+import { useModalValue } from '../components/ui/Modal';
 import RowMenu from '../components/recurring/RowMenu';
 import AddWidgetMenu from '../components/reports/dashboard/AddWidgetMenu';
 import DashboardGrid from '../components/reports/dashboard/DashboardGrid';
@@ -35,6 +36,8 @@ export default function ReportsPage() {
   const active = pages.find((p) => p.id === searchParams.get('dashboard')) ?? pages[0];
   const { data: widgets = [], isLoading: widgetsLoading } = useDashboardWidgets(active?.id);
   const dashboardRange = dashboardDateRange(active);
+  const newModal = useModalValue(modal === 'new');
+  const renameModal = useModalValue(modal === 'rename' && active);
   // Widgets with their own range (live or frozen) ignore the dashboard's picker
   const ownRangeCount = widgets.filter((w) => w.meta.dateRange).length;
 
@@ -154,8 +157,9 @@ export default function ReportsPage() {
         )}
       </div>
 
-      {modal === 'new' && (
+      {newModal.value && (
         <NameModal
+          isOpen={newModal.isOpen}
           title="New dashboard"
           label="Dashboard name"
           placeholder="e.g. Yearly review"
@@ -171,16 +175,17 @@ export default function ReportsPage() {
           }
         />
       )}
-      {modal === 'rename' && active && (
+      {renameModal.value && (
         <NameModal
+          isOpen={renameModal.isOpen}
           title="Rename dashboard"
           label="Dashboard name"
-          initialName={active.name}
+          initialName={renameModal.value.name}
           submitLabel="Rename"
           onClose={() => setModal(null)}
           onSave={(name) =>
             updateDashboard.mutate(
-              { id: active.id, data: { name } },
+              { id: renameModal.value!.id, data: { name } },
               { onSuccess: () => setModal(null) },
             )
           }

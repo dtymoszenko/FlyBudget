@@ -11,6 +11,7 @@ interface Props {
   submitLabel: string;
   onClose: () => void;
   onSave: (name: string) => void;
+  isOpen?: boolean;
 }
 
 /** Asks for a name (dashboard or widget title). Mount it only while open so it starts fresh. */
@@ -22,6 +23,7 @@ export default function NameModal({
   submitLabel,
   onClose,
   onSave,
+  isOpen = true,
 }: Props) {
   const [name, setName] = useState(initialName);
 
@@ -31,7 +33,7 @@ export default function NameModal({
   }
 
   return (
-    <Modal isOpen onClose={onClose} title={title} size="sm">
+    <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm">
       <form onSubmit={handleSubmit}>
         <label className="block text-sm font-medium text-text-secondary mb-1">{label}</label>
         <Input

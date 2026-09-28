@@ -5,6 +5,7 @@ import { useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal } from '../hooks/
 import { useAccounts } from '../hooks/useAccounts';
 import { GoalFormModal } from '../components/goals/GoalFormModal';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
+import { useModalValue } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { StatCardRow } from '../components/reports/ChartHelpers';
@@ -190,6 +191,7 @@ export default function GoalsPage() {
 
   const [addOpen, setAddOpen] = useState(false);
   const [editGoal, setEditGoal] = useState<Goal | null>(null);
+  const editModal = useModalValue(editGoal);
   const [deleting, setDeleting] = useState<Goal | null>(null);
 
   const accountNames = useMemo(() => new Map(accounts.map((a) => [a.id, a.name])), [accounts]);
@@ -284,12 +286,13 @@ export default function GoalsPage() {
         onSave={(data) => createGoal.mutate(data)}
       />
 
-      {editGoal && (
+      {editModal.value && (
         <GoalFormModal
-          isOpen={!!editGoal}
+          key={editModal.value.id}
+          isOpen={editModal.isOpen}
           onClose={() => setEditGoal(null)}
-          onSave={(data) => updateGoal.mutate({ id: editGoal.id, data })}
-          editGoal={editGoal}
+          onSave={(data) => updateGoal.mutate({ id: editModal.value!.id, data })}
+          editGoal={editModal.value}
         />
       )}
 
