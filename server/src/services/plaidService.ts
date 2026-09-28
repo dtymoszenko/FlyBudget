@@ -55,7 +55,14 @@ export function getPlaidEnvironment(): string {
   return creds?.environment === 'production' ? 'production' : 'sandbox';
 }
 
-export async function createLinkToken(): Promise<string> {
+/**
+ * Creates a Plaid Hosted Link session, opened in the user's own browser. Pass an
+ * access token to re-authenticate an existing Item (update mode) instead of
+ * adding a new one.
+ */
+export async function createHostedLink(
+  accessToken?: string,
+): Promise<{ linkToken: string; url: string }> {
   const client = getPlaidClient();
   const response = await client.linkTokenCreate({
     // Plaid requires a stable, non-identifying user id; FlyBudget is single-user
@@ -63,9 +70,46 @@ export async function createLinkToken(): Promise<string> {
     client_name: 'FlyBudget',
     language: 'en',
     country_codes: [CountryCode.Us],
-    products: [Products.Transactions],
+    ...(accessToken ? { access_token: accessToken } : { products: [Products.Transactions] }),
+    hosted_link: {},
   });
-  return response.data.link_token;
+  const url = response.data.hosted_link_url;
+  if (!url?.startsWith('https://')) throw new Error('Plaid did not return a Hosted Link URL');
+  return { linkToken: response.data.link_token, url };
+}
+
+export type HostedLinkOutcome =
+  | { status: 'pending' }
+  | { status: 'exited' }
+  | {
+      status: 'success';
+      /** Absent in update mode, where the existing Item is simply repaired */
+      publicToken?: string;
+      institution: { id: string; name: string } | null;
+    };
+
+/** Reads a Hosted Link session's result from Plaid (/link/token/get polling). */
+export async function getHostedLinkOutcome(linkToken: string): Promise<HostedLinkOutcome> {
+  const client = getPlaidClient();
+  const { data } = await client.linkTokenGet({ link_token: linkToken });
+  for (const session of data.link_sessions ?? []) {
+    const added = session.results?.item_add_results?.[0];
+    const success = session.on_success;
+    const publicToken = added?.public_token ?? success?.public_token;
+    const institution = added?.institution ?? success?.metadata?.institution ?? null;
+    if (publicToken || (session.finished_at && !session.exit)) {
+      return {
+        status: 'success',
+        publicToken,
+        institution:
+          institution?.institution_id && institution.name
+            ? { id: institution.institution_id, name: institution.name }
+            : null,
+      };
+    }
+    if (session.exit) return { status: 'exited' };
+  }
+  return { status: 'pending' };
 }
 
 /**
@@ -76,18 +120,6 @@ export async function createLinkToken(): Promise<string> {
 export async function removeItem(accessToken: string): Promise<void> {
   const client = getPlaidClient();
   await client.itemRemove({ access_token: accessToken });
-}
-
-export async function createUpdateLinkToken(accessToken: string): Promise<string> {
-  const client = getPlaidClient();
-  const response = await client.linkTokenCreate({
-    user: { client_user_id: 'local-user' },
-    client_name: 'FlyBudget',
-    language: 'en',
-    country_codes: [CountryCode.Us],
-    access_token: accessToken,
-  });
-  return response.data.link_token;
 }
 
 export interface PlaidAccountInfo {

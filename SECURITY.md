@@ -82,16 +82,20 @@ Access tokens are never sent to the app's own UI, logs, or backup exports.
   request needs a random per-launch secret held in an HttpOnly cookie, so other
   programs and users on the same machine can't read your data.
 - **Outbound.** The only external services contacted are Plaid (the
-  `plaid.com` API and the Plaid Link window) and your SimpleFIN bridge, always
+  `plaid.com` API) and your SimpleFIN bridge, always
   over HTTPS. SimpleFIN URLs are restricted to public HTTPS addresses (checked at
-  connection time), redirects are re-validated, and requests time out. Apart from
-  Plaid Link's own script, fonts and all other assets are bundled with the app.
+  connection time), redirects are re-validated, and requests time out. Fonts and
+  all other assets are bundled with the app; nothing is loaded from other sites.
 - **Content Security Policy.** The UI can only run code shipped with the app
-  (plus Plaid Link's script) and can only send data to itself and Plaid.
+  and can only talk to its own local server. No third-party scripts or frames
+  are allowed, and the page is isolated from other origins (COOP/COEP).
 
 ### Bank connections
 
-- **Plaid:** you use your own Plaid API keys. Disconnecting a bank revokes its
+- **Plaid:** you use your own Plaid API keys. You log in to your bank on
+  Plaid's own page in your web browser (Plaid Hosted Link), never inside
+  FlyBudget, which is how banks that use OAuth (Chase, Wells Fargo, and others)
+  work in the desktop app. Disconnecting a bank revokes its
   access token at Plaid (`/item/remove`); if Plaid can't be reached, the
   connection is kept so you can retry.
 - **SimpleFIN:** SimpleFIN has no revoke API. Disconnecting deletes FlyBudget's

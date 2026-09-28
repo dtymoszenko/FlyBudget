@@ -26,20 +26,6 @@ export function useConfigurePlaid() {
   });
 }
 
-export function useCreateLinkToken() {
-  return useMutation({ mutationFn: plaidApi.createLinkToken });
-}
-
-export function useExchangePublicToken() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: plaidApi.exchangePublicToken,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['plaid-items'] });
-    },
-  });
-}
-
 export function useMapAccounts() {
   const qc = useQueryClient();
   return useMutation({
@@ -89,8 +75,4 @@ export function useDisconnectItem() {
       qc.invalidateQueries({ queryKey: ['plaid-items'] });
     },
   });
-}
-
-export function useCreateUpdateLinkToken() {
-  return useMutation({ mutationFn: plaidApi.createUpdateLinkToken });
 }

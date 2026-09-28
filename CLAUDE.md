@@ -94,7 +94,7 @@ The API has no login, so `server/src/middleware/security.ts` makes sure only the
 - **`hostGuard`**: rejects any `Host` other than `localhost`/`127.0.0.1` on the server's port (blocks DNS rebinding).
 - **`originGuard`**: rejects requests from other websites (foreign `Origin`, or `Sec-Fetch-Site: cross-site`), including simple POSTs that CORS alone wouldn't stop.
 - **`apiTokenGuard`**: desktop app only. `electron/main.ts` generates a random token per launch (`FLYBUDGET_API_TOKEN`) and sets it as an HttpOnly, SameSite=Strict cookie, so other programs and users on the machine can't use the API.
-- **`securityHeaders`** (helmet): a strict CSP (only `'self'` plus Plaid Link's script and iframe), `nosniff`, no framing, `no-referrer`, and a same-origin CORP. **Loading anything from a new external origin means updating the CSP.** Fonts are self-hosted (`@fontsource/inter`), so the app never calls Google.
+- **`securityHeaders`** (helmet): a strict CSP (only `'self'`: no third-party scripts, frames or connections), `nosniff`, no framing, `no-referrer`, same-origin CORP/COOP and COEP `require-corp`. **Loading anything from a new external origin means updating the CSP.** Fonts are self-hosted (`@fontsource/inter`), so the app never calls Google.
 - **Electron window** (`electron/main.ts`): sandboxed, no Node in the page, DevTools only in dev, and every permission request denied. The window can't navigate away from the app, and `shell.openExternal` is only ever called with `https:` URLs (never pass it arbitrary URLs).
 - **Credentials at rest**: `plaid_config.secret`, `plaid_items.access_token` and `simplefin_connections.access_url` use the `encryptedText` column type (`server/src/db/schema.ts` → `secretCrypto.ts`, AES-256-GCM, stored as `enc:v1:…`). The desktop app keeps the key in `userData/credentials.key`, itself encrypted with Electron `safeStorage` (DPAPI/Keychain/libsecret), and passes it in as `FLYBUDGET_DATA_KEY`. Plaintext rows are encrypted on startup (`encryptStoredCredentials`). Plain `npm run dev` has no key and stores them unencrypted. Encrypted columns can't be used in `WHERE` clauses.
 - **Outbound requests to user-supplied URLs** (SimpleFIN setup tokens and access URLs) must go through `safeFetch` (`server/src/services/safeFetch.ts`): https only, public IPs only (checked at connect time, so DNS rebinding can't bypass it), manual redirects re-validated on every hop with `Authorization` dropped across origins, a 30s timeout, and capped response sizes. Never call `fetch` directly on such URLs.
@@ -210,7 +210,7 @@ We also integrate with **SimpleFin**, and may consider supporting other connecti
 - `server/src/services/plaidService.ts` — Plaid SDK wrapper (lazy-init client from DB credentials). Amount conversion: `Math.round(-plaidAmount * 100)` (Plaid positive=debit → app negative=outflow).
 - `server/src/services/plaidSyncService.ts` — Sync orchestration: calls Plaid Transactions Sync API (cursor-based incremental), processes added/modified/removed transactions, adjusts account balances.
 - `server/src/services/transactionHelpers.ts` — Shared `resolvePayee()` and `autoCategory()` (extracted from transactions route, used by both manual entry and Plaid sync).
-- `server/src/routes/plaid.ts` — API endpoints under `/api/plaid` (status, configure, link-token, exchange-token, map-accounts, sync, items CRUD, update-link).
+- `server/src/routes/plaid.ts` — API endpoints under `/api/plaid` (status, configure, hosted-link start/poll/cancel, map-accounts, sync, items CRUD, per-item hosted-link for re-authentication).
 
 **DB tables:**
 
@@ -225,7 +225,9 @@ We also integrate with **SimpleFin**, and may consider supporting other connecti
 - Reconciled transactions are never modified/deleted by sync
 - Account `startingBalance` is adjusted so `startingBalance + SUM(transactions) = Plaid reported balance`
 
-**Client components:** `client/src/components/plaid/` — PlaidLinkButton, ConnectBankModal (multi-step: link → account mapping → sync → done), ConnectedInstitutionCard, SyncStatusBadge, PlaidConfigForm.
+**Plaid Link runs as [Hosted Link](https://plaid.com/docs/link/hosted-link/) in the user's own browser** (RFC 8252: native apps do bank/OAuth logins in the system browser, and OAuth banks like Chase can't finish in the locked-down Electron window). `services/plaidHostedLink.ts` keeps in-memory sessions: the UI gets an opaque session id plus Plaid's URL, polls `GET /api/plaid/hosted-link/:id`, and the server polls `/link/token/get` and exchanges the public token itself, exactly once (concurrent polls share one in-flight check). Link and public tokens never reach the UI. There is no `react-plaid-link`/in-app Link.
+
+**Client components:** `client/src/components/plaid/` — `usePlaidHostedLink` hook + HostedLinkWaiting, ConnectBankModal (multi-step: link → account mapping → sync → done), ConnectedInstitutionCard, SyncStatusBadge, PlaidConfigForm.
 
 ---
 

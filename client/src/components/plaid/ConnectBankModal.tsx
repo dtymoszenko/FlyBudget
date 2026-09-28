@@ -2,13 +2,9 @@ import { useState } from 'react';
 import { Loader2, CheckCircle2, Building2 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
-import { PlaidLinkButton } from './PlaidLinkButton';
-import {
-  useCreateLinkToken,
-  useExchangePublicToken,
-  useMapAccounts,
-  useSyncItem,
-} from '../../hooks/usePlaid';
+import { HostedLinkWaiting } from './HostedLinkWaiting';
+import { useMapAccounts, useSyncItem } from '../../hooks/usePlaid';
+import { usePlaidHostedLink } from '../../hooks/usePlaidHostedLink';
 import { useAccounts } from '../../hooks/useAccounts';
 import { formatCurrency } from '../../utils/currency';
 import type {
@@ -36,13 +32,10 @@ interface MappingChoice {
 
 export function ConnectBankModal({ isOpen, onClose }: Props) {
   const [step, setStep] = useState<Step>('link');
-  const [linkToken, setLinkToken] = useState<string | null>(null);
   const [exchangeResult, setExchangeResult] = useState<PlaidExchangeResult | null>(null);
   const [mappings, setMappings] = useState<MappingChoice[]>([]);
   const [syncSummary, setSyncSummary] = useState<{ added: number; accounts: number } | null>(null);
 
-  const createLinkToken = useCreateLinkToken();
-  const exchangeToken = useExchangePublicToken();
   const mapAccounts = useMapAccounts();
   const syncItem = useSyncItem();
   const { data: existingAccounts = [] } = useAccounts();
@@ -51,37 +44,21 @@ export function ConnectBankModal({ isOpen, onClose }: Props) {
     mappings.filter((m) => m.action === 'link').map((m) => m.accountId),
   );
 
-  async function handleOpen() {
-    try {
-      const { linkToken: token } = await createLinkToken.mutateAsync();
-      setLinkToken(token);
-    } catch {
-      // Error handled by mutation state
-    }
-  }
-
-  async function handlePlaidSuccess(publicToken: string, metadata: any) {
-    try {
-      const result = await exchangeToken.mutateAsync({
-        publicToken,
-        institutionId: metadata.institution?.institution_id ?? '',
-        institutionName: metadata.institution?.name ?? 'Unknown Institution',
-      });
-
-      setExchangeResult(result);
-      setMappings(
-        result.accounts.map((a: PlaidDiscoveredAccount) => ({
-          plaidAccountId: a.plaidAccountId,
-          action: 'create' as const,
-          accountName: a.name,
-          accountType: a.suggestedType,
-        })),
-      );
-      setStep('mapping');
-    } catch {
-      // Error handled by mutation state
-    }
-  }
+  // The server exchanges the token itself; we only receive the discovered accounts
+  const hostedLink = usePlaidHostedLink((result) => {
+    if (!result) return;
+    setExchangeResult(result);
+    setMappings(
+      result.accounts.map((a: PlaidDiscoveredAccount) => ({
+        plaidAccountId: a.plaidAccountId,
+        action: 'create' as const,
+        accountName: a.name,
+        accountType: a.suggestedType,
+      })),
+    );
+    setStep('mapping');
+  });
+  const linkState = hostedLink.state;
 
   function updateMapping(plaidAccountId: string, updates: Partial<MappingChoice>) {
     setMappings((prev) =>
@@ -115,8 +92,8 @@ export function ConnectBankModal({ isOpen, onClose }: Props) {
   }
 
   function handleClose() {
+    hostedLink.cancel();
     setStep('link');
-    setLinkToken(null);
     setExchangeResult(null);
     setMappings([]);
     setSyncSummary(null);
@@ -138,10 +115,12 @@ export function ConnectBankModal({ isOpen, onClose }: Props) {
             </p>
           </div>
 
-          {!linkToken ? (
+          {linkState.phase === 'waiting' ? (
+            <HostedLinkWaiting onReopen={hostedLink.reopen} onCancel={hostedLink.cancel} />
+          ) : (
             <div className="flex justify-center">
-              <Button onClick={handleOpen} disabled={createLinkToken.isPending}>
-                {createLinkToken.isPending ? (
+              <Button onClick={() => hostedLink.start()} disabled={linkState.phase === 'starting'}>
+                {linkState.phase === 'starting' ? (
                   <>
                     <Loader2 size={16} className="animate-spin" /> Preparing...
                   </>
@@ -152,16 +131,13 @@ export function ConnectBankModal({ isOpen, onClose }: Props) {
                 )}
               </Button>
             </div>
-          ) : (
-            <div className="flex justify-center">
-              <PlaidLinkButton linkToken={linkToken} onSuccess={handlePlaidSuccess} />
-            </div>
           )}
 
-          {(createLinkToken.isError || exchangeToken.isError) && (
-            <p className="text-xs text-negative text-center">
-              Something went wrong. Please try again.
-            </p>
+          {linkState.phase === 'error' && (
+            <p className="text-xs text-negative text-center">{linkState.message}</p>
+          )}
+          {linkState.phase === 'idle' && linkState.message && (
+            <p className="text-xs text-text-secondary text-center">{linkState.message}</p>
           )}
         </div>
       )}

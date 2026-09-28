@@ -106,6 +106,13 @@ describe('request guards (no token: web / dev mode)', () => {
     expect(csp).toContain("object-src 'none'");
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).not.toContain('unsafe-eval');
+    // No third-party code or frames: Plaid Link runs in the user's own browser
+    expect(csp).toContain("script-src 'self';");
+    expect(csp).toContain("connect-src 'self';");
+    expect(csp).toContain("frame-src 'none'");
+    expect(csp).not.toMatch(/https?:/);
+    expect(headers['cross-origin-embedder-policy']).toBe('require-corp');
+    expect(headers['cross-origin-opener-policy']).toBe('same-origin');
     expect(headers['x-content-type-options']).toBe('nosniff');
     expect(headers['x-frame-options']).toBe('DENY');
     expect(headers['referrer-policy']).toBe('no-referrer');

@@ -1,10 +1,11 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { RefreshCw, Unlink, AlertTriangle, Loader2 } from 'lucide-react';
 import { SyncStatusBadge } from './SyncStatusBadge';
-import { PlaidLinkButton } from './PlaidLinkButton';
+import { HostedLinkWaiting } from './HostedLinkWaiting';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { Button } from '../ui/Button';
-import { useSyncItem, useDisconnectItem, useCreateUpdateLinkToken } from '../../hooks/usePlaid';
+import { useSyncItem, useDisconnectItem } from '../../hooks/usePlaid';
+import { usePlaidHostedLink } from '../../hooks/usePlaidHostedLink';
 import { formatDistanceToNow } from 'date-fns';
 import type { PlaidItem } from '../../types';
 
@@ -14,10 +15,8 @@ interface Props {
 
 export function ConnectedInstitutionCard({ item }: Props) {
   const [showDisconnect, setShowDisconnect] = useState(false);
-  const [updateLinkToken, setUpdateLinkToken] = useState<string | null>(null);
   const syncItem = useSyncItem();
   const disconnectItem = useDisconnectItem();
-  const createUpdateLink = useCreateUpdateLinkToken();
 
   const isSyncing = syncItem.isPending || item.syncStatus === 'syncing';
   const initial = item.institutionName.charAt(0).toUpperCase();
@@ -26,19 +25,8 @@ export function ConnectedInstitutionCard({ item }: Props) {
     await syncItem.mutateAsync(item.id);
   }
 
-  async function handleReconnect() {
-    try {
-      const { linkToken } = await createUpdateLink.mutateAsync(item.id);
-      setUpdateLinkToken(linkToken);
-    } catch {
-      // handled by mutation state
-    }
-  }
-
-  const handleUpdateSuccess = useCallback(() => {
-    setUpdateLinkToken(null);
-    syncItem.mutate(item.id);
-  }, [item.id, syncItem]);
+  // Re-authenticate in the user's browser (Plaid update mode), then sync
+  const reconnect = usePlaidHostedLink(() => syncItem.mutate(item.id));
 
   function handleDisconnect() {
     // Errors (e.g. Plaid unreachable, so access couldn't be revoked) are shown on the card
@@ -72,6 +60,13 @@ export function ConnectedInstitutionCard({ item }: Props) {
             <AlertTriangle size={14} className="text-negative mt-0.5 shrink-0" />
             <p className="text-xs text-negative">{item.syncError}</p>
           </div>
+        )}
+
+        {reconnect.state.phase === 'waiting' && (
+          <HostedLinkWaiting onReopen={reconnect.reopen} onCancel={reconnect.cancel} />
+        )}
+        {reconnect.state.phase === 'error' && (
+          <p className="text-xs text-negative">{reconnect.state.message}</p>
         )}
 
         {disconnectItem.isError && (
@@ -123,24 +118,14 @@ export function ConnectedInstitutionCard({ item }: Props) {
             )}
           </Button>
 
-          {item.syncStatus === 'login_required' && !updateLinkToken && (
+          {item.syncStatus === 'login_required' && reconnect.state.phase !== 'waiting' && (
             <button
-              onClick={handleReconnect}
-              disabled={createUpdateLink.isPending}
+              onClick={() => reconnect.start(item.id)}
+              disabled={reconnect.state.phase === 'starting'}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-caution bg-caution-subtle border border-caution/20 rounded-md hover:opacity-80 disabled:opacity-50 transition-colors"
             >
               Reconnect
             </button>
-          )}
-
-          {updateLinkToken && (
-            <PlaidLinkButton
-              linkToken={updateLinkToken}
-              onSuccess={handleUpdateSuccess}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-caution bg-caution-subtle border border-caution/20 rounded-md hover:opacity-80 transition-colors"
-            >
-              Open Link to Reconnect
-            </PlaidLinkButton>
           )}
 
           <button

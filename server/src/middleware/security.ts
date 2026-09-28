@@ -84,23 +84,23 @@ export function apiTokenGuard(token: string | undefined): RequestHandler {
 
 /**
  * Security headers. The Content Security Policy is an allowlist of where the page
- * may load code and send data: only this app, plus Plaid Link's script and iframe
- * (https://plaid.com/docs/link/web/#content-security-policy). It applies to the
- * built client served by this server (the desktop app); the Vite dev server serves
- * its own HTML.
+ * may load code and send data: only this app. (Plaid Link runs on Plaid's hosted
+ * page in the user's own browser, so no third-party script or frame is allowed.)
+ * It applies to the built client served by this server (the desktop app); the Vite
+ * dev server serves its own HTML.
  */
 export const securityHeaders = helmet({
   contentSecurityPolicy: {
     useDefaults: false,
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", 'https://cdn.plaid.com/link/v2/stable/link-initialize.js'],
+      scriptSrc: ["'self'"],
       // Some UI libraries (e.g. the emoji picker) inject <style> tags at runtime
       styleSrc: ["'self'", "'unsafe-inline'"],
       fontSrc: ["'self'"],
       imgSrc: ["'self'", 'data:', 'blob:'],
-      connectSrc: ["'self'", 'https://production.plaid.com', 'https://sandbox.plaid.com'],
-      frameSrc: ['https://cdn.plaid.com'],
+      connectSrc: ["'self'"],
+      frameSrc: ["'none'"],
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
       formAction: ["'self'"],
@@ -109,8 +109,8 @@ export const securityHeaders = helmet({
   },
   // Served over http://localhost — HSTS / upgrade-insecure-requests don't apply
   strictTransportSecurity: false,
-  // Would block Plaid Link's cross-origin iframe
-  crossOriginEmbedderPolicy: false,
+  // With COOP same-origin, fully isolates the page from other origins
+  crossOriginEmbedderPolicy: { policy: 'require-corp' },
   crossOriginOpenerPolicy: { policy: 'same-origin' },
   crossOriginResourcePolicy: { policy: 'same-origin' },
   referrerPolicy: { policy: 'no-referrer' },

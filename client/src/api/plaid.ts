@@ -7,18 +7,27 @@ export const getPlaidStatus = () =>
 export const configurePlaid = (data: { clientId: string; secret: string; environment: string }) =>
   apiFetch<{ ok: boolean }>('/plaid/configure', { method: 'POST', body: JSON.stringify(data) });
 
-export const createLinkToken = () =>
-  apiFetch<{ linkToken: string }>('/plaid/link-token', { method: 'POST' });
+// Plaid Hosted Link: the user completes Link in their own browser while the app polls.
+export interface HostedLinkStart {
+  sessionId: string;
+  url: string;
+}
 
-export const exchangePublicToken = (data: {
-  publicToken: string;
-  institutionId: string;
-  institutionName: string;
-}) =>
-  apiFetch<PlaidExchangeResult>('/plaid/exchange-token', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
+export type HostedLinkPoll =
+  | { status: 'pending' | 'exited' | 'expired' }
+  | { status: 'success'; result: PlaidExchangeResult | null };
+
+export const startHostedLink = () =>
+  apiFetch<HostedLinkStart>('/plaid/hosted-link', { method: 'POST' });
+
+export const startUpdateHostedLink = (itemId: string) =>
+  apiFetch<HostedLinkStart>(`/plaid/items/${itemId}/hosted-link`, { method: 'POST' });
+
+export const pollHostedLink = (sessionId: string) =>
+  apiFetch<HostedLinkPoll>(`/plaid/hosted-link/${sessionId}`);
+
+export const cancelHostedLink = (sessionId: string) =>
+  apiFetch<void>(`/plaid/hosted-link/${sessionId}`, { method: 'DELETE' });
 
 export interface AccountMappingAction {
   plaidAccountId: string;
@@ -45,6 +54,3 @@ export const syncAll = () =>
 
 export const disconnectItem = (itemId: string) =>
   apiFetch<void>(`/plaid/items/${itemId}`, { method: 'DELETE' });
-
-export const createUpdateLinkToken = (itemId: string) =>
-  apiFetch<{ linkToken: string }>(`/plaid/items/${itemId}/update-link`, { method: 'POST' });
