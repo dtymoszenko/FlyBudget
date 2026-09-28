@@ -56,37 +56,41 @@ export const freezeDateRange = (
   preset: 'custom',
 });
 
-const monthSpan = (r: { from: string; to: string }) => {
-  const [fy, fm] = r.from.split('-').map(Number);
-  const [ty, tm] = r.to.split('-').map(Number);
-  return (ty - fy) * 12 + (tm - fm) + 1;
-};
+/** What a dashboard shows when its range was never changed. */
+export const DEFAULT_DASHBOARD_RANGE: ReportDateRange = { preset: '6m', ...computeDateRange('6m') };
+
+export const dashboardDateRange = (page: { dateRange: ReportDateRange | null } | undefined) =>
+  resolveDateRange(page?.dateRange ?? DEFAULT_DASHBOARD_RANGE);
 
 /**
- * Turns a frozen range back into a live one: the live preset covering exactly the same
- * months today if there is one (so unfreezing a fresh freeze changes nothing), otherwise
- * the rolling window closest in length.
+ * Where a widget's months come from: its dashboard (no range of its own), its own live
+ * range, or its own frozen months.
  */
-export function unfreezeDateRange(range: ReportDateRange, now: Date = new Date()): ReportDateRange {
-  if (!isFrozen(range)) return range;
-  const live = DATE_PRESETS.map((p) => p.id).filter((p) => p !== 'custom');
-  const exact = live.find((p) => {
-    const r = computeDateRange(p, now);
-    return r.from === range.from && r.to === range.to;
-  });
-  const span = monthSpan(range);
-  const rolling = [
-    ['1m', 1],
-    ['3m', 3],
-    ['6m', 6],
-    ['12m', 12],
-  ] as const;
-  const preset =
-    exact ??
-    rolling.reduce((best, cur) =>
-      Math.abs(cur[1] - span) < Math.abs(best[1] - span) ? cur : best,
-    )[0];
-  return { preset, ...computeDateRange(preset, now) };
+export type RangeSource = 'dashboard' | 'own' | 'frozen';
+
+export function widgetDateRange(
+  own: ReportDateRange | undefined,
+  dashboard: ReportDateRange,
+): { range: ReportDateRange; source: RangeSource } {
+  if (!own) return { range: resolveDateRange(dashboard), source: 'dashboard' };
+  return { range: resolveDateRange(own), source: isFrozen(own) ? 'frozen' : 'own' };
+}
+
+// A range as a URL parameter, e.g. "6m" (live) or "2025-01..2025-12" (frozen), so a
+// dashboard can open the report builder showing the same months as its widget.
+export function encodeRangeParam(range: ReportDateRange): string {
+  return isFrozen(range) ? `${range.from}..${range.to}` : range.preset;
+}
+
+export function decodeRangeParam(param: string | null): ReportDateRange | undefined {
+  if (!param) return undefined;
+  const fixed = /^(\d{4}-(?:0[1-9]|1[0-2]))\.\.(\d{4}-(?:0[1-9]|1[0-2]))$/.exec(param);
+  if (fixed) {
+    const [, from, to] = fixed;
+    return from <= to ? { preset: 'custom', from, to } : undefined;
+  }
+  const preset = DATE_PRESETS.find((p) => p.id === param && p.id !== 'custom');
+  return preset && { preset: preset.id, ...computeDateRange(preset.id) };
 }
 
 const fmtMonth = (m: string) => format(parseISO(`${m}-01`), 'MMM yyyy');

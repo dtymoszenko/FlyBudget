@@ -164,7 +164,7 @@ The desktop app and `npm run dev` have no login, so `server/src/middleware/secur
 - `auth_config` / `sessions` — server mode only: the scrypt password hash (single row, `id='server'`) and hashed session tokens
 - `payees` — `defaultCategoryId` auto-applied when a payee is selected on a new transaction
 - `custom_reports` — `name` + `config` (JSON string of `CustomReportConfig`); stores saved custom report configurations
-- `dashboard_pages` / `dashboard_widgets` — report dashboards and their widgets (`type`, grid `x`/`y`/`width`/`height`, `meta` JSON). Custom report widgets reference `custom_report_id` (cascade delete). Migration `0014` was hand-written because `db:generate` prompts about the pending legacy cleanup above
+- `dashboard_pages` / `dashboard_widgets` — report dashboards and their widgets (`type`, grid `x`/`y`/`width`/`height`, `meta` JSON). Pages have a `date_range` (null = last 6 months). Custom report widgets reference `custom_report_id` (cascade delete). Migrations `0014`/`0015` were hand-written because `db:generate` prompts about the pending legacy cleanup above
 - `recurring_transactions` — `frequency` (`weekly|biweekly|semimonthly|monthly|quarterly|semiannually|yearly`); `status` (`active|paused|canceled`); `autoCreate` auto-creates transactions on server startup; linked to transactions via `recurringTransactionId` FK
 
 ### Custom Report Builder
@@ -183,8 +183,8 @@ The report builder at `/reports/custom` supports:
 
 `/reports` is a set of dashboards (tabs), each a grid of widgets, loosely following Actual Budget's reports dashboard.
 
-- **Widgets**: built-in `summary`, `net-worth`, `income-expenses`, `spending`, `spending-trends` (charts in `components/reports/BuiltinCharts.tsx`, registry in `BuiltinReport.tsx`) plus `custom-report`. Add them from "Add widget"; ⋮ menu has rename, date range, freeze, move to another dashboard, remove (undoable).
-- **Date ranges are per widget**, no page-wide picker: `ReportDateRange` (`utils/dateRange.ts`) is live (preset recomputed from today by `resolveDateRange`) or frozen (`preset: 'custom'`, fixed months). Custom report widgets use the report's own range. Server validates ranges with `dateRangeSchema` in `services/dashboardService.ts`.
+- **Widgets**: built-in `summary`, `net-worth`, `income-expenses`, `spending`, `spending-trends` (charts in `components/reports/BuiltinCharts.tsx`, registry in `BuiltinReport.tsx`) plus `custom-report`. Add them from "Add widget"; ⋮ menu has rename, date range, freeze/unfreeze, move to another dashboard, remove (undoable).
+- **Date ranges**: each dashboard has a range picker, and widgets follow it unless `meta.dateRange` gives them their own (a live preset, or frozen months). Unfreezing just removes `meta.dateRange`. `ReportDateRange` (`utils/dateRange.ts`) is live (preset recomputed from today by `resolveDateRange`) or frozen (`preset: 'custom'`); `widgetDateRange` picks a widget's effective range. Custom report widgets work the same way and pass their range to the builder as `?range=` (`encodeRangeParam`). Server validates ranges with `dateRangeSchema` in `services/dashboardService.ts`.
 - **Layout**: `react-grid-layout` v2 (12 cols, 80px rows), drag/resize only in "Edit layout" mode on desktop; changed positions are saved on drag/resize stop (`PUT /api/dashboards/:id/layout`). Below 768px it's a single read-only column.
 - **API**: `/api/dashboards` (pages CRUD, `GET/POST /:id/widgets`, `PUT /:id/layout`, `GET/PATCH/DELETE /widgets/:widgetId`). The first `GET` creates an "Overview" dashboard with the built-ins and all existing custom reports; the last dashboard can't be deleted.
 

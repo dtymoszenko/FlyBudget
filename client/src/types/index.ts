@@ -235,6 +235,8 @@ export interface DashboardPage {
   id: string;
   name: string;
   sortOrder: number;
+  /** The range this dashboard's widgets follow unless they have their own; null = last 6 months */
+  dateRange: ReportDateRange | null;
   createdAt: string;
 }
 
@@ -254,13 +256,14 @@ interface WidgetBase {
 export interface BuiltinWidget extends WidgetBase {
   type: BuiltinWidgetType;
   customReportId: null;
-  meta: { name?: string; dateRange: ReportDateRange };
+  /** No `dateRange` means the widget follows its dashboard's range */
+  meta: { name?: string; dateRange?: ReportDateRange };
 }
 
 export interface CustomReportWidget extends WidgetBase {
   type: 'custom-report';
   customReportId: string;
-  meta: Record<string, never>;
+  meta: { dateRange?: ReportDateRange };
 }
 
 export type DashboardWidget = BuiltinWidget | CustomReportWidget;

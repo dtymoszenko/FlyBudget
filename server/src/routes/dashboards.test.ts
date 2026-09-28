@@ -3,8 +3,12 @@ import fc from 'fast-check';
 import express from 'express';
 import type { AddressInfo } from 'net';
 import type { Server } from 'http';
+import { readFileSync } from 'fs';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
+import { eq, sql as sqlRaw } from 'drizzle-orm';
+import { nanoid } from 'nanoid';
 import { db } from '../db/index.js';
+import { dashboardPages, dashboardWidgets } from '../db/schema.js';
 import { GRID_COLS, nextPosition } from '../services/dashboardService.js';
 import { customReportsRouter } from './customReports.js';
 import { dashboardsRouter } from './dashboards.js';
@@ -150,6 +154,59 @@ describe('dashboards API', () => {
         })
       ).status,
     ).toBe(400);
+  });
+
+  it('saves and validates the dashboard date range', async () => {
+    const page = await json('POST', '/dashboards', { name: 'Ranges' });
+    expect(page.dateRange).toBeNull();
+    const ytd = { preset: 'ytd', from: '2026-01', to: '2026-09' };
+    expect((await json('PUT', `/dashboards/${page.id}`, { dateRange: ytd })).dateRange).toEqual(
+      ytd,
+    );
+    // Renaming leaves the range alone
+    const renamed = await json('PUT', `/dashboards/${page.id}`, { name: 'Renamed' });
+    expect(renamed).toMatchObject({ name: 'Renamed', dateRange: ytd });
+    const bad = { preset: 'custom', from: '2026-05', to: '2026-01' };
+    expect((await call('PUT', `/dashboards/${page.id}`, { dateRange: bad })).status).toBe(400);
+    expect((await json('PUT', `/dashboards/${page.id}`, { dateRange: null })).dateRange).toBeNull();
+  });
+
+  it('lets widgets follow the dashboard (no range) or keep their own', async () => {
+    const page = await json('POST', '/dashboards', { name: 'Follow' });
+    const follows = await json('POST', `/dashboards/${page.id}/widgets`, { type: 'spending' });
+    expect(follows.meta).toEqual({});
+    const own = { preset: '12m', from: '2025-10', to: '2026-09' };
+    const updated = await json('PATCH', `/dashboards/widgets/${follows.id}`, {
+      meta: { dateRange: own },
+    });
+    expect(updated.meta.dateRange).toEqual(own);
+    // Dropping the range makes it follow the dashboard again
+    expect((await json('PATCH', `/dashboards/widgets/${follows.id}`, { meta: {} })).meta).toEqual(
+      {},
+    );
+  });
+
+  it('migration 0015 keeps only frozen widget ranges', () => {
+    const sql = readFileSync('src/db/migrations/0015_dashboard_date_range.sql', 'utf8')
+      .split('--> statement-breakpoint')[1]
+      .trim();
+    const pageId = db.select().from(dashboardPages).get()!.id;
+    const live = { preset: '6m', from: '2026-04', to: '2026-09' };
+    const frozen = { preset: 'custom', from: '2025-01', to: '2025-12' };
+    const rows = [{ dateRange: live, name: 'Mine' }, { dateRange: frozen }, {}].map((meta) => ({
+      id: nanoid(),
+      pageId,
+      type: 'net-worth',
+      meta: JSON.stringify(meta),
+    }));
+    db.insert(dashboardWidgets).values(rows).run();
+    db.run(sqlRaw.raw(sql));
+    const metas = rows.map((r) =>
+      JSON.parse(
+        db.select().from(dashboardWidgets).where(eq(dashboardWidgets.id, r.id)).get()!.meta,
+      ),
+    );
+    expect(metas).toEqual([{ name: 'Mine' }, { dateRange: frozen }, {}]);
   });
 
   it('moves a widget to another dashboard', async () => {

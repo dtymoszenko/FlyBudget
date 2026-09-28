@@ -225,6 +225,8 @@ export const dashboardPages = sqliteTable('dashboard_pages', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   sortOrder: integer('sort_order').notNull().default(0),
+  // JSON date range the dashboard's widgets follow by default; null means the last 6 months
+  dateRange: text('date_range'),
   createdAt: text('created_at')
     .notNull()
     .default(sql`(datetime('now'))`),

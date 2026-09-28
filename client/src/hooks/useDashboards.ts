@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as api from '../api/dashboards';
 import { useUndoStore } from '../store/undoStore';
-import type { DashboardWidget } from '../types';
+import type { DashboardPage, DashboardWidget } from '../types';
 
 const widgetsKey = (pageId: string) => ['dashboards', pageId, 'widgets'];
 
@@ -33,11 +33,18 @@ export function useCreateDashboard() {
   });
 }
 
-export function useRenameDashboard() {
+/** Renames a dashboard or changes its date range, updating the cache first so the picker feels instant. */
+export function useUpdateDashboard() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, name }: { id: string; name: string }) => api.renameDashboard(id, name),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['dashboards'] }),
+    mutationFn: ({ id, data }: { id: string; data: Parameters<typeof api.updateDashboard>[1] }) =>
+      api.updateDashboard(id, data),
+    onMutate: ({ id, data }) => {
+      qc.setQueryData<DashboardPage[]>(['dashboards'], (old) =>
+        old?.map((p) => (p.id === id ? { ...p, ...data } : p)),
+      );
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['dashboards'] }),
   });
 }
 
@@ -115,7 +122,7 @@ export function useDeleteWidget() {
         undo: async () => {
           const restored = await api.addWidget(widget.pageId, {
             type: widget.type,
-            meta: widget.type === 'custom-report' ? undefined : widget.meta,
+            meta: widget.meta,
             customReportId: widget.customReportId ?? undefined,
           });
           restoredId = restored.id;

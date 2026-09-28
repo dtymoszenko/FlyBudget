@@ -5,8 +5,10 @@ import {
   DATE_PRESETS,
   computeDateRange,
   freezeDateRange,
+  decodeRangeParam,
+  encodeRangeParam,
   resolveDateRange,
-  unfreezeDateRange,
+  widgetDateRange,
 } from './dateRange';
 import type { DatePresetCustom, ReportDateRange } from '../types';
 
@@ -67,25 +69,55 @@ describe('date range helpers (property-based)', () => {
     );
   });
 
-  it('unfreezing a fresh freeze keeps the same months', () => {
+  it('widgets without their own range follow the dashboard', () => {
     fc.assert(
-      fc.property(arbLive, arbNow, (preset, now) => {
-        const frozen = freezeDateRange({ preset, from: '2000-01', to: '2000-01' }, now);
-        const live = unfreezeDateRange(frozen, now);
-        expect(live.preset).not.toBe('custom');
-        expect({ from: live.from, to: live.to }).toEqual({ from: frozen.from, to: frozen.to });
+      fc.property(
+        fc.oneof(
+          arbFrozen,
+          arbLive.map((preset) => ({ preset, from: '2020-01', to: '2020-01' })),
+        ),
+        (dashboard) => {
+          expect(widgetDateRange(undefined, dashboard)).toEqual({
+            range: resolveDateRange(dashboard),
+            source: 'dashboard',
+          });
+        },
+      ),
+    );
+  });
+
+  it("a widget's own frozen range ignores the dashboard", () => {
+    fc.assert(
+      fc.property(arbFrozen, arbFrozen, (own, dashboard) => {
+        expect(widgetDateRange(own, dashboard)).toEqual({ range: own, source: 'frozen' });
       }),
     );
   });
 
-  it('unfreezing any frozen range gives a live range', () => {
+  it('ranges survive a round trip through the URL', () => {
     fc.assert(
-      fc.property(arbFrozen, arbNow, (frozen, now) => {
-        const live = unfreezeDateRange(frozen, now);
-        expect(live.preset).not.toBe('custom');
-        expect(resolveDateRange(live, now)).toEqual(live);
+      fc.property(
+        fc.oneof(
+          arbFrozen,
+          arbLive.map((preset) => ({ preset, ...computeDateRange(preset) })),
+        ),
+        (range) => {
+          expect(decodeRangeParam(encodeRangeParam(range))).toEqual(range);
+        },
+      ),
+    );
+  });
+
+  it('rejects malformed range parameters', () => {
+    fc.assert(
+      fc.property(fc.string({ maxLength: 20 }), (junk) => {
+        const decoded = decodeRangeParam(junk);
+        if (decoded) expect(decoded.from <= decoded.to).toBe(true);
       }),
     );
+    for (const bad of ['2025-13..2025-12', '2025-06..2025-01', 'custom', '6months', '']) {
+      expect(decodeRangeParam(bad)).toBeUndefined();
+    }
   });
 
   it('live ranges saved long ago are recomputed from today', () => {

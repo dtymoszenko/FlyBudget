@@ -4,7 +4,6 @@ import { ChevronDown, Plus } from 'lucide-react';
 import { Button } from '../../ui/Button';
 import { BUILTIN_REPORTS, BUILTIN_TYPES } from '../BuiltinReport';
 import { useAddWidget } from '../../../hooks/useDashboards';
-import { computeDateRange } from '../../../utils/dateRange';
 import type { SavedCustomReport } from '../../../types';
 
 const ITEM = 'w-full text-left px-3 py-2 hover:bg-hover transition-colors cursor-pointer';
@@ -54,9 +53,8 @@ export default function AddWidgetMenu({
             <button
               key={type}
               className={ITEM}
-              onClick={() =>
-                add({ type, meta: { dateRange: { preset: '6m', ...computeDateRange('6m') } } })
-              }
+              // New widgets follow the dashboard's date range
+              onClick={() => add({ type, meta: {} })}
             >
               <p className="text-sm text-text">{BUILTIN_REPORTS[type].label}</p>
               <p className="text-xs text-text-tertiary">{BUILTIN_REPORTS[type].description}</p>

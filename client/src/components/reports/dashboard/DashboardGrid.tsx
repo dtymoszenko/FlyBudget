@@ -3,7 +3,12 @@ import ReactGridLayout, { useContainerWidth } from 'react-grid-layout';
 import type { Layout } from 'react-grid-layout';
 import WidgetCard, { NO_DRAG_CLASS } from './WidgetCard';
 import { useSaveLayout } from '../../../hooks/useDashboards';
-import type { DashboardPage, DashboardWidget, SavedCustomReport } from '../../../types';
+import type {
+  DashboardPage,
+  DashboardWidget,
+  ReportDateRange,
+  SavedCustomReport,
+} from '../../../types';
 
 const COLS = 12;
 const ROW_HEIGHT = 80;
@@ -25,10 +30,18 @@ interface Props {
   widgets: DashboardWidget[];
   reports: SavedCustomReport[];
   pages: DashboardPage[];
+  dashboardRange: ReportDateRange;
   editing: boolean;
 }
 
-export default function DashboardGrid({ pageId, widgets, reports, pages, editing }: Props) {
+export default function DashboardGrid({
+  pageId,
+  widgets,
+  reports,
+  pages,
+  dashboardRange,
+  editing,
+}: Props) {
   const { width, containerRef, mounted } = useContainerWidth();
   const saveLayout = useSaveLayout();
   const mobile = width < MOBILE_WIDTH;
@@ -88,6 +101,7 @@ export default function DashboardGrid({ pageId, widgets, reports, pages, editing
                 widget={w}
                 report={w.customReportId ? reportsById.get(w.customReportId) : undefined}
                 pages={pages}
+                dashboardRange={dashboardRange}
                 editing={canEdit}
               />
             </div>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Snowflake } from 'lucide-react';
+import { Pin, Snowflake } from 'lucide-react';
 import RowMenu from '../../recurring/RowMenu';
 import type { RowMenuItem } from '../../recurring/RowMenu';
 import { Modal } from '../../ui/Modal';
@@ -10,14 +10,14 @@ import ReportChartArea from '../ReportChartArea';
 import { BUILTIN_REPORTS, BuiltinReportChart } from '../BuiltinReport';
 import { ChartSkeleton } from '../ChartHelpers';
 import NameModal from './NameModal';
-import { useCustomReportData, useUpdateSavedReport } from '../../../hooks/useCustomReports';
+import { useCustomReportData } from '../../../hooks/useCustomReports';
 import { useDeleteWidget, useUpdateWidget } from '../../../hooks/useDashboards';
 import {
+  encodeRangeParam,
   formatDateRange,
   freezeDateRange,
   isFrozen,
-  resolveDateRange,
-  unfreezeDateRange,
+  widgetDateRange,
 } from '../../../utils/dateRange';
 import type {
   DashboardPage,
@@ -34,57 +34,48 @@ interface Props {
   /** The saved report behind a custom report widget (undefined while loading) */
   report?: SavedCustomReport;
   pages: DashboardPage[];
+  /** The range of the dashboard this widget is on, which it follows unless it has its own */
+  dashboardRange: ReportDateRange;
   editing: boolean;
 }
 
-export default function WidgetCard({ widget, report, pages, editing }: Props) {
+export default function WidgetCard({ widget, report, pages, dashboardRange, editing }: Props) {
   const navigate = useNavigate();
   const updateWidget = useUpdateWidget();
   const deleteWidget = useDeleteWidget();
-  const updateReport = useUpdateSavedReport();
   const [rangeOpen, setRangeOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
 
   const isCustom = widget.type === 'custom-report';
-  // Custom report widgets use the report's own range, so changing it changes the report
-  const savedRange: ReportDateRange | undefined = isCustom
-    ? report?.config.dateRange
-    : widget.meta.dateRange;
-  const range = savedRange && resolveDateRange(savedRange);
-  const unfrozen = savedRange && isFrozen(savedRange) ? unfreezeDateRange(savedRange) : undefined;
+  const { range, source } = widgetDateRange(widget.meta.dateRange, dashboardRange);
   const title = isCustom
     ? (report?.name ?? '')
     : widget.meta.name || BUILTIN_REPORTS[widget.type].label;
 
   const openPath = isCustom
-    ? `/reports/custom/${widget.customReportId}?dashboard=${widget.pageId}`
+    ? `/reports/custom/${widget.customReportId}?dashboard=${widget.pageId}&range=${encodeRangeParam(range)}`
     : `/reports/widget/${widget.id}`;
 
-  function saveRange(next: ReportDateRange) {
-    if (isCustom) {
-      if (report)
-        updateReport.mutate({
-          id: report.id,
-          data: { config: { ...report.config, dateRange: next } },
-        });
-    } else {
-      updateWidget.mutate({ widget, data: { meta: { ...widget.meta, dateRange: next } } });
-    }
+  // Sets the widget's own range, or with `undefined` makes it follow the dashboard again
+  function setOwnRange(next: ReportDateRange | undefined) {
+    const { dateRange: _old, ...rest } = widget.meta;
+    updateWidget.mutate({ widget, data: { meta: next ? { ...rest, dateRange: next } : rest } });
   }
 
   const menu: RowMenuItem[] = [
     { label: isCustom ? 'Edit report' : 'Open', onClick: () => navigate(openPath) },
     { label: 'Rename…', onClick: () => setRenameOpen(true), hidden: isCustom },
-    { label: 'Date range…', onClick: () => setRangeOpen(true), hidden: !savedRange },
+    { label: 'Date range…', onClick: () => setRangeOpen(true) },
     {
       label: 'Freeze dates',
-      onClick: () => savedRange && saveRange(freezeDateRange(savedRange)),
-      hidden: !savedRange || isFrozen(savedRange),
+      onClick: () => setOwnRange(freezeDateRange(range)),
+      hidden: source === 'frozen',
     },
+    { label: 'Unfreeze', onClick: () => setOwnRange(undefined), hidden: source !== 'frozen' },
     {
-      label: `Unfreeze (${unfrozen ? formatDateRange(unfrozen) : ''})`,
-      onClick: () => unfrozen && saveRange(unfrozen),
-      hidden: !unfrozen,
+      label: 'Use dashboard range',
+      onClick: () => setOwnRange(undefined),
+      hidden: source !== 'own',
     },
     ...pages
       .filter((p) => p.id !== widget.pageId)
@@ -109,14 +100,15 @@ export default function WidgetCard({ widget, report, pages, editing }: Props) {
           <p className="text-sm font-semibold text-text truncate group-hover:text-brand-600 transition-colors">
             {title}
           </p>
-          {range && (
-            <p className="flex items-center gap-1 text-[11px] text-text-tertiary">
-              {isFrozen(range) && (
-                <Snowflake size={10} className="text-brand-500" aria-label="Frozen" />
-              )}
-              {formatDateRange(range)}
-            </p>
-          )}
+          <p className="flex items-center gap-1 text-[11px] text-text-tertiary">
+            {source === 'frozen' && (
+              <Snowflake size={10} className="text-brand-500" aria-label="Frozen" />
+            )}
+            {source === 'own' && (
+              <Pin size={10} className="text-brand-500" aria-label="Own date range" />
+            )}
+            {formatDateRange(range)}
+          </p>
         </div>
         <Isolate>
           <RowMenu items={menu} />
@@ -124,23 +116,24 @@ export default function WidgetCard({ widget, report, pages, editing }: Props) {
       </div>
       <div className="flex-1 min-h-0 overflow-hidden pointer-events-none">
         {isCustom ? (
-          report && range ? (
+          report ? (
             <CustomReportBody report={report} range={range} />
           ) : (
             <ChartSkeleton />
           )
         ) : (
-          <BuiltinReportChart type={widget.type} from={range!.from} to={range!.to} compact />
+          <BuiltinReportChart type={widget.type} from={range.from} to={range.to} compact />
         )}
       </div>
 
       <Isolate>
-        {rangeOpen && savedRange && (
+        {rangeOpen && (
           <DateRangeModal
-            initial={savedRange}
+            own={widget.meta.dateRange}
+            dashboardRange={dashboardRange}
             onClose={() => setRangeOpen(false)}
             onSave={(next) => {
-              saveRange(next);
+              setOwnRange(next);
               setRangeOpen(false);
             }}
           />
@@ -188,29 +181,54 @@ function CustomReportBody({
   return <ReportChartArea config={config} data={data} isLoading={isLoading} />;
 }
 
+/** Choose between following the dashboard and a range of the widget's own (live or frozen). */
 function DateRangeModal({
-  initial,
+  own,
+  dashboardRange,
   onClose,
   onSave,
 }: {
-  initial: ReportDateRange;
+  own: ReportDateRange | undefined;
+  dashboardRange: ReportDateRange;
   onClose: () => void;
-  onSave: (range: ReportDateRange) => void;
+  onSave: (range: ReportDateRange | undefined) => void;
 }) {
-  const [value, setValue] = useState(() => resolveDateRange(initial));
+  const [follow, setFollow] = useState(!own);
+  const [value, setValue] = useState(() => widgetDateRange(own, dashboardRange).range);
+  const option = (active: boolean) =>
+    `flex-1 px-3 py-2 text-sm rounded-md border text-left transition-colors cursor-pointer ${
+      active
+        ? 'border-brand-500 bg-brand-50 text-brand-700'
+        : 'border-border text-text-secondary hover:bg-hover'
+    }`;
+
   return (
     <Modal isOpen onClose={onClose} title="Date range" size="md">
-      <DateRangeControl value={value} onChange={setValue} />
-      <p className="text-xs text-text-tertiary mt-3">
-        {isFrozen(value)
-          ? 'Frozen: this widget keeps showing these months.'
-          : 'Live: this widget moves forward with the current month.'}
-      </p>
+      <div className="flex gap-2 mb-4">
+        <button className={option(follow)} onClick={() => setFollow(true)}>
+          <p className="font-medium">Follow dashboard</p>
+          <p className="text-xs text-text-tertiary">{formatDateRange(dashboardRange)}</p>
+        </button>
+        <button className={option(!follow)} onClick={() => setFollow(false)}>
+          <p className="font-medium">Own date range</p>
+          <p className="text-xs text-text-tertiary">Ignores the dashboard's range</p>
+        </button>
+      </div>
+      {!follow && (
+        <>
+          <DateRangeControl value={value} onChange={setValue} />
+          <p className="text-xs text-text-tertiary mt-3">
+            {isFrozen(value)
+              ? 'Frozen: this widget keeps showing these months.'
+              : 'Live: this widget moves forward with the current month.'}
+          </p>
+        </>
+      )}
       <div className="flex justify-end gap-2 mt-4">
         <Button variant="secondary" onClick={onClose}>
           Cancel
         </Button>
-        <Button onClick={() => onSave(value)}>Save</Button>
+        <Button onClick={() => onSave(follow ? undefined : value)}>Save</Button>
       </div>
     </Modal>
   );

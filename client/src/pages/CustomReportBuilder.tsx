@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { ArrowLeft, Save, Download } from 'lucide-react';
 import ReportBuilderSidebar from '../components/reports/ReportBuilderSidebar';
@@ -13,7 +13,7 @@ import {
 } from '../hooks/useCustomReports';
 import { useDebounce } from '../hooks/useDebounce';
 import { downloadCsv } from '../utils/exportCsv';
-import { computeDateRange, resolveDateRange } from '../utils/dateRange';
+import { computeDateRange, decodeRangeParam, resolveDateRange } from '../utils/dateRange';
 import { Button } from '../components/ui/Button';
 import type { CustomReportConfig } from '../types';
 
@@ -32,7 +32,12 @@ export default function CustomReportBuilder() {
   // The dashboard this report was started from; a new report is added to it on save
   const [searchParams] = useSearchParams();
   const dashboardPageId = searchParams.get('dashboard') ?? undefined;
-  const [config, setConfig] = useState<CustomReportConfig>(defaultConfig);
+  // Opened from a dashboard widget: start with the months that widget shows
+  const rangeParam = decodeRangeParam(searchParams.get('range'));
+  const [config, setConfig] = useState<CustomReportConfig>(() => ({
+    ...defaultConfig(),
+    ...(rangeParam && { dateRange: rangeParam }),
+  }));
   const [saveOpen, setSaveOpen] = useState(false);
   const [reportName, setReportName] = useState('');
 
@@ -42,12 +47,16 @@ export default function CustomReportBuilder() {
 
   const savedReportId = savedReport?.id;
   const savedReportUpdatedAt = savedReport?.updatedAt;
+  // The widget's range only applies when the report first loads, not after saving changes
+  const rangeAppliedFor = useRef<string | undefined>(undefined);
   useEffect(() => {
     if (savedReport) {
+      const firstLoad = rangeAppliedFor.current !== savedReport.id;
+      rangeAppliedFor.current = savedReport.id;
       // Live ranges were computed when the report was saved; bring them up to today
       setConfig({
         ...savedReport.config,
-        dateRange: resolveDateRange(savedReport.config.dateRange),
+        dateRange: (firstLoad && rangeParam) || resolveDateRange(savedReport.config.dateRange),
       });
       setReportName(savedReport.name);
     }

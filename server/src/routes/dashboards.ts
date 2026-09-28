@@ -7,6 +7,7 @@ import { customReports, dashboardPages, dashboardWidgets } from '../db/schema.js
 import {
   GRID_COLS,
   WIDGET_TYPES,
+  dateRangeSchema,
   ensureDefaultDashboard,
   insertWidget,
   metaSchemaFor,
@@ -15,7 +16,11 @@ import {
 
 export const dashboardsRouter = Router();
 
-const pageSchema = z.object({ name: z.string().trim().min(1).max(100) });
+const pageSchema = z.object({
+  name: z.string().trim().min(1).max(100),
+  // The range widgets on this dashboard follow unless they have their own; null = last 6 months
+  dateRange: dateRangeSchema.nullable().optional(),
+});
 
 const createWidgetSchema = z.object({
   type: z.enum(WIDGET_TYPES),
@@ -51,6 +56,10 @@ function parseWidget(w: typeof dashboardWidgets.$inferSelect) {
   return { ...w, meta: JSON.parse(w.meta) };
 }
 
+function parsePage(p: typeof dashboardPages.$inferSelect) {
+  return { ...p, dateRange: p.dateRange ? JSON.parse(p.dateRange) : null };
+}
+
 function getPage(id: string) {
   return db.select().from(dashboardPages).where(eq(dashboardPages.id, id)).get();
 }
@@ -62,7 +71,7 @@ dashboardsRouter.get('/', (_req, res) => {
     .from(dashboardPages)
     .orderBy(asc(dashboardPages.sortOrder), asc(dashboardPages.createdAt))
     .all();
-  res.json(pages);
+  res.json(pages.map(parsePage));
 });
 
 dashboardsRouter.post('/', (req, res) => {
@@ -72,21 +81,30 @@ dashboardsRouter.post('/', (req, res) => {
     .select({ value: max(dashboardPages.sortOrder) })
     .from(dashboardPages)
     .get();
-  const row = { id: nanoid(), name: parsed.data.name, sortOrder: (last?.value ?? -1) + 1 };
+  const { name, dateRange } = parsed.data;
+  const row = {
+    id: nanoid(),
+    name,
+    sortOrder: (last?.value ?? -1) + 1,
+    dateRange: dateRange ? JSON.stringify(dateRange) : null,
+  };
   db.insert(dashboardPages).values(row).run();
-  res.status(201).json(getPage(row.id));
+  res.status(201).json(parsePage(getPage(row.id)!));
 });
 
 dashboardsRouter.put('/:id', (req, res) => {
-  const parsed = pageSchema.safeParse(req.body);
+  const parsed = pageSchema.partial().safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
-  db.update(dashboardPages)
-    .set({ name: parsed.data.name })
-    .where(eq(dashboardPages.id, req.params.id))
-    .run();
+  const { name, dateRange } = parsed.data;
+  const update: Partial<typeof dashboardPages.$inferInsert> = {};
+  if (name !== undefined) update.name = name;
+  if (dateRange !== undefined) update.dateRange = dateRange ? JSON.stringify(dateRange) : null;
+  if (Object.keys(update).length) {
+    db.update(dashboardPages).set(update).where(eq(dashboardPages.id, req.params.id)).run();
+  }
   const page = getPage(req.params.id);
   if (!page) return res.status(404).json({ error: 'Not found' });
-  res.json(page);
+  res.json(parsePage(page));
 });
 
 dashboardsRouter.delete('/:id', (req, res) => {

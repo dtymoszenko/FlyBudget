@@ -1,5 +1,4 @@
 import { asc, eq } from 'drizzle-orm';
-import { format, subMonths } from 'date-fns';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
 import { db } from '../db/index.js';
@@ -27,12 +26,14 @@ export const WIDGET_TYPES = [
 ] as const;
 export type WidgetType = (typeof WIDGET_TYPES)[number];
 
+// A widget without `dateRange` follows its dashboard's range. With one, it has its own range:
+// a live preset, or frozen months that no dashboard change affects.
 const builtinMetaSchema = z.object({
   name: z.string().trim().max(100).optional(),
-  dateRange: dateRangeSchema,
+  dateRange: dateRangeSchema.optional(),
 });
-// Custom report widgets take their name and date range from the report itself
-const customReportMetaSchema = z.object({});
+// Custom report widgets take their name from the report itself
+const customReportMetaSchema = z.object({ dateRange: dateRangeSchema.optional() });
 
 export function metaSchemaFor(type: WidgetType) {
   return type === 'custom-report' ? customReportMetaSchema : builtinMetaSchema;
@@ -47,11 +48,6 @@ export const DEFAULT_SIZE: Record<WidgetType, { width: number; height: number }>
   'spending-trends': { width: 6, height: 4 },
   'custom-report': { width: 6, height: 4 },
 };
-
-function liveSixMonths() {
-  const now = new Date();
-  return { preset: '6m', from: format(subMonths(now, 5), 'yyyy-MM'), to: format(now, 'yyyy-MM') };
-}
 
 type Rect = { x: number; y: number; width: number; height: number };
 const overlaps = (a: Rect, b: Rect) =>
@@ -116,7 +112,7 @@ export function ensureDefaultDashboard() {
       'spending',
       'spending-trends',
     ] as const) {
-      insertWidget(tx, pageId, type, { dateRange: liveSixMonths() });
+      insertWidget(tx, pageId, type, {});
     }
     const reports = tx
       .select({ id: customReports.id })

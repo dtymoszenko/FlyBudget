@@ -1,5 +1,5 @@
 import { apiFetch } from './client';
-import type { BuiltinWidget, DashboardPage, DashboardWidget, WidgetType } from '../types';
+import type { DashboardPage, DashboardWidget, ReportDateRange, WidgetType } from '../types';
 
 export interface WidgetLayoutItem {
   id: string;
@@ -14,8 +14,10 @@ export const getDashboards = () => apiFetch<DashboardPage[]>('/dashboards');
 export const createDashboard = (name: string) =>
   apiFetch<DashboardPage>('/dashboards', { method: 'POST', body: JSON.stringify({ name }) });
 
-export const renameDashboard = (id: string, name: string) =>
-  apiFetch<DashboardPage>(`/dashboards/${id}`, { method: 'PUT', body: JSON.stringify({ name }) });
+export const updateDashboard = (
+  id: string,
+  data: { name?: string; dateRange?: ReportDateRange | null },
+) => apiFetch<DashboardPage>(`/dashboards/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 
 export const deleteDashboard = (id: string) =>
   apiFetch<void>(`/dashboards/${id}`, { method: 'DELETE' });
@@ -27,7 +29,7 @@ export const getWidget = (id: string) => apiFetch<DashboardWidget>(`/dashboards/
 
 export const addWidget = (
   pageId: string,
-  data: { type: WidgetType; meta?: BuiltinWidget['meta']; customReportId?: string },
+  data: { type: WidgetType; meta?: DashboardWidget['meta']; customReportId?: string },
 ) =>
   apiFetch<DashboardWidget>(`/dashboards/${pageId}/widgets`, {
     method: 'POST',
