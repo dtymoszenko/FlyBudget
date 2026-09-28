@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { NavLink } from 'react-router-dom';
 import { Plus, Building2, Link2, ChevronDown, ChevronRight } from 'lucide-react';
 import { useAccounts } from '../../hooks/useAccounts';
@@ -9,6 +10,9 @@ import { ConnectBankModal } from '../plaid/ConnectBankModal';
 import { PlaidSetupModal } from '../plaid/PlaidSetupModal';
 import { SimplefinConnectModal } from '../simplefin/SimplefinConnectModal';
 import type { Account } from '../../types';
+
+/** Three 36px rows plus padding */
+const MENU_HEIGHT = 116;
 
 function AccountRow({ account }: { account: Account }) {
   const isNegative = account.balance < 0;
@@ -41,27 +45,48 @@ export function SidebarAccountList() {
   const [forBudgetOpen, setForBudgetOpen] = useState(false);
   const [offBudgetOpen, setOffBudgetOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
+  // Fixed-position menu anchor; null = closed
+  const [menuPos, setMenuPos] = useState<{ left: number; top?: number; bottom?: number } | null>(
+    null,
+  );
+  const menuOpen = menuPos !== null;
+  const setMenuOpen = (open: boolean) => {
+    if (!open) return setMenuPos(null);
+    const r = buttonRef.current!.getBoundingClientRect();
+    // Open downward when the menu fits below the button, else upward
+    setMenuPos(
+      r.bottom + MENU_HEIGHT + 8 < window.innerHeight
+        ? { left: r.left, top: r.bottom + 4 }
+        : { left: r.left, bottom: window.innerHeight - r.top + 4 },
+    );
+  };
   const [connectOpen, setConnectOpen] = useState(false);
   const [plaidSetupOpen, setPlaidSetupOpen] = useState(false);
   const [simplefinOpen, setSimplefinOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!menuOpen) return;
     function handleClickOutside(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false);
+      const target = e.target as Node;
+      if (!menuRef.current?.contains(target) && !buttonRef.current?.contains(target)) {
+        setMenuPos(null);
       }
     }
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') setMenuOpen(false);
+      if (e.key === 'Escape') setMenuPos(null);
     }
+    const close = () => setMenuPos(null);
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('resize', close);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('resize', close);
     };
   }, [menuOpen]);
 
@@ -132,50 +157,58 @@ export function SidebarAccountList() {
         )}
 
         {/* Add account */}
-        <div className="mt-3 relative" ref={menuRef}>
+        <div className="mt-3">
           <button
-            onClick={() => setMenuOpen((o) => !o)}
+            ref={buttonRef}
+            onClick={() => setMenuOpen(!menuOpen)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-[13px] text-sidebar-text hover:text-sidebar-text-hi transition-colors"
           >
             <Plus size={14} />
             <span>Add account</span>
           </button>
 
-          {menuOpen && (
-            <div className="absolute left-0 bottom-full mb-1 w-48 bg-surface rounded-md border border-border shadow-hover z-30 py-1">
-              <button
-                onClick={() => {
-                  setMenuOpen(false);
-                  setAddOpen(true);
-                }}
-                className="flex items-center gap-2 w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-hover hover:text-text transition-colors"
+          {/* Portaled so the sidebar's scroll area can't clip it */}
+          {menuPos &&
+            createPortal(
+              <div
+                ref={menuRef}
+                className="fixed z-50 min-w-48 w-max bg-surface rounded-md border border-border shadow-hover py-1 animate-menu-in"
+                style={menuPos}
               >
-                <Plus size={14} className="shrink-0" />
-                Add Manual Account
-              </button>
-              <button
-                onClick={() => {
-                  setMenuOpen(false);
-                  if (plaidConfigured) setConnectOpen(true);
-                  else setPlaidSetupOpen(true);
-                }}
-                className="flex items-center gap-2 w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-hover hover:text-text transition-colors"
-              >
-                <Building2 size={14} className="shrink-0" />
-                Connect via Plaid
-              </button>
-              <button
-                onClick={() => {
-                  setMenuOpen(false);
-                  setSimplefinOpen(true);
-                }}
-                className="flex items-center gap-2 w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-hover hover:text-text transition-colors"
-              >
-                <Link2 size={14} className="shrink-0" />
-                Connect via SimpleFIN
-              </button>
-            </div>
-          )}
+                <button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setAddOpen(true);
+                  }}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-left text-sm whitespace-nowrap text-text-secondary hover:bg-hover hover:text-text transition-colors"
+                >
+                  <Plus size={14} className="shrink-0" />
+                  Add Manual Account
+                </button>
+                <button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    if (plaidConfigured) setConnectOpen(true);
+                    else setPlaidSetupOpen(true);
+                  }}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-left text-sm whitespace-nowrap text-text-secondary hover:bg-hover hover:text-text transition-colors"
+                >
+                  <Building2 size={14} className="shrink-0" />
+                  Connect via Plaid
+                </button>
+                <button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setSimplefinOpen(true);
+                  }}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-left text-sm whitespace-nowrap text-text-secondary hover:bg-hover hover:text-text transition-colors"
+                >
+                  <Link2 size={14} className="shrink-0" />
+                  Connect via SimpleFIN
+                </button>
+              </div>,
+              document.body,
+            )}
         </div>
       </div>
 
