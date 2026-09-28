@@ -44,6 +44,18 @@ FlyBudget is **local-first**. Your budget lives in a database file on your own c
 
 The only time FlyBudget talks to the internet is when bank sync connects to **Plaid** or **SimpleFIN** on your behalf, always over encrypted HTTPS.
 
+## If you host FlyBudget yourself
+
+You can also [run FlyBudget on your own server with Docker](./self-hosting.mdx) and open it in a browser. Then your data lives on _your_ server instead of your computer, and a few extra protections apply:
+
+- **A password protects everything.** You create it on the first visit. It's stored as a scrypt hash, never in plain text, and after 10 wrong attempts logins are blocked for 15 minutes.
+- **Login sessions are hard to steal.** Each one is a random 256-bit token kept in a cookie that scripts can't read and other websites can't send, stored on the server only as a hash, and expiring after 30 days. Changing your password signs out every other device.
+- **Bank credentials are always encrypted.** The server refuses to start without an encryption key, which you keep outside the database as a Docker secret.
+- **The container is locked down.** It runs as an unprivileged user, and the example setup makes its filesystem read-only and drops all Linux privileges.
+- **Images are verifiable.** They're built by GitHub from the public source, with a signed build attestation, just like the desktop installer.
+
+Use HTTPS (through a reverse proxy like Caddy) before making your server reachable from the internet. The [self-hosting guide](./self-hosting.mdx) shows how.
+
 ## Your bank connections
 
 ### Plaid

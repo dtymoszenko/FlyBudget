@@ -19,6 +19,20 @@
 
 ---
 
+## Self-hosting
+
+Besides the desktop app, FlyBudget can run on your own server in Docker, protected
+by a password, so you can open it from any browser:
+
+```bash
+openssl rand -base64 32 > flybudget_data_key.txt   # encryption key for bank credentials
+docker compose up -d                                # uses docker-compose.yml from this repo
+```
+
+Then open `http://<your-server>:3001` and create your password. See the
+[self-hosting guide](https://flybudget.org/community/self-hosting) for HTTPS,
+backups and updates.
+
 ## Security & privacy
 
 FlyBudget is local-first: your data stays on your computer, with no FlyBudget

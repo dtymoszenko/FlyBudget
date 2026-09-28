@@ -1,0 +1,16 @@
+# Only client/ and server/ sources go into the image build
+**/node_modules
+**/dist
+**/*.db
+**/*.db-*
+**/.env
+**/*.tsbuildinfo
+**/*.test.ts
+.git
+.github
+electron
+dist-electron
+website
+build
+docs
+*.md

@@ -45,6 +45,8 @@ Especially in scope:
   FlyBudget data or bank-sync credentials
 - ways to make the local API reachable from outside the machine
 - vulnerabilities in the Electron desktop app
+- in the self-hosted Docker server: getting past the password login, stealing
+  or forging sessions, or reading data or credentials without logging in
 
 Out of scope:
 
@@ -60,6 +62,26 @@ Out of scope:
 FlyBudget is local-first: there is no FlyBudget server, account, telemetry, or
 crash reporting. Your data never leaves your computer except when bank sync
 talks to Plaid or SimpleFIN on your behalf.
+
+You can also host FlyBudget yourself with Docker ("server mode", see
+[Self-hosting](https://flybudget.org/community/self-hosting)). Then the data
+lives on your server, and:
+
+- a password protects every API route (scrypt hash; 10 failed attempts per 15
+  minutes, then blocked)
+- sessions are random 256-bit tokens, stored server-side only as SHA-256
+  hashes, sent in an HttpOnly, SameSite=Strict cookie (Secure over HTTPS),
+  expiring after 30 days; changing the password ends every other session
+- the server refuses to start without a credential encryption key, supplied as
+  a Docker secret (`FLYBUDGET_DATA_KEY_FILE`) rather than stored with the
+  database
+- the container runs as an unprivileged user; the example Compose file adds a
+  read-only filesystem, drops all capabilities and sets `no-new-privileges`
+- images are built in GitHub Actions for amd64 and arm64, base images are
+  pinned by digest, and each image has signed SLSA build provenance
+  (`gh attestation verify oci://ghcr.io/dtymoszenko/flybudget:<version> -R dtymoszenko/FlyBudget`)
+
+Run it behind an HTTPS reverse proxy before exposing it to the internet.
 
 ### What is stored, and where
 

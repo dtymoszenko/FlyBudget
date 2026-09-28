@@ -50,3 +50,17 @@ updates:
       actions:
         patterns:
           - '*'
+
+  - package-ecosystem: docker
+    directory: '/'
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: build
+    # Stay on the Node 24 LTS line; major Node upgrades are done by hand
+    ignore:
+      - dependency-name: node
+        update-types: ['version-update:semver-major']

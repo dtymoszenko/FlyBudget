@@ -1,0 +1,140 @@
+---
+title: Self-hosting with Docker
+sidebar_label: Self-hosting (Docker)
+---
+
+# Self-hosting with Docker
+
+Besides the desktop app, you can run FlyBudget on your own server (a home server, a NAS, or a small cloud machine) and open it from any browser, like Actual Budget or Firefly III. It runs in a single Docker container, and a password protects it.
+
+:::info
+
+The desktop app doesn't need any of this. Self-hosting is for when you want to reach your budget from several devices, or share it with someone in your household.
+
+:::
+
+## Quick start
+
+You need [Docker](https://docs.docker.com/get-docker/) with Docker Compose.
+
+1. Create a folder for FlyBudget and download the example [`docker-compose.yml`](https://github.com/dtymoszenko/FlyBudget/blob/main/docker-compose.yml) into it.
+2. Create the encryption key that protects your stored bank credentials:
+
+   ```bash
+   openssl rand -base64 32 > flybudget_data_key.txt
+   ```
+
+   Keep a copy of this file somewhere safe (a password manager works well). Without it, FlyBudget can't read your saved bank connections, and you'd have to connect your banks again.
+
+3. Start FlyBudget:
+
+   ```bash
+   docker compose up -d
+   ```
+
+4. Open `http://<your-server>:3001` in a browser. The first visit asks you to **create a password**. Do this right away: until a password is set, anyone who can reach the server could set it.
+
+That's it. Your budget is stored in the `flybudget-data` Docker volume.
+
+### Without Compose
+
+```bash
+docker run -d --name flybudget -p 3001:3001 \
+  -v flybudget-data:/data \
+  -v "$PWD/flybudget_data_key.txt:/run/secrets/flybudget_data_key:ro" \
+  -e FLYBUDGET_DATA_KEY_FILE=/run/secrets/flybudget_data_key \
+  --restart unless-stopped \
+  ghcr.io/dtymoszenko/flybudget:latest
+```
+
+### Building the image yourself
+
+```bash
+git clone https://github.com/dtymoszenko/FlyBudget.git
+cd FlyBudget
+docker build -t flybudget .
+```
+
+Then use `flybudget` instead of `ghcr.io/dtymoszenko/flybudget:latest`.
+
+## Using it over the internet: HTTPS
+
+On your home network, `http://` is fine. **Before making FlyBudget reachable from the internet, put it behind a reverse proxy that provides HTTPS**, such as [Caddy](https://caddyserver.com/), Traefik, or nginx. Otherwise your password and budget travel unencrypted.
+
+With Caddy, the whole configuration is:
+
+```
+budget.example.com {
+    reverse_proxy flybudget:3001
+}
+```
+
+Then tell FlyBudget about the proxy and your address in `docker-compose.yml`:
+
+```yaml
+environment:
+  - FLYBUDGET_TRUST_PROXY=1
+  - FLYBUDGET_ALLOWED_HOSTS=budget.example.com
+```
+
+`FLYBUDGET_TRUST_PROXY=1` lets FlyBudget see that the connection is HTTPS, so your login cookie is only ever sent over HTTPS.
+
+## Settings
+
+| Variable                  | What it does                                                                                                                               |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `FLYBUDGET_DATA_KEY_FILE` | Path to the file holding the encryption key (a Docker secret). **Required** (or `FLYBUDGET_DATA_KEY`).                                     |
+| `FLYBUDGET_DATA_KEY`      | The key itself, instead of a file. Less private: anyone who can run `docker inspect` can see it.                                           |
+| `FLYBUDGET_ALLOWED_HOSTS` | Comma-separated addresses FlyBudget answers to, e.g. `budget.example.com,192.168.1.20`. Recommended; by default it answers to any address. |
+| `FLYBUDGET_TRUST_PROXY`   | Set to the number of reverse proxies in front of FlyBudget (usually `1`) when using one.                                                   |
+| `PORT`                    | Port inside the container (default `3001`). You'll usually change the port mapping in `docker-compose.yml` instead.                        |
+
+## Your password
+
+- Change it in **Settings → Server**. Changing it signs out every other device.
+- After 10 wrong attempts, logins are blocked for 15 minutes.
+- Forgot it? Stop the container and remove the saved password, then start it again and set a new one:
+
+  ```bash
+  docker compose stop
+  docker run --rm -v flybudget-data:/data ghcr.io/dtymoszenko/flybudget:latest \
+    node -e "const db=require('better-sqlite3')('/data/budget.db');db.exec('DELETE FROM auth_config; DELETE FROM sessions;')"
+  docker compose start
+  ```
+
+  Then open FlyBudget right away and create a new password.
+
+## Backups
+
+Everything lives in one SQLite file, `budget.db`, in the `/data` volume. To back it up:
+
+```bash
+docker compose stop
+docker run --rm -v flybudget-data:/data -v "$PWD":/backup alpine cp /data/budget.db /backup/
+docker compose start
+```
+
+You can also export your data from **Settings → Data** at any time. Keep your `flybudget_data_key.txt` backed up separately from the database.
+
+## Updating
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+Database updates are applied automatically when the new version starts. Back up first, just in case.
+
+## How the container is secured
+
+- It runs as an unprivileged user, never as root.
+- The example Compose file makes the container's filesystem read-only, drops all Linux capabilities, and blocks privilege escalation.
+- Passwords are stored as scrypt hashes, never in plain text. Login sessions are random 256-bit tokens, stored only as hashes, in a cookie scripts can't read, and they expire after 30 days.
+- Bank credentials (Plaid and SimpleFIN) are encrypted with your key, which is kept outside the database.
+- Every image is built by GitHub Actions from the public source code, for both `amd64` and `arm64`, with a signed build attestation. You can check an image really came from this repository:
+
+  ```bash
+  gh attestation verify oci://ghcr.io/dtymoszenko/flybudget:latest -R dtymoszenko/FlyBudget
+  ```
+
+See [Security](./security.mdx) for everything else FlyBudget does to keep your data safe.

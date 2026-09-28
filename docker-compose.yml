@@ -1,0 +1,44 @@
+# Run FlyBudget on your own server:
+#
+#   1. Create the encryption key for stored bank credentials (once, keep a backup):
+#        openssl rand -base64 32 > flybudget_data_key.txt
+#   2. docker compose up -d
+#   3. Open http://<your-server>:3001 and create your password.
+#
+# Put FlyBudget behind a reverse proxy with HTTPS (Caddy, Traefik, nginx…) before
+# exposing it to the internet. More options: https://flybudget.org/docs/self-hosting
+
+services:
+  flybudget:
+    image: ghcr.io/dtymoszenko/flybudget:latest
+    container_name: flybudget
+    ports:
+      # Change the first number to use a different port on your server
+      - '3001:3001'
+    environment:
+      # Encryption key for Plaid/SimpleFIN credentials, read from the secret below
+      - FLYBUDGET_DATA_KEY_FILE=/run/secrets/flybudget_data_key
+      # Only answer to these addresses (recommended). Comma-separated, e.g.
+      # - FLYBUDGET_ALLOWED_HOSTS=budget.example.com,192.168.1.20
+      # Behind a reverse proxy, trust it so HTTPS cookies work (number of proxies):
+      # - FLYBUDGET_TRUST_PROXY=1
+    secrets:
+      - flybudget_data_key
+    volumes:
+      # Your budget database lives here. Back it up!
+      - flybudget-data:/data
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+secrets:
+  flybudget_data_key:
+    file: ./flybudget_data_key.txt
+
+volumes:
+  flybudget-data:

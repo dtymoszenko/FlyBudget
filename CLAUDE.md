@@ -37,6 +37,14 @@ npm run electron:build  # full build pipeline with electron-builder
 
 `better-sqlite3` (v13+) ships Node-API prebuilds that load in both Node and Electron, so no native rebuild is needed when switching between `npm run dev` and Electron.
 
+**Docker (self-hosted server mode):**
+
+```bash
+docker build -t flybudget .   # Dockerfile at the root; docker-compose.yml is the example users run
+```
+
+The image bundles the server with esbuild (only `better-sqlite3` stays in `node_modules`), serves the built client, runs as the `node` user with data in `/data`, and sets `FLYBUDGET_SERVER_MODE=true`. `.github/workflows/docker.yml` builds and smoke-tests the container on every PR and publishes `ghcr.io/dtymoszenko/flybudget` (amd64 + arm64, with provenance) on `v*` tags. User docs: `website/community/self-hosting.mdx`.
+
 **Type checking:**
 
 ```bash
