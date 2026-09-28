@@ -11,6 +11,7 @@ const sidebars: SidebarsConfig = {
       collapsed: false,
       items: ['contributing/ai-usage', 'contributing/commit-conventions'],
     },
+    'security',
     {
       type: 'link',
       label: 'Current Bug Reports',

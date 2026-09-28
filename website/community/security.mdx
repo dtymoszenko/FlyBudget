@@ -1,0 +1,133 @@
+---
+title: Security
+sidebar_label: Security
+---
+
+# Security
+
+FlyBudget handles something personal: your money. We've tried to be as careful as we possibly can with it, and this page explains, in plain language, everything we do to keep your data and your bank connections safe.
+
+:::tip Found a security problem? Tell us privately
+
+If you think you've found a security issue, no matter how small or unlikely, please **[report it privately on GitHub](https://github.com/dtymoszenko/FlyBudget/security/advisories/new)** rather than opening a public issue. Only the maintainers can see private reports, which gives us time to fix the problem before anyone can take advantage of it. We aim to respond within 7 days, and we'll credit you when the fix ships (unless you'd rather stay anonymous). Our full policy is in [SECURITY.md](https://github.com/dtymoszenko/FlyBudget/blob/main/SECURITY.md).
+
+:::
+
+## The short version
+
+- **Your data stays on your computer.** No FlyBudget account, no FlyBudget server, no tracking, and no crash reports.
+- **Your bank credentials are encrypted,** with a key protected by your operating system.
+- **You log in to your bank on your bank's or Plaid's own page,** never inside FlyBudget.
+- **Every release is signed,** so you can verify that the download is genuinely ours.
+- **Every change is checked automatically** for security problems before it can be merged.
+
+## Our security ratings
+
+We don't just say FlyBudget is secure. We let independent tools check it, publicly.
+
+| Check                                                                                             | Result (September 2026) |
+| ------------------------------------------------------------------------------------------------- | ----------------------- |
+| [OpenSSF Scorecard](https://scorecard.dev/viewer/?uri=github.com/dtymoszenko/FlyBudget)           | **8.6 / 10**            |
+| Known vulnerabilities in dependencies (Dependabot)                                                | **0 open**              |
+| Security issues found in our code ([CodeQL](https://codeql.github.com/), extended security rules) | **0 open**              |
+| Leaked secrets in the repository (GitHub secret scanning, full history)                           | **0 found**             |
+
+The live score is always here:
+
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/dtymoszenko/FlyBudget/badge)](https://scorecard.dev/viewer/?uri=github.com/dtymoszenko/FlyBudget)
+
+The [OpenSSF Scorecard](https://openssf.org/projects/scorecard/) is an independent rating from the Open Source Security Foundation. FlyBudget scores a perfect 10 on 12 of its checks, including signed releases, pinned dependencies, least-privilege automation, dependency updates, fuzz testing, and having no known vulnerabilities. The points we don't have yet mostly come from being a young project with one maintainer, such as having a second person review every change. We're working on that.
+
+## Your data stays yours
+
+FlyBudget is **local-first**. Your budget lives in a database file on your own computer, and the app talks to its own small built-in server that only listens on your machine (`127.0.0.1`). There is no FlyBudget cloud to be breached, no account to be phished, and no analytics.
+
+The only time FlyBudget talks to the internet is when bank sync connects to **Plaid** or **SimpleFIN** on your behalf, always over encrypted HTTPS.
+
+## Your bank connections
+
+### Plaid
+
+- **You log in on Plaid's own page, in your web browser.** When you connect a bank, FlyBudget opens Plaid's secure hosted page in your browser, the same browser you already trust with your bank, where your password manager works and banks that use OAuth (like Chase and Wells Fargo) work normally. Your bank password never passes through FlyBudget.
+- **Tokens never reach the app's screen.** Plaid gives the built-in server a token for reading your transactions. It's exchanged and stored on the server side only, and the interface never sees it.
+- **Tokens are encrypted** before they're saved (see below).
+- **Disconnecting really disconnects.** When you remove a bank, FlyBudget tells Plaid to **revoke** access, not just forget it locally. We tested this against Plaid: after disconnecting, the old token is rejected. If Plaid can't be reached at that moment, FlyBudget keeps the connection and asks you to try again, rather than leaving a live token behind.
+- **You use your own Plaid keys,** so no third party sits between you and your bank data.
+
+### SimpleFIN
+
+- **Your SimpleFIN access is encrypted** before it's saved.
+- **Protected against tricks.** A SimpleFIN setup token is really a web address. FlyBudget only follows secure public `https` addresses, checks the real destination at the moment it connects, and re-checks every redirect, so a malicious token can't point FlyBudget at your home network or other private systems.
+- **Bank data is double-checked.** Everything SimpleFIN sends is validated before it's saved, and amounts are converted to exact cents, so malformed data can't corrupt your budget.
+- **Disconnecting:** SimpleFIN doesn't offer a way for apps to revoke access, so FlyBudget deletes its copy and reminds you to also remove the app in your [SimpleFIN Bridge](https://bridge.simplefin.org) account.
+
+## Encryption
+
+Your most sensitive secrets (your Plaid keys, your Plaid access tokens, and your SimpleFIN access) are encrypted with **AES-256-GCM**, the same standard used by banks and governments. The encryption key itself is protected by your operating system (Windows DPAPI, the macOS Keychain, or the Linux secret service), so it only works for your user account on your computer.
+
+That means a copied or backed-up database file **does not** give anyone access to your bank accounts.
+
+Your budget and transactions themselves are protected by your operating system account, the same way Actual Budget, Firefly III, and most other local finance apps work. For the best protection, turn on full-disk encryption (see [below](#what-you-can-do)).
+
+## The app itself
+
+**The built-in server only answers FlyBudget.** Other websites you have open can't read your data or quietly make changes, even though the server is running on your computer. In the desktop app, every request also needs a secret that's created fresh each time you open FlyBudget, so other programs and other users on the same computer can't get in either.
+
+**A strict Content Security Policy.** The app is only allowed to run its own code and only allowed to talk to its own server. No third-party scripts, fonts, trackers, or frames are loaded at all, even the fonts are bundled with the app.
+
+**A locked-down desktop app.** The FlyBudget window:
+
+- runs in a sandbox with no direct access to your computer,
+- can't be steered to other websites,
+- refuses every request for your camera, microphone, location, or notifications,
+- only opens secure `https` links, in your normal browser,
+- disables developer tools in releases, and
+- refuses to start if its own files have been tampered with.
+
+**Careful with your files.** Exported spreadsheets are protected against "formula injection," where a booby-trapped merchant name could run something when you open the file in Excel. Error messages never reveal details about your computer.
+
+## Verifying your download
+
+Every release is built by GitHub from the public source code and signed with [Sigstore](https://www.sigstore.dev/), with [SLSA build provenance](https://slsa.dev/) that records exactly how and where it was built. You can check that the installer you downloaded is genuine with the [GitHub CLI](https://cli.github.com/):
+
+```bash
+gh attestation verify FlyBudget-Setup-<version>.exe -R dtymoszenko/FlyBudget
+```
+
+If the file was modified in any way, even by a single byte, verification fails. Only download FlyBudget from our [GitHub Releases page](https://github.com/dtymoszenko/FlyBudget/releases).
+
+## How we build FlyBudget
+
+Security isn't a one-time checklist, so these run on every single change:
+
+- **Automated tests** on every pull request, including property-based tests that try hundreds of random inputs against each rule for the money math, the bank-data handling, and the security protections.
+- **CodeQL** scans the code with GitHub's extended security rules.
+- **Dependabot** watches every dependency for known vulnerabilities and opens fixes automatically.
+- **Supply-chain protection:** new package versions wait 7 days before we adopt them (hijacked releases are usually caught within days), install scripts from packages are blocked entirely, and every package's registry signature is verified.
+- **Pinned automation:** every GitHub Action is pinned to an exact, reviewed version, with the minimum permissions it needs.
+- **Protected main branch:** nothing is merged unless the full test suite passes.
+- **Secret scanning with push protection** blocks accidental commits of keys or passwords.
+
+## What you can do
+
+FlyBudget can protect you from a lot, but not from someone who already controls your computer. A few simple habits make a big difference:
+
+- **Turn on full-disk encryption:** BitLocker on Windows, FileVault on Mac.
+- **Use a strong password** for your computer login.
+- **Treat exports and backups as private.** They contain your full financial history (but never your bank credentials).
+- **Download FlyBudget only from our GitHub Releases page,** and verify it with the command above.
+- **Disconnect banks you no longer use.**
+
+## Being honest about what we can't do
+
+No software can promise to be perfectly secure, and we'd rather be upfront than overpromise:
+
+- Anyone who can log in to your computer as you can see your budget. Full-disk encryption and a strong login password are your best protection.
+- FlyBudget is maintained by a small team. Independent audits and more reviewers are on our wish list.
+- Plaid and SimpleFIN are separate services with their own security. Issues with them should be reported to them directly.
+
+## Report a vulnerability
+
+If you find anything that could put FlyBudget users at risk, please **[report it privately on GitHub](https://github.com/dtymoszenko/FlyBudget/security/advisories/new)**. Include what you found, how to reproduce it, and why you think it matters. Please don't post it publicly until we've had a chance to fix it.
+
+Thank you for helping keep FlyBudget and everyone who uses it safe. 💙
