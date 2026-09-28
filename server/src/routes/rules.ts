@@ -8,20 +8,35 @@ import { previewRules, runRules, testConditions } from '../services/rulesEngine.
 
 export const rulesRouter = Router();
 
-const conditionSchema = z.object({
-  field: z.enum(['payee_name', 'amount', 'notes']),
-  op: z.enum(['contains', 'starts_with', 'ends_with', 'exact', 'regex']),
-  value: z.string(),
-});
+const conditionSchema = z
+  .object({
+    field: z.enum(['payee_name', 'amount', 'notes']),
+    op: z.enum(['contains', 'starts_with', 'ends_with', 'exact', 'regex']),
+    // Regexes run against every transaction; keep them short to limit catastrophic backtracking
+    value: z.string().max(500),
+  })
+  .refine((c) => c.op !== 'regex' || (c.value.length <= 200 && isValidRegex(c.value)), {
+    message: 'Invalid regular expression (max 200 characters)',
+    path: ['value'],
+  });
+
+function isValidRegex(pattern: string): boolean {
+  try {
+    new RegExp(pattern, 'i');
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 const actionSchema = z.object({
   field: z.enum(['category_id', 'payee_id', 'notes']),
-  value: z.string(),
+  value: z.string().max(5_000),
 });
 
 const ruleSchema = z.object({
-  conditions: z.array(conditionSchema),
-  actions: z.array(actionSchema),
+  conditions: z.array(conditionSchema).max(50),
+  actions: z.array(actionSchema).max(50),
   sortOrder: z.number().int().default(0),
 });
 

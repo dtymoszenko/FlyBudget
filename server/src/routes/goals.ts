@@ -11,7 +11,11 @@ const createSchema = z.object({
   name: z.string().min(1),
   targetAmount: z.number().int(),
   currentAmount: z.number().int().optional(),
-  targetDate: z.string().nullable().optional(),
+  targetDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable()
+    .optional(),
   accountId: z.string().nullable().optional(),
   icon: z.string().optional(),
   color: z.string().optional(),

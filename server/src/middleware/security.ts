@@ -1,5 +1,5 @@
 import { timingSafeEqual } from 'crypto';
-import type { RequestHandler } from 'express';
+import type { ErrorRequestHandler, RequestHandler } from 'express';
 import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
 
@@ -130,3 +130,28 @@ export const bankRateLimit = rateLimit({
   legacyHeaders: false,
   message: { error: 'Too many bank requests. Wait a minute and try again.' },
 });
+
+/** Unknown API routes get a JSON 404 instead of Express's HTML page. */
+export const apiNotFound: RequestHandler = (_req, res) => {
+  res.status(404).json({ error: 'Not found' });
+};
+
+/**
+ * Last-resort error handler. Express's default one sends the stack trace (with
+ * file paths) to the client unless NODE_ENV=production, which the app doesn't
+ * set. Details go to the server log only.
+ */
+export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
+  if (res.headersSent) return next(err);
+  const status = typeof err?.status === 'number' && err.status >= 400 ? err.status : 500;
+  if (status >= 500) console.error(`Error on ${req.method} ${req.path}:`, err);
+  const message =
+    err?.type === 'entity.parse.failed'
+      ? 'Invalid JSON'
+      : err?.type === 'entity.too.large'
+        ? 'Request too large'
+        : status < 500
+          ? 'Bad request'
+          : 'Internal server error';
+  res.status(status).json({ error: message });
+};

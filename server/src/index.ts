@@ -2,8 +2,10 @@ import express from 'express';
 import cors from 'cors';
 import {
   DEV_CLIENT_ORIGINS,
+  apiNotFound,
   apiTokenGuard,
   bankRateLimit,
+  errorHandler,
   hostGuard,
   originGuard,
   securityHeaders,
@@ -46,7 +48,8 @@ app.use(securityHeaders);
 // this server, see startServer) are same-origin already; this covers direct
 // cross-origin dev requests to :3001.
 app.use(cors({ origin: DEV_CLIENT_ORIGINS }));
-app.use(express.json());
+// Large enough for big CSV imports; requests over this are rejected with 413
+app.use(express.json({ limit: '10mb' }));
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 app.use('/api/accounts', accountsRouter);
@@ -62,6 +65,7 @@ app.use('/api/schedules', schedulesRouter);
 app.use('/api/goals', goalsRouter);
 app.use('/api/plaid', bankRateLimit, plaidRouter);
 app.use('/api/simplefin', bankRateLimit, simplefinRouter);
+app.use('/api', apiNotFound);
 
 export async function startServer(port: number | string): Promise<void> {
   if (process.env.ELECTRON_PROD) {
@@ -74,6 +78,8 @@ export async function startServer(port: number | string): Promise<void> {
   if (process.env.CLIENT_DIST) {
     app.use(express.static(process.env.CLIENT_DIST));
   }
+  // Registered last so it also covers errors from the static handler above
+  app.use(errorHandler);
   return new Promise((resolve) => {
     app.listen(Number(port), '127.0.0.1', () => {
       console.log(`Server running on http://localhost:${port}`);

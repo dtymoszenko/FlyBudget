@@ -14,12 +14,17 @@ import { z } from 'zod';
 
 export const exportRouter = Router();
 
-function escapeCsv(val: string | null | undefined): string {
+/**
+ * Quotes a text cell for CSV. Payee names and notes can come from banks and
+ * merchants, so cells that a spreadsheet would treat as a formula (=, +, -, @,
+ * tab, CR) are prefixed with an apostrophe to block CSV formula injection
+ * (https://owasp.org/www-community/attacks/CSV_Injection).
+ */
+export function escapeCsv(val: string | null | undefined): string {
   if (val == null) return '';
-  const s = String(val);
-  if (s.includes(',') || s.includes('"') || s.includes('\n')) {
-    return `"${s.replace(/"/g, '""')}"`;
-  }
+  let s = String(val);
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
   return s;
 }
 

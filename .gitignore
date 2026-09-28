@@ -30,3 +30,13 @@ build/
 
 # Claude
 .claude/
+
+# Local data and secrets: never commit
+*.sqlite
+*.sqlite3
+.env.*
+!.env.example
+credentials.key
+*.pem
+budget-backup-*.json
+transactions*.csv

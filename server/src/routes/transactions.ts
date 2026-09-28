@@ -37,20 +37,29 @@ const transferSchema = z.object({
   notes: z.string().nullable().optional(),
 });
 
+// Imported files are untrusted: validate dates and cap sizes
 const importRowSchema = z.object({
-  date: z.string(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   amount: z.number().int(),
-  payeeName: z.string().nullable().optional(),
-  notes: z.string().nullable().optional(),
-  importedId: z.string(),
+  payeeName: z.string().max(500).nullable().optional(),
+  notes: z.string().max(5_000).nullable().optional(),
+  importedId: z.string().max(500),
 });
+const importRowsSchema = z.array(importRowSchema).max(100_000);
 
 // GET /transactions — excludes split children; attaches children array to parents
 transactionsRouter.get('/', (req, res) => {
-  const { account_id, month, from, to, category_id, category_ids, category_group_id, search, reconciled } = req.query as Record<
-    string,
-    string
-  >;
+  const {
+    account_id,
+    month,
+    from,
+    to,
+    category_id,
+    category_ids,
+    category_group_id,
+    search,
+    reconciled,
+  } = req.query as Record<string, string>;
 
   let query = db.select().from(transactions).$dynamic();
 
@@ -69,7 +78,8 @@ transactionsRouter.get('/', (req, res) => {
     conditions.push(eq(transactions.categoryId, category_id));
   }
   if (category_group_id) {
-    const catIds = db.select({ id: categories.id })
+    const catIds = db
+      .select({ id: categories.id })
       .from(categories)
       .where(eq(categories.groupId, category_group_id))
       .all()
@@ -241,7 +251,7 @@ transactionsRouter.post('/transfer', (req, res) => {
 // POST /transactions/import/preview — check for duplicates before importing
 transactionsRouter.post('/import/preview', (req, res) => {
   const parsed = z
-    .object({ accountId: z.string(), rows: z.array(importRowSchema) })
+    .object({ accountId: z.string().max(64), rows: importRowsSchema })
     .safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
@@ -266,7 +276,7 @@ transactionsRouter.post('/import/preview', (req, res) => {
 // POST /transactions/import/confirm — insert non-duplicate rows
 transactionsRouter.post('/import/confirm', (req, res) => {
   const parsed = z
-    .object({ accountId: z.string(), rows: z.array(importRowSchema) })
+    .object({ accountId: z.string().max(64), rows: importRowsSchema })
     .safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 

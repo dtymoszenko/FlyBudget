@@ -101,6 +101,9 @@ The API has no login, so `server/src/middleware/security.ts` makes sure only the
 - **Bank data is untrusted input**: SimpleFIN responses are validated with Zod (`parseSimplefinResponse`), amounts are converted to cents exactly (no `parseFloat`), and payee text is stripped of control characters and capped at 200 chars.
 - **Plaid**: access tokens never leave the server. Disconnecting calls `/item/remove` to revoke the token at Plaid _before_ deleting it locally; if Plaid can't be reached, the connection is kept so the user can retry. Plaid calls time out after 30s. Only `sandbox` and `production` are valid environments (legacy `development` configs map to Sandbox).
 - **Rate limiting**: mutating `/api/plaid` and `/api/simplefin` requests are limited to 20/minute (`bankRateLimit`); GETs are not limited.
+- **Errors**: `errorHandler` (registered last in `startServer`) returns generic JSON errors and logs details server-side; never send `err.stack` or raw exception messages to the client. Unknown `/api` routes get a JSON 404. Request bodies are capped at 10 MB.
+- **CSV export**: `escapeCsv` prefixes cells starting with `=`, `+`, `-`, `@`, tab or CR with `'` (CSV formula injection: payee names come from banks and merchants). Use it for every text cell.
+- **Validation**: dates must match `YYYY-MM-DD`, imported rows are capped at 100k, and rule regexes must compile and be at most 200 characters.
 - **Packaging** (`electron-builder.json`): the app ships in `app.asar` with embedded integrity validation (a modified file makes the app refuse to start), and Electron fuses disable `ELECTRON_RUN_AS_NODE`, `NODE_OPTIONS` and `--inspect`. `better-sqlite3` is unpacked from the asar because it's a native module.
 
 ### Key conventions
