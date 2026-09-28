@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { KeyRound, ExternalLink } from 'lucide-react';
 import { useConfigurePlaid } from '../../hooks/usePlaid';
+import { PlaidEnvironmentSelect, type PlaidEnvironment } from './PlaidEnvironmentSelect';
 import { Button } from '../ui/Button';
 
 export function PlaidConfigForm() {
   const [clientId, setClientId] = useState('');
   const [secret, setSecret] = useState('');
+  const [environment, setEnvironment] = useState<PlaidEnvironment>('production');
   const configure = useConfigurePlaid();
 
   async function handleSubmit(e: React.FormEvent) {
@@ -14,7 +16,7 @@ export function PlaidConfigForm() {
     await configure.mutateAsync({
       clientId: clientId.trim(),
       secret: secret.trim(),
-      environment: 'development',
+      environment,
     });
   }
 
@@ -64,6 +66,7 @@ export function PlaidConfigForm() {
             className="w-full text-sm border border-border rounded-md px-3 py-2 bg-surface text-text focus:outline-none focus:ring-1 focus:ring-brand-600 focus:border-brand-600"
           />
         </div>
+        <PlaidEnvironmentSelect value={environment} onChange={setEnvironment} />
         <Button type="submit" disabled={!clientId.trim() || !secret.trim() || configure.isPending}>
           {configure.isPending ? 'Saving...' : 'Save Credentials'}
         </Button>

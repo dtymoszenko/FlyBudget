@@ -78,7 +78,12 @@ export async function syncSimplefinConnection(connectionId: string): Promise<Sim
           tx.posted > 0
             ? new Date(tx.posted * 1000).toISOString().split('T')[0]
             : new Date().toISOString().split('T')[0];
-        const payeeName = tx.description || 'Unknown';
+        // Bank-supplied text: strip control characters and cap the length
+        const payeeName =
+          tx.description
+            .replace(/[\u0000-\u001f\u007f]/g, ' ')
+            .trim()
+            .slice(0, 200) || 'Unknown';
         const payee = resolvePayee(payeeName, null);
         const auto = inferCategory(payee.payeeId, payee.payeeName, amount, null);
 

@@ -40,8 +40,9 @@ export function ConnectedInstitutionCard({ item }: Props) {
     syncItem.mutate(item.id);
   }, [item.id, syncItem]);
 
-  async function handleDisconnect() {
-    await disconnectItem.mutateAsync(item.id);
+  function handleDisconnect() {
+    // Errors (e.g. Plaid unreachable, so access couldn't be revoked) are shown on the card
+    disconnectItem.mutate(item.id);
   }
 
   const enabledAccounts = item.accounts.filter((a) => a.isEnabled);
@@ -70,6 +71,13 @@ export function ConnectedInstitutionCard({ item }: Props) {
           <div className="flex items-start gap-2 bg-negative-subtle border border-negative/10 rounded-md px-3 py-2">
             <AlertTriangle size={14} className="text-negative mt-0.5 shrink-0" />
             <p className="text-xs text-negative">{item.syncError}</p>
+          </div>
+        )}
+
+        {disconnectItem.isError && (
+          <div className="flex items-start gap-2 bg-negative-subtle border border-negative/10 rounded-md px-3 py-2">
+            <AlertTriangle size={14} className="text-negative mt-0.5 shrink-0" />
+            <p className="text-xs text-negative">{disconnectItem.error.message}</p>
           </div>
         )}
 
@@ -156,7 +164,7 @@ export function ConnectedInstitutionCard({ item }: Props) {
         onClose={() => setShowDisconnect(false)}
         onConfirm={handleDisconnect}
         title="Disconnect Institution"
-        message={`Are you sure you want to disconnect ${item.institutionName}? Your existing accounts and transactions will not be deleted.`}
+        message={`Are you sure you want to disconnect ${item.institutionName}? This revokes FlyBudget's access to this bank at Plaid. Your existing accounts and transactions will not be deleted.`}
         confirmLabel="Disconnect"
         danger
       />

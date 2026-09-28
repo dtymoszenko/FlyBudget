@@ -8,6 +8,8 @@ import {
   claimAccessUrl,
   fetchAccounts,
   connectionNameFromResponse,
+  simpleFinBalanceToCents,
+  InvalidSetupTokenError,
 } from '../services/simplefinService.js';
 import {
   syncSimplefinConnection,
@@ -17,7 +19,7 @@ import {
 export const simplefinRouter = Router();
 
 const setupSchema = z.object({
-  setupToken: z.string().min(1),
+  setupToken: z.string().min(1).max(4_096),
 });
 
 const mapAccountSchema = z.object({
@@ -80,13 +82,13 @@ simplefinRouter.post('/setup', async (req, res) => {
       accounts: data.accounts.map((a) => ({
         simplefinAccountId: a.id,
         name: a.name,
-        balance: Math.round(parseFloat(a.balance) * 100),
+        balance: simpleFinBalanceToCents(a.balance),
         currency: a.currency,
       })),
     });
   } catch (err: any) {
     console.error('SimpleFIN setup error:', err.message);
-    res.status(500).json({ error: err.message });
+    res.status(err instanceof InvalidSetupTokenError ? 400 : 502).json({ error: err.message });
   }
 });
 

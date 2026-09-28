@@ -3,6 +3,7 @@ import cors from 'cors';
 import {
   DEV_CLIENT_ORIGINS,
   apiTokenGuard,
+  bankRateLimit,
   hostGuard,
   originGuard,
   securityHeaders,
@@ -59,8 +60,8 @@ app.use('/api/export', exportRouter);
 app.use('/api/custom-reports', customReportsRouter);
 app.use('/api/schedules', schedulesRouter);
 app.use('/api/goals', goalsRouter);
-app.use('/api/plaid', plaidRouter);
-app.use('/api/simplefin', simplefinRouter);
+app.use('/api/plaid', bankRateLimit, plaidRouter);
+app.use('/api/simplefin', bankRateLimit, simplefinRouter);
 
 export async function startServer(port: number | string): Promise<void> {
   if (process.env.ELECTRON_PROD) {

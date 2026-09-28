@@ -9,6 +9,7 @@ import {
   getPlaidEnvironment,
   invalidatePlaidClient,
   createLinkToken,
+  removeItem,
   createUpdateLinkToken,
   exchangePublicToken,
   getInstitutionName,
@@ -19,25 +20,37 @@ import { syncPlaidItem, syncAllItems } from '../services/plaidSyncService.js';
 
 export const plaidRouter = Router();
 
+// Plaid client IDs and secrets are short hex strings
+const plaidKey = z
+  .string()
+  .trim()
+  .min(1)
+  .max(100)
+  .regex(/^[A-Za-z0-9_-]+$/, 'Unexpected characters');
+
 const configureSchema = z.object({
-  clientId: z.string().min(1),
-  secret: z.string().min(1),
-  environment: z.enum(['sandbox', 'development', 'production']).default('sandbox'),
+  clientId: plaidKey,
+  secret: plaidKey,
+  // Plaid retired "development" in 2024; limited Production replaced it
+  environment: z.enum(['sandbox', 'production']).default('production'),
 });
 
 const exchangeSchema = z.object({
-  publicToken: z.string(),
-  institutionId: z.string(),
-  institutionName: z.string(),
+  publicToken: z
+    .string()
+    .max(300)
+    .regex(/^public-[a-z]+-[A-Za-z0-9-]+$/, 'Invalid public token'),
+  institutionId: z.string().max(100),
+  institutionName: z.string().trim().max(200),
 });
 
 const mapAccountSchema = z.object({
   mappings: z.array(
     z.object({
-      plaidAccountId: z.string(),
+      plaidAccountId: z.string().max(256),
       action: z.enum(['create', 'link', 'skip']),
-      accountId: z.string().optional(),
-      accountName: z.string().optional(),
+      accountId: z.string().max(64).optional(),
+      accountName: z.string().trim().max(200).optional(),
       accountType: z.enum(['checking', 'savings', 'credit', 'cash', 'investment']).optional(),
       isOffBudget: z.number().int().min(0).max(1).optional(),
     }),
@@ -64,7 +77,8 @@ plaidRouter.post('/configure', (req, res) => {
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
   const { clientId, secret, environment } = parsed.data;
-  const existing = db.select().from(plaidConfig).get();
+  // Only the id: reading the row would decrypt the old secret for no reason
+  const existing = db.select({ id: plaidConfig.id }).from(plaidConfig).get();
   const now = new Date().toISOString();
 
   if (existing) {
@@ -276,10 +290,43 @@ plaidRouter.get('/items', (_req, res) => {
   res.json(result);
 });
 
-plaidRouter.delete('/items/:itemId', (_req, res) => {
-  const { itemId } = _req.params;
-  const item = db.select().from(plaidItems).where(eq(plaidItems.id, itemId)).get();
+plaidRouter.delete('/items/:itemId', async (req, res) => {
+  const { itemId } = req.params;
+  const item = db
+    .select({ id: plaidItems.id })
+    .from(plaidItems)
+    .where(eq(plaidItems.id, itemId))
+    .get();
   if (!item) return res.status(404).json({ error: 'Item not found' });
+
+  // Revoke the access token at Plaid before forgetting it, so a disconnected bank
+  // can't be read with a leftover token (and Plaid stops billing for it).
+  if (isPlaidConfigured()) {
+    let accessToken: string | undefined;
+    try {
+      accessToken = db
+        .select({ accessToken: plaidItems.accessToken })
+        .from(plaidItems)
+        .where(eq(plaidItems.id, itemId))
+        .get()?.accessToken;
+    } catch {
+      // Credential can't be decrypted (e.g. key lost): nothing left to revoke from here
+    }
+    if (accessToken) {
+      try {
+        await removeItem(accessToken);
+      } catch (err: any) {
+        const code = err?.response?.data?.error_code;
+        if (code !== 'ITEM_NOT_FOUND' && code !== 'INVALID_ACCESS_TOKEN') {
+          console.error('Plaid item remove error:', err?.response?.data ?? err.message);
+          return res.status(502).json({
+            error:
+              'Could not revoke access at Plaid, so the connection was kept. Check your internet connection and try again.',
+          });
+        }
+      }
+    }
+  }
 
   db.delete(plaidItems).where(eq(plaidItems.id, itemId)).run();
   res.status(204).send();

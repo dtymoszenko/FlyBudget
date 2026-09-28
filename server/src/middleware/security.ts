@@ -1,6 +1,7 @@
 import { timingSafeEqual } from 'crypto';
 import type { RequestHandler } from 'express';
 import helmet from 'helmet';
+import { rateLimit } from 'express-rate-limit';
 
 // The API has no login: it's protected by only answering the app itself.
 // These guards stop other websites open in the user's browser, and (in the
@@ -114,4 +115,18 @@ export const securityHeaders = helmet({
   crossOriginResourcePolicy: { policy: 'same-origin' },
   referrerPolicy: { policy: 'no-referrer' },
   xFrameOptions: { action: 'deny' },
+});
+
+/**
+ * Caps bank-sync actions (connect, sync, disconnect) at a pace no person clicking
+ * would hit, so a bug or runaway loop can't hammer Plaid/SimpleFIN (Plaid bills
+ * per call and may lock the account). Read-only GETs are not limited.
+ */
+export const bankRateLimit = rateLimit({
+  windowMs: 60_000,
+  limit: 20,
+  skip: (req) => req.method === 'GET',
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { error: 'Too many bank requests. Wait a minute and try again.' },
 });

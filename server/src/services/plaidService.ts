@@ -18,16 +18,12 @@ function getPlaidClient(): PlaidApi {
   const creds = getCredentials();
   if (!creds) throw new Error('Plaid is not configured');
 
-  const envMap: Record<string, string> = {
-    sandbox: PlaidEnvironments.sandbox,
-    development: PlaidEnvironments.development,
-    production: PlaidEnvironments.production,
-  };
-
   plaidClient = new PlaidApi(
     new Configuration({
-      basePath: envMap[creds.environment] ?? PlaidEnvironments.sandbox,
+      basePath: plaidBasePath(creds.environment),
       baseOptions: {
+        // Never hang a sync or the UI on a stalled connection
+        timeout: 30_000,
         headers: {
           'PLAID-CLIENT-ID': creds.clientId,
           'PLAID-SECRET': creds.secret,
@@ -36,6 +32,14 @@ function getPlaidClient(): PlaidApi {
     }),
   );
   return plaidClient;
+}
+
+/**
+ * Plaid retired its "development" environment in 2024. Configs saved with it have
+ * always been sent to Sandbox (the SDK has no development URL), so keep that.
+ */
+export function plaidBasePath(environment: string): string {
+  return environment === 'production' ? PlaidEnvironments.production : PlaidEnvironments.sandbox;
 }
 
 export function invalidatePlaidClient() {
@@ -48,27 +52,30 @@ export function isPlaidConfigured(): boolean {
 
 export function getPlaidEnvironment(): string {
   const creds = getCredentials();
-  return creds?.environment ?? 'sandbox';
+  return creds?.environment === 'production' ? 'production' : 'sandbox';
 }
 
-export async function createLinkToken(itemId?: string): Promise<string> {
+export async function createLinkToken(): Promise<string> {
   const client = getPlaidClient();
-
-  const request: any = {
+  const response = await client.linkTokenCreate({
+    // Plaid requires a stable, non-identifying user id; FlyBudget is single-user
     user: { client_user_id: 'local-user' },
     client_name: 'FlyBudget',
     language: 'en',
     country_codes: [CountryCode.Us],
-  };
-
-  if (itemId) {
-    request.access_token = itemId;
-  } else {
-    request.products = [Products.Transactions];
-  }
-
-  const response = await client.linkTokenCreate(request);
+    products: [Products.Transactions],
+  });
   return response.data.link_token;
+}
+
+/**
+ * Revokes the access token at Plaid (and stops billing for the Item). Plaid
+ * requires calling this when a user disconnects a bank — deleting the local row
+ * alone leaves the token valid indefinitely.
+ */
+export async function removeItem(accessToken: string): Promise<void> {
+  const client = getPlaidClient();
+  await client.itemRemove({ access_token: accessToken });
 }
 
 export async function createUpdateLinkToken(accessToken: string): Promise<string> {

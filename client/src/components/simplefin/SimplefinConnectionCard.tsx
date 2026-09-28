@@ -120,7 +120,7 @@ export function SimplefinConnectionCard({ connection }: Props) {
         onClose={() => setShowDisconnect(false)}
         onConfirm={() => disconnectConnection.mutateAsync(connection.id)}
         title="Disconnect SimpleFIN"
-        message={`Are you sure you want to disconnect ${connection.connectionName}? Your existing accounts and transactions will not be deleted.`}
+        message={`Are you sure you want to disconnect ${connection.connectionName}? FlyBudget will delete its stored access. To revoke it completely, also remove this app from your SimpleFIN Bridge account at bridge.simplefin.org. Your existing accounts and transactions will not be deleted.`}
         confirmLabel="Disconnect"
         danger
       />

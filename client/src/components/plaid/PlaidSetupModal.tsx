@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { KeyRound, ExternalLink, Loader2, CheckCircle2 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
+import { PlaidEnvironmentSelect, type PlaidEnvironment } from './PlaidEnvironmentSelect';
 import { useConfigurePlaid } from '../../hooks/usePlaid';
 
 interface Props {
@@ -13,6 +14,7 @@ interface Props {
 export function PlaidSetupModal({ isOpen, onClose, onConfigured }: Props) {
   const [clientId, setClientId] = useState('');
   const [secret, setSecret] = useState('');
+  const [environment, setEnvironment] = useState<PlaidEnvironment>('production');
   const [done, setDone] = useState(false);
   const configure = useConfigurePlaid();
 
@@ -22,7 +24,7 @@ export function PlaidSetupModal({ isOpen, onClose, onConfigured }: Props) {
       await configure.mutateAsync({
         clientId: clientId.trim(),
         secret: secret.trim(),
-        environment: 'development',
+        environment,
       });
       setDone(true);
     } catch {
@@ -86,6 +88,7 @@ export function PlaidSetupModal({ isOpen, onClose, onConfigured }: Props) {
                 className="w-full text-sm border border-border rounded-md px-3 py-2 bg-surface text-text focus:outline-none focus:ring-1 focus:ring-brand-600 focus:border-brand-600"
               />
             </div>
+            <PlaidEnvironmentSelect value={environment} onChange={setEnvironment} />
             <div className="flex justify-center">
               <Button
                 onClick={handleSubmit}
