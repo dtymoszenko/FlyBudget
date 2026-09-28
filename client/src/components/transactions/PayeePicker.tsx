@@ -67,7 +67,7 @@ export function PayeePicker({ value, payeeName, onChange, payees, onClose }: Pro
   return (
     <div
       ref={containerRef}
-      className="absolute top-full left-0 z-50 mt-1 w-72 bg-surface border border-border rounded-lg shadow-lg"
+      className="absolute top-full left-0 z-50 mt-1 w-72 bg-surface border border-border rounded-lg shadow-lg origin-top-left animate-menu-in"
       onClick={(e) => e.stopPropagation()}
     >
       <div className="p-2 border-b border-border-light">

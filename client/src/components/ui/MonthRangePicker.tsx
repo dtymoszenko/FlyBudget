@@ -118,7 +118,7 @@ export function MonthRangePicker({ from, to, onChange, max = format(new Date(), 
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1.5 z-50 bg-surface border border-border rounded-lg shadow-hover p-4">
+        <div className="absolute right-0 top-full mt-1.5 z-50 bg-surface border border-border rounded-lg shadow-hover p-4 origin-top-right animate-menu-in">
           <div className="flex gap-5">
             <MonthGrid
               title="From"

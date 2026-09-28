@@ -171,7 +171,7 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
             </button>
             {showAccountPicker && (
               <div
-                className="absolute z-50 top-full left-0 right-0 mt-1 bg-surface border border-border rounded-lg shadow-lg overflow-hidden max-h-56 overflow-y-auto"
+                className="absolute z-50 top-full left-0 right-0 mt-1 bg-surface border border-border rounded-lg shadow-lg overflow-hidden max-h-56 overflow-y-auto origin-top animate-menu-in"
                 onClick={(e) => e.stopPropagation()}
               >
                 {onBudgetAccounts.length > 0 && (

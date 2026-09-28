@@ -54,7 +54,7 @@ export function BudgetEditPopover({
   return (
     <div
       ref={ref}
-      className="absolute right-0 top-full mt-1 z-50 w-72 rounded-lg shadow-card border border-border-light bg-surface p-4"
+      className="absolute right-0 top-full mt-1 z-50 w-72 rounded-lg shadow-card border border-border-light bg-surface p-4 origin-top-right animate-menu-in"
       onMouseDown={(e) => e.preventDefault()}
     >
       <p className="text-sm font-semibold text-text mb-2">History</p>

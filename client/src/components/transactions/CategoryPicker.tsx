@@ -73,7 +73,7 @@ export function CategoryPicker({ value, onChange, groups, onClose, position = 'b
   return (
     <div
       ref={containerRef}
-      className={`absolute left-0 z-50 w-64 bg-surface border border-border rounded-lg shadow-lg ${position === 'above' ? 'bottom-full mb-1' : 'top-full mt-1'}`}
+      className={`absolute left-0 z-50 w-64 bg-surface border border-border rounded-lg shadow-lg animate-menu-in ${position === 'above' ? 'bottom-full mb-1 origin-bottom-left' : 'top-full mt-1 origin-top-left'}`}
       onClick={(e) => e.stopPropagation()}
     >
       <div className="p-2 border-b border-border-light">

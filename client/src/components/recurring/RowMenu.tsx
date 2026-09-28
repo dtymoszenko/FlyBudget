@@ -66,7 +66,7 @@ export default function RowMenu({ items }: { items: RowMenuItem[] }) {
           <div
             ref={menuRef}
             onClick={(e) => e.stopPropagation()}
-            className="fixed z-50 bg-surface border border-border rounded-md shadow-hover py-1"
+            className="fixed z-50 bg-surface border border-border rounded-md shadow-hover py-1 animate-menu-in"
             style={{ top: pos.top, left: pos.left, width: MENU_W }}
           >
             {visible.map((item) => (

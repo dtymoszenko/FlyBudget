@@ -52,6 +52,42 @@
   --shadow-hover: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
   --shadow-modal: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.06);
 
+  /* Open/close transitions: backdrops fade, dialogs rise slightly, menus fade and grow slightly */
+  --animate-fade-in: fade-in 150ms ease-out;
+  --animate-fade-out: fade-out 120ms ease-in forwards;
+  --animate-dialog-in: dialog-in 160ms cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-dialog-out: dialog-out 120ms ease-in forwards;
+  --animate-menu-in: menu-in 110ms ease-out;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes fade-out {
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes dialog-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px) scale(0.98);
+    }
+  }
+  @keyframes dialog-out {
+    to {
+      opacity: 0;
+      transform: translateY(4px) scale(0.98);
+    }
+  }
+  @keyframes menu-in {
+    from {
+      opacity: 0;
+      transform: scale(0.97);
+    }
+  }
+
   /* Chart */
   --color-chart-grid: #f3f4f6;
   --color-chart-axis: #9ca3af;
@@ -121,6 +157,15 @@
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4);
   --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.4);
   --shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+/* Reduced motion: keep the fades, drop the movement */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --animate-dialog-in: fade-in 150ms ease-out;
+    --animate-dialog-out: fade-out 120ms ease-in forwards;
+    --animate-menu-in: fade-in 110ms ease-out;
+  }
 }
 
 button,

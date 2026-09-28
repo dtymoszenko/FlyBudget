@@ -76,7 +76,7 @@ export function MerchantSelect({ value, onChange, placeholder = 'Search merchant
         className={selectorInputClass}
       />
       {open && (filtered.length > 0 || query) && (
-        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-surface border border-border rounded-lg shadow-lg overflow-hidden max-h-56 overflow-y-auto">
+        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-surface border border-border rounded-lg shadow-lg overflow-hidden max-h-56 overflow-y-auto origin-top animate-menu-in">
           {filtered.map((p) => (
             <button
               key={p.id}

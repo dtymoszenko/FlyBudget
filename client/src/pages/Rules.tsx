@@ -76,8 +76,8 @@ function RunRulesPreviewModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/30 cursor-pointer" onClick={onClose} />
-      <div className="relative w-full max-w-lg bg-surface rounded-lg shadow-modal">
+      <div className="absolute inset-0 bg-black/30 cursor-pointer animate-fade-in" onClick={onClose} />
+      <div className="relative w-full max-w-lg bg-surface rounded-lg shadow-modal animate-dialog-in">
         <div className="px-6 py-4 border-b border-border">
           <h2 className="text-lg font-semibold text-text">Run Rules Preview</h2>
         </div>

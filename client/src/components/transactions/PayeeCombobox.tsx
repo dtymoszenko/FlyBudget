@@ -60,7 +60,7 @@ export function PayeeCombobox({ value, onChange, payees, className = '' }: Props
         className={`block w-full bg-transparent text-sm text-text placeholder-text-tertiary focus:outline-none ${className}`}
       />
       {open && (filtered.length > 0 || (query && !exactMatch)) && (
-        <div className="absolute z-30 top-full left-0 mt-1 w-48 bg-surface border border-border rounded-md shadow-hover overflow-hidden">
+        <div className="absolute z-30 top-full left-0 mt-1 w-48 bg-surface border border-border rounded-md shadow-hover overflow-hidden origin-top-left animate-menu-in">
           {filtered.map((p) => (
             <button
               key={p.id}
