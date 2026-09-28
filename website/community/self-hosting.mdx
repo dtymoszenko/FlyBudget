@@ -34,7 +34,13 @@ You need [Docker](https://docs.docker.com/get-docker/) with Docker Compose.
 
 4. Open `http://<your-server>:3001` in a browser. The first visit asks you to **create a password**. Do this right away: until a password is set, anyone who can reach the server could set it.
 
-That's it. Your budget is stored in the `flybudget-data` Docker volume.
+That's it. Your budget is stored in a Docker volume.
+
+:::note[FlyBudget won't start?]
+
+Check `docker compose logs`. If it can't read the key file, make sure `flybudget_data_key.txt` is readable by the container (`chmod 644 flybudget_data_key.txt`); FlyBudget runs as user id 1000, not root. The key must be 32 random bytes in base64, which is exactly what the `openssl` command above creates.
+
+:::
 
 ### Without Compose
 
@@ -61,7 +67,7 @@ Then use `flybudget` instead of `ghcr.io/dtymoszenko/flybudget:latest`.
 
 On your home network, `http://` is fine. **Before making FlyBudget reachable from the internet, put it behind a reverse proxy that provides HTTPS**, such as [Caddy](https://caddyserver.com/), Traefik, or nginx. Otherwise your password and budget travel unencrypted.
 
-With Caddy, the whole configuration is:
+With Caddy, the whole configuration is (use `localhost:3001` instead of `flybudget:3001` if Caddy isn't running in Docker on the same network):
 
 ```
 budget.example.com {
@@ -92,29 +98,36 @@ environment:
 ## Your password
 
 - Change it in **Settings → Server**. Changing it signs out every other device.
-- After 10 wrong attempts, logins are blocked for 15 minutes.
-- Forgot it? Stop the container and remove the saved password, then start it again and set a new one:
+- After 10 wrong attempts, logins are blocked for up to 15 minutes.
+- Forgot it? Remove the saved password (this also signs everyone out):
 
   ```bash
-  docker compose stop
-  docker run --rm -v flybudget-data:/data ghcr.io/dtymoszenko/flybudget:latest \
-    node -e "const db=require('better-sqlite3')('/data/budget.db');db.exec('DELETE FROM auth_config; DELETE FROM sessions;')"
-  docker compose start
+  docker exec flybudget node reset-password.cjs
   ```
 
-  Then open FlyBudget right away and create a new password.
+  Then open FlyBudget **right away** and create a new password. Until you do, anyone who can reach the server could set it.
 
 ## Backups
 
-Everything lives in one SQLite file, `budget.db`, in the `/data` volume. To back it up:
+Everything lives in one SQLite file, `budget.db`, in the `/data` volume. To make a backup while FlyBudget is running:
+
+```bash
+docker exec flybudget node backup.cjs
+docker cp flybudget:/data/backups ./flybudget-backups
+```
+
+The first command saves a complete, consistent copy to `/data/backups` inside the volume; the second copies all your backups to the `flybudget-backups` folder next to your `docker-compose.yml`. Don't copy `budget.db` directly while FlyBudget is running: recent changes may still be in a separate `budget.db-wal` file.
+
+To restore, stop FlyBudget, put the backup in place as `budget.db` and start it again:
 
 ```bash
 docker compose stop
-docker run --rm -v flybudget-data:/data -v "$PWD":/backup alpine cp /data/budget.db /backup/
+docker run --rm --volumes-from flybudget -v "$PWD/flybudget-backups":/backups alpine \
+  sh -c 'rm -f /data/budget.db-wal /data/budget.db-shm && cp /backups/<backup-file>.db /data/budget.db && chown 1000:1000 /data/budget.db'
 docker compose start
 ```
 
-You can also export your data from **Settings → Data** at any time. Keep your `flybudget_data_key.txt` backed up separately from the database.
+You can also download a JSON backup of your data from **Settings → Data** at any time. Keep `flybudget_data_key.txt` backed up too, separately from the database.
 
 ## Updating
 

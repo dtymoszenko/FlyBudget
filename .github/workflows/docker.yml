@@ -43,28 +43,19 @@ jobs:
         with:
           context: .
           load: true
-          tags: flybudget:test
+          # The name docker-compose.yml uses, so the test below runs this build
+          tags: ${{ env.IMAGE }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Run it the way docker-compose.yml does (read-only, no capabilities,
-      # key from a secret file) and check that login protects the data
+      # Start it with the real docker-compose.yml (read-only, no capabilities, key
+      # from a Docker secret) and check that the login protects the data
       - name: Smoke test
         run: |
           set -euo pipefail
-          openssl rand -base64 32 > "$RUNNER_TEMP/key.txt"
-          chmod 644 "$RUNNER_TEMP/key.txt"
-          docker run -d --name flybudget -p 3001:3001 \
-            --read-only --tmpfs /tmp --cap-drop ALL --security-opt no-new-privileges:true \
-            -v "$RUNNER_TEMP/key.txt:/run/secrets/key:ro" \
-            -e FLYBUDGET_DATA_KEY_FILE=/run/secrets/key \
-            flybudget:test
-
-          for i in $(seq 1 30); do
-            curl -sf http://localhost:3001/api/health && break
-            sleep 1
-          done
-          echo
+          openssl rand -base64 32 > flybudget_data_key.txt
+          # --wait also requires the image's health check to report healthy
+          docker compose up -d --wait --wait-timeout 180
 
           expect() { # expect <status> <curl args…>
             local want=$1; shift
@@ -75,34 +66,51 @@ jobs:
           }
           J=(-H 'Origin: http://localhost:3001' -H 'Content-Type: application/json')
           URL=http://localhost:3001
+          PASSWORD='{"password":"correct horse battery"}'
 
           test "$(docker exec flybudget id -u)" = 1000
           curl -sf $URL/api/auth/status | grep -q '"needsSetup":true'
           expect 401 $URL/api/accounts
           expect 200 $URL/budget
           expect 403 -H 'Origin: https://evil.example' -H 'Content-Type: application/json' \
-            -d '{"password":"correct horse battery"}' $URL/api/auth/setup
-          expect 204 -c cookies "${J[@]}" -d '{"password":"correct horse battery"}' $URL/api/auth/setup
+            -d "$PASSWORD" $URL/api/auth/setup
+          expect 204 -c cookies "${J[@]}" -d "$PASSWORD" $URL/api/auth/setup
           expect 409 "${J[@]}" -d '{"password":"another password"}' $URL/api/auth/setup
-          expect 200 -b cookies $URL/api/accounts
+          expect 201 -b cookies "${J[@]}" \
+            -d '{"name":"Checking","type":"checking","startingBalance":12345}' $URL/api/accounts
           expect 401 "${J[@]}" -d '{"password":"wrong password"}' $URL/api/auth/login
           expect 204 -b cookies "${J[@]}" -X POST $URL/api/auth/logout
           expect 401 -b cookies $URL/api/accounts
 
-          # Data survives a restart
-          docker restart flybudget
-          for i in $(seq 1 30); do
-            curl -sf $URL/api/health > /dev/null && break
-            sleep 1
-          done
+          # Data and password survive recreating the container (docker compose pull/up)
+          docker compose up -d --wait --wait-timeout 180 --force-recreate
           curl -sf $URL/api/auth/status | grep -q '"needsSetup":false'
+          expect 204 -c cookies "${J[@]}" -d "$PASSWORD" $URL/api/auth/login
+          curl -sf -b cookies $URL/api/accounts | grep -q '"Checking"'
 
-          # Health check reports healthy
-          test "$(docker inspect --format '{{.State.Health.Status}}' flybudget)" != unhealthy
+          # The backup command from the self-hosting guide
+          docker exec flybudget node backup.cjs
+          docker cp flybudget:/data/backups ./backups
+          python3 -c "import glob, sqlite3; db = sqlite3.connect(glob.glob('backups/*.db')[0]); assert db.execute('SELECT name FROM accounts').fetchall() == [('Checking',)]"
+
+          # The password reset command from the guide
+          docker exec flybudget node reset-password.cjs
+          curl -sf $URL/api/auth/status | grep -q '"needsSetup":true'
+          expect 401 -b cookies $URL/api/accounts
+
+          # The restore steps from the guide bring back the data and the password
+          docker compose stop
+          docker run --rm --volumes-from flybudget -v "$PWD/backups":/backups alpine \
+            sh -c 'rm -f /data/budget.db-wal /data/budget.db-shm && cp /backups/*.db /data/budget.db && chown 1000:1000 /data/budget.db'
+          docker compose start
+          docker compose up -d --wait --wait-timeout 180
+          curl -sf $URL/api/auth/status | grep -q '"needsSetup":false'
+          expect 204 -c cookies "${J[@]}" -d "$PASSWORD" $URL/api/auth/login
+          curl -sf -b cookies $URL/api/accounts | grep -q '"Checking"'
 
       - name: Container logs
         if: always()
-        run: docker logs flybudget || true
+        run: docker compose logs
 
   publish:
     if: startsWith(github.ref, 'refs/tags/v')

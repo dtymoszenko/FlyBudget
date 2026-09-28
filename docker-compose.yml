@@ -6,7 +6,7 @@
 #   3. Open http://<your-server>:3001 and create your password.
 #
 # Put FlyBudget behind a reverse proxy with HTTPS (Caddy, Traefik, nginx…) before
-# exposing it to the internet. More options: https://flybudget.org/docs/self-hosting
+# exposing it to the internet. More options: https://flybudget.org/community/self-hosting
 
 services:
   flybudget:

@@ -1,5 +1,5 @@
 # FlyBudget self-hosted server: the web app and API in one container, with a
-# password login (server mode). See docs: https://flybudget.org/docs/self-hosting
+# password login (server mode). See docs: https://flybudget.org/community/self-hosting
 #
 #   docker compose up -d        (see docker-compose.yml)
 #
@@ -46,6 +46,8 @@ WORKDIR /app
 COPY --from=build /src/dist/ ./
 COPY --from=build /src/client/dist/ ./client/
 COPY --from=build /src/server/src/db/migrations/ ./migrations/
+# Maintenance: `docker exec flybudget node backup.cjs` / `node reset-password.cjs`
+COPY docker/backup.cjs docker/reset-password.cjs ./
 
 ENV NODE_ENV=production \
     FLYBUDGET_SERVER_MODE=true \
