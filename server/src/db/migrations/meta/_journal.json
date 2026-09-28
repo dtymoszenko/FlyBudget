@@ -92,6 +92,13 @@
       "when": 1790495118117,
       "tag": "0012_account_logo",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1790564377901,
+      "tag": "0013_server_auth",
+      "breakpoints": true
     }
   ]
 }

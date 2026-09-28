@@ -1,4 +1,5 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
+import { readFileSync } from 'fs';
 
 // Encryption at rest for bank credentials (Plaid secret and access tokens,
 // SimpleFIN access URLs). The desktop app supplies a 256-bit key protected by the
@@ -54,6 +55,15 @@ export function createSecretCipher(keyBase64: string | undefined): SecretCipher 
   };
 }
 
-// Read once at startup; electron/main.ts sets it before loading the server and
-// removes it from the environment afterwards.
-export const secretCipher = createSecretCipher(process.env.FLYBUDGET_DATA_KEY);
+/**
+ * The key, read once at startup: FLYBUDGET_DATA_KEY (electron/main.ts sets it and
+ * removes it from the environment afterwards), or FLYBUDGET_DATA_KEY_FILE, a file
+ * containing it (Docker secrets are mounted as files).
+ */
+function loadDataKey(): string | undefined {
+  if (process.env.FLYBUDGET_DATA_KEY) return process.env.FLYBUDGET_DATA_KEY;
+  const file = process.env.FLYBUDGET_DATA_KEY_FILE;
+  return file ? readFileSync(file, 'utf8').trim() : undefined;
+}
+
+export const secretCipher = createSecretCipher(loadDataKey());

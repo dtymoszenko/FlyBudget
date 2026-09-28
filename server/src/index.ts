@@ -1,5 +1,10 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import { listenHost, serverMode, trustProxy } from './config.js';
+import { secretCipher } from './db/secretCrypto.js';
+import { deleteExpiredSessions } from './auth/sessions.js';
+import { authRouter, requireSession } from './routes/auth.js';
 import {
   DEV_CLIENT_ORIGINS,
   apiNotFound,
@@ -37,6 +42,14 @@ import { format, addDays } from 'date-fns';
 
 const app = express();
 
+// Behind a reverse proxy (server mode), trust it for HTTPS and client-IP detection
+if (trustProxy) {
+  app.set(
+    'trust proxy',
+    /^\d+$/.test(trustProxy) ? Number(trustProxy) : trustProxy === 'true' || trustProxy,
+  );
+}
+
 // Binding to 127.0.0.1 doesn't stop other sites open in the user's browser, or other
 // programs on the machine, from calling this API — see middleware/security.ts.
 app.disable('x-powered-by');
@@ -50,6 +63,10 @@ app.use(securityHeaders);
 app.use(cors({ origin: DEV_CLIENT_ORIGINS }));
 // Large enough for big CSV imports; requests over this are rejected with 413
 app.use(express.json({ limit: '10mb' }));
+
+// Server mode: login routes, then a valid session is required for the rest of the API
+app.use('/api/auth', authRouter);
+app.use('/api', requireSession);
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 app.use('/api/accounts', accountsRouter);
@@ -68,7 +85,14 @@ app.use('/api/simplefin', bankRateLimit, simplefinRouter);
 app.use('/api', apiNotFound);
 
 export async function startServer(port: number | string): Promise<void> {
-  if (process.env.ELECTRON_PROD) {
+  if (serverMode && !secretCipher.enabled) {
+    throw new Error(
+      'Server mode requires an encryption key for bank credentials: set FLYBUDGET_DATA_KEY_FILE ' +
+        '(or FLYBUDGET_DATA_KEY) to a 32-byte base64 key, e.g. from `openssl rand -base64 32`.',
+    );
+  }
+  // Packaged app (Electron) and Docker ship migrations and apply them on startup
+  if (process.env.MIGRATIONS_PATH) {
     const { migrate } = await import('drizzle-orm/better-sqlite3/migrator');
     const { db } = await import('./db/index.js');
     migrate(db, { migrationsFolder: process.env.MIGRATIONS_PATH! });
@@ -76,13 +100,28 @@ export async function startServer(port: number | string): Promise<void> {
   // Electron serves the built client from this server so the page is same-origin
   // with the API (a file:// page would send Origin: null, which can't be allowlisted safely).
   if (process.env.CLIENT_DIST) {
-    app.use(express.static(process.env.CLIENT_DIST));
+    const clientDist = path.resolve(process.env.CLIENT_DIST);
+    app.use(express.static(clientDist));
+    // Server mode uses real URLs (/goals, /budget…): serve the app for any page URL
+    if (serverMode) {
+      app.use((req, res, next) => {
+        if (req.method !== 'GET' || req.path.startsWith('/api')) return next();
+        res.sendFile(path.join(clientDist, 'index.html'));
+      });
+    }
   }
   // Registered last so it also covers errors from the static handler above
   app.use(errorHandler);
   return new Promise((resolve) => {
-    app.listen(Number(port), '127.0.0.1', () => {
-      console.log(`Server running on http://localhost:${port}`);
+    app.listen(Number(port), listenHost, () => {
+      console.log(
+        `Server running on http://${listenHost === '0.0.0.0' ? 'localhost' : listenHost}:${port}`,
+      );
+      if (serverMode) {
+        console.log('Server mode: login required.');
+        deleteExpiredSessions();
+        setInterval(deleteExpiredSessions, 60 * 60 * 1000).unref();
+      }
 
       const credentialsEncrypted = encryptStoredCredentials();
       if (credentialsEncrypted > 0)

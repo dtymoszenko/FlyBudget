@@ -324,3 +324,26 @@ export const plaidAccountMappings = sqliteTable(
     uniqueIndex('plaid_account_mapping_unique').on(table.plaidItemId, table.plaidAccountId),
   ],
 );
+
+// --- Server mode (self-hosted / Docker) login ---
+
+/** The single login password, as an scrypt hash. Only used in server mode. */
+export const authConfig = sqliteTable('auth_config', {
+  id: text('id').primaryKey(),
+  passwordHash: text('password_hash').notNull(),
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at')
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+/** Login sessions. `id` is the SHA-256 of the session token, never the token itself. */
+export const sessions = sqliteTable('sessions', {
+  id: text('id').primaryKey(),
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  expiresAt: text('expires_at').notNull(),
+});

@@ -2,10 +2,13 @@ import { timingSafeEqual } from 'crypto';
 import type { ErrorRequestHandler, RequestHandler } from 'express';
 import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
+import { allowedHosts, serverMode } from '../config.js';
 
-// The API has no login: it's protected by only answering the app itself.
-// These guards stop other websites open in the user's browser, and (in the
-// desktop app) other programs or users on the same machine, from using it.
+// Locally (desktop app, `npm run dev`) the API has no login: it's protected by
+// only answering the app itself. These guards stop other websites open in the
+// user's browser, and (in the desktop app) other programs or users on the same
+// machine, from using it. In server mode (Docker) a password login is required
+// as well (routes/auth.ts), and the guards accept the server's real address.
 
 /** Vite dev server — the only origin that calls the API cross-origin (via its proxy or directly). */
 export const DEV_CLIENT_ORIGINS = ['http://localhost:5173', 'http://127.0.0.1:5173'];
@@ -22,6 +25,17 @@ const selfOrigins = (port: number) => LOCAL_HOSTNAMES.map((h) => `http://${h}:${
  * browser treats the API as same-origin with the attacker's page.
  */
 export const hostGuard: RequestHandler = (req, res, next) => {
+  if (serverMode) {
+    // Any host by default (a login is required anyway), or only the configured ones.
+    // Entries may be "host" or "host:port".
+    const host = (req.headers.host ?? '').toLowerCase();
+    const hostname = host.replace(/:\d+$/, '');
+    if (allowedHosts.length && !allowedHosts.includes(host) && !allowedHosts.includes(hostname)) {
+      res.status(403).json({ error: 'Forbidden host' });
+      return;
+    }
+    return next();
+  }
   const port = req.socket.localPort;
   const allowed = LOCAL_HOSTNAMES.map((h) => `${h}:${port}`);
   if (!allowed.includes(req.headers.host ?? '')) {
@@ -40,8 +54,10 @@ export const originGuard: RequestHandler = (req, res, next) => {
   const origin = req.headers.origin;
   const site = req.headers['sec-fetch-site'];
   const allowedOrigins = [...DEV_CLIENT_ORIGINS, ...selfOrigins(req.socket.localPort ?? 0)];
+  // In server mode, the page's own address (as seen through any trusted proxy)
+  const sameHost = serverMode && origin !== undefined && originHost(origin) === req.host;
 
-  if (origin !== undefined && !allowedOrigins.includes(origin)) {
+  if (origin !== undefined && !allowedOrigins.includes(origin) && !sameHost) {
     res.status(403).json({ error: 'Forbidden origin' });
     return;
   }
@@ -54,7 +70,15 @@ export const originGuard: RequestHandler = (req, res, next) => {
   next();
 };
 
-function readCookie(header: string | undefined, name: string): string | undefined {
+function originHost(origin: string): string | null {
+  try {
+    return new URL(origin).host;
+  } catch {
+    return null;
+  }
+}
+
+export function readCookie(header: string | undefined, name: string): string | undefined {
   for (const part of (header ?? '').split(';')) {
     const [key, ...rest] = part.trim().split('=');
     if (key === name) return rest.join('=');
