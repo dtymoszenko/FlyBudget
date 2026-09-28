@@ -25,10 +25,14 @@ export function formatCurrency(cents: number): string {
   return cents < 0 ? `-${sym}${formatted}` : `${sym}${formatted}`;
 }
 
+const oneDecimal = (n: number) => String(Math.round(n * 10) / 10);
+
+/** Short axis label: "$950", "$12.5k", "-$1.2M". Thresholds sit where rounding would reach the next unit. */
 export function formatCentsAxis(cents: number): string {
   const sym = getCurrencySymbol();
-  const abs = Math.abs(cents);
-  if (abs >= 100_000_00) return `${sym}${(cents / 100_000_00).toFixed(0)}M`;
-  if (abs >= 1_000_00) return `${sym}${(cents / 1_000_00).toFixed(0)}k`;
-  return `${sym}${(cents / 100).toFixed(0)}`;
+  const sign = cents < 0 ? '-' : '';
+  const dollars = Math.abs(cents) / 100;
+  if (dollars >= 999_950) return `${sign}${sym}${oneDecimal(dollars / 1_000_000)}M`;
+  if (dollars >= 999.5) return `${sign}${sym}${oneDecimal(dollars / 1_000)}k`;
+  return `${sign}${sym}${Math.round(dollars)}`;
 }

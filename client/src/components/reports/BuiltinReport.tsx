@@ -6,6 +6,8 @@ import { downloadCsv } from '../../utils/exportCsv';
 import { formatDateRange } from '../../utils/dateRange';
 import {
   NetWorthChart,
+  netWorthChange,
+  formatChange,
   IncomeExpensesChart,
   SpendingChart,
   SpendingTrendsChart,
@@ -16,7 +18,7 @@ import type { BuiltinWidgetType } from '../../types';
 
 export const BUILTIN_REPORTS: Record<BuiltinWidgetType, { label: string; description: string }> = {
   summary: { label: 'Summary', description: 'Income, expenses and averages' },
-  'net-worth': { label: 'Net Worth', description: 'Assets, liabilities and net worth' },
+  'net-worth': { label: 'Net Worth', description: 'Net worth, assets and liabilities over time' },
   'income-expenses': { label: 'Income & Expenses', description: 'Monthly income vs. spending' },
   spending: { label: 'Spending by Category', description: 'Top 10 categories' },
   'spending-trends': { label: 'Spending Trends', description: 'Category spending over time' },
@@ -111,7 +113,7 @@ export function BuiltinReportChart({
         <IncomeExpensesChart from={from} to={to} />
       );
     case 'net-worth':
-      return <NetWorthChart from={from} to={to} />;
+      return <NetWorthChart from={from} to={to} headline={compact} />;
     case 'income-expenses':
       return <IncomeExpensesChart from={from} to={to} />;
     case 'spending':
@@ -145,13 +147,11 @@ export function BuiltinReportStats({
       case 'summary':
         return summary;
       case 'net-worth': {
-        if (!nwData.length) return [];
-        const latest = nwData[nwData.length - 1].netWorth;
-        const change = nwData.length > 1 ? latest - nwData[0].netWorth : 0;
-        const sign = change >= 0 ? '+' : '';
+        const nw = netWorthChange(nwData);
+        if (!nw) return [];
         return [
-          { label: 'Net Worth', value: formatCurrency(latest) },
-          { label: 'Period Change', value: `${sign}${formatCurrency(change)}` },
+          { label: 'Net Worth', value: formatCurrency(nw.latest) },
+          { label: 'Period Change', value: formatChange(nw.change, nw.percent) },
         ];
       }
       case 'income-expenses': {

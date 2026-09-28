@@ -17,7 +17,7 @@ export const sumSeries = (payload: any[]): TooltipSummary | null =>
     ? { label: 'Total', value: payload.reduce((s, p) => s + (Number(p.value) || 0), 0) }
     : null;
 
-const TOOLTIP_CLASS = 'bg-surface border border-border rounded-md shadow-hover px-3 py-2';
+export const TOOLTIP_CLASS = 'bg-surface border border-border rounded-md shadow-hover px-3 py-2';
 
 /**
  * One line per series at the hovered point. `summary` adds a bold line below them (e.g. a total
