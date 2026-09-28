@@ -130,11 +130,18 @@ describe('escapeCsv (property-based)', () => {
     fc.assert(
       fc.property(fc.string(), (s) => {
         const escaped = escapeCsv(s);
-        const cell = unquote(escaped);
-        expect(cell.replace(/^'(?=[=+\-@\t\r])/, '')).toBe(s);
+        // Only formula-leading text gets the apostrophe; everything else is unchanged
+        // (including text that already starts with one, e.g. "'@")
+        const expected = /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
+        expect(unquote(escaped)).toBe(expected);
         if (/[",\n\r]/.test(s)) expect(escaped.startsWith('"')).toBe(true);
       }),
     );
+  });
+
+  it('leaves text that already starts with an apostrophe alone', () => {
+    expect(escapeCsv("'@home")).toBe("'@home");
+    expect(escapeCsv("'=1")).toBe("'=1");
   });
 
   it('neutralizes a real-world payload', () => {
