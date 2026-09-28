@@ -81,6 +81,10 @@ jobs:
           setup_body() { printf '{"password":"correct horse battery","setupCode":"%s"}' "$(setup_code)"; }
 
           test "$(docker exec flybudget id -u)" = 1000
+          # No package managers in the runtime image (only node is needed)
+          if docker exec flybudget sh -c 'command -v npm || command -v npx || command -v yarn || command -v corepack || ls -d /usr/local/lib/node_modules'; then
+            echo "::error::package manager found in the runtime image"; exit 1
+          fi
           curl -sf $URL/api/auth/status | grep -q '"needsSetup":true'
           expect 401 $URL/api/accounts
           expect 200 $URL/budget

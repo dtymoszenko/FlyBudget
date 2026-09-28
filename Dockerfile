@@ -39,10 +39,15 @@ RUN mkdir -p dist/node_modules \
 # ---- Runtime ----
 FROM node:24-bookworm-slim@sha256:0e0ff40c39bc087845bfb27465a0df4ea419520094bc35842ff83dd8cbe6f9b6
 
-# tini runs as PID 1 so `docker stop` shuts the server down cleanly
+# tini runs as PID 1 so `docker stop` shuts the server down cleanly. The server
+# only needs `node`, so drop the package managers bundled with the base image
+# (npm, npx, corepack, yarn): they're unused and bring their own vulnerable deps.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends tini \
  && rm -rf /var/lib/apt/lists/* \
+ && rm -rf /usr/local/lib/node_modules /opt/yarn-* \
+ && rm -f /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack \
+      /usr/local/bin/yarn /usr/local/bin/yarnpkg \
  && mkdir /data && chown node:node /data && chmod 700 /data
 
 WORKDIR /app
