@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { PlaidEnvironments } from 'plaid';
-import { plaidAmountToCents, plaidBasePath } from './plaidService.js';
+import {
+  mapPlaidAccountType,
+  plaidAmountToCents,
+  plaidBalanceToCents,
+  plaidBasePath,
+} from './plaidService.js';
 
 describe('plaidBasePath', () => {
   it('uses Production only when explicitly configured', () => {
@@ -17,6 +22,33 @@ describe('plaidBasePath', () => {
     for (const env of ['production', 'sandbox', 'development']) {
       expect(plaidBasePath(env)).toMatch(/^https:\/\/[a-z]+\.plaid\.com$/);
     }
+  });
+});
+
+describe('mapPlaidAccountType', () => {
+  // Plaid Sandbox's First Platypus Bank returns all of these
+  it.each([
+    ['depository', 'checking', 'checking'],
+    ['depository', 'savings', 'savings'],
+    ['depository', 'cd', 'savings'],
+    ['depository', 'money market', 'savings'],
+    ['depository', 'hsa', 'savings'],
+    ['depository', 'cash management', 'checking'],
+    ['credit', 'credit card', 'credit'],
+    ['investment', 'ira', 'investment'],
+    ['investment', '401k', 'investment'],
+    ['loan', 'student', 'credit'],
+    ['loan', 'mortgage', 'credit'],
+    ['loan', 'auto', 'credit'],
+    ['loan', 'home equity', 'credit'],
+  ])('%s/%s -> %s', (type, subtype, expected) => {
+    expect(mapPlaidAccountType(type, subtype)).toBe(expected);
+  });
+
+  it('stores debt balances as negative', () => {
+    expect(plaidBalanceToCents(65262, 'loan')).toBe(-6526200);
+    expect(plaidBalanceToCents(410, 'credit')).toBe(-41000);
+    expect(plaidBalanceToCents(110, 'depository')).toBe(11000);
   });
 });
 

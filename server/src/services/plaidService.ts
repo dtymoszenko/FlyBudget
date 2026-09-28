@@ -294,7 +294,9 @@ export function mapPlaidAccountType(type: string, subtype: string | null): Accou
       return 'savings';
     return 'checking';
   }
-  if (type === 'credit') return 'credit';
+  // Loans (mortgage, student, auto, HELOC) are debts: 'credit' is the closest
+  // account type, and plaidBalanceToCents already stores their balance as negative
+  if (type === 'credit' || type === 'loan') return 'credit';
   if (type === 'investment' || type === 'brokerage') return 'investment';
   return 'checking';
 }
