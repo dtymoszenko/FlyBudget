@@ -159,7 +159,8 @@ function categoryLayout(input: AxisLayoutInput, widths: number[]): AxisLayout {
     const leftRoom = input.edgeRoom?.left ?? 0;
     const texts = labels.map((l, i) => {
       const x = tickPosition(i, n, plotWidth, input.kind) + leftRoom - (lineHeight / 2) * t.sin;
-      const room = t.cos > 1e-6 ? x / t.cos : Infinity;
+      // x < 0: even the text's thickness pokes past the edge, so nothing fits (at any tilt)
+      const room = x < 0 ? 0 : t.cos > 1e-6 ? x / t.cos : Infinity;
       return truncateToWidth(l, Math.min(tiltedWidth, room), measure);
     });
     const longest = Math.max(0, ...texts.map(measure));
