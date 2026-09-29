@@ -1,38 +1,50 @@
-export function parseCsv(text: string): { headers: string[]; rows: string[][] } {
-  const lines = text.split(/\r?\n/).filter((l) => l.trim());
-  if (lines.length === 0) return { headers: [], rows: [] };
+import { parseCents } from './currency';
 
-  const parseRow = (line: string): string[] => {
-    const fields: string[] = [];
-    let current = '';
-    let inQuotes = false;
-    for (let i = 0; i < line.length; i++) {
-      const ch = line[i];
-      if (inQuotes) {
-        if (ch === '"' && line[i + 1] === '"') {
-          current += '"';
-          i++;
-        } else if (ch === '"') {
-          inQuotes = false;
-        } else {
-          current += ch;
-        }
-      } else if (ch === '"') {
-        inQuotes = true;
-      } else if (ch === ',') {
-        fields.push(current.trim());
-        current = '';
-      } else {
-        current += ch;
-      }
-    }
-    fields.push(current.trim());
-    return fields;
+/**
+ * Parses CSV text (RFC 4180): quoted fields may contain commas, doubled quotes and
+ * line breaks (bank memos often do). A UTF-8 byte order mark (Excel) is ignored.
+ */
+export function parseCsv(text: string): { headers: string[]; rows: string[][] } {
+  const records: string[][] = [];
+  let record: string[] = [];
+  let field = '';
+  let inQuotes = false;
+  const src = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
+
+  const endRecord = () => {
+    record.push(field.trim());
+    if (record.some((f) => f !== '')) records.push(record);
+    record = [];
+    field = '';
   };
 
-  const headers = parseRow(lines[0]);
-  const rows = lines.slice(1).map(parseRow);
-  return { headers, rows };
+  for (let i = 0; i < src.length; i++) {
+    const ch = src[i];
+    if (inQuotes) {
+      if (ch === '"' && src[i + 1] === '"') {
+        field += '"';
+        i++;
+      } else if (ch === '"') {
+        inQuotes = false;
+      } else {
+        field += ch;
+      }
+    } else if (ch === '"') {
+      inQuotes = true;
+    } else if (ch === ',') {
+      record.push(field.trim());
+      field = '';
+    } else if (ch === '\n' || ch === '\r') {
+      if (ch === '\r' && src[i + 1] === '\n') i++;
+      endRecord();
+    } else {
+      field += ch;
+    }
+  }
+  endRecord();
+
+  if (records.length === 0) return { headers: [], rows: [] };
+  return { headers: records[0], rows: records.slice(1) };
 }
 
 export function normalizeDate(raw: string): string {
@@ -48,14 +60,47 @@ export function normalizeDate(raw: string): string {
 
   const parsed = new Date(trimmed);
   if (!isNaN(parsed.getTime())) {
-    return parsed.toISOString().slice(0, 10);
+    // Local date parts: "Jan 5, 2024" parses as local midnight, and toISOString() (UTC)
+    // would give the previous day east of UTC
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())}`;
   }
 
   return trimmed;
 }
 
-export function generateImportId(date: string, amount: number, payeeName: string): string {
-  return `${date}|${amount}|${(payeeName || '').toLowerCase()}`;
+/**
+ * An amount as banks write it: "$1,234.56", "-12.00", "(12.00)" or "12.00-" for
+ * negatives. Returns integer cents (0 if unreadable).
+ */
+export function parseImportAmount(raw: string | undefined): number {
+  let s = (raw ?? '').replace(/[\s$€£,]/g, '');
+  let negative = false;
+  if (/^\(.*\)$/.test(s)) {
+    negative = true;
+    s = s.slice(1, -1);
+  }
+  if (s.endsWith('-')) {
+    negative = !negative;
+    s = s.slice(0, -1);
+  }
+  const cents = parseCents(s);
+  return negative ? -cents : cents;
+}
+
+/**
+ * Id used to skip rows imported before. `occurrence` numbers identical rows within one
+ * file (two same-price coffees on the same day are two purchases, not a duplicate); the
+ * first keeps the plain id, so files imported earlier still match.
+ */
+export function generateImportId(
+  date: string,
+  amount: number,
+  payeeName: string,
+  occurrence = 1,
+): string {
+  const id = `${date}|${amount}|${(payeeName || '').toLowerCase()}`;
+  return occurrence > 1 ? `${id}|${occurrence}` : id;
 }
 
 const COLUMN_HINTS: Record<string, string> = {

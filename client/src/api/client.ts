@@ -14,7 +14,14 @@ export async function apiFetch<T>(path: string, options?: RequestInit): Promise<
     if (res.status === 401 && !path.startsWith('/auth/')) {
       window.dispatchEvent(new Event(AUTH_REQUIRED_EVENT));
     }
-    throw new Error(body.error ?? res.statusText);
+    // Validation failures send an object of field errors, not a message
+    const message =
+      typeof body.error === 'string'
+        ? body.error
+        : body.error
+          ? 'Some of the values entered are invalid'
+          : res.statusText;
+    throw new Error(message);
   }
   if (res.status === 204) return undefined as T;
   return res.json();

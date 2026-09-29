@@ -5,12 +5,13 @@ import {
   parseCsv,
   normalizeDate,
   generateImportId,
+  parseImportAmount,
   guessColumnRoles,
   type ColumnRole,
 } from '../../utils/csv';
 import { importPreview } from '../../api/transactions';
 import { useImportConfirm } from '../../hooks/useTransactions';
-import { formatCurrency, parseCents } from '../../utils/currency';
+import { formatCurrency } from '../../utils/currency';
 import type { ImportPreviewRow } from '../../types';
 import type { ImportRow } from '../../api/transactions';
 
@@ -107,23 +108,29 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
     }
 
     const rows: ImportRow[] = [];
+    const seen = new Map<string, number>();
     for (const raw of rawRows) {
       const date = normalizeDate(raw[dateIdx] ?? '');
       if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
 
       let amount: number;
       if (amountIdx !== -1) {
-        amount = parseCents(raw[amountIdx]?.replace(/[$,]/g, '') ?? '0');
+        amount = parseImportAmount(raw[amountIdx]);
       } else {
-        const inf = parseCents(raw[inflowIdx]?.replace(/[$,]/g, '') ?? '0');
-        const out = parseCents(raw[outflowIdx]?.replace(/[$,]/g, '') ?? '0');
+        // Some banks write debits in the outflow column as negative numbers
+        const inf = Math.abs(inflowIdx !== -1 ? parseImportAmount(raw[inflowIdx]) : 0);
+        const out = Math.abs(outflowIdx !== -1 ? parseImportAmount(raw[outflowIdx]) : 0);
         amount = inf > 0 ? inf : -out;
       }
       if (amount === 0) continue;
 
-      const payeeName = payeeIdx !== -1 ? raw[payeeIdx] || null : null;
-      const notes = notesIdx !== -1 ? raw[notesIdx] || null : null;
-      const importedId = generateImportId(date, amount, payeeName ?? '');
+      // Same limits as the server, so one long memo can't fail the whole import
+      const payeeName = payeeIdx !== -1 ? raw[payeeIdx]?.slice(0, 500) || null : null;
+      const notes = notesIdx !== -1 ? raw[notesIdx]?.slice(0, 5000) || null : null;
+      const key = generateImportId(date, amount, payeeName ?? '');
+      const occurrence = (seen.get(key) ?? 0) + 1;
+      seen.set(key, occurrence);
+      const importedId = generateImportId(date, amount, payeeName ?? '', occurrence);
       rows.push({ date, amount, payeeName, notes, importedId });
     }
     return rows;
