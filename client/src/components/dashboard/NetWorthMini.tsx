@@ -167,7 +167,8 @@ export default function NetWorthMini() {
         )}
       </div>
 
-      {data.length > 1 && !noAccounts && (
+      {/* Before any accounts, a flat $0 line (the page still offers "Add an account") */}
+      {data.length > 1 && (
         <div className="mt-4" ref={xAxis.ref}>
           <ResponsiveContainer width="100%" height={112}>
             <AreaChart data={data} margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>

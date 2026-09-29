@@ -285,7 +285,7 @@ UI components live in `client/src/components/recurring/`. Occurrence computation
 
 The dashboard at `/dashboard` (default landing page) is built from the components in `client/src/components/dashboard/`, with `HelpFooter` (docs, GitHub and issues links) at the bottom:
 
-- `GettingStarted` — first-run checklist (add an account, bring in transactions, plan the budget, add recurring, create a rule), ticked off from real data; hidden once every step is done or by the user (`gettingStartedHidden` preference)
+- `GettingStarted` — first-run checklist (add an account, bring in transactions, add bills and paychecks, plan the budget, create a rule), ticked off from real data; hidden once every step is done or by the user (`gettingStartedHidden` preference)
 - `NetWorthMini` — net worth with a range picker and area chart
 - `SummaryStats` — Left to Spend, average monthly income/expenses, savings rate (shows "—" with a hint until there's a budget or income)
 - `IncomeExpensesMini` — 6-month income vs. expenses bars

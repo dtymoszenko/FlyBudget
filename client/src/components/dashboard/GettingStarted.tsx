@@ -57,18 +57,18 @@ export default function GettingStarted({ currentMonth }: { currentMonth: string 
         : { label: 'Connect a bank', to: '/settings?tab=connections' },
     },
     {
-      id: 'budget',
-      title: 'Plan this month’s budget',
-      description: 'Give every dollar a job by setting an amount for each category.',
-      done: (budget.data ?? []).some((g) => g.categories.some((c) => c.budgeted !== 0)),
-      action: { label: 'Open budget', to: '/budget' },
-    },
-    {
       id: 'recurring',
       title: 'Add your bills and paychecks',
       description: 'See what’s due next and never miss a payment.',
       done: (schedules.data?.length ?? 0) > 0,
       action: { label: 'Add recurring', to: '/recurring' },
+    },
+    {
+      id: 'budget',
+      title: 'Plan this month’s budget',
+      description: 'With your paychecks and bills in, give the rest of your money a job.',
+      done: (budget.data ?? []).some((g) => g.categories.some((c) => c.budgeted !== 0)),
+      action: { label: 'Open budget', to: '/budget' },
     },
     {
       id: 'rules',
@@ -89,8 +89,7 @@ export default function GettingStarted({ currentMonth }: { currentMonth: string 
         <div>
           <h2 className="text-base font-semibold text-text">Get started with FlyBudget</h2>
           <p className="text-sm text-text-tertiary mt-0.5">
-            {doneCount} of {steps.length} done. A few minutes here and your dashboard fills in on
-            its own.
+            {doneCount} of {steps.length} done. Each step brings more of your dashboard to life.
           </p>
         </div>
         <button
