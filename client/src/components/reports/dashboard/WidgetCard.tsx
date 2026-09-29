@@ -12,6 +12,7 @@ import { ChartSkeleton } from '../ChartHelpers';
 import NameModal from './NameModal';
 import { useCustomReportData } from '../../../hooks/useCustomReports';
 import { useDeleteWidget, useUpdateWidget } from '../../../hooks/useDashboards';
+import { useNearViewport } from '../../../hooks/useNearViewport';
 import {
   encodeRangeParam,
   formatDateRange,
@@ -45,6 +46,8 @@ export default function WidgetCard({ widget, report, pages, dashboardRange, edit
   const deleteWidget = useDeleteWidget();
   const [rangeOpen, setRangeOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
+  // Charts are costly to draw: only draw (and load) the ones on screen or about to scroll in
+  const { ref: bodyRef, near } = useNearViewport<HTMLDivElement>();
 
   const isCustom = widget.type === 'custom-report';
   // Summary puts its title and figures on one line when the card is wide enough (see
@@ -127,9 +130,12 @@ export default function WidgetCard({ widget, report, pages, dashboardRange, edit
         {/* Charts show their tooltips on hover; a click still bubbles up and opens the report.
           In edit mode the chart ignores the pointer so the whole card drags. */}
         <div
+          ref={bodyRef}
           className={`flex-1 min-h-0 min-w-0 overflow-hidden ${editing ? 'pointer-events-none' : ''}`}
         >
-          {isCustom ? (
+          {!near ? (
+            <ChartSkeleton />
+          ) : isCustom ? (
             report ? (
               <CustomReportBody report={report} range={range} />
             ) : (

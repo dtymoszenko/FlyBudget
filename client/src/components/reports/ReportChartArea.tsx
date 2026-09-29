@@ -166,15 +166,17 @@ function TotalChartView({
   const chartType = singlePointType(config.chartType, chartData.length);
   // Month groups arrive as "2025-06"; show them like the other charts ("Jun 25"). Checking the
   // format, not just groupBy, because data from the previous grouping can still be showing
+  const byMonth = chartData.length > 0 && chartData.every((d) => /^\d{4}-\d{2}$/.test(d.name));
   const labels = useMemo(
-    () => chartData.map((d) => (/^\d{4}-\d{2}$/.test(d.name) ? monthLabel(d.name) : d.name)),
-    [chartData],
+    () => chartData.map((d) => (byMonth ? monthLabel(d.name) : d.name)),
+    [chartData, byMonth],
   );
   const xAxis = useXAxisLayout({
     labels,
     kind: chartType === 'line' || chartType === 'area' ? 'point' : 'band',
-    // Totals are sorted by amount, even when grouped by month, so every bar keeps its label
-    ordered: false,
+    // Months come in date order, so labels can be skipped evenly like a time axis; other
+    // totals are sorted by amount, so every bar keeps its label
+    ordered: byMonth,
     inset: INSET,
   });
   if (!chartData.length) return <EmptyState />;

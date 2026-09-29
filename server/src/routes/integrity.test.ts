@@ -200,6 +200,34 @@ describe('schedules reject rules that could never finish generating dates', () =
   });
 });
 
+describe('custom reports', () => {
+  it('list month totals in date order, whatever the amounts', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        // Spending in 1-12 months of 2031, in any order and any size
+        fc.uniqueArray(fc.integer({ min: 1, max: 12 }), { minLength: 1, maxLength: 12 }),
+        fc.array(fc.integer({ min: 1, max: 1_000_000 }), { minLength: 12, maxLength: 12 }),
+        async (months, amounts) => {
+          const accountId = await newAccount();
+          for (const [i, m] of months.entries()) {
+            const date = `2031-${String(m).padStart(2, '0')}-15`;
+            await send('POST', '/transactions', { accountId, date, amount: -amounts[i] });
+          }
+          const { body } = await send(
+            'GET',
+            `/reports/custom?mode=total&group_by=month&balance_type=expense&from=2031-01&to=2031-12&account_ids=${accountId}`,
+          );
+          const names = (body.data as { name: string }[]).map((d) => d.name);
+          expect(names).toEqual(
+            [...months].sort((a, b) => a - b).map((m) => `2031-${String(m).padStart(2, '0')}`),
+          );
+        },
+      ),
+      { numRuns: 25 },
+    );
+  });
+});
+
 describe('report ranges are validated', () => {
   it.each([
     '/reports/net-worth?from=2024-01&to=999999-12',
