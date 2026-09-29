@@ -152,8 +152,11 @@ function RuleRow({
   );
 }
 
+// Stable while loading: a new [] each render would re-run the effect below forever
+const NO_RULES: Rule[] = [];
+
 export default function RulesPage() {
-  const { data: rulesData = [], isLoading } = useRules();
+  const { data: rulesData = NO_RULES, isLoading } = useRules();
   const updateRule = useUpdateRule();
   const deleteRule = useDeleteRule();
   const reorderRules = useReorderRules();

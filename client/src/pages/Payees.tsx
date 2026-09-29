@@ -174,109 +174,116 @@ export default function PayeesPage() {
               : "No payees yet. They're created automatically from transactions."}
           </div>
         ) : (
-          <table className="w-full">
-            <thead className="sticky top-0 bg-surface-alt border-b border-border z-10">
-              <tr>
-                <th className="w-10 px-4 py-2">
-                  <input
-                    type="checkbox"
-                    aria-label="Select all payees"
-                    checked={selected.size === filtered.length && filtered.length > 0}
-                    onChange={(e) =>
-                      setSelected(e.target.checked ? new Set(filtered.map((p) => p.id)) : new Set())
-                    }
-                    className="accent-brand-600"
-                  />
-                </th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-text-tertiary">Name</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-text-tertiary">
-                  Default category
-                </th>
-                <th className="px-4 py-2 text-right text-xs font-medium text-text-tertiary">
-                  Transactions
-                </th>
-                <th className="w-12 px-4 py-2" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border-light">
-              {filtered.map((p) => (
-                <tr
-                  key={p.id}
-                  className={`group hover:bg-hover transition-colors ${selected.has(p.id) ? 'bg-brand-50' : ''}`}
-                >
-                  <td className="px-4 py-2">
+          // Phones: the table scrolls sideways on its own (on wider screens the header stays sticky)
+          <div className="max-md:overflow-x-auto">
+            <table className="w-full">
+              <thead className="sticky top-0 bg-surface-alt border-b border-border z-10">
+                <tr>
+                  <th className="w-10 px-4 py-2">
                     <input
                       type="checkbox"
-                      aria-label={`Select ${p.name}`}
-                      checked={selected.has(p.id)}
-                      onChange={() => toggleSelect(p.id)}
+                      aria-label="Select all payees"
+                      checked={selected.size === filtered.length && filtered.length > 0}
+                      onChange={(e) =>
+                        setSelected(
+                          e.target.checked ? new Set(filtered.map((p) => p.id)) : new Set(),
+                        )
+                      }
                       className="accent-brand-600"
                     />
-                  </td>
-                  <td className="px-4 py-2">
-                    <div className="flex items-center gap-3">
-                      <PayeeIcon
-                        name={p.name}
-                        logo={p.logo}
-                        size="md"
-                        force
-                        onLogoChange={(logo) => updatePayee.mutate({ id: p.id, logo })}
-                      />
-                      {editingId === p.id ? (
-                        <input
-                          autoFocus
-                          aria-label={`Rename ${p.name}`}
-                          value={editingName}
-                          onChange={(e) => setEditingName(e.target.value)}
-                          onBlur={() => commitEditName(p.id)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') commitEditName(p.id);
-                            if (e.key === 'Escape') setEditingId(null);
-                          }}
-                          className="text-sm border border-brand-500 rounded px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-brand-600 w-full max-w-xs"
-                        />
-                      ) : (
-                        <span
-                          className="text-sm font-medium text-text cursor-text hover:text-brand-600 transition-colors"
-                          onDoubleClick={() => startEditName(p)}
-                          title="Double-click to rename"
-                        >
-                          {p.name}
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-2">
-                    <select
-                      aria-label={`Default category for ${p.name}`}
-                      value={p.defaultCategoryId ?? ''}
-                      onChange={(e) => handleCategoryChange(p.id, e.target.value)}
-                      className="text-sm border border-border rounded-md px-2 py-1 bg-surface text-text focus:outline-none focus:ring-1 focus:ring-brand-600 max-w-[220px]"
-                    >
-                      <option value="">No default</option>
-                      {allCategories.map((c: any) => (
-                        <option key={c.id} value={c.id}>
-                          {c.groupName} → {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="px-4 py-2 text-right text-sm text-text-secondary">
-                    {p.transactionCount}
-                  </td>
-                  <td className="px-4 py-2">
-                    <button
-                      onClick={() => setDeleteId(p.id)}
-                      aria-label={`Delete ${p.name}`}
-                      className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 p-1 text-text-tertiary hover:text-negative transition-all"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </td>
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-text-tertiary">
+                    Name
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-text-tertiary">
+                    Default category
+                  </th>
+                  <th className="px-4 py-2 text-right text-xs font-medium text-text-tertiary">
+                    Transactions
+                  </th>
+                  <th className="w-12 px-4 py-2" />
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-border-light">
+                {filtered.map((p) => (
+                  <tr
+                    key={p.id}
+                    className={`group hover:bg-hover transition-colors ${selected.has(p.id) ? 'bg-brand-50' : ''}`}
+                  >
+                    <td className="px-4 py-2">
+                      <input
+                        type="checkbox"
+                        aria-label={`Select ${p.name}`}
+                        checked={selected.has(p.id)}
+                        onChange={() => toggleSelect(p.id)}
+                        className="accent-brand-600"
+                      />
+                    </td>
+                    <td className="px-4 py-2">
+                      <div className="flex items-center gap-3">
+                        <PayeeIcon
+                          name={p.name}
+                          logo={p.logo}
+                          size="md"
+                          force
+                          onLogoChange={(logo) => updatePayee.mutate({ id: p.id, logo })}
+                        />
+                        {editingId === p.id ? (
+                          <input
+                            autoFocus
+                            aria-label={`Rename ${p.name}`}
+                            value={editingName}
+                            onChange={(e) => setEditingName(e.target.value)}
+                            onBlur={() => commitEditName(p.id)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') commitEditName(p.id);
+                              if (e.key === 'Escape') setEditingId(null);
+                            }}
+                            className="text-sm border border-brand-500 rounded px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-brand-600 w-full max-w-xs"
+                          />
+                        ) : (
+                          <span
+                            className="text-sm font-medium text-text cursor-text hover:text-brand-600 transition-colors"
+                            onDoubleClick={() => startEditName(p)}
+                            title="Double-click to rename"
+                          >
+                            {p.name}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-2">
+                      <select
+                        aria-label={`Default category for ${p.name}`}
+                        value={p.defaultCategoryId ?? ''}
+                        onChange={(e) => handleCategoryChange(p.id, e.target.value)}
+                        className="text-sm border border-border rounded-md px-2 py-1 bg-surface text-text focus:outline-none focus:ring-1 focus:ring-brand-600 max-w-[220px]"
+                      >
+                        <option value="">No default</option>
+                        {allCategories.map((c: any) => (
+                          <option key={c.id} value={c.id}>
+                            {c.groupName} → {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-4 py-2 text-right text-sm text-text-secondary">
+                      {p.transactionCount}
+                    </td>
+                    <td className="px-4 py-2">
+                      <button
+                        onClick={() => setDeleteId(p.id)}
+                        aria-label={`Delete ${p.name}`}
+                        className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 p-1 text-text-tertiary hover:text-negative transition-all"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 

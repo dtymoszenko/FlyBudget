@@ -68,10 +68,11 @@ cd e2e
 npm ci && npx playwright install chromium   # once
 npm test                                    # builds the client, starts two servers, runs everything
 npm test -- --project=desktop               # just the desktop-app suite
+npm test -- --project=phone                 # the desktop app at 390x844 (tests/phone)
 E2E_SKIP_BUILD=1 npm test                   # reuse the last client builds (faster while writing tests)
 ```
 
-`global-setup.ts` starts FlyBudget twice on throwaway databases: **desktop** (configured like the Electron app: `--mode electron` client served by the API server, per-launch API token, credential encryption key; tests inject the preload's `__API_BASE__`) and **server-mode** (password login; the setup code is read from the server log). Desktop tests run one at a time and each starts from a snapshot of the fresh database, restored through `POST /api/export/restore`. Fixtures in `tests/fixtures.ts`: `api` seeds data over HTTP, `open(page, route)` uses hash routes, `typeAmount` types into currency fields, and a console guard fails any test whose page throws or logs `console.error` (opt out with an `allow-page-errors` annotation). Prefer role/label selectors; when a control has no accessible name, give it one in the app rather than reaching for CSS selectors.
+`global-setup.ts` starts FlyBudget twice on throwaway databases: **desktop** (configured like the Electron app: `--mode electron` client served by the API server, per-launch API token, credential encryption key; tests inject the preload's `__API_BASE__`) and **server-mode** (password login; the setup code is read from the server log). Desktop tests run one at a time and each starts from a snapshot of the fresh database, restored through `POST /api/export/restore`. Fixtures in `tests/fixtures.ts`: `api` seeds data over HTTP, `open(page, route)` uses hash routes, `typeAmount` types into currency fields, and a console guard fails any test whose page throws or logs `console.error` (opt out with an `allow-page-errors` annotation). Prefer role/label selectors; when a control has no accessible name, give it one in the app rather than reaching for CSS selectors. The **phone** project runs `tests/phone/` at 390x844 against the desktop server: it visits every page, saves `phone-*.png` screenshots (uploaded by CI as `phone-screenshots`), and fails if the document or any vertically scrolling area also scrolls sideways, or if content sticks out past the right edge (only boxes that scroll sideways on their own, like tab strips or `max-md:overflow-x-auto` table wrappers, may be wider).
 
 **Supply chain:**
 
@@ -159,6 +160,12 @@ The desktop app and `npm run dev` have no login, so `server/src/middleware/secur
 - **Shared chart helpers**: `CurrencyTooltip`, `ChartSkeleton`, `EmptyState`, `StatCardRow`, `EXPENSE_COLORS`, `monthLabel` live in `client/src/components/reports/ChartHelpers.tsx` — reuse these for any new chart work.
 - **X-axis labels**: every Recharts `<XAxis>` uses `useXAxisLayout` (`client/src/hooks/useXAxisLayout.tsx`, logic in `utils/axisLayout.ts`). It measures the real label widths against the chart size and picks which labels to draw so they never overlap or get cut off: time axes skip labels evenly (`ordered: true`); category axes tilt and shorten names, or leave them to the tooltip when bars are too thin. Pass the plot `inset` (margin + y-axis width) and spread `axisProps` on the axis; don't set `interval`/`angle`/`tick` by hand.
 - **Zoomed Y axes**: `valueAxis` (`client/src/utils/valueAxis.ts`) gives a `domain` + round `ticks` fitted to the data instead of starting at $0, for line charts where the change matters (the Net Worth report). Never use it for bars: a bar's height is its value, so bar axes must include 0.
+
+### Phones (below 768px)
+
+- `useIsPhone()` (`hooks/useIsPhone.ts`, `max-width: 767px`, Tailwind's `md`) switches `AppShell` to `PhoneShell`: a top bar with a menu button (`aria-expanded`, `aria-controls="app-sidebar"`) and the sidebar as a slide-out drawer (`SidebarDrawer`). The drawer is `inert` and `invisible` when closed; opening it moves focus in and makes the page behind inert; Escape, the backdrop or "Close menu" close it and return focus to the menu button; following a link closes it. Desktop keeps the normal sidebar (`Sidebar`/`SidebarContent`).
+- Phone-only tweaks use `max-md:` classes so desktop is untouched: headers wrap (`flex-wrap`), the Settings tab strip scrolls sideways, wide tables sit in a `max-md:overflow-x-auto` wrapper, the budget summary and report builder stack, and register rows put the payee on its own line.
+- Don't default query data to a fresh `[]` (`data: x = []`) when an effect copies it into state: a new array each render re-runs the effect forever while loading (React error #185). Use a module-level constant (`NO_RULES` in `pages/Rules.tsx`).
 
 ### Shared UI components (`client/src/components/ui/`)
 

@@ -145,7 +145,7 @@ export default function MonthlyTab({ onEdit, onAdd, onFind, allRecurring, onMatc
     <div className="p-6 space-y-4">
       <div className="bg-surface rounded-lg shadow-card border border-border-light">
         {/* Card header: month + navigation + view toggle */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-border-light">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 border-b border-border-light">
           <h2 className="text-base font-semibold text-text">{format(monthDate, 'MMMM yyyy')}</h2>
           <div className="flex items-center gap-1.5">
             <button className={navBtn} onClick={() => setMonth(format(subMonths(monthDate, 1), 'yyyy-MM'))} aria-label="Previous month">

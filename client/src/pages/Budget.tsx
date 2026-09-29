@@ -531,8 +531,9 @@ export default function BudgetPage() {
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-y-auto">
-        <div className="flex-1">
+      {/* Phones: the summary (with To Be Budgeted) goes above the table instead of beside it */}
+      <div className="flex max-md:flex-col flex-1 overflow-y-auto">
+        <div className="flex-1 max-md:flex-none max-md:order-last max-md:overflow-x-auto">
           <table className="w-full border-collapse">
             <colgroup>
               <col style={{ width: '55%' }} />
@@ -664,7 +665,7 @@ export default function BudgetPage() {
           </table>
         </div>
 
-        <div className="w-80 shrink-0 border-l border-border p-4 self-start sticky top-0">
+        <div className="w-80 max-md:w-full shrink-0 border-l max-md:border-l-0 max-md:border-b border-border p-4 self-start max-md:self-stretch sticky max-md:static top-0">
           <div>
             <BudgetSummaryWidget
               toBeBudgeted={tbb}

@@ -79,7 +79,7 @@ export default function ReportBuilderSidebar({ config, onChange }: Props) {
   }
 
   return (
-    <div className="w-72 shrink-0 bg-surface border-r border-border overflow-y-auto p-4 space-y-5">
+    <div className="w-72 max-md:w-full shrink-0 bg-surface border-r max-md:border-r-0 max-md:border-t border-border overflow-y-auto max-md:overflow-visible p-4 space-y-5">
       <Section label="Chart Type">
         <ChartTypeSelector
           value={config.chartType}
