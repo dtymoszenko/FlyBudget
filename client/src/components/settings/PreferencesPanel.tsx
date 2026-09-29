@@ -14,8 +14,8 @@ const themeOptions: { value: Theme; label: string }[] = [
 ];
 
 const sidebarModes: { value: SidebarMode; label: string; description: string }[] = [
-  { value: 'persistent', label: 'Persistent', description: 'Stays open, manual collapse toggle' },
-  { value: 'auto-hide', label: 'Auto-hide', description: 'Collapsed by default, expands on hover' },
+  { value: 'persistent', label: 'Pinned', description: 'Always open' },
+  { value: 'auto-hide', label: 'Auto-hide', description: 'Collapsed, opens on hover' },
 ];
 
 const dateFormats: { value: DateFormatOption; label: string; example: string }[] = [

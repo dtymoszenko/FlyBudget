@@ -12,12 +12,10 @@ import {
   Users,
   Zap,
   Settings,
-  PanelLeftClose,
-  PanelLeftOpen,
+  Pin,
   X,
-  BookOpen,
+  CircleHelp,
 } from 'lucide-react';
-import { useAppStore } from '../../store/appStore';
 import { usePreferencesStore } from '../../store/preferencesStore';
 import { SidebarAccountList } from './SidebarAccountList';
 import { ServerStatus } from './ServerStatus';
@@ -59,21 +57,15 @@ function NavItem({ to, icon, label, collapsed }: NavItemProps) {
 }
 
 export function Sidebar() {
-  const collapsed = useAppStore((s) => s.sidebarCollapsed);
   const sidebarMode = usePreferencesStore((s) => s.sidebarMode);
 
+  // Tracked in both modes, so unpinning keeps the sidebar open until the pointer leaves it
   const [hovered, setHovered] = useState(false);
-
-  const handleMouseEnter = useCallback(() => {
-    if (sidebarMode === 'auto-hide') setHovered(true);
-  }, [sidebarMode]);
-
-  const handleMouseLeave = useCallback(() => {
-    if (sidebarMode === 'auto-hide') setHovered(false);
-  }, [sidebarMode]);
+  const handleMouseEnter = useCallback(() => setHovered(true), []);
+  const handleMouseLeave = useCallback(() => setHovered(false), []);
 
   const isAutoHide = sidebarMode === 'auto-hide';
-  const isExpanded = isAutoHide ? hovered : !collapsed;
+  const isExpanded = isAutoHide ? hovered : true;
 
   return (
     <aside
@@ -82,9 +74,7 @@ export function Sidebar() {
       className={
         isAutoHide
           ? 'w-16 shrink-0 h-screen relative z-30'
-          : `shrink-0 h-screen overflow-hidden border-r border-sidebar-border transition-[width] duration-200 ${
-              isExpanded ? 'w-[208px]' : 'w-16'
-            }`
+          : 'w-[208px] shrink-0 h-screen overflow-hidden border-r border-sidebar-border'
       }
     >
       <div
@@ -104,9 +94,11 @@ export function Sidebar() {
 
 /** The sidebar's links, account list and footer, shared by the desktop sidebar and the phone drawer. */
 function SidebarContent({ isExpanded, onClose }: { isExpanded: boolean; onClose?: () => void }) {
-  const collapsed = useAppStore((s) => s.sidebarCollapsed);
-  const toggle = useAppStore((s) => s.setSidebarCollapsed);
   const sidebarMode = usePreferencesStore((s) => s.sidebarMode);
+  const setSidebarMode = usePreferencesStore((s) => s.setSidebarMode);
+  const pinned = sidebarMode === 'persistent';
+  const headerButton =
+    'relative p-1.5 max-md:min-w-11 max-md:min-h-11 flex items-center justify-center rounded-md text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-text-hi';
 
   return (
     <div className="w-[208px] h-full flex flex-col bg-sidebar-bg">
@@ -121,15 +113,50 @@ function SidebarContent({ isExpanded, onClose }: { isExpanded: boolean; onClose?
           flyClassName="text-brand-500"
           budgetClassName="text-sidebar-text-hi"
         />
-        {onClose && (
-          <button
-            onClick={onClose}
-            aria-label="Close menu"
-            className="ml-auto p-1.5 -mr-1.5 max-md:min-w-11 max-md:min-h-11 flex items-center justify-center rounded-md text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-text-hi"
+        <div
+          className={`ml-auto -mr-1.5 flex items-center gap-0.5 transition-opacity duration-200 ${
+            isExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
+        >
+          <a
+            href={DOCS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Help & docs (opens in a new tab)"
+            className={`group ${headerButton}`}
           >
-            <X size={18} />
-          </button>
-        )}
+            <CircleHelp size={16} aria-hidden />
+            <HeaderTooltip>Help &amp; docs</HeaderTooltip>
+          </a>
+          {/* The phone drawer closes; the desktop sidebar has a pin instead: pinned stays open,
+              unpinned collapses and opens on hover (the Sidebar setting in Preferences) */}
+          {onClose ? (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close menu"
+              className={headerButton}
+            >
+              <X size={18} />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setSidebarMode(pinned ? 'auto-hide' : 'persistent')}
+              aria-pressed={pinned}
+              aria-label="Pin sidebar"
+              className={`group ${headerButton}`}
+            >
+              <Pin
+                size={16}
+                aria-hidden
+                fill={pinned ? 'currentColor' : 'none'}
+                className={pinned ? 'text-sidebar-text-hi' : undefined}
+              />
+              <HeaderTooltip>{pinned ? 'Unpin sidebar' : 'Pin sidebar'}</HeaderTooltip>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Primary nav */}
@@ -193,50 +220,25 @@ function SidebarContent({ isExpanded, onClose }: { isExpanded: boolean; onClose?
           label="Settings"
           collapsed={!isExpanded}
         />
-        <a
-          href={DOCS_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          title={!isExpanded ? 'Help & docs' : undefined}
-          className="relative flex items-center gap-2.5 py-1.5 max-md:min-h-11 max-md:text-[15px] px-3 rounded-md text-[13px] font-medium text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-text-hi"
-        >
-          <BookOpen size={18} className="shrink-0" />
-          <span
-            className={`truncate transition-opacity duration-200 ${
-              isExpanded ? 'opacity-100' : 'opacity-0'
-            }`}
-          >
-            Help &amp; docs
-          </span>
-          <span className="sr-only"> (opens in a new tab)</span>
-        </a>
       </nav>
 
       {/* Where the data lives and whether the server is reachable */}
       <div className="py-1.5 px-3 border-t border-sidebar-border">
         <ServerStatus collapsed={!isExpanded} />
       </div>
-
-      {/* Collapse toggle — persistent mode only (the phone drawer is always full width) */}
-      {sidebarMode === 'persistent' && !onClose && (
-        <div className="py-2 px-3 border-t border-sidebar-border">
-          <button
-            onClick={() => toggle(!collapsed)}
-            className="flex items-center gap-2 w-full py-1.5 px-3 rounded-md text-[13px] text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-text-hi transition-colors"
-            title={isExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
-          >
-            {isExpanded ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
-            <span
-              className={`transition-opacity duration-200 ${
-                isExpanded ? 'opacity-100' : 'opacity-0'
-              }`}
-            >
-              Collapse
-            </span>
-          </button>
-        </div>
-      )}
     </div>
+  );
+}
+
+/** A small label under a sidebar header icon, shown on hover and keyboard focus */
+function HeaderTooltip({ children }: { children: React.ReactNode }) {
+  return (
+    <span
+      aria-hidden
+      className="pointer-events-none absolute top-full right-0 mt-1.5 z-10 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs font-medium text-white shadow-lg opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 max-md:hidden"
+    >
+      {children}
+    </span>
   );
 }
 
