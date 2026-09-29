@@ -776,15 +776,15 @@ export default function CashFlowPage() {
   return (
     <div className="flex flex-col h-full bg-surface">
       <div className="px-6 py-4 border-b border-border shrink-0">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <h1 className="text-lg font-semibold text-text shrink-0">Cash Flow</h1>
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex gap-0">
+            <div className="flex flex-wrap gap-0">
               {PRESETS.map(p => (
                 <button
                   key={p.id}
                   onClick={() => setPreset(p.id)}
-                  className={`px-2.5 py-1 text-xs font-medium transition-colors border-b-2 cursor-pointer ${
+                  className={`px-2.5 py-1 text-xs font-medium whitespace-nowrap transition-colors border-b-2 cursor-pointer ${
                     preset === p.id
                       ? 'border-brand-600 text-brand-600'
                       : 'border-transparent text-text-tertiary hover:text-text-secondary'

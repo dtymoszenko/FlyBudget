@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import { Check, X, Split, Plus, Trash2 } from 'lucide-react';
 import { PayeeCombobox } from './PayeeCombobox';
+import { useCanSave } from '../../hooks/useConnection';
 import { CategorySelect } from './CategorySelect';
 import type { Account, CategoryGroup, Payee, Transaction } from '../../types';
 import type { CreateTransactionData, SplitItem } from '../../api/transactions';
@@ -49,6 +50,7 @@ export function TransactionFormRow({
     initial?.amount !== undefined && initial.amount > 0 ? centsToInput(initial.amount) : '',
   );
   const [splitMode, setSplitMode] = useState(false);
+  const canSave = useCanSave();
   const [splits, setSplits] = useState<SplitRow[]>([
     { categoryId: null, amount: '', notes: '' },
     { categoryId: null, amount: '', notes: '' },
@@ -204,8 +206,9 @@ export function TransactionFormRow({
         <div className="flex items-center gap-1 pb-0.5">
           <button
             onClick={handleSave}
-            className="p-1.5 rounded text-brand-600 hover:text-brand-700 hover:bg-brand-100"
-            title="Save"
+            disabled={!canSave}
+            className="p-1.5 rounded text-brand-600 hover:text-brand-700 hover:bg-brand-100 disabled:opacity-40 disabled:pointer-events-none"
+            title={canSave ? 'Save' : 'Save (paused until FlyBudget reconnects)'}
           >
             <Check size={16} />
           </button>

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { Modal } from '../ui/Modal';
+import { useCanSave } from '../../hooks/useConnection';
+import { SavingPausedHint } from '../connection/SavingPausedHint';
 import { CurrencyInput } from '../ui/CurrencyInput';
 import { useCreateTransaction } from '../../hooks/useTransactions';
 import { formatCurrency } from '../../utils/currency';
@@ -22,6 +24,7 @@ export function UpdateValueModal({ account, onClose }: Props) {
   // Debts are entered as the positive amount owed
   const current = liability ? -account.balance : account.balance;
   const [value, setValue] = useState(current);
+  const canSave = useCanSave();
   const createTransaction = useCreateTransaction();
 
   const newBalance = liability ? -Math.abs(value) : value;
@@ -69,6 +72,7 @@ export function UpdateValueModal({ account, onClose }: Props) {
           </p>
         </div>
 
+        <SavingPausedHint className="text-right" />
         <div className="flex justify-end gap-3 pt-2">
           <button
             type="button"
@@ -79,7 +83,7 @@ export function UpdateValueModal({ account, onClose }: Props) {
           </button>
           <button
             type="submit"
-            disabled={createTransaction.isPending}
+            disabled={createTransaction.isPending || !canSave}
             className="px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {createTransaction.isPending ? 'Saving…' : 'Save'}

@@ -109,7 +109,7 @@ export default function CustomReportBuilder() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-6 py-3 border-b border-border bg-surface flex items-center justify-between">
+      <div className="px-6 py-3 border-b border-border bg-surface flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-3">
           <Link
             to={dashboardPageId ? `/reports?dashboard=${dashboardPageId}` : '/reports'}
@@ -130,10 +130,11 @@ export default function CustomReportBuilder() {
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
+      {/* Phones: the chart on top, the options below it, in one scrolling column */}
+      <div className="flex max-md:flex-col flex-1 overflow-hidden max-md:overflow-y-auto">
         <ReportBuilderSidebar config={config} onChange={setConfig} />
-        <div className="flex-1 p-6 overflow-auto bg-page">
-          <div className="h-[500px]" key={id ?? 'new'}>
+        <div className="flex-1 max-md:flex-none max-md:order-first p-6 max-md:p-4 overflow-auto bg-page">
+          <div className="h-[500px] max-md:h-[360px]" key={id ?? 'new'}>
             <ReportChartArea config={config} data={data} isLoading={isLoading} />
           </div>
         </div>

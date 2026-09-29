@@ -6,6 +6,8 @@ import { MerchantSelect } from '../transactions/MerchantSelect';
 import { CategorySelectButton } from '../transactions/CategorySelectButton';
 import { useAccounts } from '../../hooks/useAccounts';
 import { usePayees } from '../../hooks/usePayees';
+import { useCanSave } from '../../hooks/useConnection';
+import { SavingPausedHint } from '../connection/SavingPausedHint';
 import { format } from 'date-fns';
 import {
   RECURRENCE_TYPE_LABELS,
@@ -38,6 +40,7 @@ const WEEKEND_ADJUST_OPTIONS: { value: WeekendAdjust; label: string }[] = [
 export default function RecurringFormModal({ isOpen, onClose, onSave, editItem }: Props) {
   const { data: accounts = [] } = useAccounts();
   const { data: payees = [] } = usePayees();
+  const canSave = useCanSave();
 
   const [name, setName] = useState('');
   const [amount, setAmount] = useState(0);
@@ -355,6 +358,7 @@ export default function RecurringFormModal({ isOpen, onClose, onSave, editItem }
           )}
         </div>
 
+        <SavingPausedHint className="text-right" />
         <div className="flex justify-end gap-2 pt-2">
           <button
             type="button"
@@ -365,7 +369,7 @@ export default function RecurringFormModal({ isOpen, onClose, onSave, editItem }
           </button>
           <button
             type="submit"
-            disabled={!name || amount === 0}
+            disabled={!name || amount === 0 || !canSave}
             className="px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-md hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {editItem ? 'Save Changes' : 'Add Recurring'}

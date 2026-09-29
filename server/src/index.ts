@@ -33,6 +33,7 @@ import { schedulesRouter } from './routes/schedules.js';
 import { goalsRouter } from './routes/goals.js';
 import { plaidRouter } from './routes/plaid.js';
 import { simplefinRouter } from './routes/simplefin.js';
+import { serverRouter } from './routes/server.js';
 import { syncAllItems } from './services/plaidSyncService.js';
 import { encryptStoredCredentials } from './services/credentialEncryption.js';
 import { seedDefaultCategories } from './db/defaultCategories.js';
@@ -77,7 +78,9 @@ app.use((req, res, next) => (req.path === RESTORE_PATH ? next() : jsonBody(req, 
 app.use('/api/auth', authRouter);
 app.use('/api', requireSession);
 
+// Kept minimal: anyone who can reach the server may call it (health checks, reconnecting)
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
+app.use('/api/server', serverRouter);
 app.use('/api/accounts', accountsRouter);
 app.use('/api/categories', categoriesRouter);
 app.use('/api/transactions', transactionsRouter);

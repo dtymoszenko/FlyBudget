@@ -80,7 +80,7 @@ export default function RecurringTransactionsPage() {
 
   return (
     <div className="flex flex-col h-full bg-surface">
-      <div className="px-6 border-b border-border shrink-0 flex items-center justify-between">
+      <div className="px-6 border-b border-border shrink-0 flex flex-wrap items-center justify-between gap-x-4">
         <div className="flex items-center gap-6">
           <h1 className="text-lg font-semibold text-text py-4">Recurring</h1>
           <div className="flex gap-1 self-stretch">
@@ -88,7 +88,7 @@ export default function RecurringTransactionsPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-2 text-sm font-medium transition-colors border-b-2 -mb-px cursor-pointer ${
+                className={`px-2 text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px cursor-pointer ${
                   activeTab === tab.id
                     ? 'border-brand-600 text-brand-600'
                     : 'border-transparent text-text-tertiary hover:text-text-secondary'
@@ -99,7 +99,7 @@ export default function RecurringTransactionsPage() {
             ))}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 py-2">
           <Button variant="secondary" size="sm" onClick={() => setDiscoverOpen(true)}>
             <Sparkles size={13} /> Find recurring
           </Button>

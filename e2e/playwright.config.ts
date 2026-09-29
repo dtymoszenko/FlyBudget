@@ -25,15 +25,29 @@ export default defineConfig({
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
+  // Folders are matched as tests/<name>/, so a checkout path containing "phone" or
+  // "server-mode" can't pull every test into the wrong project
   projects: [
     {
       name: 'desktop',
-      testIgnore: /server-mode\//,
+      testIgnore: /\/tests\/(server-mode|phone)\//,
       use: { baseURL: `http://localhost:${DESKTOP_PORT}` },
+    },
+    // The desktop app's pages on a phone-sized screen (iPhone 13/14: 390×844)
+    {
+      name: 'phone',
+      testMatch: /\/tests\/phone\/.*\.spec\.ts$/,
+      use: {
+        baseURL: `http://localhost:${DESKTOP_PORT}`,
+        viewport: { width: 390, height: 844 },
+        deviceScaleFactor: 2,
+        isMobile: true,
+        hasTouch: true,
+      },
     },
     {
       name: 'server-mode',
-      testMatch: /server-mode\/.*\.spec\.ts/,
+      testMatch: /\/tests\/server-mode\/.*\.spec\.ts$/,
       use: { baseURL: `http://localhost:${SERVER_PORT}` },
     },
   ],

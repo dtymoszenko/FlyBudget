@@ -526,8 +526,11 @@ function Section({
   );
 }
 
+// Stable while loading: a new [] each render would re-run the setLocalGroups effect forever
+const NO_GROUPS: CategoryGroup[] = [];
+
 export function CategoryManager() {
-  const { data: groups = [], isLoading } = useCategories();
+  const { data: groups = NO_GROUPS, isLoading } = useCategories();
   const createGroup = useCreateGroup();
   const updateGroup = useUpdateGroup();
   const deleteGroup = useDeleteGroup();

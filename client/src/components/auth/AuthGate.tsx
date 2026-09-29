@@ -1,15 +1,21 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Loader2, Lock } from 'lucide-react';
-import { AUTH_REQUIRED_EVENT } from '../../api/client';
+import { AlertTriangle, Loader2, Lock } from 'lucide-react';
+import { AUTH_REQUIRED_EVENT, NetworkError } from '../../api/client';
 import * as authApi from '../../api/auth';
+import { appModeFrom } from '../../hooks/useServer';
+import { useConnectionStore } from '../../store/connectionStore';
+import { connectionSecurity } from '../../utils/connection';
+import { ReconnectScreen } from '../connection/ReconnectScreen';
 import { Button } from '../ui/Button';
+import { AuthScreen } from './AuthScreen';
 import { MIN_PASSWORD_LENGTH } from './passwordRules';
 
 /**
  * Shows the login (or first-run setup) screen when FlyBudget runs as a server and
  * this browser isn't signed in. In the desktop app and dev mode login is disabled,
- * so this renders the app straight away.
+ * so this renders the app straight away. If the server can't be reached on startup it
+ * shows a reconnect screen that keeps retrying, and the app loads once it answers.
  */
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const qc = useQueryClient();
@@ -17,12 +23,20 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     data: status,
     isLoading,
     isError,
+    refetch,
   } = useQuery({
     queryKey: ['auth-status'],
     queryFn: authApi.getAuthStatus,
     staleTime: Infinity,
-    retry: 1,
+    // Can't reach the server: show the reconnect screen straight away (it retries itself)
+    retry: (failures, err) => !(err instanceof NetworkError) && failures < 1,
   });
+
+  // Back online (after a failed start or mid-session): refresh everything on screen
+  const reconnectedAt = useConnectionStore((s) => s.reconnectedAt);
+  useEffect(() => {
+    if (reconnectedAt !== null) void qc.invalidateQueries();
+  }, [reconnectedAt, qc]);
 
   // A request came back "login required" (session expired or signed out elsewhere)
   useEffect(() => {
@@ -39,13 +53,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     );
   }
   if (isError || !status) {
-    return (
-      <AuthScreen title="Can't reach FlyBudget">
-        <p className="text-sm text-text-secondary text-center">
-          The server isn't responding. Check that it's running, then reload this page.
-        </p>
-      </AuthScreen>
-    );
+    return <ReconnectScreen mode={appModeFrom(status)} onRetry={() => void refetch()} />;
   }
   if (!status.enabled || status.authenticated) return <>{children}</>;
 
@@ -60,33 +68,6 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     <PasswordForm mode="setup" onDone={onSignedIn} />
   ) : (
     <PasswordForm mode="login" onDone={onSignedIn} />
-  );
-}
-
-function AuthScreen({
-  title,
-  subtitle,
-  children,
-}: {
-  title: string;
-  subtitle?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-surface-alt px-4">
-      <div className="w-full max-w-sm bg-surface rounded-xl border border-border-light shadow-card p-8">
-        <div className="flex flex-col items-center mb-6">
-          <img src="/logo.png" alt="" className="w-12 h-12 mb-3" />
-          <h1 className="text-lg font-semibold text-text">{title}</h1>
-          {subtitle && (
-            <p className="text-sm text-text-secondary text-center mt-1 leading-relaxed">
-              {subtitle}
-            </p>
-          )}
-        </div>
-        {children}
-      </div>
-    </div>
   );
 }
 
@@ -117,16 +98,38 @@ function PasswordForm({ mode, onDone }: { mode: 'setup' | 'login'; onDone: () =>
 
   const inputClass =
     'w-full px-3 py-2 text-sm border border-border rounded-md bg-surface text-text focus:outline-none focus:ring-1 focus:ring-brand-600 focus:border-brand-600';
+  const { host, hostname, protocol } = window.location;
+  const unencrypted = connectionSecurity(protocol, hostname) === 'unencrypted';
 
   return (
     <AuthScreen
       title={isSetup ? 'Set up your FlyBudget server' : 'Sign in to FlyBudget'}
       subtitle={
-        isSetup
-          ? 'Create the password that protects this server. Anyone who can reach it will need this password.'
-          : undefined
+        <>
+          <span className="block font-mono text-xs break-all" aria-label="Server address">
+            {host}
+          </span>
+          {isSetup && (
+            <span className="block mt-2">
+              Create the password that protects this server. Anyone who can reach it will need this
+              password.
+            </span>
+          )}
+        </>
       }
     >
+      {unencrypted && (
+        <div
+          role="note"
+          className="flex gap-2 mb-4 p-3 rounded-md bg-caution-subtle border border-caution/30 text-xs text-text leading-relaxed"
+        >
+          <AlertTriangle size={14} className="text-caution shrink-0 mt-0.5" aria-hidden />
+          <p>
+            <span className="font-semibold">Not a secure connection.</span> Your password would
+            travel unencrypted. Only continue on a network you trust.
+          </p>
+        </div>
+      )}
       <form onSubmit={submit} className="space-y-4">
         {isSetup && (
           <div>

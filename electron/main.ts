@@ -179,6 +179,8 @@ app.whenReady().then(async () => {
   if (!IS_DEV) {
     const dataKey = loadCredentialKey();
     if (dataKey) process.env.FLYBUDGET_DATA_KEY = dataKey;
+    // Shown in the app's server status (the bundled server can't read package.json)
+    process.env.FLYBUDGET_VERSION = app.getVersion();
     // server.js is in the same directory as main.js (electron/dist/)
     const { startServer } = require(path.join(__dirname, 'server.js')) as {
       startServer: (port: number) => Promise<void>;

@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Modal } from '../ui/Modal';
+import { useCanSave } from '../../hooks/useConnection';
+import { SavingPausedHint } from '../connection/SavingPausedHint';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { CurrencyInput } from '../ui/CurrencyInput';
 import { useUpdateAccount, useCloseAccount } from '../../hooks/useAccounts';
@@ -20,6 +22,7 @@ export function EditAccountModal({ account, onClose }: Props) {
   const [startingBalance, setStartingBalance] = useState(0);
   const [isOffBudget, setIsOffBudget] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
+  const canSave = useCanSave();
   const [logo, setLogo] = useState<string | null>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -162,6 +165,7 @@ export function EditAccountModal({ account, onClose }: Props) {
             </span>
           </label>
 
+          <SavingPausedHint className="text-right" />
           <div className="flex items-center justify-between pt-2 border-t border-border-light">
             <button
               type="button"
@@ -180,7 +184,7 @@ export function EditAccountModal({ account, onClose }: Props) {
               </button>
               <button
                 type="submit"
-                disabled={!name.trim() || updateAccount.isPending}
+                disabled={!name.trim() || updateAccount.isPending || !canSave}
                 className="px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {updateAccount.isPending ? 'Saving…' : 'Save'}

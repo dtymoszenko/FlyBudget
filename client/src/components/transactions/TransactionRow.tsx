@@ -72,12 +72,13 @@ export function TransactionRow({
   }
 
   const arrowBase =
-    'opacity-0 w-9 h-9 flex items-center justify-center border border-border rounded-lg hover:bg-hover text-text-tertiary hover:text-text-secondary transition-opacity shrink-0';
+    'opacity-0 w-9 h-9 max-md:hidden flex items-center justify-center border border-border rounded-lg hover:bg-hover text-text-tertiary hover:text-text-secondary transition-opacity shrink-0';
 
   return (
     <div>
       <div
-        className={`group/row flex items-center px-4 py-2 cursor-pointer border-b border-border-light transition-colors ${
+        // Phones: the payee gets its own line, the other columns wrap below it
+        className={`group/row flex max-md:flex-wrap items-center px-4 py-2 cursor-pointer border-b border-border-light transition-colors ${
           isSelected ? 'bg-brand-50 border-l-2 border-l-brand-600' : 'bg-surface hover:bg-hover'
         }`}
         onClick={() => onOpenDetail(tx.id)}
@@ -92,7 +93,7 @@ export function TransactionRow({
         data-testid="transaction-row"
       >
         {/* Payee */}
-        <div className="group/payee flex items-center gap-1 flex-[3] min-w-0 relative mr-3">
+        <div className="group/payee flex items-center gap-1 flex-[3] max-md:basis-full min-w-0 relative mr-3">
           <PayeeIcon
             name={payeeName}
             logo={payee?.logo}

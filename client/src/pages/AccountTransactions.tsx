@@ -32,8 +32,8 @@ export default function AccountTransactionsPage() {
           <ChevronRight size={11} />
           <span className="text-text-secondary">{account.name}</span>
         </div>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2.5 min-w-0">
             <AccountIcon name={account.name} type={account.type} logo={account.logo} size="md" />
             <h1 className="text-lg font-semibold text-text">{account.name}</h1>
             <Badge variant={account.type} />

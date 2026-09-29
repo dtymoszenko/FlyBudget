@@ -26,3 +26,15 @@ export const allowedHosts = (process.env.FLYBUDGET_ALLOWED_HOSTS ?? '')
  * client IPs are detected correctly), e.g. "loopback" or "1". Unset = no proxy.
  */
 export const trustProxy = process.env.FLYBUDGET_TRUST_PROXY;
+
+/**
+ * How FlyBudget is running: the desktop app (Electron passes a per-launch API token),
+ * a self-hosted server, or `npm run dev`. Read on load, before Electron clears the token
+ * from the environment.
+ */
+export type AppMode = 'desktop' | 'server' | 'dev';
+export const appMode: AppMode = serverMode
+  ? 'server'
+  : process.env.FLYBUDGET_API_TOKEN
+    ? 'desktop'
+    : 'dev';

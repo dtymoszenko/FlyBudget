@@ -134,6 +134,13 @@
       "when": 1790750000000,
       "tag": "0018_compact_summary_widget",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1790800000000,
+      "tag": "0019_session_devices",
+      "breakpoints": true
     }
   ]
 }

@@ -9,6 +9,7 @@ import { formatCurrency, parseCents, centsToInput } from '../utils/currency';
 import { BudgetSummaryWidget } from '../components/budget/BudgetSummaryWidget';
 import { BudgetEditPopover } from '../components/budget/BudgetEditPopover';
 import { Button } from '../components/ui/Button';
+import { useCanSave } from '../hooks/useConnection';
 import type { BudgetCategory, BudgetGroup, BudgetType } from '../types';
 
 function AmountInput({
@@ -114,7 +115,9 @@ function CategoryRow({
   onApplyBulk,
 }: CategoryRowProps) {
   const showCategoryIcons = usePreferencesStore((s) => s.showCategoryIcons);
-  const isEditing = editingId === cat.id;
+  // Offline: amounts can't be saved, so they can't be edited (and an open editor closes)
+  const canSave = useCanSave();
+  const isEditing = editingId === cat.id && canSave;
   const actual = isIncome ? cat.balance - cat.carryOver - cat.budgeted : cat.spent;
   const rawRemaining = cat.budgeted - actual;
   const remaining = isIncome ? Math.max(rawRemaining, 0) : rawRemaining;
@@ -159,8 +162,10 @@ function CategoryRow({
           ) : (
             <button
               onClick={() => onStartEdit(cat.id)}
+              disabled={!canSave}
+              title={canSave ? undefined : 'Saving is paused until FlyBudget reconnects'}
               aria-label={`Planned for ${cat.name}: ${formatCurrency(cat.budgeted)}`}
-              className="tabular-nums text-sm rounded px-2 py-0.5 min-w-[5.5rem] text-right border border-border bg-surface transition-colors hover:border-text-tertiary cursor-text"
+              className="tabular-nums text-sm rounded px-2 py-0.5 min-w-[5.5rem] text-right border border-border bg-surface transition-colors hover:border-text-tertiary cursor-text disabled:cursor-not-allowed disabled:opacity-60"
             >
               <span className="text-text-secondary">{formatCurrency(cat.budgeted)}</span>
             </button>
@@ -526,8 +531,9 @@ export default function BudgetPage() {
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-y-auto">
-        <div className="flex-1">
+      {/* Phones: the summary (with To Be Budgeted) goes above the table instead of beside it */}
+      <div className="flex max-md:flex-col flex-1 overflow-y-auto">
+        <div className="flex-1 max-md:flex-none max-md:order-last max-md:overflow-x-auto">
           <table className="w-full border-collapse">
             <colgroup>
               <col style={{ width: '55%' }} />
@@ -659,7 +665,7 @@ export default function BudgetPage() {
           </table>
         </div>
 
-        <div className="w-80 shrink-0 border-l border-border p-4 self-start sticky top-0">
+        <div className="w-80 max-md:w-full shrink-0 border-l max-md:border-l-0 max-md:border-b border-border p-4 self-start max-md:self-stretch sticky max-md:static top-0">
           <div>
             <BudgetSummaryWidget
               toBeBudgeted={tbb}

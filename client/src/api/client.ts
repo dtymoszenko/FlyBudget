@@ -1,13 +1,36 @@
-// electron preload injects the full url, dev uses vite proxy
-const BASE = window.__API_BASE__ ?? '/api';
+import { API_BASE } from './base';
+import { reportNetworkFailure, reportServerReachable } from '../store/connectionStore';
+import { isUnreachableResponse } from '../utils/connection';
 
 export const AUTH_REQUIRED_EVENT = 'flybudget:auth-required';
 
+/** The request never reached FlyBudget's server (it's restarting, stopped, or offline). */
+export class NetworkError extends Error {
+  constructor() {
+    super("Can't reach FlyBudget right now. Nothing was saved; try again once it reconnects.");
+    this.name = 'NetworkError';
+  }
+}
+
 export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      headers: { 'Content-Type': 'application/json' },
+      ...options,
+    });
+  } catch (err) {
+    // Cancelled on purpose (e.g. a query that's no longer needed): not a connection problem
+    if ((err as Error)?.name === 'AbortError') throw err;
+    reportNetworkFailure();
+    throw new NetworkError();
+  }
+  if (isUnreachableResponse(res.status, res.headers.get('content-type'))) {
+    reportNetworkFailure();
+    throw new NetworkError();
+  }
+  // Any real answer (even an error or "login required") means the server is there
+  reportServerReachable();
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     // Server mode: the session expired or was signed out elsewhere — show the login screen
