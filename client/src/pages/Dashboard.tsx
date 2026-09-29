@@ -37,7 +37,8 @@ export default function Dashboard() {
         <UpcomingBills />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 mt-5 items-start">
+      {/* Both cards take the row's height, so they line up (empty or not) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 mt-5">
         <div className="lg:col-span-5">
           <SpendingBreakdown currentMonth={currentMonth} />
         </div>

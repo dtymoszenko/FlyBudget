@@ -48,7 +48,7 @@ export default function RecentTransactions() {
   }
 
   return (
-    <Card padding="none">
+    <Card padding="none" className="h-full flex flex-col">
       <div className="flex items-center justify-between px-5 pt-4 pb-3">
         <h3 className="text-sm font-semibold text-text">Recent Transactions</h3>
         <Link
@@ -62,7 +62,7 @@ export default function RecentTransactions() {
       {transactions.length === 0 ? (
         <EmptyState
           compact
-          className="pb-8"
+          className="flex-1 justify-center pb-8"
           icon={<Receipt size={20} />}
           title="No transactions yet"
           description="Import a CSV file from your bank, connect a bank, or add transactions by hand."

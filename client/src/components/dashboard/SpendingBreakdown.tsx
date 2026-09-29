@@ -43,7 +43,7 @@ export default function SpendingBreakdown({ currentMonth }: Props) {
   }
 
   return (
-    <Card>
+    <Card className="h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-semibold text-text">Spending by Category</h3>
         <Link to="/reports" className="text-xs text-brand-600 hover:text-brand-700 font-medium">
@@ -54,6 +54,7 @@ export default function SpendingBreakdown({ currentMonth }: Props) {
       {topCategories.length === 0 ? (
         <EmptyState
           compact
+          className="flex-1 justify-center"
           icon={<PieChart size={20} />}
           title="No spending this month"
           description="As you spend, your biggest categories show up here."
