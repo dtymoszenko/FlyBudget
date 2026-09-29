@@ -22,25 +22,65 @@ export function isActiveCategory(cat: BudgetCategory, isIncome: boolean) {
 export const MIN_SHOWN_CATEGORIES = 3;
 
 /**
+ * Default categories most people use, most common first. When a section needs topping up,
+ * these are picked before the rest, so a new budget shows Groceries and Rent rather than
+ * whatever sorts first. Matched by name (ignoring case): renamed or custom categories just
+ * keep the section's order.
+ */
+const COMMON_CATEGORIES = [
+  // Income
+  'paychecks',
+  'other income',
+  'interest',
+  // Fixed
+  'rent / mortgage',
+  'electric',
+  'phone',
+  'internet',
+  'car payment',
+  'car insurance',
+  'streaming services',
+  // Flexible
+  'groceries',
+  'restaurants',
+  'gas / fuel',
+  'personal care',
+  'clothing',
+  'coffee shops',
+  // Non-monthly
+  'savings',
+  'doctor / medical',
+  'car maintenance',
+  'entertainment',
+  'vacation',
+];
+
+const commonRank = (cat: BudgetCategory) => {
+  const rank = COMMON_CATEGORIES.indexOf(cat.name.trim().toLowerCase());
+  return rank === -1 ? COMMON_CATEGORIES.length : rank;
+};
+
+/**
  * Which categories a budget section lists, and which it tucks away behind "Show N inactive
- * categories": every active one, topped up with the first inactive ones (in the section's
- * order) to at least `min`, so no section ever looks empty. Both lists keep the section's
- * order.
+ * categories": every active one, topped up with inactive ones to at least `min` so no
+ * section ever looks empty (common categories first, then the section's order). Both
+ * lists keep the section's order.
  */
 export function splitCategories(
   categories: BudgetCategory[],
   isIncome: boolean,
   min = MIN_SHOWN_CATEGORIES,
 ) {
-  let fill = Math.max(min - categories.filter((c) => isActiveCategory(c, isIncome)).length, 0);
-  const shown: BudgetCategory[] = [];
-  const hidden: BudgetCategory[] = [];
-  for (const cat of categories) {
-    if (isActiveCategory(cat, isIncome)) shown.push(cat);
-    else if (fill > 0) {
-      shown.push(cat);
-      fill--;
-    } else hidden.push(cat);
-  }
+  const inactive = categories.filter((c) => !isActiveCategory(c, isIncome));
+  const fill = Math.max(min - (categories.length - inactive.length), 0);
+  const topUp = new Set(
+    inactive
+      .map((cat, index) => ({ cat, index }))
+      .sort((a, b) => commonRank(a.cat) - commonRank(b.cat) || a.index - b.index)
+      .slice(0, fill)
+      .map(({ cat }) => cat),
+  );
+  const shown = categories.filter((c) => isActiveCategory(c, isIncome) || topUp.has(c));
+  const hidden = inactive.filter((c) => !topUp.has(c));
   return { shown, hidden };
 }

@@ -86,3 +86,32 @@ describe('splitCategories (property-based)', () => {
     );
   });
 });
+
+describe('splitCategories picks common categories to top up a section', () => {
+  const idle = (name: string, sortOrder: number): BudgetCategory => ({
+    id: name,
+    groupId: 'g',
+    name,
+    icon: null,
+    budgetType: 'flexible',
+    sortOrder,
+    createdAt: '',
+    budgeted: 0,
+    spent: 0,
+    carryOver: 0,
+    balance: 0,
+  });
+
+  it('prefers Groceries and Restaurants over what happens to sort first', () => {
+    const names = ['Charity', 'Gifts', 'Donations', 'Gas / Fuel', 'Groceries', 'Restaurants'];
+    const { shown } = splitCategories(names.map(idle), false);
+    // In the section's order, not the ranking's
+    expect(shown.map((c) => c.name)).toEqual(['Gas / Fuel', 'Groceries', 'Restaurants']);
+  });
+
+  it('falls back to the section order for names it does not know', () => {
+    const names = ['Zoo Trips', 'Alpacas', 'Kayaks', 'Board Games'];
+    const { shown } = splitCategories(names.map(idle), false);
+    expect(shown.map((c) => c.name)).toEqual(['Zoo Trips', 'Alpacas', 'Kayaks']);
+  });
+});
