@@ -1,16 +1,23 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as budgetApi from '../api/budget';
 import { useUndoStore } from '../store/undoStore';
 import type { BudgetGroup } from '../types';
 
+// Switching months keeps showing the previous month until the next one arrives, so the
+// page doesn't collapse to an empty budget (and jump) in between
 export function useBudget(month: string) {
-  return useQuery({ queryKey: ['budget', month], queryFn: () => budgetApi.getBudget(month) });
+  return useQuery({
+    queryKey: ['budget', month],
+    queryFn: () => budgetApi.getBudget(month),
+    placeholderData: keepPreviousData,
+  });
 }
 
 export function useBudgetSummary(month: string) {
   return useQuery({
     queryKey: ['budget-summary', month],
     queryFn: () => budgetApi.getBudgetSummary(month),
+    placeholderData: keepPreviousData,
   });
 }
 

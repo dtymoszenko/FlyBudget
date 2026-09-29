@@ -141,4 +141,35 @@ test.describe('budget', () => {
       page.getByTestId('transaction-row').filter({ hasText: 'Farm Stand' }),
     ).toBeVisible();
   });
+  test('switching months keeps the budget on screen while the next month loads', async ({
+    page,
+    api,
+  }) => {
+    await api.createAccount('Checking', 0);
+    const groceries = await api.category('Groceries');
+    await api.call('PUT', `/budget/${thisMonth()}/${groceries.id}`, { budgeted: 20_000 });
+    await open(page, '/budget');
+    const groceriesPlanned = page.getByRole('button', { name: /^Planned for Groceries:/ });
+    await expect(groceriesPlanned).toBeVisible();
+
+    // Make next month slow to load, so the moment in between can be checked
+    const [y, m] = thisMonth().split('-').map(Number);
+    const next = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`;
+    await page.route(`**/api/budget/${next}**`, async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 1_500));
+      await route.continue();
+    });
+
+    await page.getByRole('button', { name: 'Next month' }).click();
+    // Still loading: this month's table stays (faded) instead of collapsing to nothing
+    await expect(page.locator('[aria-busy="true"]')).toBeVisible();
+    await expect(groceriesPlanned).toBeVisible();
+    await expect(page.getByText('No categories yet')).toHaveCount(0);
+
+    // Then next month's figures replace it
+    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+    await expect(
+      page.getByRole('button', { name: /^Planned for Groceries: \$0(\.00)?$/ }),
+    ).toBeVisible();
+  });
 });

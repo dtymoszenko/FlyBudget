@@ -400,7 +400,7 @@ export default function BudgetPage() {
   const [incomeCollapsed, setIncomeCollapsed] = useState(false);
   const [expensesCollapsed, setExpensesCollapsed] = useState(false);
 
-  const { data: groups = [] } = useBudget(selectedMonth);
+  const { data: groups = [], isPlaceholderData: switchingMonth } = useBudget(selectedMonth);
   const { data: summary } = useBudgetSummary(selectedMonth);
   const setBudgetMutation = useSetBudget();
   const setBulkMutation = useSetBudgetBulk();
@@ -530,7 +530,11 @@ export default function BudgetPage() {
       )}
 
       {/* Phones: the summary (with To Be Budgeted) goes above the table instead of beside it */}
-      <div className="flex max-md:flex-col flex-1 overflow-y-auto">
+      {/* While the next month loads, the previous one stays (faded) so nothing jumps */}
+      <div
+        aria-busy={switchingMonth}
+        className={`flex max-md:flex-col flex-1 overflow-y-auto transition-opacity ${switchingMonth ? 'opacity-60' : ''}`}
+      >
         <div className="flex-1 max-md:flex-none max-md:order-last max-md:overflow-x-auto">
           {isPhone ? (
             <PhoneBudget
