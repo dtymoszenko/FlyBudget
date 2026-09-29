@@ -74,7 +74,13 @@ lives on your server, and:
 - behind HTTPS (`FLYBUDGET_TRUST_PROXY`), responses carry HSTS
 - sessions are random 256-bit tokens, stored server-side only as SHA-256
   hashes, sent in an HttpOnly, SameSite=Strict cookie (Secure over HTTPS),
-  expiring after 30 days; changing the password ends every other session
+  expiring after 30 days; changing the password ends every other session.
+  Settings → Server lists signed-in devices (by an opaque id that can't be used
+  to sign in) so you can sign any of them out
+- visitors who aren't signed in learn nothing about the server: `/api/health`
+  only says it's up, and the version and security check (Settings → Server)
+  need a session. The security check names the setting that fixes each
+  warning, never a secret value
 - the server refuses to start without a credential encryption key, supplied as
   a Docker secret (`FLYBUDGET_DATA_KEY_FILE`) rather than stored with the
   database

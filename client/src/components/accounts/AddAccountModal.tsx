@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Modal } from '../ui/Modal';
+import { useCanSave } from '../../hooks/useConnection';
+import { SavingPausedHint } from '../connection/SavingPausedHint';
 import { CurrencyInput } from '../ui/CurrencyInput';
 import { useCreateAccount } from '../../hooks/useAccounts';
 import type { AccountType } from '../../types';
@@ -16,6 +18,7 @@ export function AddAccountModal({ isOpen, onClose }: Props) {
   const [type, setType] = useState<AccountType>('checking');
   const [amount, setAmount] = useState(0);
   const [isOffBudget, setIsOffBudget] = useState(false);
+  const canSave = useCanSave();
   const createAccount = useCreateAccount();
   const info = accountTypeInfo(type);
 
@@ -106,6 +109,7 @@ export function AddAccountModal({ isOpen, onClose }: Props) {
           </span>
         </label>
 
+        <SavingPausedHint className="text-right" />
         <div className="flex justify-end gap-3 pt-2">
           <button
             type="button"
@@ -116,7 +120,7 @@ export function AddAccountModal({ isOpen, onClose }: Props) {
           </button>
           <button
             type="submit"
-            disabled={!name.trim() || createAccount.isPending}
+            disabled={!name.trim() || createAccount.isPending || !canSave}
             className="px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {createAccount.isPending ? 'Adding…' : 'Add Account'}

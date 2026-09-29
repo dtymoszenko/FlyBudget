@@ -83,11 +83,27 @@ export function verifyDeviceToken(token: string | undefined): string | null {
   return timingSafeEqual(given, expected) ? id : null;
 }
 
-export function createSession(): { token: string; expiresAt: Date } {
+/** Longest user agent kept for the signed-in devices list */
+const MAX_USER_AGENT_LENGTH = 256;
+
+/** A user agent header made safe to store and show: no control characters, capped. */
+export function cleanUserAgent(userAgent: string | undefined): string | null {
+  // eslint-disable-next-line no-control-regex
+  const cleaned = (userAgent ?? '').replace(/[\u0000-\u001f\u007f-\u009f]/g, '').trim();
+  return cleaned ? cleaned.slice(0, MAX_USER_AGENT_LENGTH) : null;
+}
+
+export function createSession(userAgent?: string): { token: string; expiresAt: Date } {
   const token = randomBytes(32).toString('base64url');
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
+  const now = new Date().toISOString();
   db.insert(sessions)
-    .values({ id: digest(token), expiresAt: expiresAt.toISOString() })
+    .values({
+      id: digest(token),
+      expiresAt: expiresAt.toISOString(),
+      userAgent: cleanUserAgent(userAgent),
+      lastUsedAt: now,
+    })
     .run();
   return { token, expiresAt };
 }
@@ -111,4 +127,83 @@ export function deleteSession(token: string | undefined) {
 
 export function deleteExpiredSessions() {
   db.delete(sessions).where(lte(sessions.expiresAt, new Date().toISOString())).run();
+}
+
+// --- Signed-in devices ---
+// Settings → Server lists the sessions so the owner can sign out a lost phone. The list
+// never includes the stored id (the token's hash): each session gets a public id that is
+// a hash of that hash, which can name a session but can't be turned into a cookie.
+
+/** How often "last used" is written for a session that keeps making requests */
+const TOUCH_INTERVAL_MS = 5 * 60 * 1000;
+const lastTouched = new Map<string, number>();
+
+export const publicSessionId = (storedId: string) => digest(`session:${storedId}`).slice(0, 12);
+
+export interface SessionInfo {
+  id: string;
+  createdAt: string;
+  expiresAt: string;
+  lastUsedAt: string | null;
+  userAgent: string | null;
+  current: boolean;
+}
+
+/** Records that a valid session was used (at most every few minutes per session). */
+export function touchSession(token: string | undefined) {
+  if (!token) return;
+  const id = digest(token);
+  const now = Date.now();
+  if (now - (lastTouched.get(id) ?? 0) < TOUCH_INTERVAL_MS) return;
+  lastTouched.set(id, now);
+  // Don't let the map grow with sessions that ended long ago
+  if (lastTouched.size > 1000) {
+    for (const [key, at] of lastTouched) if (now - at >= TOUCH_INTERVAL_MS) lastTouched.delete(key);
+  }
+  db.update(sessions)
+    .set({ lastUsedAt: new Date(now).toISOString() })
+    .where(eq(sessions.id, id))
+    .run();
+}
+
+/** Every live session, newest first, with the caller's own marked `current`. */
+export function listSessions(currentToken: string | undefined): SessionInfo[] {
+  const current = currentToken ? digest(currentToken) : '';
+  return db
+    .select()
+    .from(sessions)
+    .where(gt(sessions.expiresAt, new Date().toISOString()))
+    .all()
+    .map((s) => ({
+      id: publicSessionId(s.id),
+      // SQLite's datetime('now') is UTC without the ISO "T" and "Z"
+      createdAt: /^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d$/.test(s.createdAt)
+        ? `${s.createdAt.replace(' ', 'T')}Z`
+        : s.createdAt,
+      expiresAt: s.expiresAt,
+      lastUsedAt: s.lastUsedAt,
+      userAgent: s.userAgent,
+      current: s.id === current,
+    }))
+    .sort((a, b) => (b.lastUsedAt ?? b.createdAt).localeCompare(a.lastUsedAt ?? a.createdAt));
+}
+
+/** Signs out the session with this public id. Returns whether one was found. */
+export function deleteSessionByPublicId(publicId: string): boolean {
+  const match = db
+    .select({ id: sessions.id })
+    .from(sessions)
+    .all()
+    .find((s) => publicSessionId(s.id) === publicId);
+  if (!match) return false;
+  db.delete(sessions).where(eq(sessions.id, match.id)).run();
+  return true;
+}
+
+/** Signs out every session except this one. Returns how many were signed out. */
+export function deleteOtherSessions(currentToken: string): number {
+  return db
+    .delete(sessions)
+    .where(ne(sessions.id, digest(currentToken)))
+    .run().changes;
 }

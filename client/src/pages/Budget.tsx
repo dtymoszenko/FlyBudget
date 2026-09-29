@@ -9,6 +9,7 @@ import { formatCurrency, parseCents, centsToInput } from '../utils/currency';
 import { BudgetSummaryWidget } from '../components/budget/BudgetSummaryWidget';
 import { BudgetEditPopover } from '../components/budget/BudgetEditPopover';
 import { Button } from '../components/ui/Button';
+import { useCanSave } from '../hooks/useConnection';
 import type { BudgetCategory, BudgetGroup, BudgetType } from '../types';
 
 function AmountInput({
@@ -114,7 +115,9 @@ function CategoryRow({
   onApplyBulk,
 }: CategoryRowProps) {
   const showCategoryIcons = usePreferencesStore((s) => s.showCategoryIcons);
-  const isEditing = editingId === cat.id;
+  // Offline: amounts can't be saved, so they can't be edited (and an open editor closes)
+  const canSave = useCanSave();
+  const isEditing = editingId === cat.id && canSave;
   const actual = isIncome ? cat.balance - cat.carryOver - cat.budgeted : cat.spent;
   const rawRemaining = cat.budgeted - actual;
   const remaining = isIncome ? Math.max(rawRemaining, 0) : rawRemaining;
@@ -159,8 +162,10 @@ function CategoryRow({
           ) : (
             <button
               onClick={() => onStartEdit(cat.id)}
+              disabled={!canSave}
+              title={canSave ? undefined : 'Saving is paused until FlyBudget reconnects'}
               aria-label={`Planned for ${cat.name}: ${formatCurrency(cat.budgeted)}`}
-              className="tabular-nums text-sm rounded px-2 py-0.5 min-w-[5.5rem] text-right border border-border bg-surface transition-colors hover:border-text-tertiary cursor-text"
+              className="tabular-nums text-sm rounded px-2 py-0.5 min-w-[5.5rem] text-right border border-border bg-surface transition-colors hover:border-text-tertiary cursor-text disabled:cursor-not-allowed disabled:opacity-60"
             >
               <span className="text-text-secondary">{formatCurrency(cat.budgeted)}</span>
             </button>

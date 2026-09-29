@@ -1,6 +1,8 @@
 import { useState, useCallback } from 'react';
 import { Upload, AlertTriangle, CheckCircle, X } from 'lucide-react';
 import { Modal } from '../ui/Modal';
+import { useCanSave } from '../../hooks/useConnection';
+import { SavingPausedHint } from '../connection/SavingPausedHint';
 import {
   parseCsv,
   normalizeDate,
@@ -25,6 +27,7 @@ type Step = 'upload' | 'map' | 'preview' | 'done';
 
 export function ImportModal({ isOpen, onClose, accountId }: Props) {
   const [step, setStep] = useState<Step>('upload');
+  const canSave = useCanSave();
   const [headers, setHeaders] = useState<string[]>([]);
   const [rawRows, setRawRows] = useState<string[][]>([]);
   const [roles, setRoles] = useState<ColumnRole[]>([]);
@@ -348,6 +351,7 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
               </tbody>
             </table>
           </div>
+          <SavingPausedHint className="text-right" />
           <div className="flex justify-end gap-2">
             <button
               onClick={() => setStep('map')}
@@ -357,7 +361,9 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
             </button>
             <button
               onClick={handleConfirm}
-              disabled={confirmMutation.isPending || previewRows.length === excluded.size}
+              disabled={
+                confirmMutation.isPending || previewRows.length === excluded.size || !canSave
+              }
               className="px-4 py-1.5 text-sm font-medium bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50"
             >
               {confirmMutation.isPending

@@ -5,3 +5,6 @@
  */
 export const SOURCE_CODE_URL = 'https://github.com/dtymoszenko/FlyBudget';
 export const LICENSE_URL = 'https://www.gnu.org/licenses/agpl-3.0.html';
+
+/** How to run FlyBudget on your own server (linked from Settings → Server) */
+export const SELF_HOSTING_URL = 'https://flybudget.org/community/self-hosting';

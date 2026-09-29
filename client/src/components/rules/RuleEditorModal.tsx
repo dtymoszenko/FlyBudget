@@ -11,6 +11,8 @@ import { OptionPicker, type PickerOption } from './OptionPicker';
 import { useRuleLookups } from './useRuleLookups';
 import { testConditions } from '../../api/rules';
 import { useDebounce } from '../../hooks/useDebounce';
+import { useCanSave } from '../../hooks/useConnection';
+import { SavingPausedHint } from '../connection/SavingPausedHint';
 import { formatCurrency } from '../../utils/currency';
 import {
   ACTION_TYPES,
@@ -47,6 +49,7 @@ export function RuleEditorModal({ isOpen, onClose, title, initial, applyDefault 
   const [actions, setActions] = useState<RuleAction[]>(initial.actions.length ? initial.actions : [newAction()]);
   const [applyExisting, setApplyExisting] = useState(applyDefault);
   const options = useRuleLookups();
+  const canSave = useCanSave();
 
   const rule: RuleInput = { ...initial, conditionsOp, conditions, actions };
   const complete = isRuleComplete(rule);
@@ -130,11 +133,12 @@ export function RuleEditorModal({ isOpen, onClose, title, initial, applyDefault 
             />
             Apply to existing transactions after saving
           </label>
-          <div className="flex gap-3 ml-auto">
+          <div className="flex items-center gap-3 ml-auto">
+            <SavingPausedHint />
             <Button variant="secondary" onClick={onClose}>
               Cancel
             </Button>
-            <Button onClick={() => onSave(rule, applyExisting)} disabled={!complete || saving}>
+            <Button onClick={() => onSave(rule, applyExisting)} disabled={!complete || saving || !canSave}>
               {saving ? 'Saving…' : 'Save rule'}
             </Button>
           </div>

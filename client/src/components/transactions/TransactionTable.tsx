@@ -16,6 +16,7 @@ import { TransactionRow } from './TransactionRow';
 import { TransactionDetailPanel } from './TransactionDetailPanel';
 import { ImportModal } from './ImportModal';
 import { Button } from '../ui/Button';
+import { useCanSave } from '../../hooks/useConnection';
 import { formatCurrency } from '../../utils/currency';
 import type { FilterState } from './TransactionFilters';
 import type { CategoryGroup } from '../../types';
@@ -68,6 +69,7 @@ export function TransactionTable({
   const { data: accounts = [] } = useAccounts();
 
   const createTx = useCreateTransaction();
+  const canSave = useCanSave();
   const createTransfer = useCreateTransfer();
 
   const categoryMap = useMemo(() => {
@@ -184,6 +186,8 @@ export function TransactionTable({
             </Button>
             <Button
               size="sm"
+              disabled={!canSave}
+              title={canSave ? undefined : 'Saving is paused until FlyBudget reconnects'}
               onClick={() => {
                 setShowAdd(true);
                 setDetailId(null);

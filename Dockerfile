@@ -22,10 +22,14 @@ RUN npm ci --prefix client --no-audit --no-fund \
 
 COPY client/ client/
 COPY server/ server/
+# Only for the version number, which is built into the server (Settings → Server)
+COPY package.json ./
 
-RUN npm run build --prefix client \
+RUN VERSION=$(node -p "require('./package.json').version") \
+ && npm run build --prefix client \
  && server/node_modules/.bin/esbuild server/src/index.ts --bundle --platform=node --target=node24 \
-      --external:better-sqlite3 --format=cjs --outfile=dist/server.js
+      --external:better-sqlite3 --format=cjs --outfile=dist/server.js \
+      --define:process.env.FLYBUDGET_VERSION="\"$VERSION\""
 
 # The only runtime dependency: better-sqlite3, which ships prebuilt binaries for
 # every platform. Keep just the Linux (glibc) ones.

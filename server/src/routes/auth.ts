@@ -13,10 +13,14 @@ import {
   checkPassword,
   createDeviceToken,
   createSession,
+  deleteOtherSessions,
   deleteSession,
+  deleteSessionByPublicId,
   isPasswordSet,
   isValidSession,
+  listSessions,
   setInitialPassword,
+  touchSession,
   verifyDeviceToken,
 } from '../auth/sessions.js';
 import { checkSetupCode, clearSetupCode, setupCode } from '../auth/setupCode.js';
@@ -51,7 +55,7 @@ const authRateLimit = rateLimit({
 const sessionToken = (req: Request) => readCookie(req.headers.cookie, SESSION_COOKIE);
 
 function startSession(req: Request, res: Response) {
-  const { token } = createSession();
+  const { token } = createSession(req.headers['user-agent']);
   res.cookie(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: 'strict',
@@ -147,9 +151,52 @@ authRouter.post('/change-password', authRateLimit, async (req, res) => {
   res.status(204).send();
 });
 
+// --- Signed-in devices (Settings → Server) ---
+// Each session is named by an opaque public id (see publicSessionId), never by the
+// stored hash, so nothing here can be turned back into a login.
+
+/** The caller's session token, or null after answering 404 / 401. */
+function signedIn(req: Request, res: Response): string | null {
+  if (!serverMode) {
+    res.status(404).json({ error: 'Not found' });
+    return null;
+  }
+  const token = sessionToken(req);
+  if (!token || !isValidSession(token)) {
+    res.status(401).json({ error: 'Login required' });
+    return null;
+  }
+  return token;
+}
+
+authRouter.get('/sessions', (req, res) => {
+  const token = signedIn(req, res);
+  if (token) res.json(listSessions(token));
+});
+
+authRouter.post('/sessions/sign-out-others', (req, res) => {
+  const token = signedIn(req, res);
+  if (token) res.json({ signedOut: deleteOtherSessions(token) });
+});
+
+authRouter.delete('/sessions/:id', (req, res) => {
+  const token = signedIn(req, res);
+  if (!token) return;
+  const id = req.params.id;
+  if (!/^[0-9a-f]{12}$/.test(id)) return res.status(400).json({ error: 'Invalid session id' });
+  const current = listSessions(token).find((s) => s.current)?.id === id;
+  if (!deleteSessionByPublicId(id)) return res.status(404).json({ error: 'Not found' });
+  if (current) res.clearCookie(SESSION_COOKIE, { path: '/' });
+  res.status(204).send();
+});
+
 /** In server mode, every API request except health and login needs a valid session. */
 export const requireSession: RequestHandler = (req, res, next) => {
   if (!serverMode || req.path === '/health' || req.path.startsWith('/auth/')) return next();
-  if (isValidSession(sessionToken(req))) return next();
+  const token = sessionToken(req);
+  if (isValidSession(token)) {
+    touchSession(token);
+    return next();
+  }
   res.status(401).json({ error: 'Login required' });
 };

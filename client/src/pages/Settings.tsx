@@ -1,8 +1,5 @@
-import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { Layers, ArrowUpDown, Download, SlidersHorizontal, Link2, Server } from 'lucide-react';
-import { getAuthStatus } from '../api/auth';
 import { ServerSettings } from '../components/settings/ServerSettings';
 import { CategoryManager } from '../components/settings/CategoryManager';
 import { AccountReorder } from '../components/settings/AccountReorder';
@@ -17,7 +14,7 @@ const tabs = [
   { id: 'connections', label: 'Connected Banks', icon: Link2 },
   { id: 'data', label: 'Data', icon: Download },
   { id: 'preferences', label: 'Preferences', icon: SlidersHorizontal },
-  // Only shown when FlyBudget runs as a self-hosted server (login enabled)
+  // Where the data lives; on a self-hosted server also security, devices and password
   { id: 'server', label: 'Server', icon: Server },
 ] as const;
 
@@ -26,19 +23,19 @@ type TabId = (typeof tabs)[number]['id'];
 const tabIds = new Set<string>(tabs.map((t) => t.id));
 
 export default function SettingsPage() {
-  const [searchParams] = useSearchParams();
+  // The tab lives in the URL (?tab=server), so links like the sidebar's "Server settings"
+  // can open it
+  const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
-  const initialTab = tabParam && tabIds.has(tabParam) ? (tabParam as TabId) : 'categories';
-  const [activeTab, setActiveTab] = useState<TabId>(initialTab);
-  const { data: auth } = useQuery({ queryKey: ['auth-status'], queryFn: getAuthStatus });
-  const visibleTabs = tabs.filter((t) => t.id !== 'server' || auth?.enabled);
+  const activeTab: TabId = tabParam && tabIds.has(tabParam) ? (tabParam as TabId) : 'categories';
+  const setActiveTab = (tab: TabId) => setSearchParams({ tab }, { replace: true });
 
   return (
     <div className="flex flex-col h-full bg-surface">
       <div className="px-6 py-4 border-b border-border shrink-0">
         <h1 className="text-lg font-semibold text-text">Settings</h1>
         <div className="flex gap-0 mt-3 border-b border-border-light -mb-px">
-          {visibleTabs.map((tab) => {
+          {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
             return (
@@ -66,7 +63,7 @@ export default function SettingsPage() {
           {activeTab === 'connections' && <ConnectedAccounts />}
           {activeTab === 'data' && <DataExport />}
           {activeTab === 'preferences' && <PreferencesPanel />}
-          {activeTab === 'server' && auth?.enabled && <ServerSettings />}
+          {activeTab === 'server' && <ServerSettings onOpenTab={setActiveTab} />}
 
           <p className="mt-10 pt-4 border-t border-border-light text-xs text-text-tertiary">
             FlyBudget is free software under the{' '}

@@ -96,6 +96,11 @@ jobs:
           expect 409 "${J[@]}" -d '{"password":"another password"}' $URL/api/auth/setup
           expect 201 -b cookies "${J[@]}" \
             -d '{"name":"Checking","type":"checking","startingBalance":12345}' $URL/api/accounts
+          # Server details need a login; the version is built into the bundle
+          expect 401 $URL/api/server/info
+          VERSION=$(node -p "require('./package.json').version")
+          curl -sf -b cookies $URL/api/server/info | grep -q "\"mode\":\"server\",\"version\":\"$VERSION\""
+          test "$(curl -sf $URL/api/health)" = '{"status":"ok"}'
           expect 401 "${J[@]}" -d '{"password":"wrong password"}' $URL/api/auth/login
           expect 204 -b cookies "${J[@]}" -X POST $URL/api/auth/logout
           expect 401 -b cookies $URL/api/accounts

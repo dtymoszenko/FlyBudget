@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { SERVER_PORT } from '../../ports';
 
 // Self-hosted server mode (Docker): the first visitor sets a password with the setup
 // code from the server log, and everything else needs a login. These tests share one
@@ -25,6 +26,9 @@ async function signIn(page: Page, password: string) {
 test('a new server asks for a password and the setup code', async ({ baseURL }) => {
   await owner.goto(`${baseURL}/`);
   await expect(owner.getByText('Set up your FlyBudget server')).toBeVisible();
+  // Which server this is; on this computer (localhost) there's no insecure-connection warning
+  await expect(owner.getByLabel('Server address')).toHaveText(`localhost:${SERVER_PORT}`);
+  await expect(owner.getByText('Not a secure connection.')).toBeHidden();
   // The data is not reachable yet
   const api = await owner.request.get('/api/accounts');
   expect(api.status()).toBe(401);
@@ -101,6 +105,100 @@ test('changing the password signs out other browsers', async ({ browser, baseURL
   await other.context().close();
 });
 
+test('server details and signed-in devices need a login', async ({ playwright, baseURL }) => {
+  const stranger = await playwright.request.newContext({ baseURL });
+  expect((await stranger.get('/api/server/info')).status()).toBe(401);
+  expect((await stranger.get('/api/auth/sessions')).status()).toBe(401);
+  expect((await stranger.post('/api/auth/sessions/sign-out-others')).status()).toBe(401);
+  // Anyone may check that the server is up, and learns nothing else
+  expect(await (await stranger.get('/api/health')).text()).toBe('{"status":"ok"}');
+  await stranger.dispose();
+
+  const info = await owner.request.get('/api/server/info');
+  expect(info.status()).toBe(200);
+  const body = await info.json();
+  expect(body.mode).toBe('server');
+  expect(body.checks.map((c: { id: string }) => c.id)).toEqual([
+    'https',
+    'trustProxy',
+    'allowedHosts',
+    'encryptionKey',
+    'password',
+  ]);
+});
+
+test('Settings → Server shows the security check and signed-in devices', async ({
+  browser,
+  baseURL,
+}) => {
+  const phone = await (await browser.newContext()).newPage();
+  await phone.goto(`${baseURL}/`);
+  await signIn(phone, NEW_PASSWORD);
+  await expect(phone.getByRole('complementary')).toBeVisible();
+
+  await owner.goto(`${baseURL}/settings?tab=server`);
+  const checks = owner.getByRole('list', { name: 'Security check' });
+  await expect(checks.getByRole('listitem')).toHaveCount(5);
+  await expect(checks).toContainText('Connected on the same computer as the server');
+  await expect(checks).toContainText('Bank credentials are encrypted at rest');
+  // FLYBUDGET_ALLOWED_HOSTS isn't set on the test server: a warning that names the fix
+  const hosts = checks.getByRole('listitem').filter({ hasText: 'Answers to any host name' });
+  await expect(hosts.getByLabel('Warning')).toBeVisible();
+  await expect(hosts).toContainText('FLYBUDGET_ALLOWED_HOSTS');
+
+  const devices = owner.getByRole('list', { name: 'Signed-in devices' });
+  await expect(devices.getByRole('listitem').filter({ hasText: 'This device' })).toHaveCount(1);
+  expect(await devices.getByRole('listitem').count()).toBeGreaterThanOrEqual(2);
+
+  await owner.getByRole('button', { name: 'Sign out all other devices' }).click();
+  await expect(devices.getByRole('listitem')).toHaveCount(1);
+  await expect(owner.getByRole('button', { name: 'Sign out all other devices' })).toBeDisabled();
+  await phone.reload();
+  await expect(phone.getByText('Sign in to FlyBudget')).toBeVisible();
+  await phone.context().close();
+});
+
+test('the sidebar shows the server and can sign out', async ({ baseURL }) => {
+  await owner.goto(`${baseURL}/budget`);
+  const status = owner.getByRole('button', {
+    name: `Server status: Online, localhost:${SERVER_PORT}`,
+  });
+  await status.click();
+  const menu = owner.getByRole('menu', { name: 'Server' });
+  await expect(menu).toContainText(`localhost:${SERVER_PORT}`);
+  await menu.getByRole('menuitem', { name: 'Server settings' }).click();
+  await expect(owner.getByRole('list', { name: 'Security check' })).toBeVisible();
+
+  await status.click();
+  await menu.getByRole('menuitem', { name: 'Sign out' }).click();
+  await expect(owner.getByText('Sign in to FlyBudget')).toBeVisible();
+  await signIn(owner, NEW_PASSWORD);
+  await expect(owner.getByRole('complementary')).toBeVisible();
+});
+
+test('warns before sending the password over plain HTTP to another machine', async ({
+  playwright,
+}) => {
+  // Reach the test server under a name that isn't localhost, like a server on the LAN
+  const browser = await playwright.chromium.launch({
+    args: [
+      '--host-resolver-rules=MAP flybudget.test 127.0.0.1',
+      '--disable-features=HttpsUpgrades',
+    ],
+  });
+  try {
+    const page = await browser.newPage();
+    await page.goto(`http://flybudget.test:${SERVER_PORT}/`);
+    await expect(page.getByText('Sign in to FlyBudget')).toBeVisible();
+    await expect(page.getByLabel('Server address')).toHaveText(`flybudget.test:${SERVER_PORT}`);
+    await expect(page.getByRole('note')).toContainText(
+      'Not a secure connection. Your password would travel unencrypted. Only continue on a network you trust.',
+    );
+  } finally {
+    await browser.close();
+  }
+});
+
 test("someone guessing passwords can't lock the owner out", async ({ playwright, baseURL }) => {
   // An attacker from the same address (e.g. behind the same reverse proxy) burns
   // through the failed-login limit…
@@ -116,7 +214,7 @@ test("someone guessing passwords can't lock the owner out", async ({ playwright,
 
   // …but a browser that signed in before has its own limit and still gets in
   await owner.goto(`${baseURL}/settings?tab=server`);
-  await owner.getByRole('button', { name: 'Sign out' }).click();
+  await owner.getByRole('button', { name: 'Sign out', exact: true }).click();
   await expect(owner.getByText('Sign in to FlyBudget')).toBeVisible();
   await signIn(owner, NEW_PASSWORD);
   await expect(owner.getByRole('complementary')).toBeVisible();

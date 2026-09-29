@@ -1,11 +1,12 @@
 import { spawn, execFileSync, type ChildProcess } from 'child_process';
-import { randomBytes } from 'crypto';
+import { randomBytes, timingSafeEqual } from 'crypto';
+import http from 'http';
 import { gzipSync } from 'zlib';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { DESKTOP_PORT, SERVER_PORT } from './ports';
+import { CONTROL_PORT, DESKTOP_PORT, SERVER_PORT } from './ports';
 
 // Starts FlyBudget twice, each on a throwaway database:
 //
@@ -15,6 +16,10 @@ import { DESKTOP_PORT, SERVER_PORT } from './ports';
 // - server: self-hosted server mode (password login, setup code from the log).
 //
 // Settings the tests need are passed on through environment variables.
+//
+// Tests can also stop and restart the desktop server (to check how the app behaves
+// while it can't reach it) through a small control server on 127.0.0.1:CONTROL_PORT,
+// which only accepts requests carrying a per-run token (see tests/serverControl.ts).
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const isWindows = process.platform === 'win32';
@@ -60,7 +65,7 @@ async function waitForHealth(port: number, child: ChildProcess, log: string[]) {
 }
 
 function stop(child: ChildProcess) {
-  if (child.exitCode !== null || !child.pid) return;
+  if (child.exitCode !== null || child.signalCode !== null || !child.pid) return;
   if (isWindows) {
     try {
       execFileSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
@@ -74,6 +79,67 @@ function stop(child: ChildProcess) {
       /* already gone */
     }
   }
+}
+
+/** Stops a server and waits until it has exited and its port refuses connections. */
+async function stopAndWait(child: ChildProcess, port: number) {
+  const exited =
+    child.exitCode !== null || child.signalCode !== null
+      ? Promise.resolve()
+      : new Promise<void>((r) => child.once('exit', () => r()));
+  stop(child);
+  await Promise.race([exited, new Promise((r) => setTimeout(r, 15_000))]);
+  const deadline = Date.now() + 15_000;
+  while (Date.now() < deadline) {
+    try {
+      await fetch(`http://localhost:${port}/api/health`, { signal: AbortSignal.timeout(1000) });
+    } catch {
+      return; // refused: it's gone
+    }
+    await new Promise((r) => setTimeout(r, 200));
+  }
+  throw new Error(`Server on port ${port} didn't stop`);
+}
+
+/**
+ * Test-only HTTP control for the desktop server: POST /desktop/stop and /desktop/start.
+ * Listens on 127.0.0.1 only and requires the per-run token.
+ */
+function startControlServer(
+  token: string,
+  stopDesktop: () => Promise<void>,
+  startDesktop: () => Promise<void>,
+) {
+  const expected = Buffer.from(`Bearer ${token}`);
+  const server = http.createServer(async (req, res) => {
+    const given = Buffer.from(req.headers.authorization ?? '');
+    if (given.length !== expected.length || !timingSafeEqual(given, expected)) {
+      res.writeHead(401).end();
+      return;
+    }
+    const action =
+      req.method === 'POST' && req.url === '/desktop/stop'
+        ? stopDesktop
+        : req.method === 'POST' && req.url === '/desktop/start'
+          ? startDesktop
+          : null;
+    if (!action) {
+      res.writeHead(404).end();
+      return;
+    }
+    try {
+      await action();
+      res.writeHead(204).end();
+    } catch (err) {
+      // Details (e.g. the server's log) go to the runner's output, not the response
+      console.error('e2e control: desktop server action failed', err);
+      res.writeHead(500).end();
+    }
+  });
+  return new Promise<http.Server>((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(CONTROL_PORT, '127.0.0.1', () => resolve(server));
+  });
 }
 
 export default async function globalSetup() {
@@ -97,17 +163,15 @@ export default async function globalSetup() {
   const dataKey = randomBytes(32).toString('base64');
 
   const desktopLog: string[] = [];
-  const desktop = startServer(
-    'desktop',
-    {
-      PORT: String(DESKTOP_PORT),
-      DB_PATH: path.join(dir, 'desktop.db'),
-      CLIENT_DIST: path.join(dir, 'client-desktop'),
-      FLYBUDGET_API_TOKEN: apiToken,
-      FLYBUDGET_DATA_KEY: dataKey,
-    },
-    desktopLog,
-  );
+  const desktopEnv = {
+    PORT: String(DESKTOP_PORT),
+    DB_PATH: path.join(dir, 'desktop.db'),
+    CLIENT_DIST: path.join(dir, 'client-desktop'),
+    FLYBUDGET_API_TOKEN: apiToken,
+    FLYBUDGET_DATA_KEY: dataKey,
+  };
+  // Replaced when a test restarts it
+  let desktop = startServer('desktop', desktopEnv, desktopLog);
 
   const serverLog: string[] = [];
   const server = startServer(
@@ -147,12 +211,25 @@ export default async function globalSetup() {
   // holds every default category)
   const snapshotData = gzipSync(Buffer.from(await snapshot.text())).toString('base64');
 
+  const controlToken = randomBytes(32).toString('hex');
+  const control = await startControlServer(
+    controlToken,
+    () => stopAndWait(desktop, DESKTOP_PORT),
+    async () => {
+      if (desktop.exitCode === null && desktop.signalCode === null) return; // already running
+      desktop = startServer('desktop', desktopEnv, desktopLog);
+      await waitForHealth(DESKTOP_PORT, desktop, desktopLog);
+    },
+  );
+
+  process.env.E2E_CONTROL_TOKEN = controlToken;
   process.env.E2E_API_TOKEN = apiToken;
   process.env.E2E_SETUP_CODE = setupCode;
   process.env.E2E_SNAPSHOT = snapshotData;
   process.env.E2E_DIR = dir;
 
   return async () => {
+    control.close();
     stop(desktop);
     stop(server);
     // SQLite may hold the files for a moment after the process ends on Windows

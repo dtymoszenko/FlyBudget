@@ -3,6 +3,8 @@ import { format, isValid as isValidDate, parseISO } from 'date-fns';
 import { MinusCircle, PlusCircle, ChevronDown } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
+import { useCanSave } from '../../hooks/useConnection';
+import { SavingPausedHint } from '../connection/SavingPausedHint';
 import { CurrencyInput } from '../ui/CurrencyInput';
 import { formatCurrency } from '../../utils/currency';
 import { useAccounts } from '../../hooks/useAccounts';
@@ -32,6 +34,7 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [showAccountPicker, setShowAccountPicker] = useState(false);
   const [notes, setNotes] = useState('');
+  const canSave = useCanSave();
 
   const accountRef = useRef<HTMLDivElement>(null);
 
@@ -252,6 +255,7 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
         </div>
 
         {/* Footer */}
+        <SavingPausedHint className="text-right" />
         <div className="flex justify-end gap-3 pt-2">
           <Button variant="secondary" size="md" onClick={onClose}>
             Cancel
@@ -259,7 +263,7 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
           <Button
             size="md"
             onClick={handleSubmit}
-            disabled={!isValid || createTransaction.isPending}
+            disabled={!isValid || createTransaction.isPending || !canSave}
           >
             {createTransaction.isPending ? 'Adding...' : 'Add transaction'}
           </Button>

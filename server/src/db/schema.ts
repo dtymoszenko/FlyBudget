@@ -385,4 +385,8 @@ export const sessions = sqliteTable('sessions', {
     .notNull()
     .default(sql`(datetime('now'))`),
   expiresAt: text('expires_at').notNull(),
+  /** The browser that signed in (listed in Settings → Server → Signed-in devices) */
+  userAgent: text('user_agent'),
+  /** Roughly when the session was last used (updated at most every few minutes) */
+  lastUsedAt: text('last_used_at'),
 });

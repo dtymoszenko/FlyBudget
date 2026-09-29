@@ -4,6 +4,7 @@ import { useAccounts } from '../../hooks/useAccounts';
 import { useAppStore } from '../../store/appStore';
 import { useUndoKeyboard } from '../../hooks/useUndoKeyboard';
 import { UndoToast } from '../ui/UndoToast';
+import { ConnectionBanner } from '../connection/ConnectionBanner';
 import { Sidebar } from './Sidebar';
 
 export function AppShell() {
@@ -26,9 +27,12 @@ export function AppShell() {
   return (
     <div className="flex h-screen bg-page overflow-hidden">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto">
-        <Outlet />
-      </main>
+      <div className="flex-1 min-w-0 flex flex-col">
+        <ConnectionBanner />
+        <main className="flex-1 overflow-y-auto">
+          <Outlet />
+        </main>
+      </div>
       <UndoToast />
     </div>
   );

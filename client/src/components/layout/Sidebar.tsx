@@ -18,6 +18,7 @@ import {
 import { useAppStore } from '../../store/appStore';
 import { usePreferencesStore } from '../../store/preferencesStore';
 import { SidebarAccountList } from './SidebarAccountList';
+import { ServerStatus } from './ServerStatus';
 import logoUrl from '/logo.png';
 
 interface NavItemProps {
@@ -181,6 +182,11 @@ export function Sidebar() {
               collapsed={!isExpanded}
             />
           </nav>
+
+          {/* Where the data lives and whether the server is reachable */}
+          <div className="py-1.5 px-3 border-t border-sidebar-border">
+            <ServerStatus collapsed={!isExpanded} />
+          </div>
 
           {/* Collapse toggle — persistent mode only */}
           {sidebarMode === 'persistent' && (
