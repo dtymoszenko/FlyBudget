@@ -10,6 +10,7 @@ import {
   rules,
 } from '../db/schema.js';
 import { eq, and, gte, lte } from 'drizzle-orm';
+import { isRealDate } from '../utils/validation.js';
 import { z } from 'zod';
 
 export const exportRouter = Router();
@@ -30,7 +31,14 @@ export function escapeCsv(val: string | null | undefined): string {
 
 exportRouter.get('/transactions/csv', (req, res) => {
   const { from, to } = req.query;
-  const filters = [];
+  if (
+    (from !== undefined && !isRealDate(String(from))) ||
+    (to !== undefined && !isRealDate(String(to)))
+  ) {
+    return res.status(400).json({ error: 'Expected `from` and `to` as YYYY-MM-DD' });
+  }
+  // A split is exported as its parts (which carry the categories), so amounts add up
+  const filters = [eq(transactions.isParent, 0)];
   if (typeof from === 'string') filters.push(gte(transactions.date, from));
   if (typeof to === 'string') filters.push(lte(transactions.date, to));
 
@@ -45,7 +53,7 @@ exportRouter.get('/transactions/csv', (req, res) => {
       accountId: transactions.accountId,
     })
     .from(transactions)
-    .where(filters.length ? and(...filters) : undefined)
+    .where(and(...filters))
     .orderBy(transactions.date)
     .all();
 

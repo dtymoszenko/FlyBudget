@@ -1,14 +1,30 @@
 import { Router } from 'express';
 import { db } from '../db/index.js';
-import { budgetMonths, categories, categoryGroups, transactions } from '../db/schema.js';
-import { eq, and, gte, lte, lt, sql } from 'drizzle-orm';
+import { accounts, budgetMonths, categories, categoryGroups, transactions } from '../db/schema.js';
+import { eq, and, gte, lte, lt, sql, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
 import { monthBounds } from '../utils/date.js';
+import { isMonth } from '../utils/validation.js';
 
 export const budgetRouter = Router();
 
-const upsertSchema = z.object({ budgeted: z.number().int() });
+const cents = z.number().int().min(-1e13).max(1e13);
+const upsertSchema = z.object({ budgeted: cents });
+
+// The budget only counts money in on-budget accounts: a categorized dividend in an
+// off-budget brokerage account isn't money to budget
+const onBudgetAccountIds = db
+  .select({ id: accounts.id })
+  .from(accounts)
+  .where(eq(accounts.isOffBudget, 0));
+const onBudget = inArray(transactions.accountId, onBudgetAccountIds);
+
+// Every route here takes a YYYY-MM month
+budgetRouter.param('month', (_req, res, next, month) => {
+  if (!isMonth(month)) return res.status(400).json({ error: 'Expected a month as YYYY-MM' });
+  next();
+});
 
 budgetRouter.get('/:month', (req, res) => {
   const { month } = req.params;
@@ -24,7 +40,7 @@ budgetRouter.get('/:month', (req, res) => {
       spent: sql<number>`coalesce(sum(${transactions.amount}), 0)`,
     })
     .from(transactions)
-    .where(and(gte(transactions.date, from), lte(transactions.date, to)))
+    .where(and(gte(transactions.date, from), lte(transactions.date, to), onBudget))
     .groupBy(transactions.categoryId)
     .all();
 
@@ -44,7 +60,7 @@ budgetRouter.get('/:month', (req, res) => {
       total: sql<number>`coalesce(sum(${transactions.amount}), 0)`,
     })
     .from(transactions)
-    .where(lt(transactions.date, from))
+    .where(and(lt(transactions.date, from), onBudget))
     .groupBy(transactions.categoryId)
     .all();
 
@@ -161,6 +177,7 @@ budgetRouter.get('/category/:categoryId/history', (req, res) => {
         eq(transactions.categoryId, categoryId),
         gte(transactions.date, startDate),
         lt(transactions.date, endDate),
+        onBudget,
       ),
     )
     .groupBy(sql`strftime('%Y-%m', ${transactions.date})`)
@@ -191,7 +208,7 @@ budgetRouter.get('/category/:categoryId/history', (req, res) => {
 });
 
 const bulkSchema = z.object({
-  budgeted: z.number().int(),
+  budgeted: cents,
   fromMonth: z.string().regex(/^\d{4}-\d{2}$/),
 });
 
@@ -249,7 +266,12 @@ budgetRouter.get('/:month/summary', (req, res) => {
     .innerJoin(categories, eq(transactions.categoryId, categories.id))
     .innerJoin(categoryGroups, eq(categories.groupId, categoryGroups.id))
     .where(
-      and(gte(transactions.date, from), lte(transactions.date, to), eq(categoryGroups.isIncome, 1)),
+      and(
+        gte(transactions.date, from),
+        lte(transactions.date, to),
+        eq(categoryGroups.isIncome, 1),
+        onBudget,
+      ),
     )
     .get();
 
@@ -266,7 +288,7 @@ budgetRouter.get('/:month/summary', (req, res) => {
     .from(transactions)
     .innerJoin(categories, eq(transactions.categoryId, categories.id))
     .innerJoin(categoryGroups, eq(categories.groupId, categoryGroups.id))
-    .where(and(lt(transactions.date, from), eq(categoryGroups.isIncome, 1)))
+    .where(and(lt(transactions.date, from), eq(categoryGroups.isIncome, 1), onBudget))
     .get();
 
   const priorBudgetedRow = db

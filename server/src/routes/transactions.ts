@@ -4,44 +4,52 @@ import { transactions, payees, accounts, categories } from '../db/schema.js';
 import { eq, and, like, gte, lte, sql, isNull, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
-import { resolvePayee } from '../services/transactionHelpers.js';
+import { deleteTransactionRow, resolvePayee } from '../services/transactionHelpers.js';
 import { buildRuleContext, insertNewTransaction, loadRules } from '../services/ruleService.js';
+import { isoDate } from '../utils/validation.js';
 
 export const transactionsRouter = Router();
 
+const id = z.string().min(1).max(64);
+// Amounts are integer cents; the cap keeps sums far inside Number.MAX_SAFE_INTEGER
+const cents = z.number().int().min(-1e13).max(1e13);
+
 const createSchema = z.object({
-  accountId: z.string(),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  amount: z.number().int(),
-  payeeId: z.string().nullable().optional(),
-  payeeName: z.string().nullable().optional(),
-  categoryId: z.string().nullable().optional(),
-  notes: z.string().nullable().optional(),
+  accountId: id,
+  date: isoDate,
+  amount: cents,
+  payeeId: id.nullable().optional(),
+  payeeName: z.string().max(500).nullable().optional(),
+  categoryId: id.nullable().optional(),
+  notes: z.string().max(5_000).nullable().optional(),
   splits: z
     .array(
       z.object({
-        categoryId: z.string().nullable(),
-        amount: z.number().int(),
-        notes: z.string().nullable().optional(),
+        categoryId: id.nullable(),
+        amount: cents,
+        notes: z.string().max(5_000).nullable().optional(),
       }),
     )
+    .max(100)
     .optional(),
 });
 
 const updateSchema = createSchema.omit({ splits: true }).partial();
 
-const transferSchema = z.object({
-  fromAccountId: z.string(),
-  toAccountId: z.string(),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  amount: z.number().int().positive(),
-  notes: z.string().nullable().optional(),
-});
+const transferSchema = z
+  .object({
+    fromAccountId: id,
+    toAccountId: id,
+    date: isoDate,
+    amount: cents.positive(),
+    notes: z.string().max(5_000).nullable().optional(),
+  })
+  .refine((t) => t.fromAccountId !== t.toAccountId, 'Choose two different accounts');
 
 // Imported files are untrusted: validate dates and cap sizes
 const importRowSchema = z.object({
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  amount: z.number().int(),
+  date: isoDate,
+  amount: cents,
   payeeName: z.string().max(500).nullable().optional(),
   notes: z.string().max(5_000).nullable().optional(),
   importedId: z.string().max(500),
@@ -93,8 +101,14 @@ transactionsRouter.get('/', (req, res) => {
 
   query = query.where(and(...conditions));
 
-  const limit = Math.min(Number(req.query.limit ?? 200), 1000);
-  const offset = Number(req.query.offset ?? 0);
+  const page = z
+    .object({
+      limit: z.coerce.number().int().min(1).max(1000).default(200),
+      offset: z.coerce.number().int().min(0).default(0),
+    })
+    .safeParse({ limit: req.query.limit, offset: req.query.offset });
+  if (!page.success) return res.status(400).json({ error: page.error.flatten() });
+  const { limit, offset } = page.data;
 
   const rows = query
     .orderBy(sql`${transactions.date} desc`)
@@ -154,8 +168,6 @@ transactionsRouter.post('/', (req, res) => {
       importedId: null,
       createdAt: new Date().toISOString(),
     };
-    db.insert(transactions).values(parent).run();
-
     const childRows = splits.map((s) => ({
       id: nanoid(),
       accountId: rest.accountId,
@@ -172,7 +184,10 @@ transactionsRouter.post('/', (req, res) => {
       importedId: null,
       createdAt: new Date().toISOString(),
     }));
-    for (const child of childRows) db.insert(transactions).values(child).run();
+    db.transaction((tx) => {
+      tx.insert(transactions).values(parent).run();
+      for (const child of childRows) tx.insert(transactions).values(child).run();
+    });
 
     return res.status(201).json({ ...parent, children: childRows });
   }
@@ -244,8 +259,10 @@ transactionsRouter.post('/transfer', (req, res) => {
     ...base,
   };
 
-  db.insert(transactions).values(fromTx).run();
-  db.insert(transactions).values(toTx).run();
+  db.transaction((tx) => {
+    tx.insert(transactions).values(fromTx).run();
+    tx.insert(transactions).values(toTx).run();
+  });
   res.status(201).json([fromTx, toTx]);
 });
 
@@ -282,40 +299,48 @@ transactionsRouter.post('/import/confirm', (req, res) => {
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
   const { accountId, rows } = parsed.data;
+  if (!db.select({ id: accounts.id }).from(accounts).where(eq(accounts.id, accountId)).get()) {
+    return res.status(404).json({ error: 'Account not found' });
+  }
   let imported = 0;
   const ruleOpts = { rules: loadRules(), ctx: buildRuleContext() };
 
-  for (const row of rows) {
-    const dup = db
-      .select()
-      .from(transactions)
-      .where(
-        and(eq(transactions.accountId, accountId), eq(transactions.importedId, row.importedId)),
-      )
-      .get();
-    if (dup) continue;
+  // One transaction: all rows or none, and far faster than a commit per row
+  db.transaction(() => {
+    for (const row of rows) {
+      const dup = db
+        .select()
+        .from(transactions)
+        .where(
+          and(eq(transactions.accountId, accountId), eq(transactions.importedId, row.importedId)),
+        )
+        .get();
+      if (dup) continue;
 
-    insertNewTransaction(
-      {
-        accountId,
-        date: row.date,
-        amount: row.amount,
-        payeeId: null,
-        payeeName: row.payeeName || null,
-        importedPayee: row.payeeName || null,
-        notes: row.notes ?? null,
-        categoryId: null,
-        importedId: row.importedId,
-      },
-      ruleOpts,
-    );
-    imported++;
-  }
+      insertNewTransaction(
+        {
+          accountId,
+          date: row.date,
+          amount: row.amount,
+          payeeId: null,
+          payeeName: row.payeeName || null,
+          importedPayee: row.payeeName || null,
+          notes: row.notes ?? null,
+          categoryId: null,
+          importedId: row.importedId,
+        },
+        ruleOpts,
+      );
+      imported++;
+    }
+  });
 
   res.json({ imported, skipped: rows.length - imported });
 });
 
 // PUT /transactions/:id
+// A split's parts and a transfer's other side are separate rows: keep them in step with
+// the row being edited, so budgets and both accounts agree on dates and amounts.
 transactionsRouter.put('/:id', (req, res) => {
   const parsed = updateSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
@@ -325,7 +350,49 @@ transactionsRouter.put('/:id', (req, res) => {
   if (existing.reconciled === 1)
     return res.status(403).json({ error: 'Cannot modify a reconciled transaction' });
 
-  db.update(transactions).set(parsed.data).where(eq(transactions.id, req.params.id)).run();
+  const data = parsed.data;
+  const changes = (key: keyof typeof data) =>
+    data[key] !== undefined && data[key] !== existing[key];
+  if (
+    existing.parentTransactionId &&
+    (changes('accountId') || changes('date') || changes('amount'))
+  ) {
+    return res
+      .status(400)
+      .json({ error: "Change the split transaction's account, date or amount instead of a part" });
+  }
+  if (existing.isParent === 1 && (changes('amount') || data.categoryId)) {
+    return res.status(400).json({ error: 'Edit the parts of a split transaction instead' });
+  }
+  if (existing.transferTransactionId && (changes('accountId') || data.categoryId)) {
+    return res.status(400).json({ error: 'Transfers have no category and stay in their accounts' });
+  }
+
+  db.transaction((tx) => {
+    if (Object.keys(data).length) {
+      tx.update(transactions).set(data).where(eq(transactions.id, existing.id)).run();
+    }
+    if (existing.isParent === 1) {
+      const shared = {
+        accountId: data.accountId,
+        date: data.date,
+        payeeId: data.payeeId,
+        payeeName: data.payeeName,
+      };
+      if (Object.values(shared).some((v) => v !== undefined)) {
+        tx.update(transactions)
+          .set(shared)
+          .where(eq(transactions.parentTransactionId, existing.id))
+          .run();
+      }
+    }
+    if (existing.transferTransactionId && (data.date !== undefined || data.amount !== undefined)) {
+      tx.update(transactions)
+        .set({ date: data.date, amount: data.amount === undefined ? undefined : -data.amount })
+        .where(eq(transactions.id, existing.transferTransactionId))
+        .run();
+    }
+  });
   const updated = db.select().from(transactions).where(eq(transactions.id, req.params.id)).get();
   res.json(updated);
 });
@@ -337,17 +404,6 @@ transactionsRouter.delete('/:id', (req, res) => {
   if (existing.reconciled === 1)
     return res.status(403).json({ error: 'Cannot modify a reconciled transaction' });
 
-  if (existing.transferTransactionId) {
-    db.update(transactions)
-      .set({ transferTransactionId: null })
-      .where(eq(transactions.id, existing.transferTransactionId))
-      .run();
-  }
-
-  if (existing.isParent === 1) {
-    db.delete(transactions).where(eq(transactions.parentTransactionId, existing.id)).run();
-  }
-
-  db.delete(transactions).where(eq(transactions.id, req.params.id)).run();
+  deleteTransactionRow(existing);
   res.status(204).send();
 });

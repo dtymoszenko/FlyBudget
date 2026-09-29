@@ -121,8 +121,10 @@ export async function startServer(port: number | string): Promise<void> {
   }
   // Registered last so it also covers errors from the static handler above
   app.use(errorHandler);
-  return new Promise((resolve) => {
-    app.listen(Number(port), listenHost, () => {
+  return new Promise((resolve, reject) => {
+    // Express 5 calls this with an error if listening fails (e.g. the port is taken)
+    const server = app.listen(Number(port), listenHost, (err?: Error) => {
+      if (err) return reject(err);
       console.log(
         `Server running on http://${listenHost === '0.0.0.0' ? 'localhost' : listenHost}:${port}`,
       );
@@ -130,56 +132,84 @@ export async function startServer(port: number | string): Promise<void> {
         console.log('Server mode: login required.');
         if (!isPasswordSet()) setupCode();
         deleteExpiredSessions();
-        setInterval(deleteExpiredSessions, 60 * 60 * 1000).unref();
+        setInterval(
+          () => runStartupTask('Session cleanup', deleteExpiredSessions),
+          60 * 60 * 1000,
+        ).unref();
       }
-
-      const categoriesSeeded = seedDefaultCategories();
-      if (categoriesSeeded > 0) console.log(`Created ${categoriesSeeded} default categories`);
-
-      const credentialsEncrypted = encryptStoredCredentials();
-      if (credentialsEncrypted > 0)
-        console.log(`Encrypted ${credentialsEncrypted} stored bank credential(s)`);
-
-      // --- Schedule system startup ---
-      const rulesMigrated = migrateRecurrenceRules();
-      if (rulesMigrated > 0) console.log(`Migrated ${rulesMigrated} recurrence rule(s)`);
-
-      const legacyOccs = migrateOccurrencesFromLegacy();
-      if (legacyOccs > 0) console.log(`Created ${legacyOccs} legacy occurrence(s)`);
-
-      const horizon = format(addDays(new Date(), 90), 'yyyy-MM-dd');
-      const ensured = ensureOccurrencesForAll(horizon);
-      if (ensured > 0) console.log(`Ensured ${ensured} new occurrence(s)`);
-
-      // Bank sync BEFORE schedule auto-create (so real txns get matched first)
-      const bankSyncDone = Promise.all([
-        isPlaidConfigured()
-          ? syncAllItems()
-              .then((results) => {
-                const total = results.reduce((s, r) => s + r.added, 0);
-                if (total > 0) console.log(`Plaid sync: imported ${total} new transaction(s)`);
-              })
-              .catch((err) => console.error('Plaid sync error:', err.message))
-          : Promise.resolve(),
-        syncAllSimplefinConnections()
-          .then((results) => {
-            const total = results.reduce((s, r) => s + r.added, 0);
-            if (total > 0) console.log(`SimpleFIN sync: imported ${total} new transaction(s)`);
-          })
-          .catch((err) => console.error('SimpleFIN sync error:', err.message)),
-      ]);
-
-      bankSyncDone.then(() => {
-        const scheduled = autoCreateDueScheduled();
-        if (scheduled > 0) console.log(`Auto-created ${scheduled} scheduled transaction(s)`);
-      });
-
+      runStartupTasks();
       resolve();
     });
+    server.on('error', (err) => console.error('Server error:', err));
   });
+}
+
+/** Maintenance on startup. One failing task is logged and doesn't stop the others or the server. */
+function runStartupTask(name: string, task: () => void) {
+  try {
+    task();
+  } catch (err) {
+    console.error(`${name} failed:`, err);
+  }
+}
+
+function runStartupTasks() {
+  runStartupTask('Default categories', () => {
+    const categoriesSeeded = seedDefaultCategories();
+    if (categoriesSeeded > 0) console.log(`Created ${categoriesSeeded} default categories`);
+  });
+
+  runStartupTask('Credential encryption', () => {
+    const credentialsEncrypted = encryptStoredCredentials();
+    if (credentialsEncrypted > 0)
+      console.log(`Encrypted ${credentialsEncrypted} stored bank credential(s)`);
+  });
+
+  // --- Schedule system startup ---
+  runStartupTask('Schedule migration', () => {
+    const rulesMigrated = migrateRecurrenceRules();
+    if (rulesMigrated > 0) console.log(`Migrated ${rulesMigrated} recurrence rule(s)`);
+
+    const legacyOccs = migrateOccurrencesFromLegacy();
+    if (legacyOccs > 0) console.log(`Created ${legacyOccs} legacy occurrence(s)`);
+  });
+
+  runStartupTask('Schedule occurrences', () => {
+    const horizon = format(addDays(new Date(), 90), 'yyyy-MM-dd');
+    const ensured = ensureOccurrencesForAll(horizon);
+    if (ensured > 0) console.log(`Ensured ${ensured} new occurrence(s)`);
+  });
+
+  // Bank sync BEFORE schedule auto-create (so real txns get matched first)
+  const bankSyncDone = Promise.all([
+    isPlaidConfigured()
+      ? syncAllItems()
+          .then((results) => {
+            const total = results.reduce((s, r) => s + r.added, 0);
+            if (total > 0) console.log(`Plaid sync: imported ${total} new transaction(s)`);
+          })
+          .catch((err) => console.error('Plaid sync error:', err.message))
+      : Promise.resolve(),
+    syncAllSimplefinConnections()
+      .then((results) => {
+        const total = results.reduce((s, r) => s + r.added, 0);
+        if (total > 0) console.log(`SimpleFIN sync: imported ${total} new transaction(s)`);
+      })
+      .catch((err) => console.error('SimpleFIN sync error:', err.message)),
+  ]);
+
+  bankSyncDone.then(() =>
+    runStartupTask('Scheduled transactions', () => {
+      const scheduled = autoCreateDueScheduled();
+      if (scheduled > 0) console.log(`Auto-created ${scheduled} scheduled transaction(s)`);
+    }),
+  );
 }
 
 // Auto-start unless bundled for Electron production (where main.ts calls startServer directly)
 if (!process.env.ELECTRON_PROD) {
-  startServer(process.env.EXPRESS_PORT ?? process.env.PORT ?? 3001).catch(console.error);
+  startServer(process.env.EXPRESS_PORT ?? process.env.PORT ?? 3001).catch((err) => {
+    console.error('FlyBudget failed to start:', err);
+    process.exit(1);
+  });
 }

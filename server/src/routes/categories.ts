@@ -8,14 +8,14 @@ import { z } from 'zod';
 export const categoriesRouter = Router();
 
 const groupSchema = z.object({
-  name: z.string().min(1),
+  name: z.string().trim().min(1).max(200),
   isIncome: z.number().int().min(0).max(1),
 });
 
 const categorySchema = z.object({
-  groupId: z.string(),
-  name: z.string().min(1),
-  icon: z.string().optional(),
+  groupId: z.string().max(64),
+  name: z.string().trim().min(1).max(200),
+  icon: z.string().max(32).optional(),
   budgetType: z.enum(['fixed', 'flexible', 'non_monthly']).nullable().optional(),
 });
 
@@ -64,7 +64,9 @@ categoriesRouter.put('/groups/:id', (req, res) => {
   const parsed = groupSchema.partial().safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
-  db.update(categoryGroups).set(parsed.data).where(eq(categoryGroups.id, req.params.id)).run();
+  if (Object.keys(parsed.data).length) {
+    db.update(categoryGroups).set(parsed.data).where(eq(categoryGroups.id, req.params.id)).run();
+  }
   const updated = db
     .select()
     .from(categoryGroups)
@@ -112,7 +114,9 @@ categoriesRouter.put('/:id', (req, res) => {
   const parsed = categorySchema.partial().safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
-  db.update(categories).set(parsed.data).where(eq(categories.id, req.params.id)).run();
+  if (Object.keys(parsed.data).length) {
+    db.update(categories).set(parsed.data).where(eq(categories.id, req.params.id)).run();
+  }
   const updated = db.select().from(categories).where(eq(categories.id, req.params.id)).get();
   if (!updated) return res.status(404).json({ error: 'Not found' });
   res.json(updated);
@@ -129,6 +133,11 @@ categoriesRouter.get('/:id/transaction-count', (req, res) => {
 
 categoriesRouter.delete('/:id', (req, res) => {
   const reassignTo = typeof req.query.reassignTo === 'string' ? req.query.reassignTo : undefined;
+
+  if (reassignTo === req.params.id) return res.status(400).json({ error: 'Pick another category' });
+  if (reassignTo && !db.select().from(categories).where(eq(categories.id, reassignTo)).get()) {
+    return res.status(400).json({ error: 'Unknown category' });
+  }
 
   if (reassignTo) {
     db.update(transactions)

@@ -1,30 +1,34 @@
 import { Router } from 'express';
 import { db } from '../db/index.js';
 import { accounts, transactions } from '../db/schema.js';
-import { eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNull, ne, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
 import { logoSchema } from '../utils/logo.js';
 import { accountTypeSchema, defaultOffBudget } from '../utils/accountTypes.js';
+import { accountTransactionSum, inAccountBalance } from '../services/balances.js';
 
 export const accountsRouter = Router();
 
-const createSchema = z.object({
-  name: z.string().min(1),
+const fields = {
+  name: z.string().trim().min(1).max(200),
   type: accountTypeSchema,
-  startingBalance: z.number().int().default(0),
-  isOffBudget: z.number().int().min(0).max(1).optional(),
+  startingBalance: z.number().int(),
+  isOffBudget: z.number().int().min(0).max(1),
+};
+
+const createSchema = z.object({
+  ...fields,
+  startingBalance: fields.startingBalance.default(0),
+  isOffBudget: fields.isOffBudget.optional(),
 });
 
-const updateSchema = createSchema.partial().extend({ logo: logoSchema.optional() });
+// Built without defaults: Zod applies `.default()` even inside `.partial()`, so an update
+// that only renames an account would otherwise reset its starting balance to 0
+const updateSchema = z.object(fields).partial().extend({ logo: logoSchema.optional() });
 
 function withBalance(account: typeof accounts.$inferSelect) {
-  const row = db
-    .select({ sum: sql<number>`coalesce(sum(${transactions.amount}), 0)` })
-    .from(transactions)
-    .where(eq(transactions.accountId, account.id))
-    .get();
-  return { ...account, balance: account.startingBalance + (row?.sum ?? 0) };
+  return { ...account, balance: account.startingBalance + accountTransactionSum(account.id) };
 }
 
 accountsRouter.get('/', (_req, res) => {
@@ -42,6 +46,7 @@ accountsRouter.get('/', (_req, res) => {
       sum: sql<number>`coalesce(sum(${transactions.amount}), 0)`,
     })
     .from(transactions)
+    .where(inAccountBalance)
     .groupBy(transactions.accountId)
     .all();
 
@@ -61,7 +66,7 @@ accountsRouter.get('/balances-ago', (_req, res) => {
       sum: sql<number>`coalesce(sum(${transactions.amount}), 0)`,
     })
     .from(transactions)
-    .where(sql`${transactions.date} < ${cutoff}`)
+    .where(and(sql`${transactions.date} < ${cutoff}`, inAccountBalance))
     .groupBy(transactions.accountId)
     .all();
 
@@ -91,32 +96,46 @@ accountsRouter.post('/', (req, res) => {
 });
 
 accountsRouter.put('/reorder', (req, res) => {
-  const parsed = z.object({ ids: z.array(z.string()) }).safeParse(req.body);
+  const parsed = z.object({ ids: z.array(z.string().max(64)).max(10_000) }).safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
-  for (let i = 0; i < parsed.data.ids.length; i++) {
-    db.update(accounts).set({ sortOrder: i }).where(eq(accounts.id, parsed.data.ids[i])).run();
-  }
+  db.transaction((tx) => {
+    parsed.data.ids.forEach((id, i) => {
+      tx.update(accounts).set({ sortOrder: i }).where(eq(accounts.id, id)).run();
+    });
+  });
   res.json({ ok: true });
 });
 
 accountsRouter.put('/:id/reconcile', (req, res) => {
-  const parsed = z.object({ transactionIds: z.array(z.string()).min(1) }).safeParse(req.body);
+  const parsed = z
+    .object({ transactionIds: z.array(z.string().max(64)).min(1).max(100_000) })
+    .safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
-  db.update(transactions)
+  // Only this account's transactions
+  const result = db
+    .update(transactions)
     .set({ reconciled: 1 })
-    .where(inArray(transactions.id, parsed.data.transactionIds))
+    .where(
+      and(
+        eq(transactions.accountId, req.params.id),
+        inArray(transactions.id, parsed.data.transactionIds),
+        ne(transactions.reconciled, 1),
+      ),
+    )
     .run();
 
-  res.json({ reconciled: parsed.data.transactionIds.length });
+  res.json({ reconciled: result.changes });
 });
 
 accountsRouter.put('/:id', (req, res) => {
   const parsed = updateSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
-  db.update(accounts).set(parsed.data).where(eq(accounts.id, req.params.id)).run();
+  if (Object.keys(parsed.data).length) {
+    db.update(accounts).set(parsed.data).where(eq(accounts.id, req.params.id)).run();
+  }
   const updated = db.select().from(accounts).where(eq(accounts.id, req.params.id)).get();
   if (!updated) return res.status(404).json({ error: 'Not found' });
   res.json(withBalance(updated));

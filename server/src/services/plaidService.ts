@@ -72,13 +72,14 @@ export function invalidatePlaidClient() {
   plaidClient = null;
 }
 
+// These two read only unencrypted columns, so they work even if the secret can't be decrypted
 export function isPlaidConfigured(): boolean {
-  return getCredentials() !== null;
+  return db.select({ id: plaidConfig.id }).from(plaidConfig).get() !== undefined;
 }
 
 export function getPlaidEnvironment(): string {
-  const creds = getCredentials();
-  return creds?.environment === 'production' ? 'production' : 'sandbox';
+  const config = db.select({ environment: plaidConfig.environment }).from(plaidConfig).get();
+  return config?.environment === 'production' ? 'production' : 'sandbox';
 }
 
 /**

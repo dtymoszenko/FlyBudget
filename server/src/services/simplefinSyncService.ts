@@ -5,13 +5,14 @@ import {
   transactions,
   accounts,
 } from '../db/schema.js';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import {
   fetchAccounts,
   simpleFinAmountToCents,
   simpleFinBalanceToCents,
 } from './simplefinService.js';
 import { buildRuleContext, insertNewTransaction, loadRules } from './ruleService.js';
+import { accountTransactionSum } from './balances.js';
 
 export interface SimplefinSyncResult {
   connectionId: string;
@@ -103,14 +104,7 @@ export async function syncSimplefinConnection(connectionId: string): Promise<Sim
       }
 
       const targetBalance = simpleFinBalanceToCents(sfAccount.balance);
-      const txSum = db
-        .select({ total: sql<number>`COALESCE(SUM(${transactions.amount}), 0)` })
-        .from(transactions)
-        .where(eq(transactions.accountId, mapping.accountId))
-        .get();
-
-      const currentTxSum = txSum?.total ?? 0;
-      const newStartingBalance = targetBalance - currentTxSum;
+      const newStartingBalance = targetBalance - accountTransactionSum(mapping.accountId);
 
       db.update(accounts)
         .set({ startingBalance: newStartingBalance })

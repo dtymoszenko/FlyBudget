@@ -9,15 +9,15 @@ import { logoSchema } from '../utils/logo.js';
 export const payeesRouter = Router();
 
 const createSchema = z.object({
-  name: z.string().min(1),
-  defaultCategoryId: z.string().nullable().optional(),
+  name: z.string().trim().min(1).max(500),
+  defaultCategoryId: z.string().max(64).nullable().optional(),
 });
 
 const updateSchema = createSchema.partial().extend({ logo: logoSchema.optional() });
 
 const mergeSchema = z.object({
   keepId: z.string(),
-  mergeIds: z.array(z.string()).min(1),
+  mergeIds: z.array(z.string().max(64)).min(1).max(10_000),
 });
 
 payeesRouter.get('/', (_req, res) => {
@@ -55,29 +55,35 @@ payeesRouter.post('/merge', (req, res) => {
   const parsed = mergeSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
-  const { keepId, mergeIds } = parsed.data;
+  const { keepId } = parsed.data;
+  // Never merge the kept payee into itself: it would be deleted along with the others
+  const mergeIds = parsed.data.mergeIds.filter((id) => id !== keepId);
+  if (!mergeIds.length) return res.json({ merged: 0 });
 
   const keeper = db.select().from(payees).where(eq(payees.id, keepId)).get();
   if (!keeper) return res.status(404).json({ error: 'Keeper payee not found' });
 
-  // Re-point all transactions from merged payees to the keeper
-  db.update(transactions)
-    .set({ payeeId: keepId, payeeName: keeper.name })
-    .where(inArray(transactions.payeeId, mergeIds))
-    .run();
+  db.transaction(() => {
+    // Re-point all transactions from merged payees to the keeper
+    db.update(transactions)
+      .set({ payeeId: keepId, payeeName: keeper.name })
+      .where(inArray(transactions.payeeId, mergeIds))
+      .run();
 
-  // Keep a logo from one of the merged payees if the keeper has none
-  if (!keeper.logo) {
-    const withLogo = db
-      .select({ logo: payees.logo })
-      .from(payees)
-      .where(and(inArray(payees.id, mergeIds), isNotNull(payees.logo)))
-      .get();
-    if (withLogo) db.update(payees).set({ logo: withLogo.logo }).where(eq(payees.id, keepId)).run();
-  }
+    // Keep a logo from one of the merged payees if the keeper has none
+    if (!keeper.logo) {
+      const withLogo = db
+        .select({ logo: payees.logo })
+        .from(payees)
+        .where(and(inArray(payees.id, mergeIds), isNotNull(payees.logo)))
+        .get();
+      if (withLogo)
+        db.update(payees).set({ logo: withLogo.logo }).where(eq(payees.id, keepId)).run();
+    }
 
-  // Delete the merged payees
-  db.delete(payees).where(inArray(payees.id, mergeIds)).run();
+    // Delete the merged payees
+    db.delete(payees).where(inArray(payees.id, mergeIds)).run();
+  });
 
   res.json({ merged: mergeIds.length });
 });
@@ -86,7 +92,9 @@ payeesRouter.put('/:id', (req, res) => {
   const parsed = updateSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
-  db.update(payees).set(parsed.data).where(eq(payees.id, req.params.id)).run();
+  if (Object.keys(parsed.data).length) {
+    db.update(payees).set(parsed.data).where(eq(payees.id, req.params.id)).run();
+  }
   const updated = db.select().from(payees).where(eq(payees.id, req.params.id)).get();
   if (!updated) return res.status(404).json({ error: 'Not found' });
   res.json(updated);

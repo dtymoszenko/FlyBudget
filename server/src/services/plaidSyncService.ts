@@ -1,8 +1,10 @@
 import { db } from '../db/index.js';
 import { plaidItems, plaidAccountMappings, transactions, accounts } from '../db/schema.js';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 import { syncTransactions, plaidAmountToCents, plaidBalanceToCents } from './plaidService.js';
 import { buildRuleContext, insertNewTransaction, loadRules } from './ruleService.js';
+import { accountTransactionSum } from './balances.js';
+import { deleteTransactionRow } from './transactionHelpers.js';
 
 export interface SyncResult {
   itemId: string;
@@ -112,16 +114,24 @@ export async function syncPlaidItem(plaidItemId: string): Promise<SyncResult> {
       result.modified++;
     }
 
+    const itemAccountIds = mappings.flatMap((m) => (m.accountId ? [m.accountId] : []));
     for (const tx of syncData.removed) {
       const importedId = `plaid:${tx.transactionId}`;
-      const existing = db
-        .select()
-        .from(transactions)
-        .where(eq(transactions.importedId, importedId))
-        .get();
+      const existing = itemAccountIds.length
+        ? db
+            .select()
+            .from(transactions)
+            .where(
+              and(
+                eq(transactions.importedId, importedId),
+                inArray(transactions.accountId, itemAccountIds),
+              ),
+            )
+            .get()
+        : undefined;
       if (!existing || existing.reconciled === 1) continue;
 
-      db.delete(transactions).where(eq(transactions.id, existing.id)).run();
+      deleteTransactionRow(existing);
       result.removed++;
     }
 
@@ -131,14 +141,7 @@ export async function syncPlaidItem(plaidItemId: string): Promise<SyncResult> {
 
       const targetBalance = plaidBalanceToCents(bal.current, mapping.plaidAccountType);
 
-      const txSum = db
-        .select({ total: sql<number>`COALESCE(SUM(${transactions.amount}), 0)` })
-        .from(transactions)
-        .where(eq(transactions.accountId, mapping.accountId))
-        .get();
-
-      const currentTxSum = txSum?.total ?? 0;
-      const newStartingBalance = targetBalance - currentTxSum;
+      const newStartingBalance = targetBalance - accountTransactionSum(mapping.accountId);
 
       db.update(accounts)
         .set({ startingBalance: newStartingBalance })

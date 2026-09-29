@@ -4,17 +4,28 @@ import { rules } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
-import { AMOUNT_OPS, DATE_OPS, EMPTY_OPS, ID_FIELDS, ID_OPS, LIST_OPS, TEXT_FIELDS, TEXT_OPS } from '../services/rulesEngine.js';
-import { applyRules, loadRules, parseRuleRow, planRules, testConditions } from '../services/ruleService.js';
+import {
+  AMOUNT_OPS,
+  DATE_OPS,
+  EMPTY_OPS,
+  ID_FIELDS,
+  ID_OPS,
+  LIST_OPS,
+  TEXT_FIELDS,
+  TEXT_OPS,
+} from '../services/rulesEngine.js';
+import {
+  applyRules,
+  loadRules,
+  parseRuleRow,
+  planRules,
+  testConditions,
+} from '../services/ruleService.js';
 
 export const rulesRouter = Router();
 
 // Regexes run against every transaction; keep them short to limit catastrophic backtracking
-const regexSchema = z
-  .string()
-  .min(1)
-  .max(200)
-  .refine(isValidRegex, 'Invalid regular expression');
+const regexSchema = z.string().min(1).max(200).refine(isValidRegex, 'Invalid regular expression');
 
 function isValidRegex(pattern: string): boolean {
   try {
@@ -39,8 +50,16 @@ const conditionSchema = z.union([
   z.object({ field: z.enum(ID_FIELDS), op: z.enum(LIST_OPS), value: list(id) }),
   z.object({ field: z.enum([...TEXT_FIELDS, ...ID_FIELDS]), op: z.enum(EMPTY_OPS) }),
   z.object({ field: z.literal('amount'), op: z.enum(AMOUNT_OPS), value: cents }),
-  z.object({ field: z.literal('amount'), op: z.literal('between'), value: z.tuple([cents, cents]) }),
-  z.object({ field: z.literal('direction'), op: z.literal('is'), value: z.enum(['inflow', 'outflow']) }),
+  z.object({
+    field: z.literal('amount'),
+    op: z.literal('between'),
+    value: z.tuple([cents, cents]),
+  }),
+  z.object({
+    field: z.literal('direction'),
+    op: z.literal('is'),
+    value: z.enum(['inflow', 'outflow']),
+  }),
   z.object({ field: z.literal('date'), op: z.enum(DATE_OPS), value: date }),
   z.object({ field: z.literal('date'), op: z.literal('between'), value: z.tuple([date, date]) }),
 ]);
@@ -56,27 +75,41 @@ const splitPartSchema = z
 
 const actionSchema = z.union([
   z.object({ type: z.enum(['set_category', 'set_payee']), value: id }),
-  z.object({ type: z.enum(['set_notes', 'prepend_notes', 'append_notes']), value: z.string().max(5_000) }),
+  z.object({
+    type: z.enum(['set_notes', 'prepend_notes', 'append_notes']),
+    value: z.string().max(5_000),
+  }),
   z.object({ type: z.literal('split'), parts: z.array(splitPartSchema).min(1).max(20) }),
 ]);
 
 const conditionsOp = z.enum(['and', 'or']);
 const conditions = z.array(conditionSchema).max(50);
 
-const ruleSchema = z.object({
-  conditionsOp: conditionsOp.default('and'),
+const ruleFields = {
+  conditionsOp,
   conditions,
   actions: z.array(actionSchema).min(1).max(50),
+  enabled: z.boolean(),
+  sortOrder: z.number().int(),
+};
+
+const ruleSchema = z.object({
+  ...ruleFields,
+  conditionsOp: conditionsOp.default('and'),
   enabled: z.boolean().default(true),
   sortOrder: z.number().int().default(0),
 });
+
+// Without defaults: Zod applies `.default()` inside `.partial()`, so toggling a rule
+// (`{ enabled }`) would otherwise reset its "any/all" setting and move it to the top
+const ruleUpdateSchema = z.object(ruleFields).partial();
 
 const planSchema = z.object({
   ruleIds: z.array(id).max(1_000).optional(),
   scope: z.enum(['uncategorized', 'all']),
 });
 
-function serialize(data: Partial<z.infer<typeof ruleSchema>>) {
+function serialize(data: z.infer<typeof ruleUpdateSchema>) {
   const row: Partial<typeof rules.$inferInsert> = {};
   if (data.conditionsOp !== undefined) row.conditionsOp = data.conditionsOp;
   if (data.conditions !== undefined) row.conditions = JSON.stringify(data.conditions);
@@ -106,7 +139,9 @@ rulesRouter.post('/preview', (req, res) => {
 
 // Apply the preview to the transactions the user kept ticked
 rulesRouter.post('/apply', (req, res) => {
-  const parsed = planSchema.extend({ transactionIds: z.array(id).max(100_000) }).safeParse(req.body);
+  const parsed = planSchema
+    .extend({ transactionIds: z.array(id).max(100_000) })
+    .safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
   res.json({ updated: applyRules(parsed.data) });
 });
@@ -143,7 +178,7 @@ rulesRouter.post('/', (req, res) => {
 });
 
 rulesRouter.put('/:id', (req, res) => {
-  const parsed = ruleSchema.partial().safeParse(req.body);
+  const parsed = ruleUpdateSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
   const update = serialize(parsed.data);

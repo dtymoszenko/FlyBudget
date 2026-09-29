@@ -8,6 +8,7 @@ import {
   min as minDate,
   lastDayOfMonth,
   getDay,
+  isValid,
 } from 'date-fns';
 
 export type RecurrenceType =
@@ -135,6 +136,7 @@ function stepMonthlyAnchored(
     }
   }
 
+  if (!Number.isInteger(monthStep) || monthStep < 1) return results;
   const MAX_ITERATIONS = 5000;
   let iterations = 0;
   while (iterations++ < MAX_ITERATIONS) {
@@ -165,6 +167,8 @@ export function computeOccurrenceDates(
   const effectiveEnd = end ? minDate([rEnd, end]) : rEnd;
   const rule = def.recurrenceRule;
 
+  // Malformed stored data must not loop forever: every step below needs valid dates
+  if (![start, rStart, rEnd].every(isValid) || (end && !isValid(end))) return [];
   if (isAfter(start, effectiveEnd)) return [];
 
   switch (rule.type) {
@@ -188,6 +192,7 @@ export function computeOccurrenceDates(
         rule.type === 'weekly'
           ? (rule as { type: 'weekly'; interval: number; anchorDay: number }).interval
           : 2;
+      if (!Number.isInteger(step) || step < 1) return [];
       const results: OccurrenceDatePair[] = [];
       let current = start;
       if (isBefore(current, rStart)) {
@@ -265,5 +270,7 @@ export function computeOccurrenceDates(
       return stepMonthlyAnchored(start, rule.anchorDay, 6, rStart, rEnd, end, def.weekendAdjust);
     case 'yearly':
       return stepMonthlyAnchored(start, rule.anchorDay, 12, rStart, rEnd, end, def.weekendAdjust);
+    default:
+      return [];
   }
 }

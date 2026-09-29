@@ -2,10 +2,44 @@ import { Router } from 'express';
 import { db } from '../db/index.js';
 import { transactions, accounts, categories, categoryGroups, payees } from '../db/schema.js';
 import { eq, and, gte, lte, sql, inArray, lt, isNull } from 'drizzle-orm';
+import type { Request, Response } from 'express';
 import { monthBounds } from '../utils/date.js';
 import { isLiabilityType } from '../utils/accountTypes.js';
+import { isMonth, isRealDate } from '../utils/validation.js';
+import { inAccountBalance } from '../services/balances.js';
 
 export const reportsRouter = Router();
+
+/** Longest range a report may cover, so a bad request can't make the server build millions of rows */
+const MAX_MONTHS = 1200;
+const MAX_DAYS = 3700;
+
+const monthIndex = (month: string) => Number(month.slice(0, 4)) * 12 + Number(month.slice(5, 7));
+
+/** Validated `from`/`to` months (YYYY-MM); sends a 400 and returns null if they're missing or bad. */
+function monthRangeParams(req: Request, res: Response): { from: string; to: string } | null {
+  const { from, to } = req.query;
+  if (
+    !isMonth(from) ||
+    !isMonth(to) ||
+    from > to ||
+    monthIndex(to) - monthIndex(from) >= MAX_MONTHS
+  ) {
+    res.status(400).json({ error: 'Expected `from` and `to` as YYYY-MM' });
+    return null;
+  }
+  return { from, to };
+}
+
+/** Like monthRangeParams, but `from` and `to` may be left out. */
+function optionalMonthParams(req: Request, res: Response): { from?: string; to?: string } | null {
+  const { from, to } = req.query;
+  if ((from !== undefined && !isMonth(from)) || (to !== undefined && !isMonth(to))) {
+    res.status(400).json({ error: 'Expected `from` and `to` as YYYY-MM' });
+    return null;
+  }
+  return { from, to };
+}
 
 function monthRange(from: string, to: string): string[] {
   const months: string[] = [];
@@ -39,12 +73,27 @@ export function dayRange(from: string, to: string): string[] {
 }
 
 reportsRouter.get('/net-worth', (req, res) => {
-  let {
-    from = '2024-01',
-    to = '2026-12',
-    granularity = 'monthly',
-  } = req.query as Record<string, string>;
-  const isDaily = granularity === 'daily';
+  const isDaily = req.query.granularity === 'daily';
+  let from: string;
+  let to: string;
+  if (isDaily) {
+    const q = req.query;
+    if (
+      typeof q.from !== 'string' ||
+      typeof q.to !== 'string' ||
+      !isRealDate(q.from) ||
+      !isRealDate(q.to) ||
+      q.from > q.to ||
+      Date.parse(q.to) - Date.parse(q.from) > MAX_DAYS * 86_400_000
+    ) {
+      return res.status(400).json({ error: 'Expected `from` and `to` as YYYY-MM-DD' });
+    }
+    ({ from, to } = q as { from: string; to: string });
+  } else {
+    const range = monthRangeParams(req, res);
+    if (!range) return;
+    ({ from, to } = range);
+  }
 
   const earliest = db
     .select({ d: sql<string>`min(${transactions.date})` })
@@ -71,7 +120,7 @@ reportsRouter.get('/net-worth', (req, res) => {
       total: sql<number>`coalesce(sum(${transactions.amount}), 0)`,
     })
     .from(transactions)
-    .where(lte(transactions.date, upperBound))
+    .where(and(lte(transactions.date, upperBound), inAccountBalance))
     .groupBy(transactions.accountId, groupExpr)
     .all();
 
@@ -80,35 +129,23 @@ reportsRouter.get('/net-worth', (req, res) => {
     (byAccount[row.accountId] ??= []).push({ period: row.period, total: row.total });
   }
 
-  const cumulativeByAccount: Record<string, Record<string, number>> = {};
-  for (const acct of allAccounts) {
-    const entries = (byAccount[acct.id] ?? []).sort((a, b) => a.period.localeCompare(b.period));
-    let running = acct.startingBalance;
-    const cumMap: Record<string, number> = {};
-    for (const { period, total } of entries) {
-      running += total;
-      cumMap[period] = running;
-    }
-    cumulativeByAccount[acct.id] = cumMap;
-  }
-
-  function balanceAt(acctId: string, target: string, startingBalance: number): number {
-    const cumMap = cumulativeByAccount[acctId] ?? {};
-    let balance = startingBalance;
-    for (const k of Object.keys(cumMap).sort()) {
-      if (k > target) break;
-      balance = cumMap[k];
-    }
-    return balance;
-  }
+  // Walk each account's periods alongside the (ascending) report periods
+  const cursors = allAccounts.map((acct) => ({
+    acct,
+    entries: (byAccount[acct.id] ?? []).sort((a, b) => a.period.localeCompare(b.period)),
+    next: 0,
+    balance: acct.startingBalance,
+  }));
 
   const result = periods.map((period) => {
     let assets = 0,
       liabilities = 0;
-    for (const acct of allAccounts) {
-      const balance = balanceAt(acct.id, period, acct.startingBalance);
-      if (isLiabilityType(acct.type)) liabilities += Math.abs(Math.min(balance, 0));
-      else assets += Math.max(balance, 0);
+    for (const c of cursors) {
+      while (c.next < c.entries.length && c.entries[c.next].period <= period) {
+        c.balance += c.entries[c.next++].total;
+      }
+      if (isLiabilityType(c.acct.type)) liabilities += Math.abs(Math.min(c.balance, 0));
+      else assets += Math.max(c.balance, 0);
     }
     return { month: period, assets, liabilities, netWorth: assets - liabilities };
   });
@@ -117,7 +154,9 @@ reportsRouter.get('/net-worth', (req, res) => {
 });
 
 reportsRouter.get('/spending-by-category', (req, res) => {
-  const { from, to } = req.query as Record<string, string>;
+  const range = optionalMonthParams(req, res);
+  if (!range) return;
+  const { from, to } = range;
   // Only real spending: a split's parent row (its children carry the categories) and transfers
   // have no category and would otherwise show up as "Uncategorized"; income categories aren't spending
   const conditions = [
@@ -150,7 +189,9 @@ reportsRouter.get('/spending-by-category', (req, res) => {
 });
 
 reportsRouter.get('/income-vs-expenses', (req, res) => {
-  const { from = '2024-01', to = '2026-12' } = req.query as Record<string, string>;
+  const range = monthRangeParams(req, res);
+  if (!range) return;
+  const { from, to } = range;
   const months = monthRange(from, to);
 
   // Single query grouped by month + isIncome
@@ -202,7 +243,9 @@ reportsRouter.get('/income-vs-expenses', (req, res) => {
 });
 
 reportsRouter.get('/cash-flow', (req, res) => {
-  const { from = '2024-01', to = '2026-12' } = req.query as Record<string, string>;
+  const range = monthRangeParams(req, res);
+  if (!range) return;
+  const { from, to } = range;
   const months = monthRange(from, to);
 
   // Single query grouped by month
@@ -218,6 +261,7 @@ reportsRouter.get('/cash-flow', (req, res) => {
         gte(transactions.date, monthBounds(from).from),
         lte(transactions.date, monthBounds(to).to),
         eq(accounts.isOffBudget, 0),
+        inAccountBalance,
       ),
     )
     .groupBy(sql`strftime('%Y-%m', ${transactions.date})`)
@@ -227,15 +271,12 @@ reportsRouter.get('/cash-flow', (req, res) => {
   res.json(months.map((month) => ({ month, net: netMap[month] ?? 0 })));
 });
 
-const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
-
 // Money in and out per day, for the transaction calendar. Like cash flow it covers budget
 // accounts only, and leaves out transfers; a split counts once, through its parts.
 reportsRouter.get('/daily-flow', (req, res) => {
-  const { from, to } = req.query as Record<string, string>;
-  if (!MONTH.test(from ?? '') || !MONTH.test(to ?? '') || from > to) {
-    return res.status(400).json({ error: 'Expected `from` and `to` as YYYY-MM' });
-  }
+  const range = monthRangeParams(req, res);
+  if (!range) return;
+  const { from, to } = range;
   const rows = db
     .select({
       date: transactions.date,
@@ -261,7 +302,9 @@ reportsRouter.get('/daily-flow', (req, res) => {
 });
 
 reportsRouter.get('/income-by-category', (req, res) => {
-  const { from, to } = req.query as Record<string, string>;
+  const range = optionalMonthParams(req, res);
+  if (!range) return;
+  const { from, to } = range;
   const conditions = [eq(categoryGroups.isIncome, 1)];
   if (from) conditions.push(gte(transactions.date, monthBounds(from).from));
   if (to) conditions.push(lte(transactions.date, monthBounds(to).to));
@@ -286,8 +329,11 @@ reportsRouter.get('/income-by-category', (req, res) => {
 });
 
 reportsRouter.get('/spending-trends', (req, res) => {
-  const { category_ids, from, to, granularity } = req.query as Record<string, string>;
-  if (!category_ids) return res.json([]);
+  const { category_ids, granularity } = req.query;
+  const range = optionalMonthParams(req, res);
+  if (!range) return;
+  const { from, to } = range;
+  if (typeof category_ids !== 'string' || !category_ids) return res.json([]);
 
   const ids = category_ids.split(',');
   const conditions = [];
@@ -337,8 +383,17 @@ reportsRouter.get('/spending-comparison', (req, res) => {
         total: sql<number>`coalesce(sum(${transactions.amount}), 0)`,
       })
       .from(transactions)
+      .innerJoin(accounts, eq(transactions.accountId, accounts.id))
       .where(
-        and(lt(transactions.amount, 0), gte(transactions.date, from), lte(transactions.date, to)),
+        and(
+          lt(transactions.amount, 0),
+          gte(transactions.date, from),
+          lte(transactions.date, to),
+          // Real spending: a split counts once (through its parts), transfers aren't spending
+          eq(transactions.isParent, 0),
+          isNull(transactions.transferTransactionId),
+          eq(accounts.isOffBudget, 0),
+        ),
       )
       .groupBy(transactions.date)
       .all();
@@ -568,20 +623,23 @@ reportsRouter.get('/spending-comparison', (req, res) => {
 // --------------- Custom report aggregation endpoint ---------------
 
 reportsRouter.get('/custom', (req, res) => {
-  const {
-    mode = 'total',
-    group_by = 'category',
-    balance_type = 'expense',
-    from = '2024-01',
-    to = '2026-12',
-    account_ids,
-    category_ids,
-    category_group_ids,
-  } = req.query as Record<string, string>;
+  const range = monthRangeParams(req, res);
+  if (!range) return;
+  const { from, to } = range;
+  const str = (v: unknown) => (typeof v === 'string' ? v : undefined);
+  const mode = str(req.query.mode) ?? 'total';
+  const group_by = str(req.query.group_by) ?? 'category';
+  const balance_type = str(req.query.balance_type) ?? 'expense';
+  const account_ids = str(req.query.account_ids);
+  const category_ids = str(req.query.category_ids);
+  const category_group_ids = str(req.query.category_group_ids);
 
   const conditions: ReturnType<typeof eq>[] = [
     gte(transactions.date, monthBounds(from).from),
     lte(transactions.date, monthBounds(to).to),
+    // A split counts once, through its categorized parts; transfers only move money
+    eq(transactions.isParent, 0),
+    isNull(transactions.transferTransactionId),
   ];
 
   if (balance_type === 'expense') conditions.push(lt(transactions.amount, 0));
@@ -622,7 +680,7 @@ reportsRouter.get('/custom', (req, res) => {
       id: sql<string>`strftime('%Y-%m', ${transactions.date})`,
       groupCol: sql`strftime('%Y-%m', ${transactions.date})`,
     },
-  }[group_by] ?? {
+  }[group_by as 'category'] ?? {
     name: categories.name,
     id: transactions.categoryId,
     groupCol: transactions.categoryId,

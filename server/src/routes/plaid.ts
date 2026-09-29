@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { db } from '../db/index.js';
 import { plaidConfig, plaidItems, plaidAccountMappings, accounts } from '../db/schema.js';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
 import { accountTypeSchema, defaultOffBudget } from '../utils/accountTypes.js';
@@ -36,17 +36,22 @@ const configureSchema = z.object({
 });
 
 const mapAccountSchema = z.object({
-  mappings: z.array(
-    z.object({
-      plaidAccountId: z.string().max(256),
-      action: z.enum(['create', 'link', 'skip']),
-      accountId: z.string().max(64).optional(),
-      accountName: z.string().trim().max(200).optional(),
-      accountType: accountTypeSchema.optional(),
-      isOffBudget: z.number().int().min(0).max(1).optional(),
-    }),
-  ),
+  mappings: z
+    .array(
+      z.object({
+        plaidAccountId: z.string().max(256),
+        action: z.enum(['create', 'link', 'skip']),
+        accountId: z.string().max(64).optional(),
+        accountName: z.string().trim().max(200).optional(),
+        accountType: accountTypeSchema.optional(),
+        isOffBudget: z.number().int().min(0).max(1).optional(),
+      }),
+    )
+    .max(1_000),
 });
+
+const accountExists = (id: string) =>
+  db.select({ id: accounts.id }).from(accounts).where(eq(accounts.id, id)).get() !== undefined;
 
 function requirePlaid(res: any): boolean {
   if (!isPlaidConfigured()) {
@@ -232,7 +237,12 @@ plaidRouter.post('/items/:itemId/map-accounts', (req, res) => {
     const mapping = db
       .select()
       .from(plaidAccountMappings)
-      .where(eq(plaidAccountMappings.plaidAccountId, m.plaidAccountId))
+      .where(
+        and(
+          eq(plaidAccountMappings.plaidItemId, itemId),
+          eq(plaidAccountMappings.plaidAccountId, m.plaidAccountId),
+        ),
+      )
       .get();
     if (!mapping) continue;
 
@@ -242,7 +252,7 @@ plaidRouter.post('/items/:itemId/map-accounts', (req, res) => {
         .where(eq(plaidAccountMappings.id, mapping.id))
         .run();
       skipped++;
-    } else if (m.action === 'link' && m.accountId) {
+    } else if (m.action === 'link' && m.accountId && accountExists(m.accountId)) {
       db.update(plaidAccountMappings)
         .set({ isEnabled: 1, accountId: m.accountId })
         .where(eq(plaidAccountMappings.id, mapping.id))
@@ -282,7 +292,8 @@ plaidRouter.post('/items/:itemId/sync', async (req, res) => {
     const result = await syncPlaidItem(itemId);
     res.json(result);
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    console.error('Plaid sync error:', err?.message);
+    res.status(500).json({ error: 'Sync failed' });
   }
 });
 
@@ -292,7 +303,8 @@ plaidRouter.post('/sync-all', async (_req, res) => {
     const results = await syncAllItems();
     res.json({ results });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    console.error('Plaid sync error:', err?.message);
+    res.status(500).json({ error: 'Sync failed' });
   }
 });
 

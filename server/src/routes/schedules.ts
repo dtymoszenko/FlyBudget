@@ -6,6 +6,7 @@ import { nanoid } from 'nanoid';
 import { z } from 'zod';
 import { format, addDays } from 'date-fns';
 import { buildRecurrenceRule, type RecurrenceType } from '../utils/recurrence.js';
+import { isMonth, isoDate, isRealDate } from '../utils/validation.js';
 import { findSchedules, createDiscoveredSchedules } from '../services/scheduleDiscovery.js';
 import {
   ensureOccurrences,
@@ -35,28 +36,72 @@ const recurrenceTypeEnum = z.enum([
 const amountTypeEnum = z.enum(['exact', 'approximate', 'variable']);
 const statusEnum = z.enum(['active', 'paused', 'canceled']);
 const weekendAdjustEnum = z.enum(['none', 'before', 'after', 'closest']);
-const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+const id = z.string().min(1).max(64);
+const weekday = z.number().int().min(0).max(6);
+const monthDay = z.number().int().min(1).max(31);
 
-const createSchema = z.object({
-  name: z.string().min(1),
-  amount: z.number().int(),
-  amountType: amountTypeEnum.default('exact'),
+// Stored and used to generate occurrences, so it must be well-formed: a zero or missing
+// interval would make occurrence generation loop forever
+const recurrenceRuleSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('once') }),
+  z.object({
+    type: z.literal('weekly'),
+    interval: z.number().int().min(1).max(52),
+    anchorDay: weekday,
+  }),
+  z.object({ type: z.literal('biweekly'), anchorDay: weekday }),
+  z.object({ type: z.literal('semimonthly'), day1: monthDay, day2: monthDay }),
+  z.object({
+    type: z.literal('monthly'),
+    interval: z.number().int().min(1).max(120),
+    anchorDay: monthDay,
+  }),
+  z.object({ type: z.literal('quarterly'), anchorDay: monthDay }),
+  z.object({ type: z.literal('semiannually'), anchorDay: monthDay }),
+  z.object({
+    type: z.literal('yearly'),
+    anchorMonth: z.number().int().min(0).max(11),
+    anchorDay: monthDay,
+  }),
+]);
+
+const scheduleFields = {
+  name: z.string().trim().min(1).max(200),
+  amount: z.number().int().min(-1e13).max(1e13),
+  amountType: amountTypeEnum,
   recurrenceType: recurrenceTypeEnum,
-  recurrenceRule: z.any().optional(),
-  startDate: z.string().regex(dateRegex),
-  endDate: z.string().regex(dateRegex).nullable().optional(),
-  weekendAdjust: weekendAdjustEnum.default('none'),
-  dateFlexibility: z.number().int().min(0).max(14).default(3),
-  accountId: z.string().nullable().optional(),
-  transferAccountId: z.string().nullable().optional(),
-  categoryId: z.string().nullable().optional(),
-  payeeId: z.string().nullable().optional(),
-  notes: z.string().nullable().optional(),
-  status: statusEnum.default('active'),
-  autoCreate: z.number().int().min(0).max(1).default(0),
-});
+  recurrenceRule: recurrenceRuleSchema.optional(),
+  startDate: isoDate,
+  endDate: isoDate.nullable().optional(),
+  weekendAdjust: weekendAdjustEnum,
+  dateFlexibility: z.number().int().min(0).max(14),
+  accountId: id.nullable().optional(),
+  transferAccountId: id.nullable().optional(),
+  categoryId: id.nullable().optional(),
+  payeeId: id.nullable().optional(),
+  notes: z.string().max(5_000).nullable().optional(),
+  status: statusEnum,
+  autoCreate: z.number().int().min(0).max(1),
+};
 
-const updateSchema = createSchema.partial();
+const ruleMatchesType = (s: { recurrenceType?: string; recurrenceRule?: { type: string } }) =>
+  !s.recurrenceRule || !s.recurrenceType || s.recurrenceRule.type === s.recurrenceType;
+const ruleTypeMessage = { message: 'recurrenceRule.type must match recurrenceType' };
+
+const createSchema = z
+  .object({
+    ...scheduleFields,
+    amountType: amountTypeEnum.default('exact'),
+    weekendAdjust: weekendAdjustEnum.default('none'),
+    dateFlexibility: scheduleFields.dateFlexibility.default(3),
+    status: statusEnum.default('active'),
+    autoCreate: scheduleFields.autoCreate.default(0),
+  })
+  .refine(ruleMatchesType, ruleTypeMessage);
+
+// Without defaults: Zod applies `.default()` inside `.partial()`, so pausing a schedule
+// (`{ status }`) would otherwise reset its amount type, weekend rule and auto-create
+const updateSchema = z.object(scheduleFields).partial().refine(ruleMatchesType, ruleTypeMessage);
 
 function deriveDisplayStatus(dbStatus: string, expectedDate: string): string {
   if (dbStatus !== 'pending') return dbStatus;
@@ -73,25 +118,29 @@ schedulesRouter.get('/discover', (_req, res) => {
   res.json(findSchedules());
 });
 
-const discoveredItemSchema = z.object({
-  id: z.string(),
-  accountId: z.string(),
-  accountName: z.string(),
-  payeeId: z.string().nullable(),
-  payeeName: z.string().min(1),
-  amount: z.number().int(),
-  amountType: z.enum(['exact', 'approximate']),
-  recurrenceType: z.enum(['weekly', 'biweekly', 'monthly']),
-  recurrenceRule: z.any(),
-  startDate: z.string().regex(dateRegex),
-  exactDate: z.boolean(),
-  categoryId: z.string().nullable(),
-  transactionIds: z.array(z.string()),
-});
+const discoveredItemSchema = z
+  .object({
+    id: z.string().max(200),
+    accountId: id,
+    accountName: z.string().max(200),
+    payeeId: id.nullable(),
+    payeeName: z.string().min(1).max(500),
+    amount: z.number().int().min(-1e13).max(1e13),
+    amountType: z.enum(['exact', 'approximate']),
+    recurrenceType: z.enum(['weekly', 'biweekly', 'monthly']),
+    recurrenceRule: recurrenceRuleSchema,
+    startDate: isoDate,
+    exactDate: z.boolean(),
+    categoryId: id.nullable(),
+    transactionIds: z.array(id).max(10_000),
+  })
+  .refine(ruleMatchesType, ruleTypeMessage);
 
 // POST /discover/create — create schedules from discovered items and link their transactions
 schedulesRouter.post('/discover/create', (req, res) => {
-  const parsed = z.object({ items: z.array(discoveredItemSchema).min(1) }).safeParse(req.body);
+  const parsed = z
+    .object({ items: z.array(discoveredItemSchema).min(1).max(1_000) })
+    .safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
   const ids = createDiscoveredSchedules(parsed.data.items);
   res.status(201).json({ created: ids.length, ids });
@@ -99,9 +148,10 @@ schedulesRouter.post('/discover/create', (req, res) => {
 
 // GET /occurrences — all occurrences in a date range
 schedulesRouter.get('/occurrences', (req, res) => {
-  const from = req.query.from as string;
-  const to = req.query.to as string;
-  if (!from || !to) return res.status(400).json({ error: 'from and to query params required' });
+  const { from, to } = req.query;
+  if (typeof from !== 'string' || typeof to !== 'string' || !isRealDate(from) || !isRealDate(to)) {
+    return res.status(400).json({ error: 'from and to query params required (YYYY-MM-DD)' });
+  }
 
   const rows = db
     .select({
@@ -153,8 +203,9 @@ schedulesRouter.get('/occurrences', (req, res) => {
 
 // GET /summary — income/expense totals for a month
 schedulesRouter.get('/summary', (req, res) => {
-  const month = req.query.month as string;
-  if (!month) return res.status(400).json({ error: 'month query param required' });
+  const { month } = req.query;
+  if (!isMonth(month))
+    return res.status(400).json({ error: 'month query param required (YYYY-MM)' });
 
   const from = `${month}-01`;
   const to = `${month}-31`;
@@ -209,7 +260,7 @@ schedulesRouter.post('/unmatch-transaction', (req, res) => {
 
 // GET / — list schedules
 schedulesRouter.get('/', (req, res) => {
-  const status = req.query.status as string | undefined;
+  const status = typeof req.query.status === 'string' ? req.query.status : undefined;
   const conditions = status ? [eq(schedules.status, status)] : [];
   const rows = db
     .select()
@@ -293,6 +344,12 @@ schedulesRouter.put('/:id', (req, res) => {
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
   const data = parsed.data;
+  if (
+    data.recurrenceRule &&
+    data.recurrenceRule.type !== (data.recurrenceType ?? existing.recurrenceType)
+  ) {
+    return res.status(400).json({ error: ruleTypeMessage.message });
+  }
   const updates: Record<string, any> = { ...data, updatedAt: new Date().toISOString() };
 
   if (data.recurrenceRule) {
@@ -311,11 +368,11 @@ schedulesRouter.put('/:id', (req, res) => {
   db.update(schedules).set(updates).where(eq(schedules.id, req.params.id)).run();
 
   const patternChanged =
-    data.recurrenceType ||
-    data.recurrenceRule ||
-    data.startDate ||
-    data.endDate ||
-    data.weekendAdjust;
+    (data.recurrenceType !== undefined && data.recurrenceType !== existing.recurrenceType) ||
+    updates.recurrenceRule !== undefined ||
+    (data.startDate !== undefined && data.startDate !== existing.startDate) ||
+    (data.endDate !== undefined && data.endDate !== existing.endDate) ||
+    (data.weekendAdjust !== undefined && data.weekendAdjust !== existing.weekendAdjust);
   if (patternChanged) {
     regenerateFutureOccurrences(req.params.id);
   }
@@ -391,9 +448,9 @@ schedulesRouter.post('/:id/mark-paid', (req, res) => {
     return res.status(400).json({ error: 'Schedule has no account assigned' });
 
   const bodySchema = z.object({
-    date: z.string().regex(dateRegex),
-    amount: z.number().int().optional(),
-    occurrenceId: z.string().optional(),
+    date: isoDate,
+    amount: z.number().int().min(-1e13).max(1e13).optional(),
+    occurrenceId: id.optional(),
   });
   const parsed = bodySchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
@@ -515,8 +572,8 @@ schedulesRouter.post('/occurrences/:occId/dismiss', (req, res) => {
 
 // GET /:id/occurrences — occurrences for one schedule
 schedulesRouter.get('/:id/occurrences', (req, res) => {
-  const from = req.query.from as string;
-  const to = req.query.to as string;
+  const from = typeof req.query.from === 'string' ? req.query.from : undefined;
+  const to = typeof req.query.to === 'string' ? req.query.to : undefined;
 
   let conditions = [eq(scheduleOccurrences.scheduleId, req.params.id)];
   if (from) conditions.push(gte(scheduleOccurrences.expectedDate, from));

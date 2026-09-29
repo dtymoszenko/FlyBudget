@@ -4,21 +4,22 @@ import { goals } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
+import { isoDate } from '../utils/validation.js';
 
 export const goalsRouter = Router();
 
 const createSchema = z.object({
-  name: z.string().min(1),
-  targetAmount: z.number().int(),
-  currentAmount: z.number().int().optional(),
-  targetDate: z
+  name: z.string().trim().min(1).max(200),
+  targetAmount: z.number().int().min(0).max(1e13),
+  currentAmount: z.number().int().min(-1e13).max(1e13).optional(),
+  targetDate: isoDate.nullable().optional(),
+  accountId: z.string().max(64).nullable().optional(),
+  icon: z.string().max(32).optional(),
+  // Used in inline styles on the client
+  color: z
     .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .nullable()
+    .regex(/^#[0-9a-fA-F]{6}$/)
     .optional(),
-  accountId: z.string().nullable().optional(),
-  icon: z.string().optional(),
-  color: z.string().optional(),
 });
 
 goalsRouter.get('/', (_req, res) => {
