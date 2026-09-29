@@ -4,6 +4,7 @@ import { useBudget } from '../../hooks/useBudget';
 import { useIncomeVsExpenses } from '../../hooks/useReports';
 import { formatCurrency } from '../../utils/currency';
 import { StatCard } from '../ui/StatCard';
+import { monthsToAverage } from '../../utils/reportSummary';
 import { usePreferencesStore } from '../../store/preferencesStore';
 
 interface Props {
@@ -46,7 +47,8 @@ export default function SummaryStats({ currentMonth }: Props) {
   const ltsColor =
     spentPct > 1 ? 'text-negative' : spentPct >= 0.8 ? 'text-caution' : 'text-positive';
 
-  const monthCount = ieData.length || 1;
+  // Only months since the budget's first income or spending (not the full 12 before it)
+  const monthCount = monthsToAverage(ieData);
   const avgIncome = Math.round(ieData.reduce((sum, p) => sum + p.income, 0) / monthCount);
   const avgExpenses = Math.round(ieData.reduce((sum, p) => sum + p.expenses, 0) / monthCount);
   const savingsRate = avgIncome > 0 ? Math.round(((avgIncome - avgExpenses) / avgIncome) * 100) : 0;

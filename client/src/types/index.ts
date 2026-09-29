@@ -196,6 +196,8 @@ export interface Transaction {
   importedId: string | null;
   /** Raw payee text from the bank or CSV (null for manual entries) */
   importedPayee: string | null;
+  /** 1 for a balance correction; reports leave it out while it has no category */
+  isAdjustment?: number;
   scheduleId: string | null;
   createdAt: string;
   children?: Transaction[];

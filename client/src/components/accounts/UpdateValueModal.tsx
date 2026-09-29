@@ -38,6 +38,7 @@ export function UpdateValueModal({ account, onClose }: Props) {
         date: format(new Date(), 'yyyy-MM-dd'),
         amount: change,
         notes: liability ? 'Balance update' : 'Value update',
+        adjustment: true,
       });
     }
     onClose();

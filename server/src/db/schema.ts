@@ -88,6 +88,11 @@ export const transactions = sqliteTable(
     importedId: text('imported_id'),
     /** Raw payee text from the bank or CSV, kept so rules can match it after a rename */
     importedPayee: text('imported_payee'),
+    /**
+     * 1 for a balance correction (reconciliation, "Update value"): it changes the balance, but
+     * while it has no category, income and spending reports leave it out
+     */
+    isAdjustment: integer('is_adjustment').notNull().default(0),
     scheduleId: text('schedule_id').references(() => schedules.id, { onDelete: 'set null' }),
     createdAt: text('created_at')
       .notNull()

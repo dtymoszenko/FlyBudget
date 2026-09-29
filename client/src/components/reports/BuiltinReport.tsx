@@ -4,7 +4,7 @@ import {
   useIncomeVsExpenses,
   useTopSpendingCategories,
 } from '../../hooks/useReports';
-import { formatCurrency } from '../../utils/currency';
+import { expenseFigure, incomeFigure, monthsToAverage } from '../../utils/reportSummary';
 import {
   NetWorthChart,
   IncomeExpensesChart,
@@ -33,27 +33,22 @@ export const BUILTIN_REPORTS: Record<BuiltinWidgetType, { label: string; descrip
 
 export const BUILTIN_TYPES = Object.keys(BUILTIN_REPORTS) as BuiltinWidgetType[];
 
-/** Signed totals, colored by sign: >0 green, <0 red, 0 neutral. */
+/**
+ * Totals for the range. Expenses show what was spent (red), or "+$X" in green when refunds
+ * outweighed spending. The monthly average counts only months since the budget's first
+ * activity in the range.
+ */
 export function useSummaryCards(from: string, to: string): StatCard[] {
   const { data: ieData = [] } = useIncomeVsExpenses(from, to);
   return useMemo(() => {
     const totalInc = ieData.reduce((s, d) => s + d.income, 0);
     const expNet = ieData.reduce((s, d) => s + d.expenseNet, 0);
     const txCount = ieData.reduce((s, d) => s + d.expenseCount, 0);
-    const monthCount = Math.max(ieData.length, 1);
-    const signedCard = (label: string, cents: number): StatCard => {
-      const v = Math.round(cents);
-      return {
-        label,
-        value: formatCurrency(Math.abs(v)),
-        tone: v > 0 ? 'positive' : v < 0 ? 'negative' : 'neutral',
-      };
-    };
     return [
-      signedCard('Total Income', totalInc),
-      signedCard('Total Expenses', expNet),
-      signedCard('Avg Monthly Expenses', expNet / monthCount),
-      signedCard('Avg Per Transaction', txCount > 0 ? expNet / txCount : 0),
+      { label: 'Total Income', ...incomeFigure(totalInc) },
+      { label: 'Total Expenses', ...expenseFigure(expNet) },
+      { label: 'Avg Monthly Expenses', ...expenseFigure(expNet / monthsToAverage(ieData)) },
+      { label: 'Avg Per Transaction', ...expenseFigure(txCount > 0 ? expNet / txCount : 0) },
     ];
   }, [ieData]);
 }

@@ -69,6 +69,8 @@ export type NewTransactionInput = {
   importedId: string | null;
   /** Chosen by the device for a transaction saved offline, so sending it twice can't duplicate it */
   id?: string;
+  /** A balance correction (reconciliation, "Update value"): not categorized by rules */
+  isAdjustment?: boolean;
 };
 
 type InsertOptions = {
@@ -86,6 +88,7 @@ type InsertOptions = {
  * category, the payee's default category applies. A split action creates a parent plus children.
  */
 export function insertNewTransaction(input: NewTransactionInput, opts: InsertOptions = {}) {
+  if (input.isAdjustment) return insertAdjustment(input);
   let payeeId = input.payeeId;
   if (!payeeId && input.payeeName) {
     payeeId =
@@ -122,6 +125,7 @@ export function insertNewTransaction(input: NewTransactionInput, opts: InsertOpt
     notes: tx.notes,
     reconciled: 0,
     isParent: 0,
+    isAdjustment: 0,
     transferTransactionId: null,
     parentTransactionId: null,
     importedId: input.importedId,
@@ -149,6 +153,34 @@ export function insertNewTransaction(input: NewTransactionInput, opts: InsertOpt
     for (const c of children) db.insert(transactions).values(c).run();
   });
   return { transaction: parent, children };
+}
+
+/**
+ * A balance correction is inserted as given: no rules and no payee default category, which
+ * could turn it into income or spending ("inflow → Paychecks"). Reports leave it out while it
+ * has no category.
+ */
+function insertAdjustment(input: NewTransactionInput) {
+  const row = {
+    id: input.id ?? nanoid(),
+    accountId: input.accountId,
+    date: input.date,
+    amount: input.amount,
+    payeeId: input.payeeId,
+    payeeName: input.payeeName,
+    importedPayee: input.importedPayee,
+    categoryId: input.categoryId,
+    notes: input.notes,
+    reconciled: 0,
+    isParent: 0,
+    isAdjustment: 1,
+    transferTransactionId: null,
+    parentTransactionId: null,
+    importedId: input.importedId,
+    createdAt: new Date().toISOString(),
+  };
+  db.insert(transactions).values(row).run();
+  return { transaction: row, children: [] };
 }
 
 // ---------------------------------------------------------------------------

@@ -73,6 +73,7 @@ export default function ReconcilePage() {
       date: format(new Date(), 'yyyy-MM-dd'),
       amount: adjustmentAmount,
       notes: 'Reconciliation adjustment',
+      adjustment: true,
     });
     const idsToReconcile = [...checkedIds, created.id];
     await reconcileAccount.mutateAsync({ accountId: id, transactionIds: idsToReconcile });

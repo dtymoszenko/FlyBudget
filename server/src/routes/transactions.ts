@@ -28,6 +28,8 @@ const createSchema = z.object({
   payeeName: z.string().max(500).nullable().optional(),
   categoryId: id.nullable().optional(),
   notes: z.string().max(5_000).nullable().optional(),
+  /** A balance correction (reconciliation, "Update value"), left out of income and spending */
+  adjustment: z.boolean().optional(),
   splits: z
     .array(
       z.object({
@@ -40,7 +42,7 @@ const createSchema = z.object({
     .optional(),
 });
 
-const updateSchema = createSchema.omit({ id: true, splits: true }).partial();
+const updateSchema = createSchema.omit({ id: true, splits: true, adjustment: true }).partial();
 
 const transferSchema = z
   .object({
@@ -171,7 +173,7 @@ transactionsRouter.post('/', (req, res) => {
   const parsed = createSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
-  const { id: txId, payeeName, payeeId, splits, ...rest } = parsed.data;
+  const { id: txId, payeeName, payeeId, splits, adjustment, ...rest } = parsed.data;
   const existing = txId && alreadyCreated(txId);
   if (existing) return res.status(200).json(existing);
 
@@ -237,6 +239,7 @@ transactionsRouter.post('/', (req, res) => {
       categoryId: rest.categoryId ?? null,
       importedId: null,
       id: txId,
+      isAdjustment: adjustment,
     },
     { keepUserCategory: true, keepUserNotes: true },
   );

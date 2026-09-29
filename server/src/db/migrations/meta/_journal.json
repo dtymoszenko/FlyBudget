@@ -141,6 +141,13 @@
       "when": 1790800000000,
       "tag": "0019_session_devices",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1790850000000,
+      "tag": "0020_adjustment_transactions",
+      "breakpoints": true
     }
   ]
 }

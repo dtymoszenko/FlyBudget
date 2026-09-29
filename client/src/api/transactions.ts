@@ -18,6 +18,8 @@ export interface CreateTransactionData {
   categoryId?: string | null;
   notes?: string | null;
   splits?: SplitItem[];
+  /** A balance correction (reconciliation, "Update value"): left out of income and spending */
+  adjustment?: boolean;
 }
 
 export interface CreateTransferData {

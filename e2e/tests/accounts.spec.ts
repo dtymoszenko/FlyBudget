@@ -128,7 +128,13 @@ test.describe('accounts', () => {
 
     await expect.poll(() => api.balance(brokerage.id)).toBe(1_050_000);
     const [adjustment] = await api.transactions(`?account_id=${brokerage.id}`);
-    expect(adjustment).toMatchObject({ amount: 50_000, notes: 'Value update' });
+    expect(adjustment).toMatchObject({ amount: 50_000, notes: 'Value update', isAdjustment: 1 });
+
+    // A change in value isn't money earned or spent: reports leave it out
+    await open(page, '/reports');
+    const main = page.getByRole('main');
+    await expect(main).toContainText(/\$0\s*Total Income/);
+    await expect(main).toContainText(/\$0\s*Total Expenses/);
   });
 
   test('the accounts page totals assets and liabilities', async ({ page, api }) => {
