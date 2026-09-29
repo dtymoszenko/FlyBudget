@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format, parseISO, subDays } from 'date-fns';
 import * as reportsApi from '../api/reports';
@@ -27,6 +28,12 @@ export const useIncomeVsExpenses = (from: string, to: string) =>
     queryFn: () => reportsApi.getIncomeVsExpenses(from, to),
   });
 
+export const useDailyFlow = (from: string, to: string) =>
+  useQuery({
+    queryKey: ['reports', 'daily-flow', from, to],
+    queryFn: () => reportsApi.getDailyFlow(from, to),
+  });
+
 export const useCashFlow = (from: string, to: string) =>
   useQuery({
     queryKey: ['reports', 'cash-flow', from, to],
@@ -38,6 +45,25 @@ export const useSpendingByCategory = (from: string, to: string) =>
     queryKey: ['reports', 'spending-by-category', from, to],
     queryFn: () => reportsApi.getSpendingByCategory(from, to),
   });
+
+/** How many categories Spending Trends shows when none are chosen, and the most it can show. */
+export const TOP_TREND_CATEGORIES = 5;
+export const MAX_TREND_CATEGORIES = 5;
+
+/** The `count` categories with the most spending in the range, biggest first. */
+export function useTopSpendingCategories(from: string, to: string, count: number) {
+  const { data, isLoading } = useSpendingByCategory(from, to);
+  const ids = useMemo(
+    () =>
+      [...(data ?? [])]
+        .filter((d) => d.categoryId)
+        .sort((a, b) => b.totalSpent - a.totalSpent)
+        .slice(0, count)
+        .map((d) => d.categoryId!),
+    [data, count],
+  );
+  return { ids, isLoading };
+}
 
 export const useIncomeByCategory = (from: string, to: string) =>
   useQuery({

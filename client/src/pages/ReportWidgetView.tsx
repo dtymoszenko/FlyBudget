@@ -1,14 +1,11 @@
 import { useState } from 'react';
-import { Link, Navigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Download, Save } from 'lucide-react';
+import { Navigate, useParams } from 'react-router-dom';
+import { Pin, Save, Snowflake } from 'lucide-react';
 import { Button } from '../components/ui/Button';
+import { PageHeader } from '../components/ui/PageHeader';
 import { DateRangeControl } from '../components/reports/DateRangeControl';
-import {
-  BUILTIN_REPORTS,
-  BuiltinReportChart,
-  BuiltinReportStats,
-  useBuiltinCsvExport,
-} from '../components/reports/BuiltinReport';
+import { BUILTIN_REPORTS } from '../components/reports/BuiltinReport';
+import { ReportDetail } from '../components/reports/ReportDetail';
 import { ChartSkeleton } from '../components/reports/ChartHelpers';
 import { useDashboards, useDashboardWidget, useUpdateWidget } from '../hooks/useDashboards';
 import {
@@ -17,15 +14,7 @@ import {
   formatDateRange,
   widgetDateRange,
 } from '../utils/dateRange';
-import type { BuiltinWidget, BuiltinWidgetType, ReportDateRange } from '../types';
-
-const CHART_HEIGHT: Record<BuiltinWidgetType, string> = {
-  summary: 'h-72',
-  'net-worth': 'h-72',
-  'income-expenses': 'h-72',
-  spending: 'h-96',
-  'spending-trends': 'h-80',
-};
+import type { BuiltinWidget, DashboardPage, ReportDateRange } from '../types';
 
 /** Full view of a built-in dashboard widget, where its date range can be explored and saved. */
 export default function ReportWidgetView() {
@@ -41,7 +30,8 @@ export default function ReportWidgetView() {
       </div>
     );
   }
-  const dashboardRange = dashboardDateRange(pages.find((p) => p.id === widget.pageId));
+  const page = pages.find((p) => p.id === widget.pageId);
+  const dashboardRange = dashboardDateRange(page);
   if (widget.type === 'custom-report') {
     const { range } = widgetDateRange(widget.meta.dateRange, dashboardRange);
     return (
@@ -51,96 +41,143 @@ export default function ReportWidgetView() {
       />
     );
   }
-  return <BuiltinView key={widget.id} widget={widget} dashboardRange={dashboardRange} />;
+  return (
+    <BuiltinView key={widget.id} widget={widget} page={page} dashboardRange={dashboardRange} />
+  );
 }
 
 const sameRange = (a: ReportDateRange, b: ReportDateRange) =>
   a.preset === b.preset && (a.preset !== 'custom' || (a.from === b.from && a.to === b.to));
 
-const SOURCE_LABEL = {
-  dashboard: 'Following the dashboard',
-  own: 'Own date range',
-  frozen: 'Frozen dates',
-} as const;
+const sameIds = (a: string[] | undefined, b: string[] | undefined) =>
+  (a ?? []).join(',') === (b ?? []).join(',');
 
 function BuiltinView({
   widget,
+  page,
   dashboardRange,
 }: {
   widget: BuiltinWidget;
+  page: DashboardPage | undefined;
   dashboardRange: ReportDateRange;
 }) {
   const updateWidget = useUpdateWidget();
   const saved = widgetDateRange(widget.meta.dateRange, dashboardRange);
-  // Exploring ranges here changes nothing until "Save to widget"
+  // Exploring here changes nothing on the dashboard until "Save to widget"
   const [range, setRange] = useState(saved.range);
-  const exportCsv = useBuiltinCsvExport(widget.type, range.from, range.to);
-  const changed = !sameRange(range, saved.range);
+  const [categoryIds, setCategoryIds] = useState(widget.meta.categoryIds);
+  const rangeChanged = !sameRange(range, saved.range);
+  const changed = rangeChanged || !sameIds(categoryIds, widget.meta.categoryIds);
 
-  function setOwnRange(next: ReportDateRange | undefined) {
-    const { dateRange: _old, ...rest } = widget.meta;
-    updateWidget.mutate({ widget, data: { meta: next ? { ...rest, dateRange: next } : rest } });
+  function save() {
+    const { dateRange, categoryIds: _old, ...rest } = widget.meta;
+    // A widget following the dashboard keeps doing so unless its dates were changed here
+    const nextRange = rangeChanged ? range : dateRange;
+    updateWidget.mutate({
+      widget,
+      data: {
+        meta: {
+          ...rest,
+          ...(nextRange ? { dateRange: nextRange } : {}),
+          ...(categoryIds ? { categoryIds } : {}),
+        },
+      },
+    });
   }
-  const title = widget.meta.name || BUILTIN_REPORTS[widget.type].label;
+
+  function followDashboard() {
+    const { dateRange: _old, ...rest } = widget.meta;
+    updateWidget.mutate({ widget, data: { meta: rest } });
+    setRange(dashboardRange);
+  }
+
+  const report = BUILTIN_REPORTS[widget.type];
+  const dashboardPath = `/reports?dashboard=${widget.pageId}`;
 
   return (
-    <div className="flex flex-col h-full bg-surface">
-      <div className="px-6 py-4 border-b border-border shrink-0">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-3 min-w-0">
-            <Link
-              to={`/reports?dashboard=${widget.pageId}`}
-              aria-label="Back to dashboard"
-              className="text-text-tertiary hover:text-text-secondary transition-colors"
-            >
-              <ArrowLeft size={16} />
-            </Link>
-            <div className="min-w-0">
-              <h1 className="text-lg font-semibold text-text truncate">{title}</h1>
-              <p className="text-xs text-text-tertiary">
-                {SOURCE_LABEL[saved.source]}
-                {saved.source === 'dashboard' && ` (${formatDateRange(dashboardRange)})`}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <DateRangeControl value={range} onChange={setRange} />
-            {exportCsv && (
-              <Button variant="secondary" size="sm" onClick={exportCsv}>
-                <Download size={13} /> Export CSV
-              </Button>
-            )}
-            <Button
-              size="sm"
-              disabled={!changed || updateWidget.isPending}
-              title="Give the widget this date range instead of the dashboard's"
-              onClick={() => setOwnRange(range)}
-            >
-              <Save size={13} /> Save to widget
-            </Button>
-            {saved.source !== 'dashboard' && (
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled={updateWidget.isPending}
-                onClick={() => {
-                  setOwnRange(undefined);
-                  setRange(dashboardRange);
-                }}
-              >
-                Use dashboard range
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
+    <div className="flex flex-col h-full">
+      <PageHeader
+        title={widget.meta.name || report.label}
+        subtitle={report.description}
+        breadcrumbs={[
+          { label: 'Reports', to: '/reports' },
+          { label: page?.name ?? 'Dashboard', to: dashboardPath },
+        ]}
+        actions={
+          <Button
+            size="sm"
+            disabled={!changed || updateWidget.isPending}
+            title="Show these settings on the dashboard widget"
+            onClick={save}
+          >
+            <Save size={13} /> Save to widget
+          </Button>
+        }
+      />
 
-      <div className="flex-1 overflow-y-auto px-6 py-6">
-        <BuiltinReportStats type={widget.type} from={range.from} to={range.to} />
-        <div className={`w-full ${CHART_HEIGHT[widget.type]}`}>
-          <BuiltinReportChart type={widget.type} from={range.from} to={range.to} />
+      <div className="flex-1 overflow-y-auto bg-page">
+        <div className="max-w-[1400px] mx-auto px-6 py-6 space-y-4">
+          <div className="flex items-center gap-x-3 gap-y-1 flex-wrap">
+            <span className="text-xs font-medium text-text-secondary">Date range</span>
+            <DateRangeControl value={range} onChange={setRange} />
+            <RangeNote
+              source={saved.source}
+              dashboardRange={dashboardRange}
+              changed={changed}
+              onFollowDashboard={
+                saved.source !== 'dashboard' && !updateWidget.isPending
+                  ? followDashboard
+                  : undefined
+              }
+            />
+          </div>
+          <ReportDetail
+            type={widget.type}
+            from={range.from}
+            to={range.to}
+            categoryIds={categoryIds}
+            onCategoryIdsChange={setCategoryIds}
+          />
         </div>
       </div>
     </div>
+  );
+}
+
+/** Where the widget's dates come from, and whether what's shown here differs from it. */
+function RangeNote({
+  source,
+  dashboardRange,
+  changed,
+  onFollowDashboard,
+}: {
+  source: 'dashboard' | 'own' | 'frozen';
+  dashboardRange: ReportDateRange;
+  changed: boolean;
+  onFollowDashboard?: () => void;
+}) {
+  if (changed) {
+    return (
+      <span className="text-xs text-caution">Not saved: the dashboard widget is unchanged</span>
+    );
+  }
+  return (
+    <span className="flex items-center gap-1.5 text-xs text-text-tertiary">
+      {source === 'frozen' && <Snowflake size={11} className="text-brand-500" />}
+      {source === 'own' && <Pin size={11} className="text-brand-500" />}
+      {source === 'dashboard'
+        ? `Following the dashboard (${formatDateRange(dashboardRange)})`
+        : source === 'frozen'
+          ? 'This widget keeps these dates'
+          : 'This widget has its own date range'}
+      {onFollowDashboard && (
+        <button
+          onClick={onFollowDashboard}
+          className="text-brand-600 hover:text-brand-700 font-medium cursor-pointer"
+        >
+          Use dashboard range
+        </button>
+      )}
+    </span>
   );
 }

@@ -350,6 +350,16 @@ export interface SpendingTrendPoint {
   total: number;
 }
 
+/** One day's money in and out on budget accounts, without transfers (`GET /reports/daily-flow`) */
+export interface DailyFlowPoint {
+  /** yyyy-MM-dd */
+  date: string;
+  income: number;
+  expenses: number;
+  /** Transactions that day (a split counts once) */
+  count: number;
+}
+
 export interface SpendingComparisonData {
   currentTotal: number;
   periodLabel: string;
@@ -417,7 +427,7 @@ export interface DashboardPage {
 }
 
 export type BuiltinWidgetType =
-  'summary' | 'net-worth' | 'income-expenses' | 'spending' | 'spending-trends';
+  'summary' | 'net-worth' | 'income-expenses' | 'spending' | 'spending-trends' | 'calendar';
 
 interface WidgetBase {
   id: string;
@@ -432,8 +442,11 @@ interface WidgetBase {
 export interface BuiltinWidget extends WidgetBase {
   type: BuiltinWidgetType;
   customReportId: null;
-  /** No `dateRange` means the widget follows its dashboard's range */
-  meta: { name?: string; dateRange?: ReportDateRange };
+  /**
+   * No `dateRange` means the widget follows its dashboard's range. `categoryIds` (Spending
+   * Trends only) are the categories to chart; without it, the biggest spending categories.
+   */
+  meta: { name?: string; dateRange?: ReportDateRange; categoryIds?: string[] };
 }
 
 export interface CustomReportWidget extends WidgetBase {

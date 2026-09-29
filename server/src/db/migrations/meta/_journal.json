@@ -127,6 +127,13 @@
       "when": 1790700000000,
       "tag": "0017_advanced_rules",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1790750000000,
+      "tag": "0018_compact_summary_widget",
+      "breakpoints": true
     }
   ]
 }

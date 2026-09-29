@@ -22,6 +22,7 @@ export const WIDGET_TYPES = [
   'income-expenses',
   'spending',
   'spending-trends',
+  'calendar',
   'custom-report',
 ] as const;
 export type WidgetType = (typeof WIDGET_TYPES)[number];
@@ -31,6 +32,8 @@ export type WidgetType = (typeof WIDGET_TYPES)[number];
 const builtinMetaSchema = z.object({
   name: z.string().trim().max(100).optional(),
   dateRange: dateRangeSchema.optional(),
+  // Spending Trends: the categories to chart. Without it, the biggest spending categories
+  categoryIds: z.array(z.string().min(1).max(64)).min(1).max(5).optional(),
 });
 // Custom report widgets take their name from the report itself
 const customReportMetaSchema = z.object({ dateRange: dateRangeSchema.optional() });
@@ -41,11 +44,12 @@ export function metaSchemaFor(type: WidgetType) {
 
 export const GRID_COLS = 12;
 export const DEFAULT_SIZE: Record<WidgetType, { width: number; height: number }> = {
-  summary: { width: 12, height: 2 },
+  summary: { width: 12, height: 1 },
   'net-worth': { width: 6, height: 4 },
   'income-expenses': { width: 6, height: 4 },
   spending: { width: 6, height: 4 },
   'spending-trends': { width: 6, height: 4 },
+  calendar: { width: 6, height: 4 },
   'custom-report': { width: 6, height: 4 },
 };
 
@@ -111,6 +115,7 @@ export function ensureDefaultDashboard() {
       'income-expenses',
       'spending',
       'spending-trends',
+      'calendar',
     ] as const) {
       insertWidget(tx, pageId, type, {});
     }

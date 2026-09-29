@@ -47,6 +47,9 @@ export default function WidgetCard({ widget, report, pages, dashboardRange, edit
   const [renameOpen, setRenameOpen] = useState(false);
 
   const isCustom = widget.type === 'custom-report';
+  // Summary puts its title and figures on one line when the card is wide enough (see
+  // SUMMARY_ONE_LINE_PX in DashboardGrid), so it fits in a single grid row
+  const oneLine = widget.type === 'summary';
   const rangeModal = useModalValue(rangeOpen);
   const renameModal = useModalValue(renameOpen && !isCustom);
   const { range, source } = widgetDateRange(widget.meta.dateRange, dashboardRange);
@@ -91,43 +94,56 @@ export default function WidgetCard({ widget, report, pages, dashboardRange, edit
   return (
     <div
       onClick={() => !editing && navigate(openPath)}
-      className={`h-full flex flex-col bg-surface rounded-lg border p-3 transition-all ${
+      className={`h-full bg-surface rounded-lg border p-3 transition-all @container ${
         editing
           ? 'border-dashed border-brand-300 cursor-move'
           : 'border-border-light hover:shadow-hover hover:border-brand-200 cursor-pointer group'
       }`}
     >
-      <div className="flex items-start justify-between gap-2 mb-2 shrink-0">
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-text truncate group-hover:text-brand-600 transition-colors">
-            {title}
-          </p>
-          <p className="flex items-center gap-1 text-[11px] text-text-tertiary">
-            {source === 'frozen' && (
-              <Snowflake size={10} className="text-brand-500" aria-label="Frozen" />
-            )}
-            {source === 'own' && (
-              <Pin size={10} className="text-brand-500" aria-label="Own date range" />
-            )}
-            {formatDateRange(range)}
-          </p>
+      <div
+        className={`h-full flex flex-col ${oneLine ? '@4xl:flex-row @4xl:items-center @4xl:gap-6' : ''}`}
+      >
+        <div
+          className={`flex items-start justify-between gap-2 mb-2 shrink-0 ${oneLine ? '@4xl:contents' : ''}`}
+        >
+          <div className={`min-w-0 ${oneLine ? '@4xl:w-44 @4xl:shrink-0' : ''}`}>
+            <p className="text-sm font-semibold text-text truncate group-hover:text-brand-600 transition-colors">
+              {title}
+            </p>
+            <p className="flex items-center gap-1 text-[11px] text-text-tertiary">
+              {source === 'frozen' && (
+                <Snowflake size={10} className="text-brand-500" aria-label="Frozen" />
+              )}
+              {source === 'own' && (
+                <Pin size={10} className="text-brand-500" aria-label="Own date range" />
+              )}
+              {formatDateRange(range)}
+            </p>
+          </div>
+          <Isolate className={`${oneLine ? '@4xl:order-last @4xl:self-start' : ''}`}>
+            <RowMenu items={menu} />
+          </Isolate>
         </div>
-        <Isolate>
-          <RowMenu items={menu} />
-        </Isolate>
-      </div>
-      {/* Charts show their tooltips on hover; a click still bubbles up and opens the report.
+        {/* Charts show their tooltips on hover; a click still bubbles up and opens the report.
           In edit mode the chart ignores the pointer so the whole card drags. */}
-      <div className={`flex-1 min-h-0 overflow-hidden ${editing ? 'pointer-events-none' : ''}`}>
-        {isCustom ? (
-          report ? (
-            <CustomReportBody report={report} range={range} />
+        <div
+          className={`flex-1 min-h-0 min-w-0 overflow-hidden ${editing ? 'pointer-events-none' : ''}`}
+        >
+          {isCustom ? (
+            report ? (
+              <CustomReportBody report={report} range={range} />
+            ) : (
+              <ChartSkeleton />
+            )
           ) : (
-            <ChartSkeleton />
-          )
-        ) : (
-          <BuiltinReportChart type={widget.type} from={range.from} to={range.to} compact />
-        )}
+            <BuiltinReportChart
+              type={widget.type}
+              from={range.from}
+              to={range.to}
+              categoryIds={widget.meta.categoryIds}
+            />
+          )}
+        </div>
       </div>
 
       <Isolate>
@@ -166,10 +182,15 @@ export default function WidgetCard({ widget, report, pages, dashboardRange, edit
  * Menus and modals render in portals, but React still bubbles their events through the card:
  * stop them here so they neither open the report nor start a drag in edit mode.
  */
-function Isolate({ children }: { children: React.ReactNode }) {
+function Isolate({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   const stop = (e: React.SyntheticEvent) => e.stopPropagation();
   return (
-    <div className={NO_DRAG_CLASS} onClick={stop} onMouseDown={stop} onTouchStart={stop}>
+    <div
+      className={`${NO_DRAG_CLASS} ${className}`}
+      onClick={stop}
+      onMouseDown={stop}
+      onTouchStart={stop}
+    >
       {children}
     </div>
   );

@@ -85,7 +85,7 @@ describe('dashboards API', () => {
     expect(await json('GET', '/dashboards')).toHaveLength(1);
     const widgets = await json('GET', `/dashboards/${pages[0].id}/widgets`);
     expect(widgets.map((w: { type: string }) => w.type).sort()).toEqual(
-      ['income-expenses', 'net-worth', 'spending', 'spending-trends', 'summary'].sort(),
+      ['calendar', 'income-expenses', 'net-worth', 'spending', 'spending-trends', 'summary'].sort(),
     );
   });
 

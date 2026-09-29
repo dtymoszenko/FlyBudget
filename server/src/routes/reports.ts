@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { db } from '../db/index.js';
 import { transactions, accounts, categories, categoryGroups, payees } from '../db/schema.js';
-import { eq, and, gte, lte, sql, inArray, lt } from 'drizzle-orm';
+import { eq, and, gte, lte, sql, inArray, lt, isNull } from 'drizzle-orm';
 import { monthBounds } from '../utils/date.js';
 import { isLiabilityType } from '../utils/accountTypes.js';
 
@@ -118,7 +118,13 @@ reportsRouter.get('/net-worth', (req, res) => {
 
 reportsRouter.get('/spending-by-category', (req, res) => {
   const { from, to } = req.query as Record<string, string>;
-  const conditions = [];
+  // Only real spending: a split's parent row (its children carry the categories) and transfers
+  // have no category and would otherwise show up as "Uncategorized"; income categories aren't spending
+  const conditions = [
+    eq(transactions.isParent, 0),
+    isNull(transactions.transferTransactionId),
+    sql`coalesce(${categoryGroups.isIncome}, 0) = 0`,
+  ];
   if (from) conditions.push(gte(transactions.date, monthBounds(from).from));
   if (to) conditions.push(lte(transactions.date, monthBounds(to).to));
 
@@ -134,7 +140,7 @@ reportsRouter.get('/spending-by-category', (req, res) => {
     .from(transactions)
     .leftJoin(categories, eq(transactions.categoryId, categories.id))
     .leftJoin(categoryGroups, eq(categories.groupId, categoryGroups.id))
-    .where(conditions.length ? and(...conditions) : undefined)
+    .where(and(...conditions))
     .groupBy(transactions.categoryId)
     .all();
 
@@ -219,6 +225,39 @@ reportsRouter.get('/cash-flow', (req, res) => {
 
   const netMap = Object.fromEntries(txRows.map((r) => [r.month, r.net]));
   res.json(months.map((month) => ({ month, net: netMap[month] ?? 0 })));
+});
+
+const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
+
+// Money in and out per day, for the transaction calendar. Like cash flow it covers budget
+// accounts only, and leaves out transfers; a split counts once, through its parts.
+reportsRouter.get('/daily-flow', (req, res) => {
+  const { from, to } = req.query as Record<string, string>;
+  if (!MONTH.test(from ?? '') || !MONTH.test(to ?? '') || from > to) {
+    return res.status(400).json({ error: 'Expected `from` and `to` as YYYY-MM' });
+  }
+  const rows = db
+    .select({
+      date: transactions.date,
+      income: sql<number>`coalesce(sum(case when ${transactions.amount} > 0 then ${transactions.amount} else 0 end), 0)`,
+      expenses: sql<number>`coalesce(sum(case when ${transactions.amount} < 0 then -${transactions.amount} else 0 end), 0)`,
+      count: sql<number>`count(distinct coalesce(${transactions.parentTransactionId}, ${transactions.id}))`,
+    })
+    .from(transactions)
+    .innerJoin(accounts, eq(transactions.accountId, accounts.id))
+    .where(
+      and(
+        gte(transactions.date, monthBounds(from).from),
+        lte(transactions.date, monthBounds(to).to),
+        eq(accounts.isOffBudget, 0),
+        eq(transactions.isParent, 0),
+        isNull(transactions.transferTransactionId),
+      ),
+    )
+    .groupBy(transactions.date)
+    .orderBy(transactions.date)
+    .all();
+  res.json(rows);
 });
 
 reportsRouter.get('/income-by-category', (req, res) => {

@@ -35,7 +35,7 @@ export function PageHeader({ title, subtitle, actions, tabs, breadcrumbs, childr
             ))}
           </nav>
         )}
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-x-4 gap-y-2 flex-wrap">
           <div>
             <h1 className="text-lg font-semibold text-text">{title}</h1>
             {subtitle && <p className="text-sm text-text-tertiary mt-0.5">{subtitle}</p>}

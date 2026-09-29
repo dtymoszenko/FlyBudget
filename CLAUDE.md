@@ -151,7 +151,7 @@ The desktop app and `npm run dev` have no login, so `server/src/middleware/secur
 | `/accounts/:id`           | Single account transaction list                                                    |
 | `/accounts/:id/reconcile` | Account reconciliation flow                                                        |
 | `/reports`                | Report dashboards (`?dashboard=<id>` picks the tab): movable grid of widgets       |
-| `/reports/widget/:id`     | Full view of a built-in report widget (date range, CSV export, save to widget)     |
+| `/reports/widget/:id`     | Full view of a built-in report widget (stats, chart, breakdown table, save)        |
 | `/reports/custom`         | Custom Report Builder (configurable chart type, grouping, filtering)               |
 | `/reports/custom/:id`     | Saved custom report (loads saved config by ID)                                     |
 | `/recurring`              | Recurring transactions (bills, subscriptions, recurring income)                    |
@@ -191,10 +191,13 @@ The report builder at `/reports/custom` supports:
 
 `/reports` is a set of dashboards (tabs), each a grid of widgets.
 
-- **Widgets**: built-in `summary`, `net-worth`, `income-expenses`, `spending`, `spending-trends` (charts in `components/reports/BuiltinCharts.tsx`, registry in `BuiltinReport.tsx`) plus `custom-report`. Add them from "Add widget"; ⋮ menu has rename, date range, freeze/unfreeze, move to another dashboard, remove (undoable).
+- **Widgets**: built-in `summary`, `net-worth`, `income-expenses`, `spending`, `spending-trends`, `calendar` (charts in `components/reports/BuiltinCharts.tsx`, dashboard versions and registry in `BuiltinReport.tsx`) plus `custom-report`. Add them from "Add widget"; ⋮ menu has rename, date range, freeze/unfreeze, move to another dashboard, remove (undoable).
+- **Full view** (`/reports/widget/:id`, `ReportDetail.tsx`): every built-in report has the same layout: four stat cards, the chart in a card, and a breakdown table whose contents are exactly what Export CSV saves. Give a new built-in report the same three parts. "Save to widget" stores the date range (only if changed) and, for Spending Trends, `meta.categoryIds`.
+- **Transaction Calendar** (`TransactionCalendar.tsx`, layout math in `utils/calendarLayout.ts`, data from `GET /reports/daily-flow`: money in/out per day on budget accounts, no transfers, splits counted once): up to `CALENDAR_MONTHS_MAX` (3) months it draws month grids with a green (in) and red (out) bar per day, square-root scaled; longer ranges draw a heatmap (a square per day colored by net, in quartile levels), starting at the first month with transactions. On the dashboard (`fit`) it picks the layout with the biggest cells that fit the widget. The full view lists a clicked day's transactions.
+- **Spending Trends categories**: `meta.categoryIds` (1-5), or when unset the `TOP_TREND_CATEGORIES` (5) with the most spending in the range (`useTopSpendingCategories`), on both the widget and the full view.
 - **Date ranges**: each dashboard has a range picker, and widgets follow it unless `meta.dateRange` gives them their own (a live preset, or frozen months). Unfreezing just removes `meta.dateRange`. `ReportDateRange` (`utils/dateRange.ts`) is live (preset recomputed from today by `resolveDateRange`) or frozen (`preset: 'custom'`); `widgetDateRange` picks a widget's effective range. Custom report widgets work the same way and pass their range to the builder as `?range=` (`encodeRangeParam`). Server validates ranges with `dateRangeSchema` in `services/dashboardService.ts`.
 - **Short ranges**: reports take `yyyy-MM` month ranges. Net Worth switches to daily points for ranges up to `DAILY_MAX_MONTHS` (3), starting at the previous month's close (`useNetWorthSeries`); Spending Trends shows a running total by day for a single month (`granularity=daily`). Any line/area chart with a single point is drawn as bars instead.
-- **Layout**: `react-grid-layout` v2 (12 cols, 80px rows), drag/resize only in "Edit layout" mode on desktop; changed positions are saved on drag/resize stop (`PUT /api/dashboards/:id/layout`). Below 768px it's a single read-only column.
+- **Layout**: `react-grid-layout` v2 (12 cols, 80px rows), drag/resize only in "Edit layout" mode on desktop; changed positions are saved on drag/resize stop (`PUT /api/dashboards/:id/layout`). Below 768px it's a single read-only column. Summary is one row tall: title, dates and figures sit on one line when its card is wide enough (`SUMMARY_ONE_LINE_PX`), and it's drawn two rows tall (not saved) when narrower.
 - **API**: `/api/dashboards` (pages CRUD, `GET/POST /:id/widgets`, `PUT /:id/layout`, `GET/PATCH/DELETE /widgets/:widgetId`). The first `GET` creates an "Overview" dashboard with the built-ins and all existing custom reports; the last dashboard can't be deleted.
 
 ### Recurring Transactions

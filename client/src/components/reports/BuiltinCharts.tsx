@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import {
   AreaChart,
   Area,
@@ -14,6 +14,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   Cell,
+  ReferenceLine,
 } from 'recharts';
 import {
   useNetWorthSeries,
@@ -33,6 +34,7 @@ import {
   CurrencyTooltip,
   TOOLTIP_CLASS,
   ShareTooltip,
+  sumSeries,
   ChartSkeleton,
   EmptyState,
   EXPENSE_COLORS,
@@ -346,53 +348,125 @@ export function SpendingChart({ from, to }: { from: string; to: string }) {
   );
 }
 
+/** Summary's full view: expenses (net of refunds) per month against the monthly average. */
+export function MonthlySpendingChart({ from, to }: { from: string; to: string }) {
+  const { data = [], isLoading } = useIncomeVsExpenses(from, to);
+  const chartData = useMemo(
+    () => data.map((d) => ({ month: monthLabel(d.month), spending: -d.expenseNet })),
+    [data],
+  );
+  const monthLabels = useMemo(() => chartData.map((d) => d.month), [chartData]);
+  const xAxis = useXAxisLayout({ labels: monthLabels, kind: 'band', ordered: true, inset: INSET });
+  const average = chartData.length
+    ? chartData.reduce((s, d) => s + d.spending, 0) / chartData.length
+    : 0;
+
+  if (isLoading) return <ChartSkeleton />;
+  if (!chartData.some((d) => d.spending !== 0)) return <EmptyState />;
+
+  return (
+    <div ref={xAxis.ref} className="w-full h-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={chartData} margin={{ top: 4, right: 16, left: 16, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
+          <XAxis dataKey="month" axisLine={false} tickLine={false} {...xAxis.axisProps} />
+          <YAxis
+            tickFormatter={formatCentsAxis}
+            tick={{ fontSize: 11, fill: chartColors.axis }}
+            axisLine={false}
+            tickLine={false}
+            width={60}
+          />
+          <Tooltip
+            content={
+              <CurrencyTooltip summary={() => ({ label: 'Monthly average', value: average })} />
+            }
+          />
+          <Bar
+            dataKey="spending"
+            name="Expenses"
+            fill={chartColors.negativeLight}
+            radius={[3, 3, 0, 0]}
+            maxBarSize={40}
+          />
+          {chartData.length > 1 && (
+            <ReferenceLine
+              y={average}
+              stroke={chartColors.label}
+              strokeDasharray="4 4"
+              label={{
+                value: `Avg ${formatCurrency(Math.round(average))}`,
+                position: 'insideTopRight',
+                fontSize: 11,
+                fill: chartColors.label,
+              }}
+            />
+          )}
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+/** How a category is named in charts and tables: its icon (when shown) and name. */
+export function categoryLabel(
+  c: { name?: string | null; icon?: string | null } | undefined,
+  showIcons: boolean,
+  fallback = 'Uncategorized',
+) {
+  if (!c?.name) return fallback;
+  return `${showIcons && c.icon ? c.icon + ' ' : ''}${c.name}`;
+}
+
+/**
+ * Spending in each of `categoryIds` over the range, one line per category in EXPENSE_COLORS
+ * order. A single month shows each category's running total by day; longer ranges, totals by
+ * month.
+ */
 export function SpendingTrendsChart({
   from,
   to,
-  compact,
-  topCategoryIds,
+  categoryIds,
+  caption,
 }: {
   from: string;
   to: string;
-  compact?: boolean;
-  topCategoryIds?: string[];
+  categoryIds: string[];
+  /** A short note above the chart (e.g. which categories these are) */
+  caption?: string;
 }) {
   const showCategoryIcons = usePreferencesStore((s) => s.showCategoryIcons);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const activeIds = compact && topCategoryIds?.length ? topCategoryIds : selectedIds;
   const { data: groups = [] } = useCategories();
-  // A single month shows each category's running total by day; longer ranges, totals by month
   const daily = monthCount(from, to) === 1;
   const { data: trendData = [], isLoading } = useSpendingTrends(
-    activeIds,
+    categoryIds,
     from,
     to,
     daily ? 'daily' : undefined,
   );
 
-  const expenseCategories = useMemo(
-    () => (groups as any[]).filter((g: any) => g.isIncome === 0).flatMap((g: any) => g.categories),
-    [groups],
-  );
+  // Series are keyed by id, so two categories with the same name stay apart
+  const names = useMemo(() => {
+    const byId = new Map(groups.flatMap((g) => g.categories).map((c) => [c.id, c]));
+    return categoryIds.map((id) =>
+      categoryLabel(byId.get(id), showCategoryIcons, 'Deleted category'),
+    );
+  }, [groups, categoryIds, showCategoryIcons]);
 
   const chartData = useMemo(() => {
     if (!trendData.length) return [];
-    const keyOf = (p: (typeof trendData)[number]) =>
-      p.categoryName
-        ? `${showCategoryIcons && p.categoryIcon ? p.categoryIcon + ' ' : ''}${p.categoryName}`
-        : p.categoryId;
     const byPeriod = new Map<string, Record<string, number>>();
     for (const p of trendData) {
       const row = byPeriod.get(p.month) ?? {};
-      row[keyOf(p)] = (row[keyOf(p)] ?? 0) + p.total;
+      row[p.categoryId] = (row[p.categoryId] ?? 0) + p.total;
       byPeriod.set(p.month, row);
     }
-    const keys = [...new Set(trendData.map(keyOf))];
+    const zero = () => Object.fromEntries(categoryIds.map((id) => [id, 0]));
 
     if (daily) {
       const { from: first, to: last } = dayBounds(from, to);
       if (last < first) return [];
-      const running: Record<string, number> = Object.fromEntries(keys.map((k) => [k, 0]));
+      const running: Record<string, number> = zero();
       return eachDayOfInterval({ start: parseISO(first), end: parseISO(last) }).map((d) => {
         const day = format(d, 'yyyy-MM-dd');
         for (const [k, v] of Object.entries(byPeriod.get(day) ?? {})) running[k] += v;
@@ -403,17 +477,11 @@ export function SpendingTrendsChart({
     const firstMonth = [...byPeriod.keys()].sort()[0];
     return monthsBetween(firstMonth > from ? firstMonth : from, to).map((month) => ({
       month: monthLabel(month),
-      ...Object.fromEntries(keys.map((k) => [k, 0])),
+      ...zero(),
       ...byPeriod.get(month),
     }));
-  }, [trendData, showCategoryIcons, daily, from, to]);
+  }, [trendData, categoryIds, daily, from, to]);
 
-  const selectedNames = useMemo(() => {
-    return activeIds.map((id) => {
-      const cat = expenseCategories.find((c: any) => c.id === id);
-      return cat ? `${showCategoryIcons && cat.icon ? cat.icon + ' ' : ''}${cat.name}` : id;
-    });
-  }, [activeIds, expenseCategories, showCategoryIcons]);
   const single = chartData.length === 1;
   const monthLabels = useMemo(
     () =>
@@ -432,101 +500,67 @@ export function SpendingTrendsChart({
 
   const TrendChart = single ? BarChart : LineChart;
 
-  function toggleCategory(id: string) {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : prev.length < 5 ? [...prev, id] : prev,
-    );
-  }
-
   return (
-    <div className="h-full flex flex-col gap-3">
-      {!compact && (
-        <div className="flex flex-wrap gap-1.5 shrink-0">
-          {expenseCategories.map((cat: any) => {
-            const checked = selectedIds.includes(cat.id);
-            const disabled = !checked && selectedIds.length >= 5;
-            return (
-              <button
-                key={cat.id}
-                onClick={() => !disabled && toggleCategory(cat.id)}
-                className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ${
-                  checked
-                    ? 'bg-brand-50 border-brand-500 text-brand-700'
-                    : disabled
-                      ? 'bg-surface-alt border-border-light text-text-disabled cursor-not-allowed'
-                      : 'bg-surface border-border text-text-secondary hover:border-text-tertiary'
-                }`}
-              >
-                {showCategoryIcons && cat.icon ? `${cat.icon} ` : ''}
-                {cat.name}
-              </button>
-            );
-          })}
-          {expenseCategories.length === 0 && (
-            <span className="text-xs text-text-tertiary">No expense categories found.</span>
+    <div ref={xAxis.ref} className="w-full h-full">
+      {isLoading ? (
+        <ChartSkeleton />
+      ) : !categoryIds.length || !chartData.length ? (
+        <EmptyState />
+      ) : (
+        <div className="h-full flex flex-col">
+          {(caption || daily) && (
+            <p className="text-[11px] text-text-tertiary px-1 pb-1 shrink-0">
+              {caption
+                ? `${caption}${daily ? ' · running total' : ''}`
+                : 'Running total this month'}
+            </p>
           )}
+          <div className="flex-1 min-h-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <TrendChart data={chartData} margin={{ top: 4, right: 16, left: 16, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
+                <XAxis dataKey="month" axisLine={false} tickLine={false} {...xAxis.axisProps} />
+                <YAxis
+                  tickFormatter={formatCentsAxis}
+                  tick={{ fontSize: 11, fill: chartColors.axis }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={60}
+                />
+                <Tooltip
+                  content={<CurrencyTooltip summary={sumSeries} />}
+                  labelFormatter={daily ? formatDateLabel : undefined}
+                />
+                <Legend wrapperStyle={{ fontSize: 11 }} iconSize={8} />
+                {categoryIds.map((id, i) => {
+                  const color = EXPENSE_COLORS[i % EXPENSE_COLORS.length];
+                  return single ? (
+                    <Bar
+                      key={id}
+                      dataKey={id}
+                      name={names[i]}
+                      fill={color}
+                      radius={[4, 4, 0, 0]}
+                      maxBarSize={48}
+                    />
+                  ) : (
+                    <Line
+                      key={id}
+                      type={daily ? 'stepAfter' : 'monotone'}
+                      dataKey={id}
+                      name={names[i]}
+                      stroke={color}
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls
+                    />
+                  );
+                })}
+              </TrendChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       )}
-
-      <div ref={xAxis.ref} className="flex-1 min-h-0">
-        {activeIds.length === 0 ? (
-          <EmptyState message="Select categories above to compare trends." />
-        ) : isLoading ? (
-          <ChartSkeleton />
-        ) : !chartData.length ? (
-          <EmptyState />
-        ) : (
-          <div className="h-full flex flex-col">
-            {daily && (
-              <p className="text-[11px] text-text-tertiary px-1 pb-1 shrink-0">
-                Running total this month
-              </p>
-            )}
-            <div className="flex-1 min-h-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <TrendChart data={chartData} margin={{ top: 4, right: 16, left: 16, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
-                  <XAxis dataKey="month" axisLine={false} tickLine={false} {...xAxis.axisProps} />
-                  <YAxis
-                    tickFormatter={formatCentsAxis}
-                    tick={{ fontSize: 11, fill: chartColors.axis }}
-                    axisLine={false}
-                    tickLine={false}
-                    width={60}
-                  />
-                  <Tooltip
-                    content={<CurrencyTooltip />}
-                    labelFormatter={daily ? formatDateLabel : undefined}
-                  />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                  {selectedNames.map((name, i) => {
-                    const color = EXPENSE_COLORS[i % EXPENSE_COLORS.length];
-                    return single ? (
-                      <Bar
-                        key={name}
-                        dataKey={name}
-                        fill={color}
-                        radius={[4, 4, 0, 0]}
-                        maxBarSize={48}
-                      />
-                    ) : (
-                      <Line
-                        key={name}
-                        type={daily ? 'stepAfter' : 'monotone'}
-                        dataKey={name}
-                        stroke={color}
-                        strokeWidth={2}
-                        dot={false}
-                        connectNulls
-                      />
-                    );
-                  })}
-                </TrendChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        )}
-      </div>
     </div>
   );
 }
