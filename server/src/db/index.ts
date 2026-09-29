@@ -18,7 +18,10 @@ if (process.env.DB_NATIVE_BINDING) {
   dbOptions.nativeBinding = process.env.DB_NATIVE_BINDING;
 }
 
-const sqlite = new Database(dbPath, dbOptions);
+/** Where the database lives (':memory:' in tests) */
+export const databasePath = dbPath;
+
+export const sqlite = new Database(dbPath, dbOptions);
 sqlite.pragma('journal_mode = WAL');
 sqlite.pragma('foreign_keys = ON');
 

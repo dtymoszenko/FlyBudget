@@ -1,19 +1,21 @@
-import { Router } from 'express';
+import express, { Router } from 'express';
 import { db } from '../db/index.js';
+import { accounts, categories, transactions } from '../db/schema.js';
 import {
-  accounts,
-  categories,
-  categoryGroups,
-  transactions,
-  budgetMonths,
-  payees,
-  rules,
-} from '../db/schema.js';
+  InvalidBackupError,
+  createBackup,
+  parseBackup,
+  restoreBackup,
+  saveSafetyCopy,
+} from '../services/backupService.js';
 import { eq, and, gte, lte } from 'drizzle-orm';
 import { isRealDate } from '../utils/validation.js';
 import { z } from 'zod';
 
 export const exportRouter = Router();
+
+export const RESTORE_PATH = '/api/export/restore';
+const RESTORE_BODY_LIMIT = '250mb';
 
 /**
  * Quotes a text cell for CSV. Payee names and notes can come from banks and
@@ -93,19 +95,30 @@ exportRouter.get('/transactions/csv', (req, res) => {
 });
 
 exportRouter.get('/backup', (_req, res) => {
-  const data = {
-    exportedAt: new Date().toISOString(),
-    accounts: db.select().from(accounts).all(),
-    categoryGroups: db.select().from(categoryGroups).all(),
-    categories: db.select().from(categories).all(),
-    payees: db.select().from(payees).all(),
-    transactions: db.select().from(transactions).all(),
-    budgetMonths: db.select().from(budgetMonths).all(),
-    rules: db.select().from(rules).all(),
-  };
-
   const dateStr = new Date().toISOString().slice(0, 10);
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Content-Disposition', `attachment; filename="budget-backup-${dateStr}.json"`);
-  res.json(data);
+  res.json(createBackup());
+});
+
+// Replaces everything with a backup. A backup can be much bigger than other requests
+// (every transaction, plus logos), so this route parses its own body; index.ts skips
+// the general 10 MB parser for it. It runs after the login check like every route here.
+exportRouter.post('/restore', express.json({ limit: RESTORE_BODY_LIMIT }), async (req, res) => {
+  let data;
+  try {
+    data = parseBackup(req.body);
+  } catch (err) {
+    if (err instanceof InvalidBackupError) return res.status(400).json({ error: err.message });
+    throw err;
+  }
+  const safetyCopy = await saveSafetyCopy();
+  try {
+    const restored = restoreBackup(data);
+    res.json({ restored, safetyCopy });
+  } catch (err) {
+    // e.g. a row pointing at an account that isn't in the file: nothing was changed
+    console.error('Restore failed:', err);
+    res.status(400).json({ error: 'The backup is inconsistent, so nothing was restored' });
+  }
 });

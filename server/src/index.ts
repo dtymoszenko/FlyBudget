@@ -25,7 +25,7 @@ import { budgetRouter } from './routes/budget.js';
 import { payeesRouter } from './routes/payees.js';
 import { rulesRouter } from './routes/rules.js';
 import { reportsRouter } from './routes/reports.js';
-import { exportRouter } from './routes/export.js';
+import { RESTORE_PATH, exportRouter } from './routes/export.js';
 import { customReportsRouter } from './routes/customReports.js';
 import { dashboardsRouter } from './routes/dashboards.js';
 import { schedulesRouter } from './routes/schedules.js';
@@ -67,7 +67,9 @@ app.use(securityHeaders, hstsWhenSecure);
 // cross-origin dev requests to :3001.
 app.use(cors({ origin: DEV_CLIENT_ORIGINS }));
 // Large enough for big CSV imports; requests over this are rejected with 413
-app.use(express.json({ limit: '10mb' }));
+// (except restoring a backup, which parses its own bigger body after the login check)
+const jsonBody = express.json({ limit: '10mb' });
+app.use((req, res, next) => (req.path === RESTORE_PATH ? next() : jsonBody(req, res, next)));
 
 // Server mode: login routes, then a valid session is required for the rest of the API
 app.use('/api/auth', authRouter);
