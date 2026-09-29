@@ -1,19 +1,23 @@
 import { Router, type Request, type RequestHandler, type Response } from 'express';
-import { rateLimit } from 'express-rate-limit';
+import { ipKeyGenerator, rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
 import { serverMode } from '../config.js';
 import { readCookie } from '../middleware/security.js';
 import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../auth/password.js';
 import {
+  DEVICE_COOKIE,
+  DEVICE_TTL_MS,
   SESSION_COOKIE,
   SESSION_TTL_MS,
   changePassword,
   checkPassword,
+  createDeviceToken,
   createSession,
   deleteSession,
   isPasswordSet,
   isValidSession,
   setInitialPassword,
+  verifyDeviceToken,
 } from '../auth/sessions.js';
 import { checkSetupCode, clearSetupCode, setupCode } from '../auth/setupCode.js';
 
@@ -26,11 +30,19 @@ export const authRouter = Router();
 
 const password = z.string().min(MIN_PASSWORD_LENGTH).max(MAX_PASSWORD_LENGTH);
 
-/** Slows password guessing: failed attempts are limited per IP; successes don't count. */
+/**
+ * Slows password guessing: failed attempts are limited per IP, or per trusted device
+ * for browsers that signed in before (see DEVICE_COOKIE), so the owner can't be locked
+ * out by someone else behind the same proxy or NAT. Successes don't count.
+ */
 const authRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 10,
   skipSuccessfulRequests: true,
+  keyGenerator: (req) => {
+    const device = verifyDeviceToken(readCookie(req.headers.cookie, DEVICE_COOKIE));
+    return device ? `device:${device}` : `ip:${ipKeyGenerator(req.ip ?? '')}`;
+  },
   standardHeaders: 'draft-8',
   legacyHeaders: false,
   message: { error: 'Too many attempts. Wait 15 minutes and try again.' },
@@ -48,6 +60,21 @@ function startSession(req: Request, res: Response) {
     maxAge: SESSION_TTL_MS,
     path: '/',
   });
+  trustDevice(req, res);
+}
+
+/** Marks this browser as a trusted device (only sent to the login routes). */
+function trustDevice(req: Request, res: Response) {
+  const device = createDeviceToken();
+  if (device) {
+    res.cookie(DEVICE_COOKIE, device, {
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: req.secure,
+      maxAge: DEVICE_TTL_MS,
+      path: '/api/auth',
+    });
+  }
 }
 
 authRouter.get('/status', (req, res) => {
@@ -115,6 +142,8 @@ authRouter.post('/change-password', authRateLimit, async (req, res) => {
     return res.status(401).json({ error: 'Current password is incorrect' });
   }
   await changePassword(parsed.data.newPassword, token);
+  // The new password voids every device cookie; this browser gets a fresh one
+  trustDevice(req, res);
   res.status(204).send();
 });
 

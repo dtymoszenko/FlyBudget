@@ -2,7 +2,7 @@ import { timingSafeEqual } from 'crypto';
 import type { ErrorRequestHandler, RequestHandler } from 'express';
 import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
-import { allowedHosts, serverMode } from '../config.js';
+import { allowedHosts, serverMode, trustProxy } from '../config.js';
 
 // Locally (desktop app, `npm run dev`) the API has no login: it's protected by
 // only answering the app itself. These guards stop other websites open in the
@@ -170,6 +170,24 @@ export const bankRateLimit = rateLimit({
   legacyHeaders: false,
   message: { error: 'Too many bank requests. Wait a minute and try again.' },
 });
+
+/**
+ * Server mode behind a reverse proxy that FlyBudget wasn't told about: every request
+ * seems to come from the proxy, so HTTPS isn't detected (cookies lose `Secure`) and new
+ * browsers share one login rate limit. Says so once in the log.
+ */
+let proxyWarned = false;
+export const proxyConfigWarning: RequestHandler = (req, _res, next) => {
+  if (serverMode && !trustProxy && !proxyWarned && req.headers['x-forwarded-for']) {
+    proxyWarned = true;
+    console.warn(
+      'FlyBudget is behind a reverse proxy, but FLYBUDGET_TRUST_PROXY is not set. Set it to ' +
+        'the number of proxies in front of FlyBudget (usually 1) so HTTPS and client ' +
+        'addresses are detected: https://flybudget.org/community/self-hosting',
+    );
+  }
+  next();
+};
 
 /** Unknown API routes get a JSON 404 instead of Express's HTML page. */
 export const apiNotFound: RequestHandler = (_req, res) => {

@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from 'crypto';
+import { createHash, createHmac, randomBytes, timingSafeEqual } from 'crypto';
 import { and, eq, gt, lte, ne } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { authConfig, sessions } from '../db/schema.js';
@@ -49,6 +49,38 @@ export async function changePassword(newPassword: string, keepSessionToken?: str
     .run();
   const keep = keepSessionToken ? digest(keepSessionToken) : '';
   db.delete(sessions).where(ne(sessions.id, keep)).run();
+}
+
+// --- Trusted devices ---
+// Browsers that have signed in get a long-lived "device" cookie (OWASP's defense
+// against lockout attacks): failed logins from a known device are rate limited on
+// their own, so someone guessing passwords, even from behind the same reverse proxy
+// or NAT, can't lock the owner out. The cookie is an HMAC keyed by the password
+// hash, so only this server can issue one, and changing the password voids them all.
+
+export const DEVICE_COOKIE = 'flybudget_device';
+export const DEVICE_TTL_MS = 400 * 24 * 60 * 60 * 1000; // the longest browsers keep a cookie
+
+function deviceSignature(id: string): Buffer | null {
+  const row = db.select({ hash: authConfig.passwordHash }).from(authConfig).get();
+  return row ? createHmac('sha256', row.hash).update(`device:${id}`).digest() : null;
+}
+
+/** A new device cookie value, or null if no password is set yet. */
+export function createDeviceToken(): string | null {
+  const id = randomBytes(18).toString('base64url');
+  const signature = deviceSignature(id);
+  return signature ? `${id}.${signature.toString('base64url')}` : null;
+}
+
+/** The device id if the cookie value is one this server issued (for the current password). */
+export function verifyDeviceToken(token: string | undefined): string | null {
+  const [id, sig, extra] = (token ?? '').split('.');
+  if (!id || !sig || extra !== undefined || id.length > 64) return null;
+  const expected = deviceSignature(id);
+  const given = Buffer.from(sig, 'base64url');
+  if (!expected || given.length !== expected.length) return null;
+  return timingSafeEqual(given, expected) ? id : null;
 }
 
 export function createSession(): { token: string; expiresAt: Date } {

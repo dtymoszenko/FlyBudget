@@ -38,6 +38,11 @@ const post = (path: string, body: unknown, cookie?: string) =>
 const get = (path: string, cookie?: string) =>
   fetch(base + path, { headers: cookie ? { cookie } : {} });
 const sessionCookie = (res: Response) => res.headers.get('set-cookie')?.split(';')[0];
+const deviceCookie = (res: Response) =>
+  res.headers
+    .getSetCookie()
+    .find((c) => c.startsWith('flybudget_device='))
+    ?.split(';')[0];
 
 describe('server mode login', () => {
   let cookie: string;
@@ -130,6 +135,27 @@ describe('server mode login', () => {
     expect((await post('/auth/login', { password: 'second password 456' })).status).toBe(204);
   });
 
+  let device: string;
+  let voidedDevice: string;
+
+  it('remembers a browser that signed in, until the password changes', async () => {
+    const before = await post('/auth/login', { password: 'second password 456' });
+    voidedDevice = deviceCookie(before)!;
+    const session = sessionCookie(before)!;
+    expect(voidedDevice).toMatch(/^flybudget_device=[\w-]+\.[\w-]+$/);
+    expect(before.headers.getSetCookie().join()).toMatch(/Path=\/api\/auth/);
+    // Changing the password voids old device cookies and gives this browser a new one
+    const changed = await post(
+      '/auth/change-password',
+      { currentPassword: 'second password 456', newPassword: 'third password 789' },
+      session,
+    );
+    expect(changed.status).toBe(204);
+    device = deviceCookie(changed)!;
+    expect(device).toBeDefined();
+    expect(device).not.toBe(voidedDevice);
+  });
+
   it('rate-limits repeated failed attempts', async () => {
     const statuses: number[] = [];
     for (let i = 0; i < 12; i++) {
@@ -138,5 +164,23 @@ describe('server mode login', () => {
     expect(statuses).toContain(429);
     // Earlier failures in this file count too, so the limit kicks in within 10 tries
     expect(statuses.indexOf(429)).toBeLessThanOrEqual(10);
+  });
+
+  it("can't lock out a browser that signed in before, even from the same address", async () => {
+    // This address is locked now (previous test); a trusted device has its own limit
+    expect((await post('/auth/login', { password: 'guess' })).status).toBe(429);
+    expect((await post('/auth/login', { password: 'third password 789' }, device)).status).toBe(
+      204,
+    );
+    // Forged, tampered or voided device cookies fall back to the address's limit
+    for (const fake of [
+      'flybudget_device=forged.cookie',
+      device.slice(0, -2) + 'AA',
+      voidedDevice,
+    ]) {
+      expect((await post('/auth/login', { password: 'third password 789' }, fake)).status).toBe(
+        429,
+      );
+    }
   });
 });

@@ -15,6 +15,7 @@ import {
   errorHandler,
   hostGuard,
   originGuard,
+  proxyConfigWarning,
   securityHeaders,
   hstsWhenSecure,
 } from './middleware/security.js';
@@ -58,6 +59,7 @@ if (trustProxy) {
 // Binding to 127.0.0.1 doesn't stop other sites open in the user's browser, or other
 // programs on the machine, from calling this API — see middleware/security.ts.
 app.disable('x-powered-by');
+app.use(proxyConfigWarning);
 app.use(hostGuard);
 app.use(originGuard);
 app.use(apiTokenGuard(process.env.FLYBUDGET_API_TOKEN));
