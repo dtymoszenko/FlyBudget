@@ -165,7 +165,10 @@ test.describe('budget', () => {
       .toBe(30_000);
   });
 
-  test('inactive categories are tucked away until asked for', async ({ page, api }) => {
+  test('inactive categories are tucked away until asked for, keeping a few in view', async ({
+    page,
+    api,
+  }) => {
     await seedAccount(api);
     await open(page, '/budget');
     const fixed = page.getByRole('region', { name: 'Fixed' });
@@ -175,13 +178,14 @@ test.describe('budget', () => {
     await expect(fixed.getByTestId('budget-card').first()).toBeVisible();
     await expect(showInactive).toBeHidden();
 
-    // Once something is planned, the categories with nothing going on are tucked away
+    // Once something is planned, categories with nothing going on are tucked away, but a
+    // section still lists a few (never empty)
     const groceries = await api.category('Groceries');
     await api.call('PUT', `/budget/${thisMonth()}/${groceries.id}`, { budgeted: 50_000 });
     await page.reload();
-    await expect(fixed.getByTestId('budget-card')).toHaveCount(0);
+    await expect(fixed.getByTestId('budget-card')).toHaveCount(3);
     await showInactive.click();
-    await expect(fixed.getByTestId('budget-card').first()).toBeVisible();
+    await expect.poll(() => fixed.getByTestId('budget-card').count()).toBeGreaterThan(3);
   });
 });
 

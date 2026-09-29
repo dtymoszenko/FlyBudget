@@ -6,7 +6,7 @@ import { BudgetAmountSheet } from './BudgetAmountSheet';
 import { usePreferencesStore } from '../../store/preferencesStore';
 import { useCanSave } from '../../hooks/useConnection';
 import { formatCurrency } from '../../utils/currency';
-import { categoryFigures, isActiveCategory } from '../../utils/budgetFigures';
+import { categoryFigures, splitCategories } from '../../utils/budgetFigures';
 import type { BudgetCategory } from '../../types';
 
 export interface PhoneBudgetSection {
@@ -66,9 +66,9 @@ function Section({
   const [collapsed, setCollapsed] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
   const { isIncome, categories } = section;
-  const active = categories.filter((c) => isActiveCategory(c, isIncome));
-  const inactiveCount = categories.length - active.length;
-  const visible = showInactive || showAll ? categories : active;
+  const { shown, hidden } = splitCategories(categories, isIncome);
+  const inactiveCount = hidden.length;
+  const visible = showInactive || showAll ? categories : shown;
   const planned = categories.reduce((s, c) => s + c.budgeted, 0);
   const actual = categories.reduce((s, c) => s + categoryFigures(c, isIncome).actual, 0);
 
@@ -128,7 +128,12 @@ function CategoryCard({
     remaining > 0 ? 'bg-positive/20' : remaining < 0 ? 'bg-negative/20' : 'bg-surface-alt';
 
   return (
-    <div className="px-4 py-3 border-t border-border-light bg-surface" data-testid="budget-card">
+    // relative: keeps the sr-only text inside the card, or it's placed against the page and
+    // makes the whole window scroll
+    <div
+      className="relative px-4 py-3 border-t border-border-light bg-surface"
+      data-testid="budget-card"
+    >
       <div className="flex items-center gap-2">
         <span className="flex-1 min-w-0 truncate text-[15px] font-medium text-text">
           {showCategoryIcons && cat.icon ? `${cat.icon} ` : ''}

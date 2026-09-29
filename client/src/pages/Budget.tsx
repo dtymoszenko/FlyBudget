@@ -15,6 +15,7 @@ import { useIsPhone } from '../hooks/useIsPhone';
 import { useCanSave } from '../hooks/useConnection';
 import { ExternalLink } from '../components/ui/ExternalLink';
 import { docsUrl } from '../utils/project';
+import { splitCategories } from '../utils/budgetFigures';
 import type { BudgetCategory, BudgetGroup, BudgetType } from '../types';
 
 function AmountInput({
@@ -201,13 +202,8 @@ function IncomeGroupSection({
     return { ...raw, received: raw.balance - raw.carryOver - raw.budgeted };
   }, [group.categories]);
 
-  const active = group.categories.filter(
-    (c) => c.budgeted !== 0 || c.balance - c.carryOver - c.budgeted !== 0,
-  );
-  const inactive = group.categories.filter(
-    (c) => c.budgeted === 0 && c.balance - c.carryOver - c.budgeted === 0,
-  );
-  const visibleCats = showUnbudgeted || showAll ? group.categories : active;
+  const { shown, hidden: inactive } = splitCategories(group.categories, true);
+  const visibleCats = showUnbudgeted || showAll ? group.categories : shown;
 
   return (
     <>
@@ -313,9 +309,8 @@ function BudgetTypeSection({
     [categories],
   );
 
-  const active = categories.filter((c) => c.budgeted !== 0 || c.spent !== 0);
-  const inactive = categories.filter((c) => c.budgeted === 0 && c.spent === 0);
-  const visibleCats = showUnbudgeted || showAll ? categories : active;
+  const { shown, hidden: inactive } = splitCategories(categories, false);
+  const visibleCats = showUnbudgeted || showAll ? categories : shown;
 
   const status = getStatus(totals.spent, totals.budgeted);
   const remaining = totals.budgeted - totals.spent;

@@ -17,3 +17,30 @@ export function categoryFigures(cat: BudgetCategory, isIncome: boolean) {
 export function isActiveCategory(cat: BudgetCategory, isIncome: boolean) {
   return cat.budgeted !== 0 || categoryFigures(cat, isIncome).actual !== 0;
 }
+
+/** Each budget section always lists at least this many categories */
+export const MIN_SHOWN_CATEGORIES = 3;
+
+/**
+ * Which categories a budget section lists, and which it tucks away behind "Show N inactive
+ * categories": every active one, topped up with the first inactive ones (in the section's
+ * order) to at least `min`, so no section ever looks empty. Both lists keep the section's
+ * order.
+ */
+export function splitCategories(
+  categories: BudgetCategory[],
+  isIncome: boolean,
+  min = MIN_SHOWN_CATEGORIES,
+) {
+  let fill = Math.max(min - categories.filter((c) => isActiveCategory(c, isIncome)).length, 0);
+  const shown: BudgetCategory[] = [];
+  const hidden: BudgetCategory[] = [];
+  for (const cat of categories) {
+    if (isActiveCategory(cat, isIncome)) shown.push(cat);
+    else if (fill > 0) {
+      shown.push(cat);
+      fill--;
+    } else hidden.push(cat);
+  }
+  return { shown, hidden };
+}
