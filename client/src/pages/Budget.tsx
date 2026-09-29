@@ -13,10 +13,12 @@ import type { BudgetCategory, BudgetGroup, BudgetType } from '../types';
 
 function AmountInput({
   cents,
+  label,
   onSave,
   onCancel,
 }: {
   cents: number;
+  label: string;
   onSave: (c: number) => void;
   onCancel: () => void;
 }) {
@@ -26,16 +28,15 @@ function AmountInput({
   return (
     <input
       autoFocus
+      aria-label={label}
       type="number"
       min="0"
       step="0.01"
       value={raw}
       onChange={(e) => setRaw(e.target.value)}
-      onFocus={(e) => {
-        const el = e.target;
-        const len = el.value.length;
-        el.setSelectionRange(len, len);
-      }}
+      // Select the amount so typing replaces it (number inputs don't allow moving the caret:
+      // setSelectionRange throws on them)
+      onFocus={(e) => e.target.select()}
       onKeyDown={(e) => {
         if (e.key === 'Enter') {
           (e.target as HTMLInputElement).blur();
@@ -141,7 +142,12 @@ function CategoryRow({
         <div className="relative inline-block">
           {isEditing ? (
             <>
-              <AmountInput cents={cat.budgeted} onSave={onSave} onCancel={onCancel} />
+              <AmountInput
+                cents={cat.budgeted}
+                label={`Planned for ${cat.name}`}
+                onSave={onSave}
+                onCancel={onCancel}
+              />
               <BudgetEditPopover
                 categoryId={cat.id}
                 isIncome={isIncome}
@@ -153,6 +159,7 @@ function CategoryRow({
           ) : (
             <button
               onClick={() => onStartEdit(cat.id)}
+              aria-label={`Planned for ${cat.name}: ${formatCurrency(cat.budgeted)}`}
               className="tabular-nums text-sm rounded px-2 py-0.5 min-w-[5.5rem] text-right border border-border bg-surface transition-colors hover:border-text-tertiary cursor-text"
             >
               <span className="text-text-secondary">{formatCurrency(cat.budgeted)}</span>
@@ -500,12 +507,14 @@ export default function BudgetPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setSelectedMonth(format(subMonths(monthDate, 1), 'yyyy-MM'))}
+              aria-label="Previous month"
               className="p-1.5 rounded-md hover:bg-surface-alt text-text-tertiary hover:text-text-secondary transition-colors"
             >
               <ChevronLeft size={18} />
             </button>
             <button
               onClick={() => setSelectedMonth(format(addMonths(monthDate, 1), 'yyyy-MM'))}
+              aria-label="Next month"
               className="p-1.5 rounded-md hover:bg-surface-alt text-text-tertiary hover:text-text-secondary transition-colors"
             >
               <ChevronRight size={18} />

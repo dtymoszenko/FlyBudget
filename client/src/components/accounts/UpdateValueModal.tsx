@@ -47,7 +47,12 @@ export function UpdateValueModal({ account, onClose }: Props) {
           <label className="block text-sm font-medium text-text-secondary mb-1">
             {liability ? 'Amount owed today' : 'Value today'}
           </label>
-          <CurrencyInput value={value} onChange={setValue} allowNegative={!liability} />
+          <CurrencyInput
+            value={value}
+            onChange={setValue}
+            allowNegative={!liability}
+            aria-label={liability ? 'Amount owed today' : 'Value today'}
+          />
           <p className="mt-1 text-xs text-text-tertiary">
             Currently {formatCurrency(current)}.
             {change !== 0 && (

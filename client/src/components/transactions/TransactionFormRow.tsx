@@ -124,12 +124,17 @@ export function TransactionFormRow({
     'w-full bg-surface text-sm text-text placeholder-text-disabled border border-border rounded px-2 py-1.5 focus:outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600';
 
   return (
-    <div className="bg-brand-50 border-b border-brand-100 px-4 py-3">
+    <div
+      role="form"
+      aria-label={initial ? 'Edit transaction' : 'New transaction'}
+      className="bg-brand-50 border-b border-brand-100 px-4 py-3"
+    >
       <div className="grid grid-cols-4 gap-3 mb-3">
         <div>
           <label className="text-xs text-text-tertiary mb-1 block">Date</label>
           <input
             type="date"
+            aria-label="Date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
             className={inputCls}
@@ -160,6 +165,7 @@ export function TransactionFormRow({
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Notes"
+            aria-label="Notes"
             className={inputCls}
           />
         </div>
@@ -171,6 +177,7 @@ export function TransactionFormRow({
           <input
             type="number"
             value={outflow}
+            aria-label="Outflow"
             onChange={(e) => setOutflow(e.target.value)}
             onFocus={() => setInflow('')}
             placeholder="0.00"
@@ -184,6 +191,7 @@ export function TransactionFormRow({
           <input
             type="number"
             value={inflow}
+            aria-label="Inflow"
             onChange={(e) => setInflow(e.target.value)}
             onFocus={() => setOutflow('')}
             placeholder="0.00"
@@ -237,6 +245,7 @@ export function TransactionFormRow({
                 value={s.categoryId}
                 onChange={(v) => updateSplit(i, 'categoryId', v)}
                 groups={groups}
+                label={`Split ${i + 1} category`}
                 className="text-xs"
               />
               <input
@@ -244,12 +253,14 @@ export function TransactionFormRow({
                 value={s.notes}
                 onChange={(e) => updateSplit(i, 'notes', e.target.value)}
                 placeholder="Notes"
+                aria-label={`Split ${i + 1} notes`}
                 className={`${inputCls} text-xs`}
               />
               <input
                 type="number"
                 value={s.amount}
                 onChange={(e) => updateSplit(i, 'amount', e.target.value)}
+                aria-label={`Split ${i + 1} amount`}
                 placeholder="0.00"
                 min="0"
                 step="0.01"
@@ -259,6 +270,7 @@ export function TransactionFormRow({
                 {splits.length > 2 && (
                   <button
                     onClick={() => removeSplitRow(i)}
+                    aria-label={`Remove split ${i + 1}`}
                     className="p-0.5 rounded text-text-tertiary hover:text-negative"
                   >
                     <Trash2 size={14} />

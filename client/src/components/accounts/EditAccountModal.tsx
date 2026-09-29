@@ -130,6 +130,7 @@ export function EditAccountModal({ account, onClose }: Props) {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              aria-label="Account name"
               autoFocus
               className="block w-full rounded-lg border border-border px-3 py-2 text-sm bg-surface text-text focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
             />
@@ -141,7 +142,12 @@ export function EditAccountModal({ account, onClose }: Props) {
             <label className="block text-sm font-medium text-text-secondary mb-1">
               Starting Balance
             </label>
-            <CurrencyInput value={startingBalance} onChange={setStartingBalance} allowNegative />
+            <CurrencyInput
+              value={startingBalance}
+              onChange={setStartingBalance}
+              allowNegative
+              aria-label="Starting balance"
+            />
           </div>
 
           <label className="flex items-center gap-3 cursor-pointer">

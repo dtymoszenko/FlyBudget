@@ -8,6 +8,8 @@ interface Props {
   accounts?: Account[];
   currentAccountId?: string;
   className?: string;
+  /** Accessible name; defaults to "Category" */
+  label?: string;
 }
 
 export function CategorySelect({
@@ -17,12 +19,14 @@ export function CategorySelect({
   accounts,
   currentAccountId,
   className = '',
+  label = 'Category',
 }: Props) {
   const showCategoryIcons = usePreferencesStore((s) => s.showCategoryIcons);
   const transferAccounts = accounts?.filter((a) => a.id !== currentAccountId && !a.closedAt) ?? [];
 
   return (
     <select
+      aria-label={label}
       value={value ?? ''}
       onChange={(e) => onChange(e.target.value || null)}
       className={`block w-full bg-transparent text-sm text-text focus:outline-none ${className}`}

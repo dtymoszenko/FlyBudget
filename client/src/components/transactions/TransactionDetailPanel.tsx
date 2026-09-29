@@ -14,7 +14,14 @@ import { usePreferencesStore } from '../../store/preferencesStore';
 import { AccountIcon } from '../accounts/AccountIcon';
 import { formatCurrency } from '../../utils/currency';
 import { RECURRENCE_TYPE_LABELS } from '../../types';
-import type { Transaction, CategoryGroup, Payee, Account, RuleCondition, RuleInput } from '../../types';
+import type {
+  Transaction,
+  CategoryGroup,
+  Payee,
+  Account,
+  RuleCondition,
+  RuleInput,
+} from '../../types';
 
 interface Props {
   transaction: Transaction;
@@ -135,11 +142,15 @@ export function TransactionDetailPanel({
     'w-full text-sm border border-border rounded-lg px-3 py-2 bg-surface text-text focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600 disabled:opacity-60 disabled:cursor-not-allowed';
 
   return (
-    <div className="w-96 shrink-0 border-l border-border bg-surface flex flex-col h-full">
+    <aside
+      aria-label="Transaction details"
+      className="w-96 shrink-0 border-l border-border bg-surface flex flex-col h-full"
+    >
       <div className="px-5 py-3 border-b border-border flex items-center justify-between">
         <span className="text-sm font-medium text-text-secondary">Transaction Details</span>
         <button
           onClick={onClose}
+          aria-label="Close details"
           className="p-1 rounded hover:bg-hover text-text-tertiary hover:text-text-secondary"
         >
           <X size={16} />
@@ -154,7 +165,9 @@ export function TransactionDetailPanel({
               logo={payee?.logo}
               transfer={isTransfer}
               size="lg"
-              onLogoChange={payee ? (logo) => updatePayee.mutate({ id: payee.id, logo }) : undefined}
+              onLogoChange={
+                payee ? (logo) => updatePayee.mutate({ id: payee.id, logo }) : undefined
+              }
             />
             <div>
               <div className="text-base font-semibold text-text">{payeeName}</div>
@@ -184,6 +197,7 @@ export function TransactionDetailPanel({
           <label className="text-xs font-medium text-text-secondary mb-1.5 block">Date</label>
           <input
             type="date"
+            aria-label="Date"
             value={localDate}
             onChange={(e) => setLocalDate(e.target.value)}
             onBlur={saveDate}
@@ -204,7 +218,9 @@ export function TransactionDetailPanel({
                 return (
                   <div key={child.id} className="flex items-center justify-between text-sm pl-2">
                     <div className="flex items-center gap-1.5">
-                      {showCategoryIcons && childCat?.icon && <span className="text-sm">{childCat.icon}</span>}
+                      {showCategoryIcons && childCat?.icon && (
+                        <span className="text-sm">{childCat.icon}</span>
+                      )}
                       <span className="text-text-secondary">
                         {childCat?.name ?? 'Uncategorized'}
                       </span>
@@ -227,7 +243,9 @@ export function TransactionDetailPanel({
                 disabled={isReconciled}
                 className={`${inputCls} text-left flex items-center gap-2 ${canEditCategory ? 'cursor-pointer' : ''}`}
               >
-                {showCategoryIcons && categoryEntry?.icon && <span className="text-base">{categoryEntry.icon}</span>}
+                {showCategoryIcons && categoryEntry?.icon && (
+                  <span className="text-base">{categoryEntry.icon}</span>
+                )}
                 <span className={categoryEntry ? '' : 'text-text-tertiary'}>
                   {categoryEntry?.name ?? 'Uncategorized'}
                 </span>
@@ -266,6 +284,7 @@ export function TransactionDetailPanel({
             onBlur={saveNotes}
             disabled={isReconciled}
             placeholder="Add notes to this transaction..."
+            aria-label="Notes"
             rows={3}
             className={`${inputCls} resize-none`}
           />
@@ -331,6 +350,6 @@ export function TransactionDetailPanel({
         onConfirm={handleDelete}
         onClose={() => setShowDeleteConfirm(false)}
       />
-    </div>
+    </aside>
   );
 }

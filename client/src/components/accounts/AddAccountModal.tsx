@@ -65,6 +65,7 @@ export function AddAccountModal({ isOpen, onClose }: Props) {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            aria-label="Account name"
             placeholder={
               info.group === 'property' ? 'e.g. 2021 Honda Civic' : 'e.g. Chase Checking'
             }
@@ -83,6 +84,7 @@ export function AddAccountModal({ isOpen, onClose }: Props) {
             value={amount}
             onChange={setAmount}
             placeholder="0.00"
+            aria-label={amountLabel}
             allowNegative={!info.liability}
           />
           <p className="mt-1 text-xs text-text-secondary">{amountHint}</p>

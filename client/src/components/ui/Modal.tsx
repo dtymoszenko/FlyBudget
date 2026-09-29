@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
@@ -40,6 +40,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: Props) 
   const [mounted, setMounted] = useState(isOpen);
   if (isOpen && !mounted) setMounted(true);
   const closing = mounted && !isOpen;
+  const titleId = useId();
 
   // While fading out, keep showing what was on screen: parents often clear the data a modal
   // was showing (e.g. the transaction being edited) in the same update that closes it
@@ -72,12 +73,18 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: Props) 
       {/* Tall dialogs scroll with the page instead of getting cut off */}
       <div className="relative min-h-full flex items-center justify-center p-4 pointer-events-none">
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
           className={`relative w-full ${sizeClasses[size]} bg-surface rounded-lg shadow-modal ${closing ? 'animate-dialog-out' : 'pointer-events-auto animate-dialog-in'}`}
         >
           <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-            <h2 className="text-base font-semibold text-text">{shown.current.title}</h2>
+            <h2 id={titleId} className="text-base font-semibold text-text">
+              {shown.current.title}
+            </h2>
             <button
               onClick={onClose}
+              aria-label="Close"
               className="p-1 rounded-md text-text-tertiary hover:text-text-secondary hover:bg-surface-alt transition-colors"
             >
               <X size={18} />

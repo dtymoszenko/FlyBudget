@@ -136,6 +136,7 @@ export default function RecurringFormModal({ isOpen, onClose, onSave, editItem }
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            aria-label="Name"
             placeholder="e.g. Netflix, Rent, Paycheck…"
             required
           />
@@ -146,7 +147,7 @@ export default function RecurringFormModal({ isOpen, onClose, onSave, editItem }
             <label className="block text-sm font-medium text-text-secondary mb-1">
               {amountType === 'variable' ? 'Estimated Amount' : 'Amount'}
             </label>
-            <CurrencyInput value={amount} onChange={setAmount} />
+            <CurrencyInput value={amount} onChange={setAmount} aria-label="Amount" />
           </div>
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-1">Type</label>
@@ -154,6 +155,7 @@ export default function RecurringFormModal({ isOpen, onClose, onSave, editItem }
               <button
                 type="button"
                 onClick={() => setIsExpense(true)}
+                aria-pressed={isExpense}
                 className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-all ${
                   isExpense
                     ? 'bg-negative-subtle text-negative ring-1 ring-negative/20'
@@ -165,6 +167,7 @@ export default function RecurringFormModal({ isOpen, onClose, onSave, editItem }
               <button
                 type="button"
                 onClick={() => setIsExpense(false)}
+                aria-pressed={!isExpense}
                 className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-all ${
                   !isExpense
                     ? 'bg-positive-subtle text-positive ring-1 ring-positive/20'
@@ -187,6 +190,7 @@ export default function RecurringFormModal({ isOpen, onClose, onSave, editItem }
                 key={opt.value}
                 type="button"
                 onClick={() => setAmountType(opt.value)}
+                aria-pressed={amountType === opt.value}
                 className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-all ${
                   amountType === opt.value
                     ? 'bg-brand-50 text-brand-600 ring-1 ring-brand-600/20'
@@ -208,6 +212,7 @@ export default function RecurringFormModal({ isOpen, onClose, onSave, editItem }
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-1">Frequency</label>
             <Select
+              aria-label="Frequency"
               value={recurrenceType}
               onChange={(e) => setRecurrenceType(e.target.value as RecurrenceType)}
             >
@@ -220,7 +225,11 @@ export default function RecurringFormModal({ isOpen, onClose, onSave, editItem }
           </div>
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-1">Account</label>
-            <Select value={accountId} onChange={(e) => setAccountId(e.target.value)}>
+            <Select
+              aria-label="Account"
+              value={accountId}
+              onChange={(e) => setAccountId(e.target.value)}
+            >
               <option value="">No account</option>
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>
@@ -236,6 +245,7 @@ export default function RecurringFormModal({ isOpen, onClose, onSave, editItem }
             <label className="block text-sm font-medium text-text-secondary mb-1">Start Date</label>
             <Input
               type="date"
+              aria-label="Start date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
               required
@@ -247,6 +257,7 @@ export default function RecurringFormModal({ isOpen, onClose, onSave, editItem }
             </label>
             <Input
               type="date"
+              aria-label="End date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
               min={startDate}
@@ -279,6 +290,7 @@ export default function RecurringFormModal({ isOpen, onClose, onSave, editItem }
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Optional notes…"
+            aria-label="Notes"
           />
         </div>
 
@@ -311,6 +323,7 @@ export default function RecurringFormModal({ isOpen, onClose, onSave, editItem }
                     Weekend Adjustment
                   </label>
                   <Select
+                    aria-label="Weekend adjustment"
                     value={weekendAdjust}
                     onChange={(e) => setWeekendAdjust(e.target.value as WeekendAdjust)}
                   >
@@ -329,6 +342,7 @@ export default function RecurringFormModal({ isOpen, onClose, onSave, editItem }
                 </label>
                 <Input
                   type="number"
+                  aria-label="Date flexibility"
                   value={dateFlexibility}
                   onChange={(e) =>
                     setDateFlexibility(Math.max(0, Math.min(14, parseInt(e.target.value) || 0)))

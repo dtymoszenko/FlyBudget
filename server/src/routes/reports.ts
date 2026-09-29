@@ -101,7 +101,9 @@ reportsRouter.get('/net-worth', (req, res) => {
     .get();
   if (earliest?.d) {
     const minPeriod = isDaily ? earliest.d : earliest.d.slice(0, 7);
-    if (from < minPeriod) from = minPeriod;
+    // Start at the first transaction, but never past the end of the range (a budget whose
+    // transactions are all dated later still has a net worth: its starting balances)
+    if (from < minPeriod) from = minPeriod < to ? minPeriod : to;
   }
 
   const periods = isDaily ? dayRange(from, to) : monthRange(from, to);

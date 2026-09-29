@@ -12,6 +12,7 @@ export function AccountTypeSelect({ value, onChange }: Props) {
     <div>
       <label className="block text-sm font-medium text-text-secondary mb-1">Account Type</label>
       <select
+        aria-label="Account type"
         value={value}
         onChange={(e) => onChange(e.target.value as AccountType)}
         className="block w-full rounded-lg border border-border px-3 py-2 text-sm bg-surface text-text focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"

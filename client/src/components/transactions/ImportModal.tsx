@@ -203,7 +203,7 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
       {error && (
         <div className="mb-4 flex items-center gap-2 px-3 py-2 text-sm bg-negative-subtle text-negative rounded-lg">
           <AlertTriangle size={14} /> {error}
-          <button onClick={() => setError(null)} className="ml-auto">
+          <button onClick={() => setError(null)} className="ml-auto" aria-label="Dismiss">
             <X size={14} />
           </button>
         </div>
@@ -225,6 +225,7 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
             id="csv-file-input"
             type="file"
             accept=".csv"
+            aria-label="CSV file"
             className="hidden"
             onChange={handleFileInput}
           />
@@ -245,6 +246,7 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
                       <div className="text-xs font-medium text-text-tertiary mb-1">{h}</div>
                       <select
                         value={roles[i]}
+                        aria-label={`Column ${h}`}
                         onChange={(e) => setRole(i, e.target.value as ColumnRole)}
                         className="w-full text-xs border border-border rounded px-1.5 py-1 bg-surface text-text"
                       >
@@ -326,6 +328,7 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
                         type="checkbox"
                         checked={!excluded.has(i)}
                         onChange={() => toggleExclude(i)}
+                        aria-label={`Import ${row.payeeName ?? 'row'} on ${row.date}`}
                         className="w-3.5 h-3.5 accent-brand-600"
                       />
                     </td>

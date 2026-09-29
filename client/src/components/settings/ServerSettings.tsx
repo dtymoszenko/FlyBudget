@@ -59,6 +59,7 @@ export function ServerSettings() {
             <input
               type="password"
               autoComplete="current-password"
+              aria-label="Current password"
               value={current}
               onChange={(e) => setCurrent(e.target.value)}
               className={inputClass}
@@ -71,6 +72,7 @@ export function ServerSettings() {
             <input
               type="password"
               autoComplete="new-password"
+              aria-label="New password"
               value={next}
               onChange={(e) => setNext(e.target.value)}
               className={inputClass}
@@ -83,6 +85,7 @@ export function ServerSettings() {
             <input
               type="password"
               autoComplete="new-password"
+              aria-label="Confirm new password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               className={inputClass}

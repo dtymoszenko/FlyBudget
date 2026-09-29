@@ -57,6 +57,7 @@ export function PayeeCombobox({ value, onChange, payees, className = '' }: Props
         onChange={handleChange}
         onFocus={() => setOpen(true)}
         placeholder="Payee"
+        aria-label="Payee"
         className={`block w-full bg-transparent text-sm text-text placeholder-text-tertiary focus:outline-none ${className}`}
       />
       {open && (filtered.length > 0 || (query && !exactMatch)) && (

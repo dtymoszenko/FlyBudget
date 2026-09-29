@@ -81,6 +81,15 @@ export function TransactionRow({
           isSelected ? 'bg-brand-50 border-l-2 border-l-brand-600' : 'bg-surface hover:bg-hover'
         }`}
         onClick={() => onOpenDetail(tx.id)}
+        // Keyboard users open the details with Enter or Space, like a button
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+            e.preventDefault();
+            onOpenDetail(tx.id);
+          }
+        }}
+        data-testid="transaction-row"
       >
         {/* Payee */}
         <div className="group/payee flex items-center gap-1 flex-[3] min-w-0 relative mr-3">
@@ -261,7 +270,9 @@ export function TransactionRow({
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 {childCat ? (
                   <>
-                    {showCategoryIcons && childCat.icon && <span className="text-sm shrink-0">{childCat.icon}</span>}
+                    {showCategoryIcons && childCat.icon && (
+                      <span className="text-sm shrink-0">{childCat.icon}</span>
+                    )}
                     <span className="text-xs text-text-tertiary truncate">{childCat.name}</span>
                   </>
                 ) : (

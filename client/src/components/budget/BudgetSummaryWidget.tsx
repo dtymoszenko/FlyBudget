@@ -120,7 +120,11 @@ export function BudgetSummaryWidget({
   return (
     <div className="rounded-lg shadow-card border border-border-light overflow-hidden bg-surface">
       <div className="p-3">
-        <div className={`${hero.bg} rounded-lg px-4 py-3 text-center`}>
+        <div
+          role="status"
+          aria-label="To be budgeted"
+          className={`${hero.bg} rounded-lg px-4 py-3 text-center`}
+        >
           <p className={`text-lg font-semibold tabular-nums ${hero.text}`}>
             {formatCurrency(toBeBudgeted)}
           </p>
