@@ -166,12 +166,18 @@ The desktop app and `npm run dev` have no login, so `server/src/middleware/secur
 ### Phones (below 768px)
 
 - `useIsPhone()` (`hooks/useIsPhone.ts`, `max-width: 767px`, Tailwind's `md`) switches `AppShell` to `PhoneShell`: a top bar with a menu button (`aria-expanded`, `aria-controls="app-sidebar"`) and the sidebar as a slide-out drawer (`SidebarDrawer`). The drawer is `inert` and `invisible` when closed; opening it moves focus in and makes the page behind inert; Escape, the backdrop or "Close menu" close it and return focus to the menu button; following a link closes it. Desktop keeps the normal sidebar (`Sidebar`/`SidebarContent`).
-- Phone-only tweaks use `max-md:` classes so desktop is untouched: headers wrap (`flex-wrap`), the Settings tab strip scrolls sideways, wide tables sit in a `max-md:overflow-x-auto` wrapper, the budget summary and report builder stack, and register rows put the payee on its own line.
+- Phone-only tweaks use `max-md:` classes so desktop is untouched: headers wrap (`flex-wrap`), the Settings tab strip scrolls sideways, wide tables sit in a `max-md:overflow-x-auto` wrapper, the budget summary and report builder stack.
+- Lists become cards on phones (switch with `useIsPhone()`, desktop keeps the tables): the register (`TransactionCard`; tapping opens `TransactionDetailPanel`, which is full screen on phones), the budget (`components/budget/PhoneBudget.tsx`: collapsible groups, inactive categories behind a toggle, planned amounts edited in `BudgetAmountSheet`), payees and rules (actions in a `RowMenu`; rules move up/down instead of dragging). Budget actual/remaining math is shared by the table and the cards in `utils/budgetFigures.ts`.
+- Adding a transaction on a phone opens `TransactionFormRow` with `layout="sheet"` in a `Modal` (one field per row); `PayeeCombobox`/`CategorySelect` take `fieldClassName` for the larger fields.
+- Touch targets are at least 44px on phones (`max-md:min-h-11`, plus `max-md:min-w-11` for icon buttons): `Button`, `RowMenu`, modal close buttons, month navigation, the sidebar and filter tabs. Give new icon buttons the same. Inputs, selects and textareas are at least 16px (an unlayered rule in `index.css`) so iOS doesn't zoom in.
+- E2E: `tests/phone/phone-native.spec.ts` covers the cards, sheets and 44px controls (`expectTouchSize`, `expectBottomSheet`).
 - Don't default query data to a fresh `[]` (`data: x = []`) when an effect copies it into state: a new array each render re-runs the effect forever while loading (React error #185). Use a module-level constant (`NO_RULES` in `pages/Rules.tsx`).
 
 ### Shared UI components (`client/src/components/ui/`)
 
-- `Modal` — portal-based, ESC closes, backdrop click closes, sizes: `sm | md | lg` (named export, not default)
+- `Modal` — portal-based, ESC closes, backdrop click closes, sizes: `sm | md | lg` (named export, not default). On phones it's a bottom sheet (full width, slides up, safe-area padding)
+- `RowMenu` — ⋮ portal menu (`items` with `label`/`onClick`/`danger`/`hidden`; `label` names the trigger for screen readers), taller items on phones
+- `Button` — `primary | secondary | ghost | danger`, sizes `sm | md`, never wraps, at least 44px tall on phones
 - `ConfirmModal` — wraps Modal, `danger` prop for red confirm button
 - `CurrencyInput` — displays formatted `$1,234.56`, stores/emits integer cents
 - `Badge` — colored pill for account types and states
@@ -243,7 +249,7 @@ The recurring page at `/recurring` pairs a month-at-a-glance view with an Actual
 - **Monthly** — one card with month nav (← → Today), a List | Calendar toggle, and an Income / Expenses summary (remaining, paid of total, progress bar) computed client-side from occurrences. List view is split into Income and Expenses sections sorted by date; Calendar view shows name chips per day (clicking a day jumps to its rows).
 - **All recurring** (Actual `SchedulesTable`-style) — searchable table: Name | Payee | Account | Next date | Status | Amount | Frequency | ⋮. Status follows Actual's `getStatus()` order (missed → due → upcoming within the upcoming length → scheduled). Canceled items hide behind a "Show canceled" row.
 
-Shared pieces: `StatusBadge` (Actual color/icon scheme), `RowMenu` (⋮ portal menu), `scheduleFormat.ts` (`~` approx / `+` income amounts, upcoming-length helpers). Match suggestions render as a banner under the header (`MatchSuggestionsPanel`).
+Shared pieces: `StatusBadge` (Actual color/icon scheme), `RowMenu` (`components/ui`), `scheduleFormat.ts` (`~` approx / `+` income amounts, upcoming-length helpers). Match suggestions render as a banner under the header (`MatchSuggestionsPanel`).
 
 **Find recurring** (`DiscoverSchedulesModal`, `GET /api/schedules/discover`, `POST /api/schedules/discover/create`) — port of Actual's `find-schedules.ts` in `server/src/services/scheduleDiscovery.ts`. Per open account it scans weekly / every-2-weeks / monthly-on-day-X / monthly-last-day patterns, requiring 3 consecutive matches (same payee, ±2 days, amount within 7.5%), picks the best-ranked pattern per payee, then walks the start date back through history. Ignores transactions already linked to a schedule or occurrence, transfers, split children, and payees with a live schedule. Creating links past transactions to occurrences (paid) and marks unmatched past occurrences skipped; schedules get `source='detected'`.
 
