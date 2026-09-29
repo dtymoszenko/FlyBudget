@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import Link from '@docusaurus/Link';
+import useBrokenLinks from '@docusaurus/useBrokenLinks';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Layout from '@theme/Layout';
 import Heading from '@theme/Heading';
@@ -13,95 +14,28 @@ function HeroSection(): ReactNode {
         <div className={styles.heroGrid}>
           <div className={styles.heroText}>
             <Heading as="h1" className={styles.heroHeadline}>
-              <span className={styles.headlineWhite}>Your money.</span>
-              <span className={styles.headlineWhite}>Your data.</span>
-              <span className={styles.headlineBlue}>Your rules.</span>
+              Plan your money.
+              <br />
+              Keep it private.
             </Heading>
             <p className={styles.heroDescription}>
-              A fast, open-source budgeting app that gives you complete control over your financial
-              data.
+              FlyBudget is a free budgeting app. Plan every dollar, track your accounts, and keep
+              your financial data on your own computer or server. No subscription. No account
+              required.
             </p>
             <div className={styles.ctaRow}>
-              <Link className={styles.ctaPrimary} to="/docs/intro">
-                Get Started <span aria-hidden="true">&rarr;</span>
+              <Link className={styles.ctaPrimary} to="/download">
+                Download FlyBudget
               </Link>
               <Link className={styles.ctaSecondary} to="/tour/intro">
                 Take the Tour
               </Link>
-              <Link className={styles.ctaSecondary} href="https://github.com/dtymoszenko/flybudget">
-                <svg
-                  className={styles.githubIcon}
-                  viewBox="0 0 16 16"
-                  fill="currentColor"
-                  aria-hidden="true"
-                >
-                  <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
-                </svg>
-                GitHub
-              </Link>
             </div>
-            <div className={styles.attributeRow}>
-              <div className={styles.attribute}>
-                <svg
-                  className={styles.attributeIcon}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                  <path d="M7 11V7a5 5 0 0110 0v4" />
-                </svg>
-                Open source
-              </div>
-              <span className={styles.attributeDot} aria-hidden="true">
-                &middot;
-              </span>
-              <div className={styles.attribute}>
-                <svg
-                  className={styles.attributeIcon}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-                  <line x1="8" y1="21" x2="16" y2="21" />
-                  <line x1="12" y1="17" x2="12" y2="21" />
-                </svg>
-                Local-first
-              </div>
-              <span className={styles.attributeDot} aria-hidden="true">
-                &middot;
-              </span>
-              <div className={styles.attribute}>
-                <svg
-                  className={styles.attributeIcon}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
-                  <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
-                  <line x1="6" y1="6" x2="6.01" y2="6" />
-                  <line x1="6" y1="18" x2="6.01" y2="18" />
-                </svg>
-                Self-hostable
-              </div>
-            </div>
+            <p className={styles.heroFacts}>
+              Open source (AGPL). Available for Windows or self-host with Docker.
+            </p>
           </div>
           <div className={styles.heroArtwork}>
-            <div className={styles.heroGlow} />
             <img
               src="/img/hero-decoration.svg"
               className={styles.heroDecoration}
@@ -124,29 +58,135 @@ function HeroSection(): ReactNode {
   );
 }
 
-function SmallFeature({
-  title,
-  icon,
-  children,
-}: {
+// Icons from Lucide (the same set, and the same icon for each page, as the app's sidebar)
+function Icon({ children }: { children: ReactNode }): ReactNode {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {children}
+    </svg>
+  );
+}
+
+interface Feature {
   title: string;
   icon: ReactNode;
-  children: ReactNode;
-}): ReactNode {
+  text: string;
+  /** The user guide page that explains it */
+  doc: string;
+  docLabel: string;
+}
+
+const FEATURES: Feature[] = [
+  {
+    title: 'Plan every dollar',
+    icon: (
+      <Icon>
+        <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" />
+        <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" />
+      </Icon>
+    ),
+    text: "Give each dollar a category at the start of the month. What you don't spend carries over, so you always know what's left.",
+    doc: '/docs/budgeting',
+    docLabel: 'How budgeting works',
+  },
+  {
+    title: 'Connect your bank',
+    icon: (
+      <Icon>
+        <line x1="3" x2="21" y1="22" y2="22" />
+        <line x1="6" x2="6" y1="18" y2="11" />
+        <line x1="10" x2="10" y1="18" y2="11" />
+        <line x1="14" x2="14" y1="18" y2="11" />
+        <line x1="18" x2="18" y1="18" y2="11" />
+        <polygon points="12 2 20 7 4 7" />
+      </Icon>
+    ),
+    text: 'Bring in transactions automatically with SimpleFIN or Plaid, or import a CSV file from your bank. Syncing is optional.',
+    doc: '/docs/bank-sync',
+    docLabel: 'Connecting a bank',
+  },
+  {
+    title: 'Let rules do the sorting',
+    icon: (
+      <Icon>
+        <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
+      </Icon>
+    ),
+    text: 'Rules categorize, rename and split new transactions for you, whether you type them in, import them or sync them.',
+    doc: '/docs/rules',
+    docLabel: 'How rules work',
+  },
+  {
+    title: 'See bills before they’re due',
+    icon: (
+      <Icon>
+        <path d="m17 2 4 4-4 4" />
+        <path d="M3 11v-1a4 4 0 0 1 4-4h14" />
+        <path d="m7 22-4-4 4-4" />
+        <path d="M21 13v1a4 4 0 0 1-4 4H3" />
+      </Icon>
+    ),
+    text: 'Keep track of bills, subscriptions and paychecks. FlyBudget can find the ones that repeat in your past transactions.',
+    doc: '/docs/recurring',
+    docLabel: 'Tracking recurring bills',
+  },
+  {
+    title: 'Understand your spending',
+    icon: (
+      <Icon>
+        <path d="M3 3v16a2 2 0 0 0 2 2h16" />
+        <path d="M18 17V9" />
+        <path d="M13 17V5" />
+        <path d="M8 17v-3" />
+      </Icon>
+    ),
+    text: 'Net worth, income and expenses, spending by category and a transaction calendar, on dashboards you arrange yourself.',
+    doc: '/docs/reports',
+    docLabel: 'Using reports',
+  },
+  {
+    title: 'Save toward goals',
+    icon: (
+      <Icon>
+        <circle cx="12" cy="12" r="10" />
+        <circle cx="12" cy="12" r="6" />
+        <circle cx="12" cy="12" r="2" />
+      </Icon>
+    ),
+    text: 'Set a target for an emergency fund, a trip or a down payment, and watch your progress as you save.',
+    doc: '/docs/goals',
+    docLabel: 'Setting goals',
+  },
+];
+
+function SmallFeature({ title, icon, text, doc, docLabel }: Feature): ReactNode {
   return (
     <div className={styles.smallFeature}>
       <div className={styles.smallFeatureIcon}>{icon}</div>
       <div>
         <h3 className={styles.smallFeatureTitle}>{title}</h3>
-        <p className={styles.smallFeatureText}>{children}</p>
+        <p className={styles.smallFeatureText}>{text}</p>
+        <Link className={styles.smallFeatureLink} to={doc}>
+          {docLabel}
+        </Link>
       </div>
     </div>
   );
 }
 
 function FeaturesSection(): ReactNode {
+  // The navbar's "Features" link jumps here; registering the id lets the build check that link
+  useBrokenLinks().collectAnchor('features');
   return (
-    <section id="community" className={styles.featuresSection}>
+    <section id="features" className={styles.featuresSection}>
       <img
         src="/img/homepage/footer-bg.svg"
         className={styles.footerBg}
@@ -158,54 +198,21 @@ function FeaturesSection(): ReactNode {
           Why FlyBudget?
         </Heading>
         <div className={styles.smallFeaturesGrid}>
-          <SmallFeature
-            title="Feature 1"
-            icon={
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <rect x="2" y="3" width="20" height="18" rx="2" />
-                <line x1="2" y1="9" x2="22" y2="9" />
-                <line x1="9" y1="3" x2="9" y2="21" />
-              </svg>
-            }
-          >
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor
-            incididunt ut labore et dolore magna aliqua.
-          </SmallFeature>
-
-          <SmallFeature
-            title="Feature 2"
-            icon={
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-                <polyline points="9 22 9 12 15 12 15 22" />
-              </svg>
-            }
-          >
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor
-            incididunt ut labore et dolore magna aliqua.
-          </SmallFeature>
+          {FEATURES.map((f) => (
+            <SmallFeature key={f.doc} {...f} />
+          ))}
         </div>
 
         <div className={styles.ownDataSection}>
           <h2 className={styles.ownDataTitle}>Own your data</h2>
           <p className={styles.ownDataText}>
-            FlyBudget runs entirely on your computer. No cloud accounts, no subscriptions, no data
-            collection. Your financial data never leaves your machine unless you choose to export
-            it.
+            Your budget lives in one file on your computer, or on a server you run. There's no
+            FlyBudget account, no subscription and no tracking, and you can download a full backup
+            whenever you like.
+          </p>
+          <p className={styles.ownDataLinks}>
+            <Link to="/community/security">How your data is protected</Link>
+            <Link to="/docs/backups">Backups and exports</Link>
           </p>
         </div>
       </div>
@@ -219,7 +226,7 @@ export default function Home(): ReactNode {
     <Layout description={siteConfig.tagline}>
       <HeroSection />
       <main>
-        <section id="features" className={styles.featureHighlights}>
+        <section className={styles.featureHighlights}>
           <div className={styles.featureHighlightsContainer}>
             <p>Feature Start</p>
           </div>

@@ -33,9 +33,22 @@
   height: 2.25rem;
 }
 
-.navbar__title {
-  font-size: 1.2rem;
+/* The FlyBudget wordmark (src/theme/Logo): bolder and tighter than the menu links, so the
+   name reads as a logo. The logo never shrinks, or the name gets cut off on narrow screens. */
+.navbar__brand {
+  flex: none;
+}
+
+.brand-wordmark {
+  flex: none;
+  overflow: visible;
+  font-size: 1.25rem;
   font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.brand-wordmark__fly {
+  color: var(--ifm-color-primary);
 }
 
 .navbar__search-input {
