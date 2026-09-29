@@ -744,7 +744,12 @@ reportsRouter.get('/custom', (req, res) => {
   } else {
     const rows = baseQuery
       .groupBy(groupByCol.groupCol)
-      .orderBy(sql`abs(sum(${transactions.amount})) desc`)
+      // Months read left to right in date order; every other grouping is biggest first
+      .orderBy(
+        group_by === 'month'
+          ? sql`strftime('%Y-%m', ${transactions.date})`
+          : sql`abs(sum(${transactions.amount})) desc`,
+      )
       .all() as { name: string | null; id: string | null; value: number }[];
 
     const data = rows
