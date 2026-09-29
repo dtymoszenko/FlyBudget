@@ -113,3 +113,17 @@ test.describe('goals', () => {
     });
   });
 });
+
+test('settings link to the license and the source code', async ({ page, api }) => {
+  await api.createAccount('Checking');
+  await open(page, '/settings');
+  await expect(page.getByRole('link', { name: 'GNU AGPL v3' })).toHaveAttribute(
+    'href',
+    'https://www.gnu.org/licenses/agpl-3.0.html',
+  );
+  const source = page.getByRole('link', { name: 'Source code' });
+  await expect(source).toHaveAttribute('href', 'https://github.com/dtymoszenko/FlyBudget');
+  // Opens outside the app (the desktop app hands https links to the system browser)
+  await expect(source).toHaveAttribute('target', '_blank');
+  await expect(source).toHaveAttribute('rel', /noopener/);
+});

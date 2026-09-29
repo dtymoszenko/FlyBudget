@@ -279,6 +279,10 @@ We also integrate with **SimpleFin**, and may consider supporting other connecti
 
 ---
 
+## License and contributions
+
+FlyBudget is **AGPL-3.0-only** (`LICENSE`; every `package.json` says so). Outside contributors accept the Contributor License Agreement (`CLA.md`) with a one-line PR comment; `.github/workflows/cla.yml` checks it and sets a **CLA** status (it runs on `pull_request_target`, so it must never check out or run PR code, or interpolate comment text into its script). The CLA's version is in its acceptance sentence: changing the terms means a new version and sentence. Settings links to the license and to `SOURCE_CODE_URL` (`client/src/utils/project.ts`), which forks running a modified FlyBudget for others should point at their own source (AGPL section 13). Don't add dependencies whose licenses are incompatible with AGPL-3.0.
+
 ## Commit Message Conventions
 
 Use conventional commit prefixes:

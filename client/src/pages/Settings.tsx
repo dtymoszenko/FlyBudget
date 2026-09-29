@@ -9,6 +9,7 @@ import { AccountReorder } from '../components/settings/AccountReorder';
 import { DataExport } from '../components/settings/DataExport';
 import { PreferencesPanel } from '../components/settings/PreferencesPanel';
 import { ConnectedAccounts } from '../components/settings/ConnectedAccounts';
+import { LICENSE_URL, SOURCE_CODE_URL } from '../utils/project';
 
 const tabs = [
   { id: 'categories', label: 'Categories', icon: Layers },
@@ -66,6 +67,27 @@ export default function SettingsPage() {
           {activeTab === 'data' && <DataExport />}
           {activeTab === 'preferences' && <PreferencesPanel />}
           {activeTab === 'server' && auth?.enabled && <ServerSettings />}
+
+          <p className="mt-10 pt-4 border-t border-border-light text-xs text-text-tertiary">
+            FlyBudget is free software under the{' '}
+            <a
+              href={LICENSE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-text-secondary"
+            >
+              GNU AGPL v3
+            </a>
+            .{' '}
+            <a
+              href={SOURCE_CODE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-text-secondary"
+            >
+              Source code
+            </a>
+          </p>
         </div>
       </div>
     </div>

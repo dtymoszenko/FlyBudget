@@ -1,0 +1,101 @@
+name: CLA
+
+# Checks that the author of a pull request has accepted the Contributor License
+# Agreement (CLA.md) by commenting the exact acceptance sentence on any pull request
+# in this repo. The comment itself is the public, timestamped record. Sets a "CLA"
+# commit status, and posts one reminder with instructions when it's missing.
+#
+# Security: pull_request_target runs with this repo's token, so this workflow never
+# checks out or runs the pull request's code, and comment text is only compared as
+# data inside the script (never interpolated into it with ${{ }}).
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize]
+  issue_comment:
+    types: [created]
+
+permissions: {}
+
+concurrency:
+  group: cla-${{ github.event.pull_request.number || github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  cla:
+    if: github.event_name == 'pull_request_target' || github.event.issue.pull_request
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write # the reminder comment
+      statuses: write # the "CLA" status
+    steps:
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const PHRASE = 'I have read the FlyBudget CLA (v1) and I agree to it';
+            // The copyright holder doesn't sign their own agreement
+            const EXEMPT = new Set(['dtymoszenko']);
+            const MARKER = '<!-- flybudget-cla -->';
+            const { owner, repo } = context.repo;
+            const claUrl = `https://github.com/${owner}/${repo}/blob/main/CLA.md`;
+
+            const number = context.payload.pull_request?.number ?? context.payload.issue.number;
+            const pr = context.payload.pull_request
+              ?? (await github.rest.pulls.get({ owner, repo, pull_number: number })).data;
+            const author = pr.user.login;
+
+            // Only the PR author's own acceptance (or "recheck") needs a new check
+            if (context.eventName === 'issue_comment' && context.payload.comment.user.login !== author) {
+              return;
+            }
+
+            const normalize = (text) =>
+              String(text ?? '').trim().replace(/\s+/g, ' ').replace(/[.!]+$/, '').toLowerCase();
+            const accepts = (comment) =>
+              comment.user?.login === author && normalize(comment.body) === normalize(PHRASE);
+
+            async function signedOn(issueNumber) {
+              const comments = await github.paginate(github.rest.issues.listComments, {
+                owner, repo, issue_number: issueNumber, per_page: 100,
+              });
+              return comments.some(accepts);
+            }
+
+            async function hasSigned() {
+              if (pr.user.type === 'Bot' || EXEMPT.has(author)) return true;
+              if (await signedOn(number)) return true;
+              // Signed on an earlier pull request? Search, then confirm the exact comment
+              const { data } = await github.rest.search.issuesAndPullRequests({
+                q: `repo:${owner}/${repo} is:pr commenter:${author} "FlyBudget CLA"`,
+                per_page: 20,
+              });
+              for (const item of data.items) {
+                if (item.number !== number && (await signedOn(item.number))) return true;
+              }
+              return false;
+            }
+
+            const signed = await hasSigned();
+            await github.rest.repos.createCommitStatus({
+              owner, repo, sha: pr.head.sha, context: 'CLA',
+              state: signed ? 'success' : 'failure',
+              description: signed ? 'Contributor License Agreement accepted' : 'Please accept the Contributor License Agreement',
+              target_url: claUrl,
+            });
+            if (signed) return;
+
+            const existing = await github.paginate(github.rest.issues.listComments, {
+              owner, repo, issue_number: number, per_page: 100,
+            });
+            if (existing.some((c) => c.body?.includes(MARKER))) return;
+            await github.rest.issues.createComment({
+              owner, repo, issue_number: number,
+              body: [
+                MARKER,
+                `Thanks for your contribution, @${author}! Before it can be merged, please read the [Contributor License Agreement](${claUrl}) and accept it by commenting exactly:`,
+                '',
+                `> ${PHRASE}.`,
+                '',
+                'You only need to do this once. It lets FlyBudget be offered in places like the App Store, and promises your work always stays part of an open-source FlyBudget.',
+              ].join('\n'),
+            });
