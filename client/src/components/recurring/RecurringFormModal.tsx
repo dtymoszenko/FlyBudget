@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useFormReset } from '../../hooks/useFormReset';
 import { Modal } from '../ui/Modal';
 import { Input, Select } from '../ui/Input';
 import { CurrencyInput } from '../ui/CurrencyInput';
@@ -61,46 +62,70 @@ export default function RecurringFormModal({ isOpen, onClose, onSave, editItem }
   const [autoCreate, setAutoCreate] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  useEffect(() => {
-    if (isOpen) {
-      if (editItem) {
-        setName(editItem.name);
-        setAmount(Math.abs(editItem.amount));
-        setIsExpense(editItem.amount < 0);
-        setAmountType(editItem.amountType);
-        setRecurrenceType(editItem.recurrenceType);
-        setStartDate(editItem.startDate);
-        setEndDate(editItem.endDate || '');
-        setWeekendAdjust(editItem.weekendAdjust);
-        setDateFlexibility(editItem.dateFlexibility);
-        setAccountId(editItem.accountId || '');
-        setCategoryId(editItem.categoryId || '');
-        const matchedPayee = editItem.payeeId
-          ? payees.find((p) => p.id === editItem.payeeId)
-          : null;
-        setPayeeValue({ id: editItem.payeeId, name: matchedPayee?.name || '' });
-        setNotes(editItem.notes || '');
-        setAutoCreate(Boolean(editItem.autoCreate));
-        setShowAdvanced(editItem.weekendAdjust !== 'none' || editItem.dateFlexibility !== 3);
-      } else {
-        setName('');
-        setAmount(0);
-        setIsExpense(true);
-        setAmountType('exact');
-        setRecurrenceType('monthly');
-        setStartDate(format(new Date(), 'yyyy-MM-dd'));
-        setEndDate('');
-        setWeekendAdjust('none');
-        setDateFlexibility(3);
-        setAccountId(accounts.length > 0 ? accounts[0].id : '');
-        setCategoryId('');
-        setPayeeValue({ id: null, name: '' });
-        setNotes('');
-        setAutoCreate(false);
-        setShowAdvanced(false);
-      }
+  // Set when the form opened before accounts/payees had loaded: filled in once they arrive
+  const pendingDefaults = useRef({ account: false, payee: false });
+
+  // Filled once per opening: payees and accounts refetch (e.g. after picking or creating a
+  // payee) and must not wipe the form
+  useFormReset(isOpen ? (editItem?.id ?? 'new') : null, () => {
+    if (editItem) {
+      setName(editItem.name);
+      setAmount(Math.abs(editItem.amount));
+      setIsExpense(editItem.amount < 0);
+      setAmountType(editItem.amountType);
+      setRecurrenceType(editItem.recurrenceType);
+      setStartDate(editItem.startDate);
+      setEndDate(editItem.endDate || '');
+      setWeekendAdjust(editItem.weekendAdjust);
+      setDateFlexibility(editItem.dateFlexibility);
+      setAccountId(editItem.accountId || '');
+      setCategoryId(editItem.categoryId || '');
+      const matchedPayee = editItem.payeeId ? payees.find((p) => p.id === editItem.payeeId) : null;
+      setPayeeValue({ id: editItem.payeeId, name: matchedPayee?.name ?? '' });
+      pendingDefaults.current = {
+        account: false,
+        payee: Boolean(editItem.payeeId && !matchedPayee),
+      };
+      setNotes(editItem.notes || '');
+      setAutoCreate(Boolean(editItem.autoCreate));
+      setShowAdvanced(editItem.weekendAdjust !== 'none' || editItem.dateFlexibility !== 3);
+    } else {
+      setName('');
+      setAmount(0);
+      setIsExpense(true);
+      setAmountType('exact');
+      setRecurrenceType('monthly');
+      setStartDate(format(new Date(), 'yyyy-MM-dd'));
+      setEndDate('');
+      setWeekendAdjust('none');
+      setDateFlexibility(3);
+      setAccountId(accounts.length > 0 ? accounts[0].id : '');
+      pendingDefaults.current = { account: accounts.length === 0, payee: false };
+      setCategoryId('');
+      setPayeeValue({ id: null, name: '' });
+      setNotes('');
+      setAutoCreate(false);
+      setShowAdvanced(false);
     }
-  }, [isOpen, editItem, accounts, payees]);
+  });
+
+  // Data that loads after the dialog opened fills in what it couldn't, once, and only if
+  // the user hasn't changed that field in the meantime
+  useEffect(() => {
+    if (!isOpen || !pendingDefaults.current.account || accounts.length === 0) return;
+    pendingDefaults.current.account = false;
+    setAccountId((current) => current || accounts[0].id);
+  }, [isOpen, accounts]);
+  useEffect(() => {
+    const payeeId = editItem?.payeeId;
+    if (!isOpen || !pendingDefaults.current.payee || !payeeId) return;
+    const payee = payees.find((p) => p.id === payeeId);
+    if (!payee) return;
+    pendingDefaults.current.payee = false;
+    setPayeeValue((current) =>
+      current.id === payeeId && !current.name ? { id: payee.id, name: payee.name } : current,
+    );
+  }, [isOpen, editItem, payees]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -272,7 +297,7 @@ export default function RecurringFormModal({ isOpen, onClose, onSave, editItem }
           <label className="block text-sm font-medium text-text-secondary mb-1">
             Payee <span className="text-text-tertiary font-normal">(optional)</span>
           </label>
-          <MerchantSelect value={payeeValue} onChange={setPayeeValue} />
+          <MerchantSelect value={payeeValue} onChange={setPayeeValue} label="Payee" />
         </div>
 
         <div>

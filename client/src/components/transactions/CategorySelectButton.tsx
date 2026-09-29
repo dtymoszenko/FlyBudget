@@ -38,6 +38,8 @@ export function CategorySelectButton({
       <button
         type="button"
         onClick={() => setOpen(!open)}
+        aria-label={`Category: ${entry?.name ?? placeholder}`}
+        aria-expanded={open}
         className={`${selectorInputClass} text-left flex items-center justify-between cursor-pointer`}
       >
         <span className="flex items-center gap-2 truncate">

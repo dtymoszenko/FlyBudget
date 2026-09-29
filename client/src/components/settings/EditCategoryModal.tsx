@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useFormReset } from '../../hooks/useFormReset';
 import EmojiPicker, { type EmojiClickData } from 'emoji-picker-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
@@ -71,15 +72,15 @@ export function EditCategoryModal({ category, groups, isIncome, onClose, onDelet
   const [budgetType, setBudgetType] = useState<BudgetType>('flexible');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
-  useEffect(() => {
-    if (category) {
-      setName(category.name);
-      setIcon(category.icon ?? '');
-      setGroupId(category.groupId);
-      setBudgetType((category.budgetType as BudgetType) ?? 'flexible');
-      setShowEmojiPicker(false);
-    }
-  }, [category]);
+  // Filled once per opening, not on every refetch of the categories (that would undo edits)
+  useFormReset(category?.id ?? null, () => {
+    if (!category) return;
+    setName(category.name);
+    setIcon(category.icon ?? '');
+    setGroupId(category.groupId);
+    setBudgetType((category.budgetType as BudgetType) ?? 'flexible');
+    setShowEmojiPicker(false);
+  });
 
   if (!category) return null;
 

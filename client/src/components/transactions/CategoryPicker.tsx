@@ -88,6 +88,7 @@ export function CategoryPicker({ value, onChange, groups, onClose, position = 'b
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search categories..."
+            aria-label="Search categories"
             className="w-full pl-8 pr-3 py-1.5 text-sm border border-border rounded-md bg-surface text-text focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600"
           />
         </div>
@@ -95,6 +96,7 @@ export function CategoryPicker({ value, onChange, groups, onClose, position = 'b
 
       <div className="overflow-y-auto max-h-72">
         <button
+          type="button"
           onClick={() => onChange(null)}
           className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-hover ${value === null ? 'bg-brand-50 text-brand-700' : 'text-text-secondary'}`}
         >
@@ -109,6 +111,7 @@ export function CategoryPicker({ value, onChange, groups, onClose, position = 'b
             </div>
             {group.categories.map((cat) => (
               <button
+                type="button"
                 key={cat.id}
                 onClick={() => onChange(cat.id)}
                 className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-hover ${value === cat.id ? 'bg-brand-50 text-brand-700' : 'text-text'}`}
@@ -173,6 +176,7 @@ export function CategoryPicker({ value, onChange, groups, onClose, position = 'b
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="Category name"
+              aria-label="New category name"
               className="w-full text-sm border border-border rounded px-2 py-1.5 bg-surface text-text focus:border-brand-600 focus:outline-none"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleCreate();
@@ -181,6 +185,7 @@ export function CategoryPicker({ value, onChange, groups, onClose, position = 'b
             />
             <div className="flex gap-2">
               <button
+                type="button"
                 onClick={handleCreate}
                 disabled={!newName.trim() || createCategory.isPending}
                 className="flex-1 text-xs font-medium text-white bg-brand-600 hover:bg-brand-700 rounded px-2 py-1.5 disabled:opacity-50"
@@ -188,6 +193,7 @@ export function CategoryPicker({ value, onChange, groups, onClose, position = 'b
                 {createCategory.isPending ? 'Creating...' : 'Create'}
               </button>
               <button
+                type="button"
                 onClick={() => {
                   setShowCreate(false);
                   setNewName('');
@@ -200,6 +206,7 @@ export function CategoryPicker({ value, onChange, groups, onClose, position = 'b
           </div>
         ) : (
           <button
+            type="button"
             onClick={() => setShowCreate(true)}
             className="w-full px-3 py-2.5 text-sm text-brand-600 hover:text-brand-700 font-medium flex items-center gap-1.5 hover:bg-hover"
           >

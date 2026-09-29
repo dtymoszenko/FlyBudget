@@ -16,6 +16,8 @@ interface Props {
   value: MerchantValue;
   onChange: (value: MerchantValue) => void;
   placeholder?: string;
+  /** Accessible name of the search box */
+  label?: string;
 }
 
 /**
@@ -23,7 +25,12 @@ interface Props {
  * by transaction count, merchant icons, and "Create new merchant". Free text that
  * isn't confirmed (picked or created) is cleared on blur.
  */
-export function MerchantSelect({ value, onChange, placeholder = 'Search merchants...' }: Props) {
+export function MerchantSelect({
+  value,
+  onChange,
+  placeholder = 'Search merchants...',
+  label = 'Merchant',
+}: Props) {
   const { data: payees = [] } = usePayees();
   const createPayee = useCreatePayee();
   const canSave = useCanSave();
@@ -75,6 +82,7 @@ export function MerchantSelect({ value, onChange, placeholder = 'Search merchant
         }}
         onFocus={() => setOpen(true)}
         placeholder={placeholder}
+        aria-label={label}
         className={selectorInputClass}
       />
       {open && (filtered.length > 0 || query) && (

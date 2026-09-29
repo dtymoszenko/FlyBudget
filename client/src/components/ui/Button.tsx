@@ -30,10 +30,12 @@ export function Button({
   size = 'md',
   children,
   className = '',
+  // Not "submit" (the browser default): a Button inside a form only submits it when asked
+  type = 'button',
   ...props
 }: Props) {
   return (
-    <button className={buttonClass(variant, size, className)} {...props}>
+    <button type={type} className={buttonClass(variant, size, className)} {...props}>
       {children}
     </button>
   );

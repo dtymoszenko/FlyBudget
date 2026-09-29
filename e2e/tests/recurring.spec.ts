@@ -62,6 +62,47 @@ test.describe('recurring', () => {
     await expect(scheduleRow(page, 'Streaming Plus').first()).toContainText('$15.99');
   });
 
+  test('picking or creating a payee or category keeps what was already filled in', async ({
+    page,
+    api,
+  }) => {
+    await api.createAccount('Checking', 500_000);
+    await api.createAccount('Savings', 100_000, 'savings');
+    await open(page, '/recurring');
+    await page.getByRole('main').getByRole('button', { name: 'Add recurring' }).first().click();
+    const dialog = page.getByRole('dialog', { name: 'Add Recurring' });
+    const name = dialog.getByRole('textbox', { name: 'Name' });
+    const account = dialog.getByRole('combobox', { name: 'Account' });
+
+    await name.fill('Gym membership');
+    await typeAmount(dialog.getByRole('textbox', { name: 'Amount' }), '45');
+    await account.selectOption({ label: 'Savings' });
+
+    // A brand-new payee (creating it refreshes the payee list)
+    await dialog.getByRole('textbox', { name: 'Payee' }).fill('Iron Temple Gym');
+    await dialog.getByRole('button', { name: /Create new merchant/ }).click();
+    await expect(dialog.getByRole('textbox', { name: 'Payee' })).toHaveValue('Iron Temple Gym');
+    await expect(name).toHaveValue('Gym membership');
+    await expect(account).toHaveValue(/.+/);
+    await expect(account.locator('option:checked')).toHaveText('Savings');
+
+    // A brand-new category: none of its buttons may submit the form
+    await dialog.getByRole('button', { name: /^Category:/ }).click();
+    await dialog.getByRole('button', { name: 'Create new category' }).click();
+    await dialog.getByRole('textbox', { name: 'New category name' }).fill('Fitness');
+    await dialog.getByRole('button', { name: 'Create', exact: true }).click();
+    await expect(dialog.getByRole('button', { name: 'Category: Fitness' })).toBeVisible();
+    await expect(dialog).toBeVisible();
+    await expect(name).toHaveValue('Gym membership');
+    await expect(account.locator('option:checked')).toHaveText('Savings');
+    await expect(dialog.getByRole('textbox', { name: 'Payee' })).toHaveValue('Iron Temple Gym');
+
+    await dialog.getByRole('button', { name: 'Add Recurring' }).click();
+    await expect(dialog).toBeHidden();
+    const [schedule] = await api.call<any[]>('GET', '/schedules');
+    expect(schedule).toMatchObject({ name: 'Gym membership', amount: -4_500 });
+  });
+
   test('marking a bill paid records the transaction', async ({ page, api }) => {
     const checking = await api.createAccount('Checking', 500_000);
     await createRent(api, checking.id);

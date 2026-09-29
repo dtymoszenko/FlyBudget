@@ -93,6 +93,7 @@ export function PayeePicker({ value, payeeName, onChange, payees, onClose }: Pro
           const isSelected = p.id === value;
           return (
             <button
+              type="button"
               key={p.id}
               onClick={() => onChange(p.id, p.name)}
               className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2.5 hover:bg-hover ${
@@ -118,6 +119,7 @@ export function PayeePicker({ value, payeeName, onChange, payees, onClose }: Pro
       {query && !exactMatch && (
         <div className="border-t border-border-light">
           <button
+            type="button"
             onClick={handleCreate}
             disabled={createPayee.isPending}
             className="w-full px-3 py-2.5 text-sm text-brand-600 hover:text-brand-700 font-medium flex items-center gap-1.5 hover:bg-hover"

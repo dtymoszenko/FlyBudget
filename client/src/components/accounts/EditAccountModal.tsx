@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
+import { useFormReset } from '../../hooks/useFormReset';
 import { Modal } from '../ui/Modal';
 import { useCanSave } from '../../hooks/useConnection';
 import { SavingPausedHint } from '../connection/SavingPausedHint';
@@ -31,16 +32,16 @@ export function EditAccountModal({ account, onClose }: Props) {
   const updateAccount = useUpdateAccount();
   const closeAccount = useCloseAccount();
 
-  useEffect(() => {
-    if (account) {
-      setName(account.name);
-      setType(account.type);
-      setStartingBalance(account.startingBalance);
-      setIsOffBudget(account.isOffBudget === 1);
-      setLogo(account.logo ?? null);
-      setLogoError(null);
-    }
-  }, [account]);
+  // Filled once per opening, not on every refetch of the account (that would undo edits)
+  useFormReset(account?.id ?? null, () => {
+    if (!account) return;
+    setName(account.name);
+    setType(account.type);
+    setStartingBalance(account.startingBalance);
+    setIsOffBudget(account.isOffBudget === 1);
+    setLogo(account.logo ?? null);
+    setLogoError(null);
+  });
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
