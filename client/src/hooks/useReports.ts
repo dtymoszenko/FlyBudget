@@ -34,12 +34,6 @@ export const useDailyFlow = (from: string, to: string) =>
     queryFn: () => reportsApi.getDailyFlow(from, to),
   });
 
-export const useCashFlow = (from: string, to: string) =>
-  useQuery({
-    queryKey: ['reports', 'cash-flow', from, to],
-    queryFn: () => reportsApi.getCashFlow(from, to),
-  });
-
 export const useSpendingByCategory = (from: string, to: string) =>
   useQuery({
     queryKey: ['reports', 'spending-by-category', from, to],

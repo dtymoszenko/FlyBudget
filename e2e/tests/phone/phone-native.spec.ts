@@ -169,8 +169,18 @@ test.describe('budget', () => {
     await seedAccount(api);
     await open(page, '/budget');
     const fixed = page.getByRole('region', { name: 'Fixed' });
+    const showInactive = fixed.getByRole('button', { name: /^Show \d+ inactive categories$/ });
+
+    // Nothing planned yet: every category is listed, so there's something to plan
+    await expect(fixed.getByTestId('budget-card').first()).toBeVisible();
+    await expect(showInactive).toBeHidden();
+
+    // Once something is planned, the categories with nothing going on are tucked away
+    const groceries = await api.category('Groceries');
+    await api.call('PUT', `/budget/${thisMonth()}/${groceries.id}`, { budgeted: 50_000 });
+    await page.reload();
     await expect(fixed.getByTestId('budget-card')).toHaveCount(0);
-    await fixed.getByRole('button', { name: /^Show \d+ inactive categories$/ }).click();
+    await showInactive.click();
     await expect(fixed.getByTestId('budget-card').first()).toBeVisible();
   });
 });

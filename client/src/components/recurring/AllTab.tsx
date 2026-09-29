@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { format, parseISO, subDays, addDays } from 'date-fns';
-import { Search, Sparkles, Clock } from 'lucide-react';
+import { Search, Sparkles, Clock, Plus, Repeat } from 'lucide-react';
 import { useAccounts } from '../../hooks/useAccounts';
 import { usePayees } from '../../hooks/usePayees';
 import {
@@ -22,6 +22,8 @@ import {
 } from './scheduleFormat';
 import { usePreferencesStore } from '../../store/preferencesStore';
 import { Button } from '../ui/Button';
+import { EmptyState } from '../ui/EmptyState';
+import { docsUrl } from '../../utils/project';
 import type { Schedule, ScheduleOccurrence } from '../../types';
 
 const GRID =
@@ -30,6 +32,7 @@ const GRID =
 interface Props {
   allRecurring: Schedule[];
   onEdit: (item: Schedule) => void;
+  onAdd: () => void;
   onFind: () => void;
   onChangeUpcomingLength: () => void;
 }
@@ -58,15 +61,26 @@ function deriveRow(
   const pending = occs.filter(isPending);
   const next = pending[0] ?? null;
   if (s.status === 'canceled') return { nextOcc: null, nextDate: null, status: 'cancelled' };
-  if (s.status === 'paused') return { nextOcc: next, nextDate: next?.expectedDate ?? null, status: 'paused' };
+  if (s.status === 'paused')
+    return { nextOcc: next, nextDate: next?.expectedDate ?? null, status: 'paused' };
   if (next)
-    return { nextOcc: next, nextDate: next.expectedDate, status: occurrenceBadgeStatus(next, upcomingDays) };
+    return {
+      nextOcc: next,
+      nextDate: next.expectedDate,
+      status: occurrenceBadgeStatus(next, upcomingDays),
+    };
   const last = occs[occs.length - 1];
   if (last) return { nextOcc: null, nextDate: last.expectedDate, status: last.displayStatus };
   return { nextOcc: null, nextDate: null, status: 'scheduled' };
 }
 
-export default function AllTab({ allRecurring, onEdit, onFind, onChangeUpcomingLength }: Props) {
+export default function AllTab({
+  allRecurring,
+  onEdit,
+  onAdd,
+  onFind,
+  onChangeUpcomingLength,
+}: Props) {
   const upcomingLength = usePreferencesStore((s) => s.upcomingLength);
   const upcomingDays = getUpcomingDays(upcomingLength);
   const [filter, setFilter] = useState('');
@@ -136,7 +150,10 @@ export default function AllTab({ allRecurring, onEdit, onFind, onChangeUpcomingL
         onClick={() => onEdit(s)}
         className={`${GRID} px-5 py-2.5 border-b border-border-light hover:bg-hover transition-colors cursor-pointer`}
       >
-        <span className={`text-sm font-medium truncate ${muted ? 'text-text-tertiary' : 'text-text'}`} title={s.name}>
+        <span
+          className={`text-sm font-medium truncate ${muted ? 'text-text-tertiary' : 'text-text'}`}
+          title={s.name}
+        >
           {s.name}
         </span>
         <span className="text-sm text-text-secondary truncate">{r.payeeName || '—'}</span>
@@ -165,7 +182,11 @@ export default function AllTab({ allRecurring, onEdit, onFind, onChangeUpcomingL
                 hidden: !r.nextOcc || isCanceled,
                 onClick: () =>
                   r.nextOcc &&
-                  markPaid.mutate({ scheduleId: s.id, date: r.nextOcc.expectedDate, occurrenceId: r.nextOcc.id }),
+                  markPaid.mutate({
+                    scheduleId: s.id,
+                    date: r.nextOcc.expectedDate,
+                    occurrenceId: r.nextOcc.id,
+                  }),
               },
               {
                 label: 'Skip next date',
@@ -175,7 +196,8 @@ export default function AllTab({ allRecurring, onEdit, onFind, onChangeUpcomingL
               {
                 label: isPaused ? 'Resume' : 'Pause',
                 hidden: isCanceled,
-                onClick: () => updateSchedule.mutate({ id: s.id, status: isPaused ? 'active' : 'paused' }),
+                onClick: () =>
+                  updateSchedule.mutate({ id: s.id, status: isPaused ? 'active' : 'paused' }),
               },
               {
                 label: 'Restart',
@@ -183,8 +205,18 @@ export default function AllTab({ allRecurring, onEdit, onFind, onChangeUpcomingL
                 onClick: () => updateSchedule.mutate({ id: s.id, status: 'active' }),
               },
               { label: 'Edit', onClick: () => onEdit(s) },
-              { label: 'Cancel recurring', danger: true, hidden: isCanceled, onClick: () => setConfirm({ schedule: s, hard: false }) },
-              { label: 'Delete permanently', danger: true, hidden: !isCanceled, onClick: () => setConfirm({ schedule: s, hard: true }) },
+              {
+                label: 'Cancel recurring',
+                danger: true,
+                hidden: isCanceled,
+                onClick: () => setConfirm({ schedule: s, hard: false }),
+              },
+              {
+                label: 'Delete permanently',
+                danger: true,
+                hidden: !isCanceled,
+                onClick: () => setConfirm({ schedule: s, hard: true }),
+              },
             ]}
           />
         </div>
@@ -199,12 +231,20 @@ export default function AllTab({ allRecurring, onEdit, onFind, onChangeUpcomingL
           <Button variant="secondary" size="sm" onClick={onFind}>
             <Sparkles size={13} /> Find recurring
           </Button>
-          <Button variant="secondary" size="sm" onClick={onChangeUpcomingLength} title="Change upcoming length">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={onChangeUpcomingLength}
+            title="Change upcoming length"
+          >
             <Clock size={13} /> Upcoming: {describeUpcomingLength(upcomingLength)}
           </Button>
         </div>
         <div className="relative w-72">
-          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none" />
+          <Search
+            size={14}
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none"
+          />
           <input
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
@@ -215,7 +255,9 @@ export default function AllTab({ allRecurring, onEdit, onFind, onChangeUpcomingL
       </div>
 
       <div className="bg-surface rounded-lg shadow-card border border-border-light overflow-hidden">
-        <div className={`${GRID} px-5 py-2.5 bg-surface-alt border-b border-border-light text-xs font-medium text-text-tertiary sticky top-0 z-10`}>
+        <div
+          className={`${GRID} px-5 py-2.5 bg-surface-alt border-b border-border-light text-xs font-medium text-text-tertiary sticky top-0 z-10`}
+        >
           <span>Name</span>
           <span>Payee</span>
           <span>Account</span>
@@ -226,11 +268,30 @@ export default function AllTab({ allRecurring, onEdit, onFind, onChangeUpcomingL
           <span />
         </div>
 
-        {active.length === 0 && (!canceled.length || !showCanceled) && (
-          <p className="py-16 text-center text-sm italic text-text-tertiary">
-            {filter ? 'No matching recurring items' : 'No recurring items'}
-          </p>
-        )}
+        {active.length === 0 &&
+          (!canceled.length || !showCanceled) &&
+          (filter || allRecurring.length > 0 ? (
+            <p className="py-16 text-center text-sm italic text-text-tertiary">
+              {filter ? 'No matching recurring items' : 'No active recurring items'}
+            </p>
+          ) : (
+            <EmptyState
+              icon={<Repeat size={26} />}
+              title="No recurring items yet"
+              description="Add bills, subscriptions and paychecks to see what’s due and when, or let FlyBudget find them in the transactions you already have."
+              learnMoreHref={docsUrl('recurring')}
+              actions={
+                <>
+                  <Button variant="secondary" onClick={onFind}>
+                    <Sparkles size={14} /> Find recurring
+                  </Button>
+                  <Button onClick={onAdd}>
+                    <Plus size={14} /> Add recurring
+                  </Button>
+                </>
+              }
+            />
+          ))}
         {active.map(renderRow)}
 
         {canceled.length > 0 &&

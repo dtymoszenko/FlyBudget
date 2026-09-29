@@ -53,9 +53,10 @@ export function useUpdateRule() {
       if (!ctx?.old) return;
       const snapshot = toInput(ctx.old);
       useUndoStore.getState().push({
-        description: data.enabled !== undefined && Object.keys(data).length === 1
-          ? `${data.enabled ? 'Enable' : 'Disable'} rule`
-          : `Edit rule`,
+        description:
+          data.enabled !== undefined && Object.keys(data).length === 1
+            ? `${data.enabled ? 'Enable' : 'Disable'} rule`
+            : `Edit rule`,
         undo: async () => {
           await rulesApi.updateRule(id, snapshot);
           qc.invalidateQueries({ queryKey: QK });

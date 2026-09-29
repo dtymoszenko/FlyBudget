@@ -35,7 +35,7 @@ export function isUnreachableResponse(status: number, contentType: string | null
 
 const LOOPBACK_HOSTS = ['localhost', '127.0.0.1', '[::1]', '::1'];
 
-export const isLoopbackHost = (hostname: string) => LOOPBACK_HOSTS.includes(hostname.toLowerCase());
+const isLoopbackHost = (hostname: string) => LOOPBACK_HOSTS.includes(hostname.toLowerCase());
 
 /** How private the connection between this browser and the server is. */
 export type ConnectionSecurity = 'encrypted' | 'local' | 'unencrypted';

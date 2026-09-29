@@ -15,11 +15,14 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   X,
+  BookOpen,
 } from 'lucide-react';
 import { useAppStore } from '../../store/appStore';
 import { usePreferencesStore } from '../../store/preferencesStore';
 import { SidebarAccountList } from './SidebarAccountList';
 import { ServerStatus } from './ServerStatus';
+import { DOCS_URL } from '../../utils/project';
+import { BrandName } from '../ui/BrandName';
 import logoUrl from '/logo.png';
 
 interface NavItemProps {
@@ -109,14 +112,15 @@ function SidebarContent({ isExpanded, onClose }: { isExpanded: boolean; onClose?
     <div className="w-[208px] h-full flex flex-col bg-sidebar-bg">
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-4 py-3 border-b border-sidebar-border">
-        <img src={logoUrl} alt="FlyBudget" className="w-7 h-7 shrink-0" />
-        <span
-          className={`text-sm font-semibold text-sidebar-text-hi tracking-tight transition-opacity duration-200 ${
+        <img src={logoUrl} alt="" className="w-7 h-7 shrink-0" />
+        {/* The sidebar is dark in both themes, so "Budget" is always light here */}
+        <BrandName
+          className={`text-sm font-semibold tracking-tight transition-opacity duration-200 ${
             isExpanded ? 'opacity-100' : 'opacity-0'
           }`}
-        >
-          FlyBudget
-        </span>
+          flyClassName="text-brand-500"
+          budgetClassName="text-sidebar-text-hi"
+        />
         {onClose && (
           <button
             onClick={onClose}
@@ -189,6 +193,23 @@ function SidebarContent({ isExpanded, onClose }: { isExpanded: boolean; onClose?
           label="Settings"
           collapsed={!isExpanded}
         />
+        <a
+          href={DOCS_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          title={!isExpanded ? 'Help & docs' : undefined}
+          className="relative flex items-center gap-2.5 py-1.5 max-md:min-h-11 max-md:text-[15px] px-3 rounded-md text-[13px] font-medium text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-text-hi"
+        >
+          <BookOpen size={18} className="shrink-0" />
+          <span
+            className={`truncate transition-opacity duration-200 ${
+              isExpanded ? 'opacity-100' : 'opacity-0'
+            }`}
+          >
+            Help &amp; docs
+          </span>
+          <span className="sr-only"> (opens in a new tab)</span>
+        </a>
       </nav>
 
       {/* Where the data lives and whether the server is reachable */}

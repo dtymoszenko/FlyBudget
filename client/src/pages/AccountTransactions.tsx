@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { CheckSquare, ChevronRight, Pencil, RefreshCw } from 'lucide-react';
+import { CheckSquare, ChevronRight, Landmark, Pencil, RefreshCw } from 'lucide-react';
 import { useAccounts } from '../hooks/useAccounts';
 import { Badge } from '../components/ui/Badge';
-import { Button } from '../components/ui/Button';
+import { Button, ButtonLink } from '../components/ui/Button';
+import { EmptyState } from '../components/ui/EmptyState';
 import { formatCurrency } from '../utils/currency';
 import { TransactionTable } from '../components/transactions/TransactionTable';
 import { AccountIcon } from '../components/accounts/AccountIcon';
@@ -14,12 +15,22 @@ import { accountTypeInfo } from '../utils/accountTypes';
 export default function AccountTransactionsPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data: accounts = [] } = useAccounts();
+  const { data: accounts = [], isLoading } = useAccounts();
   const account = accounts.find((a) => a.id === id);
   const [editOpen, setEditOpen] = useState(false);
   const [updateValueOpen, setUpdateValueOpen] = useState(false);
 
-  if (!account) return null;
+  if (!account) {
+    if (isLoading) return null;
+    return (
+      <EmptyState
+        icon={<Landmark size={26} />}
+        title="Account not found"
+        description="It may have been closed or deleted, or the link is out of date."
+        actions={<ButtonLink to="/accounts">Go to Accounts</ButtonLink>}
+      />
+    );
+  }
   const typeInfo = accountTypeInfo(account.type);
 
   return (

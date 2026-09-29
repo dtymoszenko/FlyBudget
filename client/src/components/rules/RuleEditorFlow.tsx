@@ -13,7 +13,7 @@ interface Props {
   title?: string;
 }
 
-export const emptyRule = (): RuleInput => ({
+const emptyRule = (): RuleInput => ({
   conditionsOp: 'and',
   conditions: [{ field: 'payee_name', op: 'contains', value: '' }],
   actions: [{ type: 'set_category', value: '' }],

@@ -195,8 +195,8 @@
 
 button,
 select,
-[type="checkbox"],
-[type="radio"] {
+[type='checkbox'],
+[type='radio'] {
   cursor: pointer;
 }
 

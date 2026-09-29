@@ -3,7 +3,11 @@ import { Link } from 'react-router-dom';
 import { format, parse } from 'date-fns';
 import { useBudget } from '../../hooks/useBudget';
 import { formatCurrency } from '../../utils/currency';
+import { Wallet } from 'lucide-react';
 import { Card } from '../ui/Card';
+import { EmptyState } from '../ui/EmptyState';
+import { ButtonLink } from '../ui/Button';
+import { docsUrl } from '../../utils/project';
 import type { BudgetType } from '../../types';
 
 interface Props {
@@ -73,9 +77,18 @@ export default function BudgetProgress({ currentMonth }: Props) {
       </div>
 
       {groupStats.length === 0 ? (
-        <p className="text-sm text-text-disabled py-4 text-center">
-          No budgeted categories this month.
-        </p>
+        <EmptyState
+          compact
+          icon={<Wallet size={20} />}
+          title={`No budget for ${monthLabel} yet`}
+          description="Set how much you plan to spend in each category, then watch your progress here."
+          learnMoreHref={docsUrl('budgeting')}
+          actions={
+            <ButtonLink size="sm" to="/budget">
+              Plan your budget
+            </ButtonLink>
+          }
+        />
       ) : (
         <div className="divide-y divide-border-light">
           {groupStats.map((g) => {

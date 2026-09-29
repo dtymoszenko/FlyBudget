@@ -10,15 +10,35 @@ import type {
   RuleSplitPart,
 } from '../types';
 
-const TEXT_OPS: RuleConditionOp[] = ['is', 'is_not', 'contains', 'not_contains', 'starts_with', 'ends_with', 'one_of', 'not_one_of', 'regex', 'is_empty', 'is_not_empty'];
+const TEXT_OPS: RuleConditionOp[] = [
+  'is',
+  'is_not',
+  'contains',
+  'not_contains',
+  'starts_with',
+  'ends_with',
+  'one_of',
+  'not_one_of',
+  'regex',
+  'is_empty',
+  'is_not_empty',
+];
 const ID_OPS: RuleConditionOp[] = ['is', 'is_not', 'one_of', 'not_one_of'];
 
-export const CONDITION_FIELDS: Array<{ value: RuleConditionField; label: string; ops: RuleConditionOp[] }> = [
+export const CONDITION_FIELDS: Array<{
+  value: RuleConditionField;
+  label: string;
+  ops: RuleConditionOp[];
+}> = [
   { value: 'payee', label: 'Payee', ops: [...ID_OPS, 'is_empty', 'is_not_empty'] },
   { value: 'payee_name', label: 'Payee name', ops: TEXT_OPS },
   { value: 'imported_payee', label: 'Imported description', ops: TEXT_OPS },
   { value: 'notes', label: 'Notes', ops: TEXT_OPS },
-  { value: 'amount', label: 'Amount', ops: ['is', 'is_not', 'gt', 'gte', 'lt', 'lte', 'between', 'approx'] },
+  {
+    value: 'amount',
+    label: 'Amount',
+    ops: ['is', 'is_not', 'gt', 'gte', 'lt', 'lte', 'between', 'approx'],
+  },
   { value: 'direction', label: 'Inflow / outflow', ops: ['is'] },
   { value: 'category', label: 'Category', ops: [...ID_OPS, 'is_empty', 'is_not_empty'] },
   { value: 'account', label: 'Account', ops: ID_OPS },
@@ -71,11 +91,17 @@ export const ACTION_TYPES: Array<{ value: RuleAction['type']; label: string }> =
 ];
 
 const today = () => new Date().toISOString().slice(0, 10);
-const isTextField = (f: RuleConditionField) => f === 'payee_name' || f === 'imported_payee' || f === 'notes';
+const isTextField = (f: RuleConditionField) =>
+  f === 'payee_name' || f === 'imported_payee' || f === 'notes';
 
 /** A condition with a sensible starting value, keeping the old value when it still fits */
-export function makeCondition(field: RuleConditionField, op: RuleConditionOp, prev?: RuleCondition): RuleCondition {
-  const compatible = prev && (prev.field === field || (isTextField(prev.field) && isTextField(field)));
+export function makeCondition(
+  field: RuleConditionField,
+  op: RuleConditionOp,
+  prev?: RuleCondition,
+): RuleCondition {
+  const compatible =
+    prev && (prev.field === field || (isTextField(prev.field) && isTextField(field)));
   const old = compatible && 'value' in prev ? prev.value : undefined;
   const first = Array.isArray(old) ? old[0] : old;
   const num = typeof first === 'number' ? first : 0;
@@ -83,7 +109,8 @@ export function makeCondition(field: RuleConditionField, op: RuleConditionOp, pr
 
   if (op === 'is_empty' || op === 'is_not_empty') return { field, op } as RuleCondition;
   if (op === 'one_of' || op === 'not_one_of') {
-    const list = Array.isArray(old) && typeof old[0] === 'string' ? (old as string[]) : str ? [str] : [];
+    const list =
+      Array.isArray(old) && typeof old[0] === 'string' ? (old as string[]) : str ? [str] : [];
     return { field, op, value: list } as RuleCondition;
   }
   switch (field) {
@@ -104,7 +131,11 @@ export function makeCondition(field: RuleConditionField, op: RuleConditionOp, pr
   }
 }
 
-export const newCondition = (): RuleCondition => ({ field: 'payee_name', op: 'contains', value: '' });
+export const newCondition = (): RuleCondition => ({
+  field: 'payee_name',
+  op: 'contains',
+  value: '',
+});
 export const newAction = (): RuleAction => ({ type: 'set_category', value: '' });
 export const newSplitPart = (kind: RuleSplitPart['kind'] = 'remainder'): RuleSplitPart => ({
   kind,
@@ -114,27 +145,35 @@ export const newSplitPart = (kind: RuleSplitPart['kind'] = 'remainder'): RuleSpl
 });
 
 export function makeAction(type: RuleAction['type'], prev?: RuleAction): RuleAction {
-  if (type === 'split') return { type, parts: [newSplitPart('percent'), newSplitPart('remainder')] };
-  const keepText = prev && prev.type !== 'split' && prev.type.endsWith('notes') && type.endsWith('notes');
+  if (type === 'split')
+    return { type, parts: [newSplitPart('percent'), newSplitPart('remainder')] };
+  const keepText =
+    prev && prev.type !== 'split' && prev.type.endsWith('notes') && type.endsWith('notes');
   return { type, value: keepText ? (prev as { value: string }).value : '' } as RuleAction;
 }
 
 export function isConditionComplete(c: RuleCondition): boolean {
   if (!('value' in c)) return true;
   const v = c.value;
-  if (Array.isArray(v)) return v.length > 0 && v.every((x) => (typeof x === 'string' ? x.trim() !== '' : x >= 0));
+  if (Array.isArray(v))
+    return v.length > 0 && v.every((x) => (typeof x === 'string' ? x.trim() !== '' : x >= 0));
   if (typeof v === 'number') return v >= 0;
   return v.trim() !== '';
 }
 
-export function isActionComplete(a: RuleAction): boolean {
-  if (a.type === 'split') return a.parts.length > 0 && a.parts.every((p) => p.kind !== 'percent' || p.value <= 100);
+function isActionComplete(a: RuleAction): boolean {
+  if (a.type === 'split')
+    return a.parts.length > 0 && a.parts.every((p) => p.kind !== 'percent' || p.value <= 100);
   if (a.type === 'set_notes') return true; // empty clears the notes
   return a.value.trim() !== '';
 }
 
 export function isRuleComplete(r: Pick<RuleInput, 'conditions' | 'actions'>): boolean {
-  return r.actions.length > 0 && r.conditions.every(isConditionComplete) && r.actions.every(isActionComplete);
+  return (
+    r.actions.length > 0 &&
+    r.conditions.every(isConditionComplete) &&
+    r.actions.every(isActionComplete)
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -147,10 +186,12 @@ export type RuleLookups = {
 };
 
 const quote = (s: string) => `"${s}"`;
-const shortDate = (d: string) => (/^\d{4}-\d{2}-\d{2}$/.test(d) ? format(parseISO(d), 'MMM d, yyyy') : d);
+const shortDate = (d: string) =>
+  /^\d{4}-\d{2}-\d{2}$/.test(d) ? format(parseISO(d), 'MMM d, yyyy') : d;
 
 function nameOf(field: RuleConditionField, id: string, l: RuleLookups): string {
-  const name = field === 'payee' ? l.payee(id) : field === 'account' ? l.account(id) : l.category(id);
+  const name =
+    field === 'payee' ? l.payee(id) : field === 'account' ? l.account(id) : l.category(id);
   return name ?? '(deleted)';
 }
 
@@ -168,7 +209,9 @@ export function conditionText(c: RuleCondition, l: RuleLookups): string {
       ? `${formatCurrency(c.value[0])} and ${formatCurrency(c.value[1])}`
       : formatCurrency(c.value);
   } else if (c.field === 'date') {
-    value = Array.isArray(c.value) ? `${shortDate(c.value[0])} and ${shortDate(c.value[1])}` : shortDate(c.value);
+    value = Array.isArray(c.value)
+      ? `${shortDate(c.value[0])} and ${shortDate(c.value[1])}`
+      : shortDate(c.value);
   } else if (Array.isArray(c.value)) {
     value = c.value.map(one).join(', ');
   } else {
@@ -178,7 +221,12 @@ export function conditionText(c: RuleCondition, l: RuleLookups): string {
 }
 
 function splitPartText(p: RuleSplitPart, l: RuleLookups): string {
-  const amount = p.kind === 'fixed' ? formatCurrency(p.value) : p.kind === 'percent' ? `${p.value}%` : 'the rest';
+  const amount =
+    p.kind === 'fixed'
+      ? formatCurrency(p.value)
+      : p.kind === 'percent'
+        ? `${p.value}%`
+        : 'the rest';
   return `${amount} to ${p.categoryId ? (l.category(p.categoryId) ?? '(deleted)') : 'uncategorized'}`;
 }
 
@@ -201,7 +249,10 @@ export function actionText(a: RuleAction, l: RuleLookups): string {
 
 /** Plain text of a whole rule, for search */
 export function ruleSearchText(r: Rule, l: RuleLookups): string {
-  return [...r.conditions.map((c) => conditionText(c, l)), ...r.actions.map((a) => actionText(a, l))]
+  return [
+    ...r.conditions.map((c) => conditionText(c, l)),
+    ...r.actions.map((a) => actionText(a, l)),
+  ]
     .join(' ')
     .toLowerCase();
 }

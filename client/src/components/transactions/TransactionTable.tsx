@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { format, parseISO } from 'date-fns';
-import { Plus, Upload } from 'lucide-react';
+import { Plus, Receipt, SearchX, Upload, Link2 } from 'lucide-react';
 import { useTransactions } from '../../hooks/useTransactions';
 import { useCategories } from '../../hooks/useCategories';
 import { usePayees } from '../../hooks/usePayees';
@@ -15,7 +15,10 @@ import { Modal } from '../ui/Modal';
 import { useIsPhone } from '../../hooks/useIsPhone';
 import { TransactionDetailPanel } from './TransactionDetailPanel';
 import { ImportModal } from './ImportModal';
-import { Button } from '../ui/Button';
+import { Button, ButtonLink } from '../ui/Button';
+import { EmptyState } from '../ui/EmptyState';
+import { useOpenFromLink } from '../../hooks/useOpenFromLink';
+import { docsUrl } from '../../utils/project';
 import { useAddTransaction } from '../../hooks/useOffline';
 import { formatCurrency } from '../../utils/currency';
 import type { FilterState } from './TransactionFilters';
@@ -30,6 +33,8 @@ interface Props {
   month?: string;
   onClearMonth?: () => void;
   overlayDetail?: boolean;
+  /** All Transactions: opens the add-transaction dialog from the empty state */
+  onAddTransaction?: () => void;
 }
 
 export function TransactionTable({
@@ -40,6 +45,7 @@ export function TransactionTable({
   month,
   onClearMonth,
   overlayDetail,
+  onAddTransaction,
 }: Props) {
   const [filters, setFilters] = useState<FilterState>(() => ({
     ...DEFAULT_FILTERS,
@@ -65,11 +71,25 @@ export function TransactionTable({
     return base;
   }, [filters, accountId, categoryId, categoryIds, categoryGroupId, month]);
   const { data: transactions = [], isLoading } = useTransactions(params);
+  // Whether there are any transactions at all here, to tell "nothing yet" from "filtered out"
+  const scoped = Boolean(categoryId || categoryIds?.length || categoryGroupId || month);
+  const { data: anyTransactions = [] } = useTransactions(
+    accountId ? { accountId, limit: 1 } : { limit: 1 },
+  );
+  const isFirstRun = !scoped && anyTransactions.length === 0;
+  const filtersChanged =
+    filters.search !== DEFAULT_FILTERS.search || filters.categoryId !== DEFAULT_FILTERS.categoryId;
   const { data: groups = [] } = useCategories();
   const { data: payees = [] } = usePayees();
   const { data: accounts = [] } = useAccounts();
 
   const newTx = useAddTransaction();
+  const startAdd = () => {
+    setShowAdd(true);
+    setDetailId(null);
+  };
+  useOpenFromLink('import', () => accountId && setShowImport(true));
+  useOpenFromLink('add', () => accountId && startAdd());
   // Phones: cards instead of rows, the entry form in a sheet, and details full screen
   const isPhone = useIsPhone();
   const overlay = overlayDetail || isPhone;
@@ -199,10 +219,7 @@ export function TransactionTable({
                     ? 'Saved on this device and sent when FlyBudget reconnects'
                     : undefined
               }
-              onClick={() => {
-                setShowAdd(true);
-                setDetailId(null);
-              }}
+              onClick={startAdd}
             >
               <Plus size={13} /> Add Transaction
             </Button>
@@ -234,9 +251,65 @@ export function TransactionTable({
           {isLoading ? (
             <div className="px-4 py-10 text-center text-sm text-text-tertiary">Loading...</div>
           ) : transactions.length === 0 && (!showAdd || isPhone) ? (
-            <div className="px-4 py-10 text-center text-sm text-text-tertiary">
-              No transactions found.
-            </div>
+            isFirstRun ? (
+              <EmptyState
+                icon={<Receipt size={26} />}
+                title="No transactions yet"
+                description={
+                  accountId
+                    ? 'Import a CSV file downloaded from your bank, or add transactions by hand as you spend.'
+                    : 'Add transactions by hand, import a CSV file from an account page, or connect a bank to bring them in automatically.'
+                }
+                learnMoreHref={docsUrl('transactions')}
+                actions={
+                  accountId ? (
+                    <>
+                      <Button variant="secondary" onClick={() => setShowImport(true)}>
+                        <Upload size={14} /> Import a CSV file
+                      </Button>
+                      <Button disabled={!newTx.allowed} onClick={startAdd}>
+                        <Plus size={14} /> Add a transaction
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <ButtonLink variant="secondary" to="/settings?tab=connections">
+                        <Link2 size={14} /> Connect a bank
+                      </ButtonLink>
+                      {onAddTransaction && (
+                        <Button disabled={!newTx.allowed} onClick={onAddTransaction}>
+                          <Plus size={14} /> Add a transaction
+                        </Button>
+                      )}
+                    </>
+                  )
+                }
+              />
+            ) : (
+              <EmptyState
+                compact
+                icon={<SearchX size={20} />}
+                title="No transactions found"
+                description={
+                  filtersChanged
+                    ? 'Nothing matches your search and filters.'
+                    : filters.datePreset === 'all'
+                      ? 'There are no transactions here.'
+                      : 'There are no transactions in this date range.'
+                }
+                actions={
+                  (filtersChanged || filters.datePreset !== 'all') && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setFilters({ ...DEFAULT_FILTERS, datePreset: 'all' })}
+                    >
+                      {filtersChanged ? 'Clear filters' : 'Show all dates'}
+                    </Button>
+                  )
+                }
+              />
+            )
           ) : (
             groupedByDate.map((group) => (
               <div key={group.date}>

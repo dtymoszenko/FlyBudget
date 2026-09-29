@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react';
 import { format, subMonths, subDays, startOfYear } from 'date-fns';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useNetWorth } from '../../hooks/useReports';
+import { useAccounts } from '../../hooks/useAccounts';
+import { ButtonLink } from '../ui/Button';
 import { formatCurrency } from '../../utils/currency';
 import { chartColors } from '../../utils/chartColors';
 import { formatDateAxisLabels, formatDateLabel } from '../../utils/chartTicks';
@@ -79,6 +81,8 @@ export default function NetWorthMini() {
 
   const { from, to, granularity } = useMemo(() => computeRange(preset), [preset]);
   const { data = [], isLoading } = useNetWorth(from, to, granularity);
+  const { data: accounts, isLoading: accountsLoading } = useAccounts();
+  const noAccounts = !accountsLoading && accounts?.length === 0;
 
   const dateLabels = useMemo(() => formatDateAxisLabels(data.map((d) => d.month)), [data]);
   const xAxis = useXAxisLayout({
@@ -129,7 +133,12 @@ export default function NetWorthMini() {
           >
             {formatCurrency(latest)}
           </p>
-          {data.length > 1 && (
+          {noAccounts && (
+            <p className="text-sm text-text-tertiary mt-1">
+              What you own minus what you owe, across all your accounts.
+            </p>
+          )}
+          {data.length > 1 && !noAccounts && (
             <p
               className={`text-sm tabular-nums mt-0.5 ${change >= 0 ? 'text-positive' : 'text-negative'}`}
             >
@@ -139,20 +148,26 @@ export default function NetWorthMini() {
           )}
         </div>
 
-        <select
-          value={preset}
-          onChange={(e) => setPreset(e.target.value as Preset)}
-          className="text-sm border border-border rounded-lg px-3 py-1.5 bg-surface text-text cursor-pointer focus:outline-none focus:ring-1 focus:ring-brand-600"
-        >
-          {PRESETS.map((p) => (
-            <option key={p.value} value={p.value}>
-              {p.label}
-            </option>
-          ))}
-        </select>
+        {noAccounts ? (
+          <ButtonLink size="sm" to="/accounts?add=1">
+            Add an account
+          </ButtonLink>
+        ) : (
+          <select
+            value={preset}
+            onChange={(e) => setPreset(e.target.value as Preset)}
+            className="text-sm border border-border rounded-lg px-3 py-1.5 bg-surface text-text cursor-pointer focus:outline-none focus:ring-1 focus:ring-brand-600"
+          >
+            {PRESETS.map((p) => (
+              <option key={p.value} value={p.value}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
-      {data.length > 1 && (
+      {data.length > 1 && !noAccounts && (
         <div className="mt-4" ref={xAxis.ref}>
           <ResponsiveContainer width="100%" height={112}>
             <AreaChart data={data} margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>

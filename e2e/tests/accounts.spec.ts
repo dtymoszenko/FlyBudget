@@ -3,7 +3,7 @@ import { test, expect, open, isoDay, typeAmount } from './fixtures';
 test.describe('accounts', () => {
   test('a new user adds their first account from the welcome screen', async ({ page, api }) => {
     await open(page, '/dashboard');
-    await page.getByRole('button', { name: /Add Manually/ }).click();
+    await page.getByRole('button', { name: /Add accounts manually/ }).click();
 
     const dialog = page.getByRole('dialog', { name: 'Add Account' });
     await dialog.getByRole('textbox', { name: 'Account name' }).fill('Chase Checking');
@@ -20,13 +20,18 @@ test.describe('accounts', () => {
     expect(account).toMatchObject({ isOffBudget: 0 });
   });
 
-  test('"Add Later" skips setup and opens the app', async ({ page }) => {
+  test('"Skip for now" opens the app, and it stays open after a reload', async ({ page }) => {
     await open(page, '/welcome');
-    await page.getByRole('button', { name: 'Add Later' }).click();
+    await page.getByRole('button', { name: 'Skip for now and look around' }).click();
     await expect(page).toHaveURL(/#\/dashboard$/);
     await expect(
       page.getByRole('complementary').getByRole('link', { name: 'Budget' }),
     ).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Get started with FlyBudget' })).toBeVisible();
+
+    await page.reload();
+    await expect(page).toHaveURL(/#\/dashboard$/);
+    await expect(page.getByRole('heading', { name: 'Get started with FlyBudget' })).toBeVisible();
   });
 
   test('investments, property and loans default to off budget', async ({ page, api }) => {

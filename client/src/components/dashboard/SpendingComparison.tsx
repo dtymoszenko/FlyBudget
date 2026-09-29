@@ -11,7 +11,9 @@ import {
 } from 'recharts';
 import { useSpendingComparison } from '../../hooks/useReports';
 import { formatCurrency } from '../../utils/currency';
+import { TrendingDown } from 'lucide-react';
 import { Card } from '../ui/Card';
+import { EmptyState } from '../ui/EmptyState';
 import { chartColors } from '../../utils/chartColors';
 import { useXAxisLayout } from '../../hooks/useXAxisLayout';
 
@@ -85,6 +87,11 @@ export default function SpendingComparison() {
     return Object.values(merged).sort((a, b) => a.day - b.day);
   }, [data]);
 
+  const hasData =
+    !!data &&
+    (data.current.some((p) => p.cumulative !== 0) ||
+      data.comparison.some((p) => p.cumulative !== 0));
+
   const labels = useMemo(() => chartData.map((d) => d.label), [chartData]);
   // Inset: y-axis width (50) on the left, chart margin (8) on the right
   const xAxis = useXAxisLayout({
@@ -132,7 +139,7 @@ export default function SpendingComparison() {
         </select>
       </div>
 
-      {chartData.length > 0 ? (
+      {hasData && chartData.length > 0 ? (
         <div className="mt-2" ref={xAxis.ref}>
           <ResponsiveContainer width="100%" height={192}>
             <AreaChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
@@ -175,7 +182,12 @@ export default function SpendingComparison() {
           </ResponsiveContainer>
         </div>
       ) : (
-        <p className="text-sm text-text-disabled py-8 text-center">Not enough data yet.</p>
+        <EmptyState
+          compact
+          icon={<TrendingDown size={20} />}
+          title="Nothing to compare yet"
+          description="Once you have some spending, this shows how this period compares with the last one."
+        />
       )}
     </Card>
   );

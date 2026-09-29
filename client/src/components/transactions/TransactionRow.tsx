@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ChevronRight, ChevronDown, ArrowLeftRight, ArrowRight, Lock } from 'lucide-react';
+import { ChevronRight, ChevronDown, ArrowRight, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useUpdateTransaction } from '../../hooks/useTransactions';
 import { useUpdatePayee } from '../../hooks/usePayees';

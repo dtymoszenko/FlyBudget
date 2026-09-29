@@ -18,6 +18,10 @@ interface PreferencesState {
   upcomingLength: string;
   /** Keep a copy of the budget on this device, to open it when the server can't be reached */
   keepOfflineCopy: boolean;
+  /** "Skip for now" on the welcome screen: open the app even with no accounts */
+  setupSkipped: boolean;
+  /** The getting started checklist on the dashboard was hidden */
+  gettingStartedHidden: boolean;
   setTheme: (theme: Theme) => void;
   setCurrencySymbol: (symbol: string) => void;
   setDateFormat: (format: DateFormatOption) => void;
@@ -28,6 +32,8 @@ interface PreferencesState {
   setShowAccountIcons: (show: boolean) => void;
   setUpcomingLength: (length: string) => void;
   setKeepOfflineCopy: (keep: boolean) => void;
+  setSetupSkipped: (skipped: boolean) => void;
+  setGettingStartedHidden: (hidden: boolean) => void;
 }
 
 export const usePreferencesStore = create<PreferencesState>()(
@@ -43,6 +49,8 @@ export const usePreferencesStore = create<PreferencesState>()(
       showAccountIcons: true,
       upcomingLength: '7',
       keepOfflineCopy: true,
+      setupSkipped: false,
+      gettingStartedHidden: false,
       setTheme: (theme) => set({ theme }),
       setCurrencySymbol: (currencySymbol) => set({ currencySymbol }),
       setDateFormat: (dateFormat) => set({ dateFormat }),
@@ -53,6 +61,8 @@ export const usePreferencesStore = create<PreferencesState>()(
       setShowAccountIcons: (showAccountIcons) => set({ showAccountIcons }),
       setUpcomingLength: (upcomingLength) => set({ upcomingLength }),
       setKeepOfflineCopy: (keepOfflineCopy) => set({ keepOfflineCopy }),
+      setSetupSkipped: (setupSkipped) => set({ setupSkipped }),
+      setGettingStartedHidden: (gettingStartedHidden) => set({ gettingStartedHidden }),
     }),
     { name: 'budget-preferences' },
   ),

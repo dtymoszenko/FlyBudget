@@ -25,6 +25,9 @@ async function sidewaysOverflow(page: Page) {
     const problems: string[] = [];
     const extra = document.documentElement.scrollWidth - window.innerWidth;
     if (extra > 0) problems.push(`document +${extra}px`);
+    // Only the content area scrolls up and down, never the window itself
+    const below = document.documentElement.scrollHeight - window.innerHeight;
+    if (below > 0) problems.push(`document scrolls down +${below}px`);
     for (const el of document.querySelectorAll('body *')) {
       if (scrollsDown(el) && el.scrollWidth > el.clientWidth + 1) {
         problems.push(`${name(el)} scrolls sideways +${el.scrollWidth - el.clientWidth}px`);

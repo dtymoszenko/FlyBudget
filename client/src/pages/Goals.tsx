@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Plus, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, ChevronDown, ChevronRight, Target } from 'lucide-react';
 import { differenceInCalendarDays, differenceInCalendarMonths, format, parseISO } from 'date-fns';
 import { useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal } from '../hooks/useGoals';
 import { useAccounts } from '../hooks/useAccounts';
@@ -7,6 +7,8 @@ import { GoalFormModal } from '../components/goals/GoalFormModal';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { useModalValue } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
+import { EmptyState } from '../components/ui/EmptyState';
+import { docsUrl } from '../utils/project';
 import { Card } from '../components/ui/Card';
 import { StatCardRow } from '../components/reports/ChartHelpers';
 import RowMenu from '../components/ui/RowMenu';
@@ -228,15 +230,18 @@ export default function GoalsPage() {
       </div>
 
       {goals.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-text-tertiary mb-4">
-              No goals yet. Set a savings target to start tracking your progress.
-            </p>
-            <Button onClick={() => setAddOpen(true)}>
-              <Plus size={14} /> Add Goal
-            </Button>
-          </div>
+        <div className="flex-1 flex items-center justify-center overflow-y-auto">
+          <EmptyState
+            icon={<Target size={26} />}
+            title="Save for what matters"
+            description="Set a target like an emergency fund, a trip or a new car, and see how close you are and how much to set aside each month."
+            learnMoreHref={docsUrl('goals')}
+            actions={
+              <Button onClick={() => setAddOpen(true)}>
+                <Plus size={14} /> Add Goal
+              </Button>
+            }
+          />
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto">

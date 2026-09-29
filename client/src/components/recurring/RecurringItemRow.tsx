@@ -62,7 +62,9 @@ export default function RecurringItemRow({
       }`}
     >
       <div className="min-w-0">
-        <p className={`text-sm font-medium truncate ${isMuted ? 'text-text-tertiary' : 'text-text'}`}>
+        <p
+          className={`text-sm font-medium truncate ${isMuted ? 'text-text-tertiary' : 'text-text'}`}
+        >
           {occ.scheduleName}
         </p>
         <p className="text-xs text-text-tertiary truncate">
@@ -101,10 +103,22 @@ export default function RecurringItemRow({
       <div onClick={(e) => e.stopPropagation()}>
         <RowMenu
           items={[
-            { label: 'Mark as paid', onClick: () => onMarkPaid?.(), hidden: !isPending || !onMarkPaid },
-            { label: 'Match to transaction', onClick: () => onMatch?.(), hidden: !isPending || !onMatch },
+            {
+              label: 'Mark as paid',
+              onClick: () => onMarkPaid?.(),
+              hidden: !isPending || !onMarkPaid,
+            },
+            {
+              label: 'Match to transaction',
+              onClick: () => onMatch?.(),
+              hidden: !isPending || !onMatch,
+            },
             { label: 'Skip', onClick: () => onSkip?.(), hidden: !isPending || !onSkip },
-            { label: 'Unlink transaction', onClick: () => onUnmatch?.(), hidden: !isPaid || !onUnmatch },
+            {
+              label: 'Unlink transaction',
+              onClick: () => onUnmatch?.(),
+              hidden: !isPaid || !onUnmatch,
+            },
             { label: 'Edit recurring', onClick: () => onEdit?.(), hidden: !onEdit },
           ]}
         />

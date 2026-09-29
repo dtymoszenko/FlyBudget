@@ -3,17 +3,18 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Loader2, Menu } from 'lucide-react';
 import { useAccounts } from '../../hooks/useAccounts';
 import { useIsPhone } from '../../hooks/useIsPhone';
-import { useAppStore } from '../../store/appStore';
+import { usePreferencesStore } from '../../store/preferencesStore';
 import { useUndoKeyboard } from '../../hooks/useUndoKeyboard';
 import { UndoToast } from '../ui/UndoToast';
 import { ConnectionBanner } from '../connection/ConnectionBanner';
 import { Sidebar, SidebarDrawer } from './Sidebar';
+import { BrandName } from '../ui/BrandName';
 import logoUrl from '/logo.png';
 
 export function AppShell() {
   useUndoKeyboard();
   const { data: accounts = [], isLoading } = useAccounts();
-  const setupSkipped = useAppStore((s) => s.setupSkipped);
+  const setupSkipped = usePreferencesStore((s) => s.setupSkipped);
   const isPhone = useIsPhone();
 
   if (isLoading) {
@@ -98,9 +99,11 @@ function PhoneShell() {
             <Menu size={20} />
           </button>
           <img src={logoUrl} alt="" className="w-6 h-6" />
-          <span className="text-sm font-semibold text-sidebar-text-hi tracking-tight">
-            FlyBudget
-          </span>
+          <BrandName
+            className="text-sm font-semibold tracking-tight"
+            flyClassName="text-brand-500"
+            budgetClassName="text-sidebar-text-hi"
+          />
         </header>
         <ConnectionBanner />
         <main className="flex-1 min-h-0 overflow-y-auto">

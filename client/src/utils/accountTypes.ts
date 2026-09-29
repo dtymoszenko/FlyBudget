@@ -14,8 +14,3 @@ export function isLiabilityType(type: string): boolean {
 export function accountTypeLabel(type: string): string {
   return BY_TYPE.get(type as AccountTypeInfo['value'])?.label ?? type;
 }
-
-/** Homes, cars and valuables have no statements; their value is updated by hand */
-export function isPropertyType(type: string): boolean {
-  return accountTypeInfo(type).group === 'property';
-}

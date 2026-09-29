@@ -2,7 +2,6 @@ import { apiFetch } from './client';
 import type {
   NetWorthPoint,
   IncomeExpensesPoint,
-  CashFlowPoint,
   SpendingByCategory,
   IncomeByCategoryItem,
   SpendingTrendPoint,
@@ -19,9 +18,6 @@ export const getNetWorth = (from: string, to: string, granularity?: 'daily' | 'm
 
 export const getIncomeVsExpenses = (from: string, to: string) =>
   apiFetch<IncomeExpensesPoint[]>(`/reports/income-vs-expenses${toQueryString(from, to)}`);
-
-export const getCashFlow = (from: string, to: string) =>
-  apiFetch<CashFlowPoint[]>(`/reports/cash-flow${toQueryString(from, to)}`);
 
 export const getSpendingByCategory = (from: string, to: string) =>
   apiFetch<SpendingByCategory[]>(`/reports/spending-by-category${toQueryString(from, to)}`);

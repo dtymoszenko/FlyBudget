@@ -165,7 +165,7 @@ test.describe('account register', () => {
     await row(page, 'Oops Store').click();
     await page.getByRole('button', { name: 'Delete Transaction' }).click();
     await page.getByRole('dialog').getByRole('button', { name: 'Delete' }).click();
-    await expect(page.getByText('No transactions found.')).toBeVisible();
+    await expect(page.getByText('No transactions yet')).toBeVisible();
     expect(await api.balance(checking.id)).toBe(100_000);
   });
 

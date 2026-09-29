@@ -120,7 +120,9 @@ export function OptionPicker(props: Props) {
                     {o.group && <span className="text-text-tertiary">{o.group} → </span>}
                     {o.label}
                   </span>
-                  {!props.multiple && isOn && <Check size={13} className="text-brand-600 shrink-0" />}
+                  {!props.multiple && isOn && (
+                    <Check size={13} className="text-brand-600 shrink-0" />
+                  )}
                 </button>
               );
             })}

@@ -55,7 +55,10 @@ export function CategorySelectButton({
       {open && (
         <CategoryPicker
           value={value}
-          onChange={(id) => { onChange(id); setOpen(false); }}
+          onChange={(id) => {
+            onChange(id);
+            setOpen(false);
+          }}
           groups={groups as CategoryGroup[]}
           onClose={() => setOpen(false)}
           position={position}

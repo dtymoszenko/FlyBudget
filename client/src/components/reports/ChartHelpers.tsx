@@ -1,4 +1,5 @@
 import { format, parseISO } from 'date-fns';
+import { ChartNoAxesColumn } from 'lucide-react';
 import { formatCurrency } from '../../utils/currency';
 import { CATEGORY_COLORS } from '../../utils/chartColors';
 
@@ -91,10 +92,19 @@ export function ChartSkeleton() {
   );
 }
 
-export function EmptyState({ message = 'No data for this period.' }: { message?: string }) {
+/** A chart with nothing to draw: says so, and what would fill it */
+export function EmptyState({
+  message = 'No data for this period',
+  hint = 'Add transactions, or pick a longer date range.',
+}: {
+  message?: string;
+  hint?: string;
+}) {
   return (
-    <div className="h-full flex items-center justify-center">
-      <div className="text-sm text-text-tertiary">{message}</div>
+    <div className="h-full min-h-24 flex flex-col items-center justify-center text-center gap-1 px-4">
+      <ChartNoAxesColumn size={20} className="text-text-disabled mb-1" aria-hidden />
+      <p className="text-sm font-medium text-text-secondary">{message}</p>
+      {hint && <p className="text-xs text-text-tertiary">{hint}</p>}
     </div>
   );
 }
@@ -129,7 +139,9 @@ export function StatCardRow({
             key={c.label}
             className="rounded-xl bg-surface border border-border-light shadow-card px-4 py-6 text-center"
           >
-            <p className={`text-xl font-semibold tabular-nums ${c.tone ? TONE_CLASS[c.tone] : 'text-text'}`}>
+            <p
+              className={`text-xl font-semibold tabular-nums ${c.tone ? TONE_CLASS[c.tone] : 'text-text'}`}
+            >
               {c.value}
             </p>
             <p className="text-sm text-text-secondary mt-1.5">{c.label}</p>
@@ -148,7 +160,9 @@ export function StatCardRow({
         >
           <p className="text-xs text-text-tertiary">{c.label}</p>
           {c.sub && <p className="text-[11px] text-text-tertiary/80">{c.sub}</p>}
-          <p className={`text-lg font-semibold mt-0.5 tabular-nums ${c.tone ? TONE_CLASS[c.tone] : 'text-text'}`}>
+          <p
+            className={`text-lg font-semibold mt-0.5 tabular-nums ${c.tone ? TONE_CLASS[c.tone] : 'text-text'}`}
+          >
             {c.value}
           </p>
         </div>

@@ -1,7 +1,7 @@
 import { useState, useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { format, parseISO, addMonths, subMonths } from 'date-fns';
-import { ChevronLeft, ChevronRight, ChevronDown, Eye } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, Eye, Lightbulb } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
 import { usePreferencesStore } from '../store/preferencesStore';
 import { useBudget, useBudgetSummary, useSetBudget, useSetBudgetBulk } from '../hooks/useBudget';
@@ -13,6 +13,8 @@ import { SpentBar } from '../components/budget/SpentBar';
 import { PhoneBudget } from '../components/budget/PhoneBudget';
 import { useIsPhone } from '../hooks/useIsPhone';
 import { useCanSave } from '../hooks/useConnection';
+import { ExternalLink } from '../components/ui/ExternalLink';
+import { docsUrl } from '../utils/project';
 import type { BudgetCategory, BudgetGroup, BudgetType } from '../types';
 
 function AmountInput({
@@ -169,6 +171,8 @@ interface IncomeGroupProps {
   onSave: (categoryId: string, cents: number) => void;
   onCancel: () => void;
   onApplyBulk: (categoryId: string, cents: number) => void;
+  /** Nothing is planned this month yet: list every category, so there's something to plan */
+  showAll: boolean;
 }
 
 function IncomeGroupSection({
@@ -179,6 +183,7 @@ function IncomeGroupSection({
   onSave,
   onCancel,
   onApplyBulk,
+  showAll,
 }: IncomeGroupProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [showUnbudgeted, setShowUnbudgeted] = useState(false);
@@ -202,7 +207,7 @@ function IncomeGroupSection({
   const inactive = group.categories.filter(
     (c) => c.budgeted === 0 && c.balance - c.carryOver - c.budgeted === 0,
   );
-  const visibleCats = showUnbudgeted ? group.categories : active;
+  const visibleCats = showUnbudgeted || showAll ? group.categories : active;
 
   return (
     <>
@@ -248,7 +253,7 @@ function IncomeGroupSection({
               onApplyBulk={onApplyBulk}
             />
           ))}
-          {inactive.length > 0 && (
+          {inactive.length > 0 && !showAll && (
             <tr className="border-b border-border-light">
               <td colSpan={4} className="py-2 pl-10 pr-3">
                 <button
@@ -278,6 +283,7 @@ interface BudgetTypeSectionProps {
   onSave: (categoryId: string, cents: number) => void;
   onCancel: () => void;
   onApplyBulk: (categoryId: string, cents: number) => void;
+  showAll: boolean;
 }
 
 function BudgetTypeSection({
@@ -289,6 +295,7 @@ function BudgetTypeSection({
   onSave,
   onCancel,
   onApplyBulk,
+  showAll,
 }: BudgetTypeSectionProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [showUnbudgeted, setShowUnbudgeted] = useState(false);
@@ -308,7 +315,7 @@ function BudgetTypeSection({
 
   const active = categories.filter((c) => c.budgeted !== 0 || c.spent !== 0);
   const inactive = categories.filter((c) => c.budgeted === 0 && c.spent === 0);
-  const visibleCats = showUnbudgeted ? categories : active;
+  const visibleCats = showUnbudgeted || showAll ? categories : active;
 
   const status = getStatus(totals.spent, totals.budgeted);
   const remaining = totals.budgeted - totals.spent;
@@ -360,7 +367,7 @@ function BudgetTypeSection({
             />
           ))}
 
-          {inactive.length > 0 && (
+          {inactive.length > 0 && !showAll && (
             <tr className="border-b border-border-light">
               <td colSpan={4} className="py-2 pl-10 pr-3">
                 <button
@@ -465,6 +472,8 @@ export default function BudgetPage() {
     setSelectedMonth(format(new Date(), 'yyyy-MM'));
   }
 
+  const nothingPlanned =
+    groups.length > 0 && !groups.some((g) => g.categories.some((c) => c.budgeted !== 0));
   const tbb = summary?.toBeBudgeted ?? 0;
   const carryOver = summary?.carryOver ?? 0;
   const expRemaining = expenseTotals.budgeted - expenseTotals.spent;
@@ -502,6 +511,24 @@ export default function BudgetPage() {
         </div>
       </div>
 
+      {nothingPlanned && (
+        <div className="flex items-start gap-3 px-6 py-3 bg-brand-50 border-b border-border-light text-sm text-text-secondary shrink-0">
+          <Lightbulb size={16} className="text-brand-600 shrink-0 mt-0.5" aria-hidden />
+          <p>
+            Nothing is planned for {format(monthDate, 'MMMM')} yet. {isPhone ? 'Tap' : 'Click'} an
+            amount in the <strong className="font-medium text-text">Planned</strong> column to set
+            what you expect to earn and spend in each category. Categories you leave empty are
+            tucked away once you've planned something.{' '}
+            <ExternalLink
+              href={docsUrl('budgeting')}
+              className="font-medium text-brand-600 hover:text-brand-700"
+            >
+              How budgeting works
+            </ExternalLink>
+          </p>
+        </div>
+      )}
+
       {/* Phones: the summary (with To Be Budgeted) goes above the table instead of beside it */}
       <div className="flex max-md:flex-col flex-1 overflow-y-auto">
         <div className="flex-1 max-md:flex-none max-md:order-last max-md:overflow-x-auto">
@@ -524,6 +551,7 @@ export default function BudgetPage() {
               month={selectedMonth}
               onSave={handleSave}
               onApplyBulk={handleApplyBulk}
+              showAll={nothingPlanned}
             />
           ) : (
             <table className="w-full border-collapse">
@@ -572,6 +600,7 @@ export default function BudgetPage() {
                         onSave={handleSave}
                         onCancel={() => setEditingId(null)}
                         onApplyBulk={handleApplyBulk}
+                        showAll={nothingPlanned}
                       />
                     ))}
 
@@ -629,6 +658,7 @@ export default function BudgetPage() {
                         onSave={handleSave}
                         onCancel={() => setEditingId(null)}
                         onApplyBulk={handleApplyBulk}
+                        showAll={nothingPlanned}
                       />
                     ))}
 
@@ -653,7 +683,13 @@ export default function BudgetPage() {
                 {groups.length === 0 && (
                   <tr>
                     <td colSpan={4} className="py-16 text-center text-sm text-text-tertiary">
-                      No categories yet. Add some in Settings.
+                      No categories yet.{' '}
+                      <Link
+                        to="/settings?tab=categories"
+                        className="font-medium text-brand-600 hover:text-brand-700"
+                      >
+                        Add some in Settings
+                      </Link>
                     </td>
                   </tr>
                 )}

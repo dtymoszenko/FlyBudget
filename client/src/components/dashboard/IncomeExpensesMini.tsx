@@ -4,7 +4,10 @@ import { format, parseISO } from 'date-fns';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useIncomeVsExpenses } from '../../hooks/useReports';
 import { formatCurrency } from '../../utils/currency';
+import { ArrowLeftRight } from 'lucide-react';
 import { Card } from '../ui/Card';
+import { EmptyState } from '../ui/EmptyState';
+import { ButtonLink } from '../ui/Button';
 import { chartColors } from '../../utils/chartColors';
 import { useXAxisLayout } from '../../hooks/useXAxisLayout';
 
@@ -44,6 +47,7 @@ export default function IncomeExpensesMini({ sixMonthsAgo, currentMonth }: Props
   });
 
   const latestNet = data.length > 0 ? data[data.length - 1].net : 0;
+  const hasData = data.some((d) => d.income !== 0 || d.expenses !== 0);
 
   if (isLoading) {
     return (
@@ -66,16 +70,18 @@ export default function IncomeExpensesMini({ sixMonthsAgo, currentMonth }: Props
           View all
         </Link>
       </div>
-      <p className="text-sm text-text-tertiary mb-3">
-        Net this month:{' '}
-        <span
-          className={`font-semibold tabular-nums ${latestNet >= 0 ? 'text-positive' : 'text-negative'}`}
-        >
-          {formatCurrency(latestNet)}
-        </span>
-      </p>
+      {hasData && (
+        <p className="text-sm text-text-tertiary mb-3">
+          Net this month:{' '}
+          <span
+            className={`font-semibold tabular-nums ${latestNet >= 0 ? 'text-positive' : 'text-negative'}`}
+          >
+            {formatCurrency(latestNet)}
+          </span>
+        </p>
+      )}
 
-      {chartData.length > 0 ? (
+      {hasData ? (
         <div ref={xAxis.ref}>
           <ResponsiveContainer width="100%" height={192}>
             <BarChart data={chartData} margin={{ top: 4, right: 4, left: 4, bottom: 0 }} barGap={2}>
@@ -98,7 +104,17 @@ export default function IncomeExpensesMini({ sixMonthsAgo, currentMonth }: Props
           </ResponsiveContainer>
         </div>
       ) : (
-        <p className="text-sm text-text-disabled py-8 text-center">Not enough data yet.</p>
+        <EmptyState
+          compact
+          icon={<ArrowLeftRight size={20} />}
+          title="No money in or out yet"
+          description="Add transactions to compare what comes in with what goes out, month by month."
+          actions={
+            <ButtonLink size="sm" to="/transactions?add=1">
+              Add a transaction
+            </ButtonLink>
+          }
+        />
       )}
     </Card>
   );

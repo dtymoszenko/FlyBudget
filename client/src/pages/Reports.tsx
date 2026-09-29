@@ -139,8 +139,13 @@ export default function ReportsPage() {
             <ChartSkeleton />
           </div>
         ) : active && widgets.length === 0 ? (
-          <div className="flex flex-col items-center justify-center text-center py-20 gap-3">
-            <p className="text-sm text-text-secondary">This dashboard is empty.</p>
+          <div className="flex flex-col items-center justify-center text-center py-20 gap-3 px-6">
+            <LayoutGrid size={26} className="text-brand-600" aria-hidden />
+            <p className="text-base font-semibold text-text">This dashboard is empty</p>
+            <p className="text-sm text-text-tertiary max-w-sm">
+              Add charts like net worth, spending trends or a transaction calendar, or build your
+              own report and pin it here.
+            </p>
             <AddWidgetMenu pageId={active.id} reports={reports} />
           </div>
         ) : (

@@ -55,7 +55,11 @@ interface SankeyNode {
   savingsRate?: number;
 }
 
-interface SankeyLink { source: number; target: number; value: number }
+interface SankeyLink {
+  source: number;
+  target: number;
+  value: number;
+}
 
 interface SankeyGraph {
   nodes: SankeyNode[];
@@ -67,13 +71,25 @@ interface SankeyGraph {
 }
 
 interface LayoutNode extends SankeyNode {
-  x: number; y: number; w: number; h: number; labelY: number; idx: number;
-  slotY: number; slotH: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  labelY: number;
+  idx: number;
+  slotY: number;
+  slotH: number;
 }
 
 interface LayoutLink {
-  si: number; ti: number; value: number;
-  sy: number; ty: number; lw: number; color: string; idx: number;
+  si: number;
+  ti: number;
+  value: number;
+  sy: number;
+  ty: number;
+  lw: number;
+  color: string;
+  idx: number;
 }
 
 interface SelectedNode {
@@ -112,7 +128,9 @@ function lighten(hex: string, amt: number): string {
 }
 
 function highlightPath(
-  ni: number, nodes: SankeyNode[], links: SankeyLink[],
+  ni: number,
+  nodes: SankeyNode[],
+  links: SankeyLink[],
 ): { hn: Set<number>; hl: Set<number> } {
   const node = nodes[ni];
   const hn = new Set([ni]);
@@ -126,22 +144,41 @@ function highlightPath(
 
   function up(idx: number) {
     links.forEach((l, li) => {
-      if (l.target === idx && !hl.has(li)) { hl.add(li); hn.add(l.source); up(l.source); }
+      if (l.target === idx && !hl.has(li)) {
+        hl.add(li);
+        hn.add(l.source);
+        up(l.source);
+      }
     });
   }
   function down(idx: number) {
     links.forEach((l, li) => {
-      if (l.source === idx && !hl.has(li)) { hl.add(li); hn.add(l.target); down(l.target); }
+      if (l.source === idx && !hl.has(li)) {
+        hl.add(li);
+        hn.add(l.target);
+        down(l.target);
+      }
     });
   }
 
   if (node.nodeType === 'income') {
-    links.forEach((l, li) => { if (l.source === ni) { hl.add(li); hn.add(l.target); } });
+    links.forEach((l, li) => {
+      if (l.source === ni) {
+        hl.add(li);
+        hn.add(l.target);
+      }
+    });
   } else if (node.nodeType === 'expense-group' || node.nodeType === 'savings') {
-    links.forEach((l, li) => { if (l.target === ni) { hl.add(li); hn.add(l.source); } });
+    links.forEach((l, li) => {
+      if (l.target === ni) {
+        hl.add(li);
+        hn.add(l.source);
+      }
+    });
     down(ni);
   } else {
-    up(ni); down(ni);
+    up(ni);
+    down(ni);
   }
   return { hn, hl };
 }
@@ -149,14 +186,17 @@ function highlightPath(
 /** Largest scale where every node's slot (max(value·s, MIN_SLOT)) plus gaps fits in `avail`. */
 function fitLayerScale(amounts: number[], avail: number): number {
   const used = (s: number) =>
-    amounts.reduce((sum, a) => sum + Math.max(a * s, MIN_SLOT), 0) + (amounts.length - 1) * NODE_GAP;
+    amounts.reduce((sum, a) => sum + Math.max(a * s, MIN_SLOT), 0) +
+    (amounts.length - 1) * NODE_GAP;
   const total = amounts.reduce((s, a) => s + a, 0);
   if (total <= 0) return Infinity;
-  let lo = 0, hi = avail / total;
+  let lo = 0,
+    hi = avail / total;
   if (used(lo) > avail) return lo;
   for (let i = 0; i < 40; i++) {
     const mid = (lo + hi) / 2;
-    if (used(mid) <= avail) lo = mid; else hi = mid;
+    if (used(mid) <= avail) lo = mid;
+    else hi = mid;
   }
   return lo;
 }
@@ -168,9 +208,10 @@ function buildSankeyGraph(
   spendingData: SpendingByCat[],
   showIcons: boolean,
 ): SankeyGraph | null {
-  const validIncome = incomeData.filter(c => c.totalReceived > 0);
-  const validSpending = spendingData.filter(c => c.totalSpent > 0);
-  const hasNeg = validIncome.length < incomeData.length || validSpending.length < spendingData.length;
+  const validIncome = incomeData.filter((c) => c.totalReceived > 0);
+  const validSpending = spendingData.filter((c) => c.totalSpent > 0);
+  const hasNeg =
+    validIncome.length < incomeData.length || validSpending.length < spendingData.length;
   if (!validIncome.length && !validSpending.length) return null;
 
   const totalIncome = validIncome.reduce((s, c) => s + c.totalReceived, 0);
@@ -183,47 +224,75 @@ function buildSankeyGraph(
   // Layer 0: Income sources
   const incomeNodes: SankeyNode[] = validIncome
     .sort((a, b) => b.totalReceived - a.totalReceived)
-    .map(c => ({
+    .map((c) => ({
       name: `${icon(c)}${c.categoryName ?? 'Income'}`,
-      nodeType: 'income', amount: c.totalReceived, color: chartColors.positive, layer: 0,
+      nodeType: 'income',
+      amount: c.totalReceived,
+      color: chartColors.positive,
+      layer: 0,
       pctOfIncome: validIncome.length > 1 ? (c.totalReceived / totalIncome) * 100 : undefined,
     }));
 
   // Layer 1: Hub
   const hubNode: SankeyNode = {
-    name: 'Total Income', nodeType: 'hub', amount: totalIncome, color: chartColors.brand, layer: 1,
+    name: 'Total Income',
+    nodeType: 'hub',
+    amount: totalIncome,
+    color: chartColors.brand,
+    layer: 1,
   };
 
   // Build group aggregates
-  const groupMap = new Map<string, { total: number; groupId: string | null; items: SpendingByCat[] }>();
+  const groupMap = new Map<
+    string,
+    { total: number; groupId: string | null; items: SpendingByCat[] }
+  >();
   for (const item of validSpending) {
     const key = item.groupName ?? 'Uncategorized';
     const ex = groupMap.get(key);
-    if (ex) { ex.total += item.totalSpent; ex.items.push(item); }
-    else groupMap.set(key, { total: item.totalSpent, groupId: item.groupId, items: [item] });
+    if (ex) {
+      ex.total += item.totalSpent;
+      ex.items.push(item);
+    } else groupMap.set(key, { total: item.totalSpent, groupId: item.groupId, items: [item] });
   }
   const sortedGroups = [...groupMap.entries()].sort((a, b) => b[1].total - a[1].total);
 
   // Assign group colors
   const gColorMap = new Map<string, string>();
   sortedGroups.forEach(([name], i) => {
-    gColorMap.set(name, name === 'Uncategorized' ? chartColors.axis : EXPENSE_COLORS[i % EXPENSE_COLORS.length]);
+    gColorMap.set(
+      name,
+      name === 'Uncategorized' ? chartColors.axis : EXPENSE_COLORS[i % EXPENSE_COLORS.length],
+    );
   });
 
   // Layer 2: Expense groups
   const groupNodes: SankeyNode[] = sortedGroups.map(([name, { total, groupId }]) => ({
-    name, nodeType: 'expense-group', amount: total,
-    color: gColorMap.get(name) ?? chartColors.axis, layer: 2,
-    groupId, groupName: name,
+    name,
+    nodeType: 'expense-group',
+    amount: total,
+    color: gColorMap.get(name) ?? chartColors.axis,
+    layer: 2,
+    groupId,
+    groupName: name,
     pctOfIncome: totalIncome > 0 ? (total / totalIncome) * 100 : 0,
     pctOfSpending: totalExpenses > 0 ? (total / totalExpenses) * 100 : 0,
   }));
 
   // Layer 2: Savings
-  const savingsNodes: SankeyNode[] = savings > MIN_SAVINGS_CENTS
-    ? [{ name: 'Savings', nodeType: 'savings', amount: savings, color: chartColors.positive,
-         layer: 2, savingsRate: totalIncome > 0 ? (savings / totalIncome) * 100 : 0 }]
-    : [];
+  const savingsNodes: SankeyNode[] =
+    savings > MIN_SAVINGS_CENTS
+      ? [
+          {
+            name: 'Savings',
+            nodeType: 'savings',
+            amount: savings,
+            color: chartColors.positive,
+            layer: 2,
+            savingsRate: totalIncome > 0 ? (savings / totalIncome) * 100 : 0,
+          },
+        ]
+      : [];
 
   // Layer 3: Subcategories per group (with Other aggregation)
   const subcatNodes: SankeyNode[] = [];
@@ -236,9 +305,12 @@ function buildSankeyGraph(
 
     const subs: SankeyNode[] = sorted.map((item, ci) => ({
       name: `${icon(item)}${item.categoryName ?? 'Uncategorized'}`,
-      nodeType: 'subcategory' as NodeType, amount: item.totalSpent,
+      nodeType: 'subcategory' as NodeType,
+      amount: item.totalSpent,
       color: lighten(gColor, sorted.length > 1 ? Math.min(ci * 0.12, 0.4) : 0),
-      layer: 3, categoryId: item.categoryId, groupName: gName,
+      layer: 3,
+      categoryId: item.categoryId,
+      groupName: gName,
       pctOfGroup: gTotal > 0 ? (item.totalSpent / gTotal) * 100 : 0,
       pctOfSpending: totalExpenses > 0 ? (item.totalSpent / totalExpenses) * 100 : 0,
     }));
@@ -248,7 +320,11 @@ function buildSankeyGraph(
 
   // Assemble nodes (Savings leads layer 2, above the expense groups)
   const nodes: SankeyNode[] = [
-    ...incomeNodes, hubNode, ...savingsNodes, ...groupNodes, ...subcatNodes,
+    ...incomeNodes,
+    hubNode,
+    ...savingsNodes,
+    ...groupNodes,
+    ...subcatNodes,
   ];
 
   const hubIdx = incomeNodes.length;
@@ -258,18 +334,25 @@ function buildSankeyGraph(
 
   // Build links
   const links: SankeyLink[] = [];
-  incomeNodes.forEach((_, i) => links.push({ source: i, target: hubIdx, value: validIncome[i].totalReceived }));
-  sortedGroups.forEach(([, { total }], i) => links.push({ source: hubIdx, target: grpStart + i, value: total }));
+  incomeNodes.forEach((_, i) =>
+    links.push({ source: i, target: hubIdx, value: validIncome[i].totalReceived }),
+  );
+  sortedGroups.forEach(([, { total }], i) =>
+    links.push({ source: hubIdx, target: grpStart + i, value: total }),
+  );
   if (savingsNodes.length) links.push({ source: hubIdx, target: savStart, value: savings });
 
   let si = subStart;
   for (const [gName] of sortedGroups) {
     const subs = groupSubMap.get(gName) ?? [];
     const gi = grpStart + sortedGroups.findIndex(([n]) => n === gName);
-    for (const sub of subs) { links.push({ source: gi, target: si, value: sub.amount }); si++; }
+    for (const sub of subs) {
+      links.push({ source: gi, target: si, value: sub.amount });
+      si++;
+    }
   }
 
-  const validLinks = links.filter(l => l.value > 0);
+  const validLinks = links.filter((l) => l.value > 0);
   return validLinks.length
     ? { nodes, links: validLinks, totalIncome, totalExpenses, savings, hasNegativeFlows: hasNeg }
     : null;
@@ -278,9 +361,14 @@ function buildSankeyGraph(
 // ─── Compute Layout ──────────────────────────────────────────────────────────
 
 function computeLayout(
-  graph: SankeyGraph, width: number, height: number,
+  graph: SankeyGraph,
+  width: number,
+  height: number,
 ): { nodes: LayoutNode[]; links: LayoutLink[] } | null {
-  const mT = SANKEY_MARGIN_Y / 2, mB = SANKEY_MARGIN_Y / 2, lmL = 170, lmR = 180;
+  const mT = SANKEY_MARGIN_Y / 2,
+    mB = SANKEY_MARGIN_Y / 2,
+    lmL = 170,
+    lmR = 180;
   const dW = width - lmL - lmR;
   const dH = height - mT - mB;
   if (dW <= 0 || dH <= 0) return null;
@@ -294,14 +382,21 @@ function computeLayout(
 
   // Column X — adaptive to income count
   const incCount = (layers.get(0) ?? []).length;
-  const colX = incCount <= 1
-    ? [0.05, 0.20, 0.55, 0.92].map(p => lmL + p * dW)
-    : [0.02, 0.28, 0.58, 0.92].map(p => lmL + p * dW);
+  const colX =
+    incCount <= 1
+      ? [0.05, 0.2, 0.55, 0.92].map((p) => lmL + p * dW)
+      : [0.02, 0.28, 0.58, 0.92].map((p) => lmL + p * dW);
 
   // Global scale: constrained by most-crowded layer
   let scale = Infinity;
   for (const [, idxs] of layers) {
-    scale = Math.min(scale, fitLayerScale(idxs.map(i => graph.nodes[i].amount), dH));
+    scale = Math.min(
+      scale,
+      fitLayerScale(
+        idxs.map((i) => graph.nodes[i].amount),
+        dH,
+      ),
+    );
   }
   if (!isFinite(scale) || scale <= 0) scale = 1;
 
@@ -309,14 +404,21 @@ function computeLayout(
   const ln: LayoutNode[] = graph.nodes.map((n, i) => {
     const h = Math.max(n.amount * scale, MIN_NODE_H);
     return {
-      ...n, x: colX[n.layer] ?? 0, y: 0, w: NODE_W, h, labelY: 0, idx: i,
-      slotY: 0, slotH: Math.max(h, MIN_SLOT),
+      ...n,
+      x: colX[n.layer] ?? 0,
+      y: 0,
+      w: NODE_W,
+      h,
+      labelY: 0,
+      idx: i,
+      slotY: 0,
+      slotH: Math.max(h, MIN_SLOT),
     };
   });
 
   // Stack evenly spaced, top-aligned slots per layer; bar and label centered in each slot
   for (const [, idxs] of layers) {
-    const layerN = idxs.map(i => ln[i]);
+    const layerN = idxs.map((i) => ln[i]);
     let y = mT;
     for (const n of layerN) {
       n.slotY = y;
@@ -325,10 +427,6 @@ function computeLayout(
       y += n.slotH + NODE_GAP;
     }
   }
-
-  // Link port allocation
-  const outPort = ln.map(n => n.y);
-  const inPort = ln.map(n => n.y);
 
   // Group links by source, sort by target Y
   const bySource = new Map<number, number[]>();
@@ -339,8 +437,10 @@ function computeLayout(
     if (!byTarget.has(l.target)) byTarget.set(l.target, []);
     byTarget.get(l.target)!.push(i);
   });
-  for (const [, li] of bySource) li.sort((a, b) => ln[graph.links[a].target].y - ln[graph.links[b].target].y);
-  for (const [, li] of byTarget) li.sort((a, b) => ln[graph.links[a].source].y - ln[graph.links[b].source].y);
+  for (const [, li] of bySource)
+    li.sort((a, b) => ln[graph.links[a].target].y - ln[graph.links[b].target].y);
+  for (const [, li] of byTarget)
+    li.sort((a, b) => ln[graph.links[a].source].y - ln[graph.links[b].source].y);
 
   const linkSy = new Float64Array(graph.links.length);
   const linkTy = new Float64Array(graph.links.length);
@@ -350,20 +450,27 @@ function computeLayout(
     let py = ln[ni].y;
     for (const li of lis) {
       const w = graph.links[li].value * scale;
-      linkSy[li] = py + w / 2; linkW[li] = w; py += w;
+      linkSy[li] = py + w / 2;
+      linkW[li] = w;
+      py += w;
     }
   }
   for (const [ni, lis] of byTarget) {
     let py = ln[ni].y;
     for (const li of lis) {
       const w = graph.links[li].value * scale;
-      linkTy[li] = py + w / 2; py += w;
+      linkTy[li] = py + w / 2;
+      py += w;
     }
   }
 
   const ll: LayoutLink[] = graph.links.map((l, i) => ({
-    si: l.source, ti: l.target, value: l.value,
-    sy: linkSy[i], ty: linkTy[i], lw: linkW[i],
+    si: l.source,
+    ti: l.target,
+    value: l.value,
+    sy: linkSy[i],
+    ty: linkTy[i],
+    lw: linkW[i],
     color: ln[l.source].nodeType === 'income' ? ln[l.source].color : ln[l.target].color,
     idx: i,
   }));
@@ -376,8 +483,10 @@ function computeLayout(
 function linkPath(sx: number, sy: number, tx: number, ty: number, w: number) {
   const hw = w / 2;
   const cx = (sx + tx) / 2;
-  return `M${sx},${sy - hw} C${cx},${sy - hw} ${cx},${ty - hw} ${tx},${ty - hw} ` +
-    `L${tx},${ty + hw} C${cx},${ty + hw} ${cx},${sy + hw} ${sx},${sy + hw} Z`;
+  return (
+    `M${sx},${sy - hw} C${cx},${sy - hw} ${cx},${ty - hw} ${tx},${ty - hw} ` +
+    `L${tx},${ty + hw} C${cx},${ty + hw} ${cx},${sy + hw} ${sx},${sy + hw} Z`
+  );
 }
 
 function useContainerSize(ref: React.RefObject<HTMLDivElement | null>) {
@@ -385,7 +494,7 @@ function useContainerSize(ref: React.RefObject<HTMLDivElement | null>) {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const ro = new ResizeObserver(entries => {
+    const ro = new ResizeObserver((entries) => {
       const e = entries[0];
       if (e) setSize({ width: e.contentRect.width, height: e.contentRect.height });
     });
@@ -398,7 +507,7 @@ function useContainerSize(ref: React.RefObject<HTMLDivElement | null>) {
 }
 
 function SankeyDiagram({ from, to, selectedNode, onNodeClick }: SankeyDiagramProps) {
-  const showIcons = usePreferencesStore(s => s.showCategoryIcons);
+  const showIcons = usePreferencesStore((s) => s.showCategoryIcons);
   const { data: incomeData = [], isLoading: il } = useIncomeByCategory(from, to);
   const { data: spendingData = [], isLoading: sl } = useSpendingByCategory(from, to);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -422,14 +531,14 @@ function SankeyDiagram({ from, to, selectedNode, onNodeClick }: SankeyDiagramPro
   }, [graph]);
 
   const layout = useMemo(
-    () => graph && width > 0 ? computeLayout(graph, width, height) : null,
+    () => (graph && width > 0 ? computeLayout(graph, width, height) : null),
     [graph, width, height],
   );
 
   // Map selectedNode to graph index
   const selectedIdx = useMemo(() => {
     if (!selectedNode || !graph) return -1;
-    return graph.nodes.findIndex(n => {
+    return graph.nodes.findIndex((n) => {
       if (selectedNode.nodeType === 'subcategory' && n.nodeType === 'subcategory')
         return n.categoryId != null && n.categoryId === selectedNode.categoryId;
       if (selectedNode.nodeType === 'expense-group' && n.nodeType === 'expense-group')
@@ -453,43 +562,68 @@ function SankeyDiagram({ from, to, selectedNode, onNodeClick }: SankeyDiagramPro
   }, []);
 
   const handleNodeMove = useCallback((e: React.MouseEvent, node: SankeyNode) => {
-    setTooltip(prev => prev ? { x: e.clientX, y: e.clientY, node } : null);
+    setTooltip((prev) => (prev ? { x: e.clientX, y: e.clientY, node } : null));
   }, []);
 
   const handleLeave = useCallback(() => {
-    setHoveredIdx(null); setTooltip(null);
+    setHoveredIdx(null);
+    setTooltip(null);
   }, []);
 
-  const handleClick = useCallback((node: SankeyNode) => {
-    const isClickable = node.nodeType === 'subcategory' || node.nodeType === 'expense-group';
-    if (!isClickable) return;
-    // Check if already selected
-    const isSame = selectedNode && (
-      (node.categoryId != null && node.categoryId === selectedNode.categoryId) ||
-      (node.nodeType === 'expense-group' && node.groupName === selectedNode.name)
+  const handleClick = useCallback(
+    (node: SankeyNode) => {
+      const isClickable = node.nodeType === 'subcategory' || node.nodeType === 'expense-group';
+      if (!isClickable) return;
+      // Check if already selected
+      const isSame =
+        selectedNode &&
+        ((node.categoryId != null && node.categoryId === selectedNode.categoryId) ||
+          (node.nodeType === 'expense-group' && node.groupName === selectedNode.name));
+      if (isSame) {
+        onNodeClick(null);
+        return;
+      }
+      onNodeClick({
+        categoryId: node.categoryId,
+        groupId: node.groupId,
+        groupName: node.groupName,
+        name: node.name,
+        nodeType: node.nodeType,
+      });
+    },
+    [selectedNode, onNodeClick],
+  );
+
+  const handleLinkEnter = useCallback(
+    (e: React.MouseEvent, link: LayoutLink) => {
+      if (!layout) return;
+      const src = layout.nodes[link.si];
+      const tgt = layout.nodes[link.ti];
+      setHoveredIdx(link.ti);
+      setTooltip({
+        x: e.clientX,
+        y: e.clientY,
+        node: {
+          ...tgt,
+          name: `${src.name} → ${tgt.name}`,
+        },
+      });
+    },
+    [layout],
+  );
+
+  if (il || sl)
+    return (
+      <div ref={containerRef} className="w-full" style={{ height: SANKEY_MIN_H }}>
+        <ChartSkeleton />
+      </div>
     );
-    if (isSame) { onNodeClick(null); return; }
-    onNodeClick({
-      categoryId: node.categoryId,
-      groupId: node.groupId,
-      groupName: node.groupName,
-      name: node.name,
-      nodeType: node.nodeType,
-    });
-  }, [selectedNode, onNodeClick]);
-
-  const handleLinkEnter = useCallback((e: React.MouseEvent, link: LayoutLink) => {
-    if (!layout) return;
-    const src = layout.nodes[link.si];
-    const tgt = layout.nodes[link.ti];
-    setHoveredIdx(link.ti);
-    setTooltip({ x: e.clientX, y: e.clientY, node: {
-      ...tgt, name: `${src.name} → ${tgt.name}`,
-    }});
-  }, [layout]);
-
-  if (il || sl) return <div ref={containerRef} className="w-full" style={{ height: SANKEY_MIN_H }}><ChartSkeleton /></div>;
-  if (!graph) return <div ref={containerRef} className="w-full" style={{ height: SANKEY_MIN_H }}><EmptyState /></div>;
+  if (!graph)
+    return (
+      <div ref={containerRef} className="w-full" style={{ height: SANKEY_MIN_H }}>
+        <EmptyState />
+      </div>
+    );
 
   return (
     <div ref={containerRef} className="relative w-full">
@@ -501,7 +635,8 @@ function SankeyDiagram({ from, to, selectedNode, onNodeClick }: SankeyDiagramPro
               const srcX = layout.nodes[l.si].x + NODE_W;
               const tgtX = layout.nodes[l.ti].x;
               const tgtNode = layout.nodes[l.ti];
-              const clickable = tgtNode.nodeType === 'subcategory' || tgtNode.nodeType === 'expense-group';
+              const clickable =
+                tgtNode.nodeType === 'subcategory' || tgtNode.nodeType === 'expense-group';
               let opacity = 0.22;
               if (highlighted) {
                 opacity = highlighted.hl.has(l.idx) ? 0.6 : 0.07;
@@ -515,9 +650,14 @@ function SankeyDiagram({ from, to, selectedNode, onNodeClick }: SankeyDiagramPro
                   // Transparent stroke widens the hit area of thin flows to ≥ 8px
                   stroke="transparent"
                   strokeWidth={l.lw < 8 ? 8 - l.lw : 0}
-                  style={{ transition: 'fill-opacity 0.2s ease', cursor: clickable ? 'pointer' : 'default' }}
-                  onMouseEnter={e => handleLinkEnter(e, l)}
-                  onMouseMove={e => setTooltip(prev => prev ? { ...prev, x: e.clientX, y: e.clientY } : null)}
+                  style={{
+                    transition: 'fill-opacity 0.2s ease',
+                    cursor: clickable ? 'pointer' : 'default',
+                  }}
+                  onMouseEnter={(e) => handleLinkEnter(e, l)}
+                  onMouseMove={(e) =>
+                    setTooltip((prev) => (prev ? { ...prev, x: e.clientX, y: e.clientY } : null))
+                  }
                   onMouseLeave={handleLeave}
                   onClick={clickable ? () => handleClick(tgtNode) : undefined}
                 />
@@ -537,15 +677,19 @@ function SankeyDiagram({ from, to, selectedNode, onNodeClick }: SankeyDiagramPro
               return (
                 <rect
                   key={i}
-                  x={n.x} y={n.y} width={n.w} height={n.h}
-                  fill={n.color} rx={3}
+                  x={n.x}
+                  y={n.y}
+                  width={n.w}
+                  height={n.h}
+                  fill={n.color}
+                  rx={3}
                   style={{
                     opacity: nodeOpacity,
                     transition: 'opacity 0.2s ease',
                     cursor: clickable ? 'pointer' : 'default',
                   }}
-                  onMouseEnter={e => handleNodeEnter(e, n.idx, n)}
-                  onMouseMove={e => handleNodeMove(e, n)}
+                  onMouseEnter={(e) => handleNodeEnter(e, n.idx, n)}
+                  onMouseMove={(e) => handleNodeMove(e, n)}
                   onMouseLeave={handleLeave}
                   onClick={() => handleClick(n)}
                 />
@@ -582,7 +726,10 @@ function SankeyDiagram({ from, to, selectedNode, onNodeClick }: SankeyDiagramPro
               } else if (n.nodeType === 'savings' && n.savingsRate != null) {
                 pctStr = ` · ${n.savingsRate.toFixed(1)}%`;
               }
-              const hitW = NODE_W + 8 + Math.max(n.name.length * fontSize * 0.6, (amtStr.length + pctStr.length) * 5.5);
+              const hitW =
+                NODE_W +
+                8 +
+                Math.max(n.name.length * fontSize * 0.6, (amtStr.length + pctStr.length) * 5.5);
 
               return (
                 <g
@@ -592,32 +739,42 @@ function SankeyDiagram({ from, to, selectedNode, onNodeClick }: SankeyDiagramPro
                     transition: 'opacity 0.2s ease',
                     cursor: clickable ? 'pointer' : 'default',
                   }}
-                  onMouseEnter={e => handleNodeEnter(e, n.idx, n)}
-                  onMouseMove={e => handleNodeMove(e, n)}
+                  onMouseEnter={(e) => handleNodeEnter(e, n.idx, n)}
+                  onMouseMove={(e) => handleNodeMove(e, n)}
                   onMouseLeave={handleLeave}
                   onClick={() => handleClick(n)}
                 >
                   {/* Hit area spanning bar through label (label-height only, so big nodes don't block flows) */}
                   {clickable && (
                     <rect
-                      x={n.x} y={n.labelY - MIN_SLOT / 2}
-                      width={hitW} height={MIN_SLOT}
+                      x={n.x}
+                      y={n.labelY - MIN_SLOT / 2}
+                      width={hitW}
+                      height={MIN_SLOT}
                       fill="transparent"
                     />
                   )}
                   <text
-                    x={lx} y={n.labelY - 3}
-                    textAnchor={anchor} fontSize={fontSize} fontWeight={fontWeight}
-                    fill={chartColors.label} pointerEvents="none"
+                    x={lx}
+                    y={n.labelY - 3}
+                    textAnchor={anchor}
+                    fontSize={fontSize}
+                    fontWeight={fontWeight}
+                    fill={chartColors.label}
+                    pointerEvents="none"
                   >
                     {n.name}
                   </text>
                   <text
-                    x={lx} y={n.labelY + 10}
-                    textAnchor={anchor} fontSize={9}
-                    fill={chartColors.axis} pointerEvents="none"
+                    x={lx}
+                    y={n.labelY + 10}
+                    textAnchor={anchor}
+                    fontSize={9}
+                    fill={chartColors.axis}
+                    pointerEvents="none"
                   >
-                    {amtStr}{pctStr}
+                    {amtStr}
+                    {pctStr}
                   </text>
                 </g>
               );
@@ -632,7 +789,11 @@ function SankeyDiagram({ from, to, selectedNode, onNodeClick }: SankeyDiagramPro
           className="fixed z-50 pointer-events-none bg-surface rounded-md shadow-hover border border-border px-3 py-2 max-w-[260px]"
           style={{ left: tooltip.x + 14, top: tooltip.y - 12 }}
         >
-          <SankeyTooltip node={tooltip.node} totalIncome={graph.totalIncome} totalExpenses={graph.totalExpenses} />
+          <SankeyTooltip
+            node={tooltip.node}
+            totalIncome={graph.totalIncome}
+            totalExpenses={graph.totalExpenses}
+          />
         </div>
       )}
 
@@ -640,7 +801,10 @@ function SankeyDiagram({ from, to, selectedNode, onNodeClick }: SankeyDiagramPro
       {graph.hasNegativeFlows && (
         <div className="mt-1 px-4 flex items-center gap-1.5 text-xs text-text-tertiary">
           <Info size={12} className="shrink-0" />
-          <span>Some flows excluded — Sankey diagrams cannot represent negative values (e.g. refunds). Summary totals may differ slightly.</span>
+          <span>
+            Some flows excluded — Sankey diagrams cannot represent negative values (e.g. refunds).
+            Summary totals may differ slightly.
+          </span>
         </div>
       )}
     </div>
@@ -649,14 +813,25 @@ function SankeyDiagram({ from, to, selectedNode, onNodeClick }: SankeyDiagramPro
 
 // ─── Tooltip Content ─────────────────────────────────────────────────────────
 
-function SankeyTooltip({ node, totalIncome, totalExpenses }: {
-  node: SankeyNode; totalIncome: number; totalExpenses: number;
+function SankeyTooltip({
+  node,
+  totalIncome,
+  totalExpenses,
+}: {
+  node: SankeyNode;
+  totalIncome: number;
+  totalExpenses: number;
 }) {
   const n = node;
   const amt = formatCurrency(n.amount);
 
   if (n.nodeType === 'hub') {
-    return <><p className="text-xs font-medium text-text">{n.name}</p><p className="text-xs text-positive font-semibold">{amt}</p></>;
+    return (
+      <>
+        <p className="text-xs font-medium text-text">{n.name}</p>
+        <p className="text-xs text-positive font-semibold">{amt}</p>
+      </>
+    );
   }
 
   if (n.nodeType === 'income') {
@@ -664,7 +839,9 @@ function SankeyTooltip({ node, totalIncome, totalExpenses }: {
       <>
         <p className="text-xs font-medium text-text">{n.name}</p>
         <p className="text-xs text-positive font-semibold">{amt}</p>
-        {n.pctOfIncome != null && <p className="text-xs text-text-tertiary">{n.pctOfIncome.toFixed(1)}% of total income</p>}
+        {n.pctOfIncome != null && (
+          <p className="text-xs text-text-tertiary">{n.pctOfIncome.toFixed(1)}% of total income</p>
+        )}
       </>
     );
   }
@@ -674,7 +851,9 @@ function SankeyTooltip({ node, totalIncome, totalExpenses }: {
       <>
         <p className="text-xs font-medium text-text">{n.name}</p>
         <p className="text-xs text-positive font-semibold">{amt}</p>
-        {n.savingsRate != null && <p className="text-xs text-text-tertiary">{n.savingsRate.toFixed(1)}% savings rate</p>}
+        {n.savingsRate != null && (
+          <p className="text-xs text-text-tertiary">{n.savingsRate.toFixed(1)}% savings rate</p>
+        )}
       </>
     );
   }
@@ -683,9 +862,17 @@ function SankeyTooltip({ node, totalIncome, totalExpenses }: {
     return (
       <>
         <p className="text-xs font-medium text-text">{n.name}</p>
-        <p className="text-xs font-semibold" style={{ color: n.color }}>{amt}</p>
-        {n.pctOfIncome != null && <p className="text-xs text-text-tertiary">{n.pctOfIncome.toFixed(1)}% of total income</p>}
-        {n.pctOfSpending != null && <p className="text-xs text-text-tertiary">{n.pctOfSpending.toFixed(1)}% of total spending</p>}
+        <p className="text-xs font-semibold" style={{ color: n.color }}>
+          {amt}
+        </p>
+        {n.pctOfIncome != null && (
+          <p className="text-xs text-text-tertiary">{n.pctOfIncome.toFixed(1)}% of total income</p>
+        )}
+        {n.pctOfSpending != null && (
+          <p className="text-xs text-text-tertiary">
+            {n.pctOfSpending.toFixed(1)}% of total spending
+          </p>
+        )}
       </>
     );
   }
@@ -695,12 +882,18 @@ function SankeyTooltip({ node, totalIncome, totalExpenses }: {
   return (
     <>
       <p className="text-xs font-medium text-text">{n.name}</p>
-      <p className="text-xs font-semibold" style={{ color: n.color }}>{amt}</p>
+      <p className="text-xs font-semibold" style={{ color: n.color }}>
+        {amt}
+      </p>
       {n.pctOfGroup != null && n.groupName && (
-        <p className="text-xs text-text-tertiary">{n.pctOfGroup.toFixed(1)}% of {n.groupName}</p>
+        <p className="text-xs text-text-tertiary">
+          {n.pctOfGroup.toFixed(1)}% of {n.groupName}
+        </p>
       )}
       {n.pctOfSpending != null && (
-        <p className="text-xs text-text-tertiary">{n.pctOfSpending.toFixed(1)}% of total spending</p>
+        <p className="text-xs text-text-tertiary">
+          {n.pctOfSpending.toFixed(1)}% of total spending
+        </p>
       )}
     </>
   );
@@ -709,7 +902,7 @@ function SankeyTooltip({ node, totalIncome, totalExpenses }: {
 // ─── Page Component ──────────────────────────────────────────────────────────
 
 export default function CashFlowPage() {
-  const showIcons = usePreferencesStore(s => s.showCategoryIcons);
+  const showIcons = usePreferencesStore((s) => s.showCategoryIcons);
   const today = new Date();
   const [preset, setPreset] = useState<Preset>('6m');
   const [from, setFrom] = useState(() => format(subMonths(today, 5), 'yyyy-MM'));
@@ -735,7 +928,9 @@ export default function CashFlowPage() {
     setTo(r.to);
   }, [preset]);
 
-  useEffect(() => { setSelectedNode(null); }, [from, to]);
+  useEffect(() => {
+    setSelectedNode(null);
+  }, [from, to]);
 
   const { data: incData = [] } = useIncomeByCategory(from, to);
   const { data: spData = [] } = useSpendingByCategory(from, to);
@@ -748,8 +943,16 @@ export default function CashFlowPage() {
     return [
       { label: 'Total income', value: formatCurrency(totalIncome), tone: 'positive' },
       { label: 'Total expenses', value: formatCurrency(totalExpenses), tone: 'negative' },
-      { label: 'Total net income', value: formatCurrency(net), tone: net < 0 ? 'negative' : undefined },
-      { label: 'Savings rate', value: `${savingsRate.toFixed(1)}%`, tone: savingsRate < 0 ? 'negative' : undefined },
+      {
+        label: 'Total net income',
+        value: formatCurrency(net),
+        tone: net < 0 ? 'negative' : undefined,
+      },
+      {
+        label: 'Savings rate',
+        value: `${savingsRate.toFixed(1)}%`,
+        tone: savingsRate < 0 ? 'negative' : undefined,
+      },
     ];
   }, [incData, spData]);
 
@@ -765,7 +968,7 @@ export default function CashFlowPage() {
   function handleExport() {
     downloadCsv(
       `cash-flow-${from}-${to}.csv`,
-      spData.map(d => ({
+      spData.map((d) => ({
         category: `${showIcons && d.categoryIcon ? d.categoryIcon + ' ' : ''}${d.categoryName ?? 'Uncategorized'}`,
         group: d.groupName ?? '',
         total_cents: d.totalSpent,
@@ -780,7 +983,7 @@ export default function CashFlowPage() {
           <h1 className="text-lg font-semibold text-text shrink-0">Cash Flow</h1>
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex flex-wrap gap-0">
-              {PRESETS.map(p => (
+              {PRESETS.map((p) => (
                 <button
                   key={p.id}
                   onClick={() => setPreset(p.id)}
@@ -826,9 +1029,7 @@ export default function CashFlowPage() {
         {selectedNode && (
           <div ref={txSectionRef} className="mt-6">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-text">
-                Transactions: {selectedNode.name}
-              </h2>
+              <h2 className="text-sm font-semibold text-text">Transactions: {selectedNode.name}</h2>
               <button
                 onClick={() => setSelectedNode(null)}
                 className="flex items-center gap-1 text-xs text-text-tertiary hover:text-text-secondary cursor-pointer transition-colors"

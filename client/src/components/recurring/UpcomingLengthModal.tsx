@@ -32,7 +32,10 @@ export default function UpcomingLengthModal({ isOpen, onClose }: Props) {
   const [custom, setCustom] = useState(isCustomUpcomingLength(saved));
 
   useEffect(() => {
-    if (isOpen) { setTemp(saved); setCustom(isCustomUpcomingLength(saved)); }
+    if (isOpen) {
+      setTemp(saved);
+      setCustom(isCustomUpcomingLength(saved));
+    }
   }, [isOpen, saved]);
 
   const [num, unit] = custom && temp.includes('-') ? temp.split('-') : ['1', 'day'];
@@ -55,12 +58,21 @@ export default function UpcomingLengthModal({ isOpen, onClose }: Props) {
           value={custom ? 'custom' : temp}
           onChange={(e) => {
             const v = e.target.value;
-            if (v === 'custom') { setCustom(true); setTemp('1-week'); }
-            else { setCustom(false); setTemp(v); }
+            if (v === 'custom') {
+              setCustom(true);
+              setTemp('1-week');
+            } else {
+              setCustom(false);
+              setTemp(v);
+            }
           }}
           className={`${selectCls} w-full`}
         >
-          {UPCOMING_PRESETS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+          {UPCOMING_PRESETS.map((p) => (
+            <option key={p.value} value={p.value}>
+              {p.label}
+            </option>
+          ))}
           <option value="custom">Custom length</option>
         </select>
 
@@ -73,23 +85,40 @@ export default function UpcomingLengthModal({ isOpen, onClose }: Props) {
               onChange={(e) => setTemp(`${Math.max(1, parseInt(e.target.value, 10) || 1)}-${unit}`)}
               className={`${selectCls} w-24 cursor-text`}
             />
-            <select value={unit} onChange={(e) => setTemp(`${num}-${e.target.value}`)} className={`${selectCls} flex-1`}>
-              {UNITS.map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
+            <select
+              value={unit}
+              onChange={(e) => setTemp(`${num}-${e.target.value}`)}
+              className={`${selectCls} flex-1`}
+            >
+              {UNITS.map((u) => (
+                <option key={u.value} value={u.value}>
+                  {u.label}
+                </option>
+              ))}
             </select>
           </div>
         )}
 
         <p className="text-xs text-text-tertiary">
-          Items due within the next <span className="font-medium text-text-secondary">{days} {days === 1 ? 'day' : 'days'}</span> will show as Upcoming.
+          Items due within the next{' '}
+          <span className="font-medium text-text-secondary">
+            {days} {days === 1 ? 'day' : 'days'}
+          </span>{' '}
+          will show as Upcoming.
         </p>
       </div>
 
       <div className="flex justify-end gap-2 mt-5">
-        <Button variant="secondary" size="sm" onClick={onClose}>Cancel</Button>
+        <Button variant="secondary" size="sm" onClick={onClose}>
+          Cancel
+        </Button>
         <Button
           size="sm"
           disabled={temp === saved}
-          onClick={() => { setUpcomingLength(temp); onClose(); }}
+          onClick={() => {
+            setUpcomingLength(temp);
+            onClose();
+          }}
         >
           Save
         </Button>

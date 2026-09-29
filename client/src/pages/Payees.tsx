@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react';
-import { Trash2, GitMerge, Search } from 'lucide-react';
+import { Trash2, GitMerge, Search, Store } from 'lucide-react';
 import { usePayees, useUpdatePayee, useDeletePayee, useMergePayees } from '../hooks/usePayees';
 import { useCategories } from '../hooks/useCategories';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { Modal, useModalValue } from '../components/ui/Modal';
-import { Button } from '../components/ui/Button';
+import { Button, ButtonLink } from '../components/ui/Button';
+import { EmptyState } from '../components/ui/EmptyState';
 import { PayeeIcon } from '../components/payees/PayeeIcon';
 import RowMenu from '../components/ui/RowMenu';
 import { useIsPhone } from '../hooks/useIsPhone';
@@ -171,11 +172,22 @@ export default function PayeesPage() {
             Loading...
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex items-center justify-center h-32 text-sm text-text-tertiary">
-            {search
-              ? 'No payees match your search.'
-              : "No payees yet. They're created automatically from transactions."}
-          </div>
+          search ? (
+            <div className="flex items-center justify-center h-32 text-sm text-text-tertiary">
+              No payees match your search.
+            </div>
+          ) : (
+            <EmptyState
+              icon={<Store size={26} />}
+              title="No payees yet"
+              description="Payees are the people and businesses you pay or get paid by. They’re added automatically as you enter or import transactions, and you can give each one a default category."
+              actions={
+                <ButtonLink variant="secondary" to="/transactions?add=1">
+                  Add a transaction
+                </ButtonLink>
+              }
+            />
+          )
         ) : isPhone ? (
           // Phones: a card per payee. Renaming and deleting are in the ⋮ menu (no hover or
           // double-click on a touch screen), and ticking two or more offers "Merge"

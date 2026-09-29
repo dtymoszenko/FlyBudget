@@ -3,13 +3,18 @@ import { Link } from 'react-router-dom';
 import { format, addDays, parseISO, differenceInDays } from 'date-fns';
 import { useScheduleOccurrences } from '../../hooks/useSchedules';
 import { formatCurrency } from '../../utils/currency';
+import { CalendarClock } from 'lucide-react';
 import { Card } from '../ui/Card';
+import { EmptyState } from '../ui/EmptyState';
+import { ButtonLink } from '../ui/Button';
+import { useSchedules } from '../../hooks/useSchedules';
 
 export default function UpcomingBills() {
   const today = format(new Date(), 'yyyy-MM-dd');
   const thirtyDaysOut = format(addDays(new Date(), 30), 'yyyy-MM-dd');
 
   const { data: occurrences = [], isLoading } = useScheduleOccurrences(today, thirtyDaysOut);
+  const { data: schedules = [] } = useSchedules();
 
   const upcoming = useMemo(
     () =>
@@ -47,7 +52,23 @@ export default function UpcomingBills() {
       </div>
 
       {upcoming.length === 0 ? (
-        <p className="text-sm text-text-disabled py-4 text-center">No upcoming bills.</p>
+        schedules.length === 0 ? (
+          <EmptyState
+            compact
+            icon={<CalendarClock size={20} />}
+            title="Track your bills and paychecks"
+            description="Add rent, subscriptions and income that repeat, or let FlyBudget find them in your transactions."
+            actions={
+              <ButtonLink size="sm" to="/recurring?add=1">
+                Add recurring
+              </ButtonLink>
+            }
+          />
+        ) : (
+          <p className="text-sm text-text-tertiary py-6 text-center">
+            Nothing due in the next 30 days.
+          </p>
+        )
       ) : (
         <div className="divide-y divide-border-light">
           {upcoming.map((occ, i) => {

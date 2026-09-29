@@ -30,7 +30,8 @@ function hasValidShape(c: RuleCondition): boolean {
   if (c.op === 'is_empty' || c.op === 'is_not_empty') return !('value' in c);
   if (!('value' in c)) return false;
   const v = c.value;
-  if (c.op === 'one_of' || c.op === 'not_one_of') return Array.isArray(v) && v.every((x) => typeof x === 'string');
+  if (c.op === 'one_of' || c.op === 'not_one_of')
+    return Array.isArray(v) && v.every((x) => typeof x === 'string');
   if (c.field === 'amount') {
     return c.op === 'between'
       ? Array.isArray(v) && v.length === 2 && v.every((x) => typeof x === 'number')
@@ -79,7 +80,8 @@ describe('rule editor helpers (property-based)', () => {
     fc.assert(
       fc.property(arbFieldOp, ({ field, op }) => {
         const c = makeCondition(field, op);
-        const prefilled = field === 'amount' || field === 'date' || field === 'direction' || !('value' in c);
+        const prefilled =
+          field === 'amount' || field === 'date' || field === 'direction' || !('value' in c);
         expect(isConditionComplete(c)).toBe(prefilled);
       }),
     );
@@ -91,7 +93,12 @@ describe('rule editor helpers (property-based)', () => {
         let c: RuleCondition | undefined;
         for (const { field, op } of edits) {
           c = makeCondition(field, op, c);
-          if ('value' in c && typeof c.value === 'string' && c.field !== 'date' && c.field !== 'direction') {
+          if (
+            'value' in c &&
+            typeof c.value === 'string' &&
+            c.field !== 'date' &&
+            c.field !== 'direction'
+          ) {
             c = { ...c, value: id } as RuleCondition;
           }
           expect(conditionText(c, lookups).length).toBeGreaterThan(0);
@@ -100,7 +107,9 @@ describe('rule editor helpers (property-based)', () => {
     );
     for (const { value } of ACTION_TYPES) {
       const a = makeAction(value);
-      const withTarget = (a.type === 'set_category' || a.type === 'set_payee' ? { ...a, value: 'gone' } : a) as RuleAction;
+      const withTarget = (
+        a.type === 'set_category' || a.type === 'set_payee' ? { ...a, value: 'gone' } : a
+      ) as RuleAction;
       expect(actionText(withTarget, lookups)).toMatch(/\S/);
     }
   });

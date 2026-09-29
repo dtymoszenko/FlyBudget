@@ -1,5 +1,12 @@
 import { formatCurrency } from '../../utils/currency';
-import { addMonths, addYears, differenceInCalendarDays, endOfMonth, parseISO, startOfMonth } from 'date-fns';
+import {
+  addMonths,
+  addYears,
+  differenceInCalendarDays,
+  endOfMonth,
+  parseISO,
+  startOfMonth,
+} from 'date-fns';
 import { RECURRENCE_TYPE_LABELS, type AmountType, type ScheduleOccurrence } from '../../types';
 import type { RecurringBadgeStatus } from './StatusBadge';
 
@@ -27,7 +34,10 @@ export const UPCOMING_PRESETS: { value: string; label: string }[] = [
 export const isCustomUpcomingLength = (v: string) => !UPCOMING_PRESETS.some((p) => p.value === v);
 
 /** Number of days after today that still count as "upcoming". */
-export function getUpcomingDays(length: string = DEFAULT_UPCOMING_LENGTH, today = new Date()): number {
+export function getUpcomingDays(
+  length: string = DEFAULT_UPCOMING_LENGTH,
+  today = new Date(),
+): number {
   switch (length) {
     case 'currentMonth':
       return differenceInCalendarDays(endOfMonth(today), today);
@@ -38,10 +48,14 @@ export function getUpcomingDays(length: string = DEFAULT_UPCOMING_LENGTH, today 
         const [num, unit] = length.split('-');
         const value = Math.max(1, parseInt(num, 10) || 1);
         switch (unit) {
-          case 'day': return value;
-          case 'week': return value * 7;
-          case 'month': return differenceInCalendarDays(addMonths(today, value), today);
-          case 'year': return differenceInCalendarDays(addYears(today, value), today);
+          case 'day':
+            return value;
+          case 'week':
+            return value * 7;
+          case 'month':
+            return differenceInCalendarDays(addMonths(today, value), today);
+          case 'year':
+            return differenceInCalendarDays(addYears(today, value), today);
         }
       }
       return parseInt(length, 10) || 7;
@@ -61,8 +75,14 @@ export function describeUpcomingLength(length: string): string {
  * Badge status for an occurrence, following Actual's getStatus(): pending dates
  * beyond the upcoming window show as "Scheduled" instead of "Upcoming".
  */
-export function occurrenceBadgeStatus(occ: ScheduleOccurrence, upcomingDays: number): RecurringBadgeStatus {
-  if (occ.displayStatus === 'upcoming' && differenceInCalendarDays(parseISO(occ.expectedDate), new Date()) > upcomingDays)
+export function occurrenceBadgeStatus(
+  occ: ScheduleOccurrence,
+  upcomingDays: number,
+): RecurringBadgeStatus {
+  if (
+    occ.displayStatus === 'upcoming' &&
+    differenceInCalendarDays(parseISO(occ.expectedDate), new Date()) > upcomingDays
+  )
     return 'scheduled';
   return occ.displayStatus;
 }

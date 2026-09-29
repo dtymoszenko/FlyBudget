@@ -33,7 +33,9 @@ export function MerchantSelect({ value, onChange, placeholder = 'Search merchant
 
   // Sync the input when a confirmed merchant is set from outside (e.g. editing).
   // Unconfirmed typing clears value.id, so don't sync then or the input would wipe itself.
-  useEffect(() => { if (value.id) setQuery(value.name); }, [value.id, value.name]);
+  useEffect(() => {
+    if (value.id) setQuery(value.name);
+  }, [value.id, value.name]);
 
   const sortedPayees = useMemo(
     () => [...payees].sort((a, b) => b.transactionCount - a.transactionCount),
@@ -81,7 +83,10 @@ export function MerchantSelect({ value, onChange, placeholder = 'Search merchant
             <button
               key={p.id}
               type="button"
-              onMouseDown={(e) => { e.preventDefault(); select(p.id, p.name); }}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                select(p.id, p.name);
+              }}
               className="w-full text-left px-3 py-2 text-sm flex items-center gap-2.5 hover:bg-hover cursor-pointer"
             >
               <PayeeIcon name={p.name} logo={p.logo} />

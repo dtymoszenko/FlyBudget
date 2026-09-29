@@ -21,13 +21,15 @@ interface Props {
   month: string;
   onSave: (categoryId: string, cents: number) => void;
   onApplyBulk: (categoryId: string, cents: number) => void;
+  /** Nothing is planned this month yet: list every category, so there's something to plan */
+  showAll?: boolean;
 }
 
 /**
  * The budget on a phone: a card per category (planned, actual, remaining) instead of the
  * four-column table. Tapping the planned amount opens a sheet to change it.
  */
-export function PhoneBudget({ sections, month, onSave, onApplyBulk }: Props) {
+export function PhoneBudget({ sections, month, onSave, onApplyBulk, showAll = false }: Props) {
   const [editing, setEditing] = useState<{ cat: BudgetCategory; isIncome: boolean } | null>(null);
 
   return (
@@ -36,6 +38,7 @@ export function PhoneBudget({ sections, month, onSave, onApplyBulk }: Props) {
         <Section
           key={section.key}
           section={section}
+          showAll={showAll}
           onEdit={(cat) => setEditing({ cat, isIncome: section.isIncome })}
         />
       ))}
@@ -53,9 +56,11 @@ export function PhoneBudget({ sections, month, onSave, onApplyBulk }: Props) {
 
 function Section({
   section,
+  showAll,
   onEdit,
 }: {
   section: PhoneBudgetSection;
+  showAll: boolean;
   onEdit: (cat: BudgetCategory) => void;
 }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -63,7 +68,7 @@ function Section({
   const { isIncome, categories } = section;
   const active = categories.filter((c) => isActiveCategory(c, isIncome));
   const inactiveCount = categories.length - active.length;
-  const visible = showInactive ? categories : active;
+  const visible = showInactive || showAll ? categories : active;
   const planned = categories.reduce((s, c) => s + c.budgeted, 0);
   const actual = categories.reduce((s, c) => s + categoryFigures(c, isIncome).actual, 0);
 
@@ -90,7 +95,7 @@ function Section({
           {visible.map((cat) => (
             <CategoryCard key={cat.id} cat={cat} isIncome={isIncome} onEdit={() => onEdit(cat)} />
           ))}
-          {inactiveCount > 0 && (
+          {inactiveCount > 0 && !showAll && (
             <button
               type="button"
               onClick={() => setShowInactive((s) => !s)}

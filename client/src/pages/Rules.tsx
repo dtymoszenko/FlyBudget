@@ -24,6 +24,9 @@ import { useRuleLookups } from '../components/rules/useRuleLookups';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { useModalValue } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
+import { EmptyState } from '../components/ui/EmptyState';
+import { useOpenFromLink } from '../hooks/useOpenFromLink';
+import { docsUrl } from '../utils/project';
 import RowMenu from '../components/ui/RowMenu';
 import { useIsPhone } from '../hooks/useIsPhone';
 import { actionText, conditionText, ruleSearchText, type RuleLookups } from '../utils/ruleFormat';
@@ -254,6 +257,7 @@ export default function RulesPage() {
   }
 
   const newRule = () => setEditing({ key: `new-${Date.now()}` });
+  useOpenFromLink('add', newRule);
 
   return (
     <div className="flex flex-col h-full bg-surface">
@@ -309,16 +313,17 @@ export default function RulesPage() {
             Loading...
           </div>
         ) : localRules.length === 0 ? (
-          <div className="flex flex-col items-center justify-center text-center h-56 gap-3 px-6">
-            <Wand2 size={22} className="text-text-tertiary" />
-            <p className="text-sm text-text-secondary max-w-md">
-              Rules categorize, rename and split transactions for you as they come in. You can also
-              make one from any transaction.
-            </p>
-            <Button size="sm" variant="secondary" onClick={newRule}>
-              <Plus size={13} /> Add your first rule
-            </Button>
-          </div>
+          <EmptyState
+            icon={<Wand2 size={26} />}
+            title="Let rules do the sorting"
+            description="Rules categorize, rename and split transactions for you as they come in, for example “payee contains Netflix → Streaming”. You can also make one from any transaction."
+            learnMoreHref={docsUrl('rules')}
+            actions={
+              <Button onClick={newRule}>
+                <Plus size={14} /> Add your first rule
+              </Button>
+            }
+          />
         ) : (
           <div className="max-w-5xl mx-auto px-6 py-4">
             <p className="text-xs text-text-tertiary mb-2">

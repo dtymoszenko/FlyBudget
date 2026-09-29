@@ -1,14 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as simplefinApi from '../api/simplefin';
 
-export function useSimplefinStatus() {
-  return useQuery({
-    queryKey: ['simplefin-status'],
-    queryFn: simplefinApi.getSimplefinStatus,
-    staleTime: Infinity,
-  });
-}
-
 export function useSimplefinConnections() {
   return useQuery({
     queryKey: ['simplefin-connections'],

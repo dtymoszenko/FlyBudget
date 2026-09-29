@@ -113,7 +113,9 @@ export function CategoryPicker({ value, onChange, groups, onClose, position = 'b
                 onClick={() => onChange(cat.id)}
                 className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-hover ${value === cat.id ? 'bg-brand-50 text-brand-700' : 'text-text'}`}
               >
-                {showCategoryIcons && cat.icon && <span className="text-base shrink-0">{cat.icon}</span>}
+                {showCategoryIcons && cat.icon && (
+                  <span className="text-base shrink-0">{cat.icon}</span>
+                )}
                 <span className="truncate flex-1">{cat.name}</span>
                 {value === cat.id && <Check size={14} className="text-brand-600 shrink-0" />}
               </button>

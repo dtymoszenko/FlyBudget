@@ -1,11 +1,22 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, ChevronRight, ChevronDown, TrendingUp, TrendingDown } from 'lucide-react';
+import {
+  Plus,
+  ChevronRight,
+  ChevronDown,
+  TrendingUp,
+  TrendingDown,
+  Landmark,
+  Link2,
+} from 'lucide-react';
 import { useAccounts, useBalancesAgo } from '../hooks/useAccounts';
 import { AddAccountModal } from '../components/accounts/AddAccountModal';
 import { AssetLiabilitySummary } from '../components/accounts/AssetLiabilitySummary';
-import { Button } from '../components/ui/Button';
+import { Button, ButtonLink } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
+import { EmptyState } from '../components/ui/EmptyState';
+import { useOpenFromLink } from '../hooks/useOpenFromLink';
+import { docsUrl } from '../utils/project';
 import { formatCurrency } from '../utils/currency';
 import NetWorthMini from '../components/dashboard/NetWorthMini';
 import { ACCOUNT_GROUPS, type Account, type AccountGroup } from '../types';
@@ -111,6 +122,7 @@ export default function AccountsPage() {
   const { data: accounts = [], isLoading } = useAccounts();
   const { data: balancesAgo = {} } = useBalancesAgo();
   const [addOpen, setAddOpen] = useState(false);
+  useOpenFromLink('add', () => setAddOpen(true));
   const allGroups = useMemo(() => groupAccountsByType(accounts), [accounts]);
 
   if (isLoading) {
@@ -138,13 +150,23 @@ export default function AccountsPage() {
       </div>
 
       {accounts.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-text-tertiary mb-4">No accounts yet. Add one to get started.</p>
-            <Button onClick={() => setAddOpen(true)}>
-              <Plus size={14} /> Add Account
-            </Button>
-          </div>
+        <div className="flex-1 flex items-center justify-center overflow-y-auto">
+          <EmptyState
+            icon={<Landmark size={26} />}
+            title="Add the accounts you want to track"
+            description="Checking, savings, credit cards, loans, investments or your home: each account keeps its own balance and transactions, and together they make up your net worth."
+            learnMoreHref={docsUrl('accounts')}
+            actions={
+              <>
+                <Button onClick={() => setAddOpen(true)}>
+                  <Plus size={14} /> Add your first account
+                </Button>
+                <ButtonLink variant="secondary" to="/settings?tab=connections">
+                  <Link2 size={14} /> Connect a bank
+                </ButtonLink>
+              </>
+            }
+          />
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto">

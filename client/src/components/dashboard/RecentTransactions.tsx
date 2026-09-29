@@ -5,7 +5,11 @@ import { useCategories } from '../../hooks/useCategories';
 import { useAccounts } from '../../hooks/useAccounts';
 import { usePayees } from '../../hooks/usePayees';
 import { TransactionRow } from '../transactions/TransactionRow';
+import { Plus, Receipt, Upload } from 'lucide-react';
 import { Card } from '../ui/Card';
+import { EmptyState } from '../ui/EmptyState';
+import { ButtonLink } from '../ui/Button';
+import { docsUrl } from '../../utils/project';
 import type { CategoryGroup } from '../../types';
 
 export default function RecentTransactions() {
@@ -22,6 +26,8 @@ export default function RecentTransactions() {
     }
     return map;
   }, [groups]);
+
+  const firstAccount = accounts.find((a) => !a.closedAt);
 
   const accountInfoMap = useMemo(
     () => new Map(accounts.map((a) => [a.id, { name: a.name, type: a.type, logo: a.logo }])),
@@ -54,7 +60,30 @@ export default function RecentTransactions() {
       </div>
 
       {transactions.length === 0 ? (
-        <p className="text-sm text-text-disabled py-4 text-center">No transactions yet.</p>
+        <EmptyState
+          compact
+          className="pb-8"
+          icon={<Receipt size={20} />}
+          title="No transactions yet"
+          description="Import a CSV file from your bank, connect a bank, or add transactions by hand."
+          learnMoreHref={docsUrl('transactions')}
+          actions={
+            <>
+              {firstAccount && (
+                <ButtonLink
+                  size="sm"
+                  variant="secondary"
+                  to={`/accounts/${firstAccount.id}?import=1`}
+                >
+                  <Upload size={13} /> Import a CSV file
+                </ButtonLink>
+              )}
+              <ButtonLink size="sm" to="/transactions?add=1">
+                <Plus size={13} /> Add a transaction
+              </ButtonLink>
+            </>
+          }
+        />
       ) : (
         <div>
           {transactions.map((tx) => (

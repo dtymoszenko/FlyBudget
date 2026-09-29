@@ -22,7 +22,17 @@ export function fileToSquareDataUrl(file: File, size = 128): Promise<string> {
         return;
       }
       ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, size, size);
+      ctx.drawImage(
+        img,
+        (img.width - side) / 2,
+        (img.height - side) / 2,
+        side,
+        side,
+        0,
+        0,
+        size,
+        size,
+      );
       URL.revokeObjectURL(url);
       resolve(canvas.toDataURL('image/png'));
     };

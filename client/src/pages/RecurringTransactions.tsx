@@ -8,13 +8,14 @@ import OccurrenceMatchModal from '../components/recurring/OccurrenceMatchModal';
 import DiscoverSchedulesModal from '../components/recurring/DiscoverSchedulesModal';
 import UpcomingLengthModal from '../components/recurring/UpcomingLengthModal';
 import { Button } from '../components/ui/Button';
+import { useOpenFromLink } from '../hooks/useOpenFromLink';
 import {
   useSchedules,
   useCreateSchedule,
   useUpdateSchedule,
   useScheduleOccurrences,
 } from '../hooks/useSchedules';
-import type { Schedule, ScheduleOccurrence } from '../types';
+import type { Schedule } from '../types';
 import { format, subDays, addDays } from 'date-fns';
 
 const tabs = [
@@ -31,6 +32,10 @@ export default function RecurringTransactionsPage() {
   const [matchOccurrenceId, setMatchOccurrenceId] = useState<string | null>(null);
   const [discoverOpen, setDiscoverOpen] = useState(false);
   const [upcomingOpen, setUpcomingOpen] = useState(false);
+  useOpenFromLink('add', () => {
+    setEditItem(null);
+    setFormOpen(true);
+  });
 
   const { data: allRecurring = [] } = useSchedules();
   const createSchedule = useCreateSchedule();
@@ -125,6 +130,7 @@ export default function RecurringTransactionsPage() {
           <AllTab
             allRecurring={allRecurring}
             onEdit={handleEdit}
+            onAdd={handleAdd}
             onFind={() => setDiscoverOpen(true)}
             onChangeUpcomingLength={() => setUpcomingOpen(true)}
           />

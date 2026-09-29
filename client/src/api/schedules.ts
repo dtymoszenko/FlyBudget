@@ -1,9 +1,7 @@
 import { apiFetch } from './client';
 import type {
   Schedule,
-  ScheduleWithOccurrences,
   ScheduleOccurrence,
-  ScheduleSummary,
   MatchSuggestion,
   DiscoveredSchedule,
   Transaction,
@@ -37,8 +35,6 @@ export const getSchedules = (status?: string) => {
   return apiFetch<Schedule[]>(`/schedules${q}`);
 };
 
-export const getSchedule = (id: string) => apiFetch<ScheduleWithOccurrences>(`/schedules/${id}`);
-
 export const createSchedule = (data: CreateScheduleData) =>
   apiFetch<Schedule>('/schedules', { method: 'POST', body: JSON.stringify(data) });
 
@@ -52,9 +48,6 @@ export const getScheduleOccurrences = (from: string, to: string) => {
   const q = new URLSearchParams({ from, to });
   return apiFetch<ScheduleOccurrence[]>(`/schedules/occurrences?${q}`);
 };
-
-export const getScheduleSummary = (month: string) =>
-  apiFetch<ScheduleSummary>(`/schedules/summary?month=${month}`);
 
 export const markOccurrencePaid = (
   scheduleId: string,
@@ -97,9 +90,6 @@ export const dismissMatch = (occurrenceId: string, transactionId: string) =>
 
 export const getMatchSuggestions = () =>
   apiFetch<MatchSuggestion[]>('/schedules/match-suggestions');
-
-export const triggerScheduleAutoCreate = () =>
-  apiFetch<{ created: number }>('/schedules/auto-create', { method: 'POST' });
 
 export const discoverSchedules = () => apiFetch<DiscoveredSchedule[]>('/schedules/discover');
 

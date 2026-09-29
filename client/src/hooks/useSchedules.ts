@@ -34,13 +34,6 @@ export function useScheduleOccurrences(from: string, to: string) {
   });
 }
 
-export function useScheduleSummary(month: string) {
-  return useQuery({
-    queryKey: ['schedule-summary', month],
-    queryFn: () => api.getScheduleSummary(month),
-  });
-}
-
 export function useMatchSuggestions() {
   return useQuery({
     queryKey: MQK,

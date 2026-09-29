@@ -7,3 +7,6 @@ build
 package-lock.json
 server/budget.db
 electron/dist
+server/src/db/migrations/meta
+e2e/test-results
+e2e/playwright-report

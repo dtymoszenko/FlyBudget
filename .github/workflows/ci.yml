@@ -67,6 +67,8 @@ jobs:
       - run: npm ci
       - run: npm audit signatures
       - run: npx tsc -p electron/tsconfig.json --noEmit
+      # The whole repository follows .prettierrc (fix with `npm run format`)
+      - run: npm run format:check
 
   # End-to-end: the real app in a real browser (Playwright), against throwaway databases.
   # Covers the desktop-app setup and self-hosted server mode; see e2e/global-setup.ts.

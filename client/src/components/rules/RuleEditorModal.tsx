@@ -27,7 +27,14 @@ import {
   newSplitPart,
   opLabel,
 } from '../../utils/ruleFormat';
-import type { RuleAction, RuleCondition, RuleConditionField, RuleConditionOp, RuleInput, RuleSplitPart } from '../../types';
+import type {
+  RuleAction,
+  RuleCondition,
+  RuleConditionField,
+  RuleConditionOp,
+  RuleInput,
+  RuleSplitPart,
+} from '../../types';
 
 const fieldClass =
   'text-sm border border-border rounded-lg px-2 py-1.5 bg-surface text-text focus:outline-none focus:ring-1 focus:ring-brand-400';
@@ -43,10 +50,20 @@ interface Props {
   onSave: (rule: RuleInput, applyToExisting: boolean) => void;
 }
 
-export function RuleEditorModal({ isOpen, onClose, title, initial, applyDefault = false, saving, onSave }: Props) {
+export function RuleEditorModal({
+  isOpen,
+  onClose,
+  title,
+  initial,
+  applyDefault = false,
+  saving,
+  onSave,
+}: Props) {
   const [conditionsOp, setConditionsOp] = useState(initial.conditionsOp);
   const [conditions, setConditions] = useState<RuleCondition[]>(initial.conditions);
-  const [actions, setActions] = useState<RuleAction[]>(initial.actions.length ? initial.actions : [newAction()]);
+  const [actions, setActions] = useState<RuleAction[]>(
+    initial.actions.length ? initial.actions : [newAction()],
+  );
   const [applyExisting, setApplyExisting] = useState(applyDefault);
   const options = useRuleLookups();
   const canSave = useCanSave();
@@ -54,8 +71,10 @@ export function RuleEditorModal({ isOpen, onClose, title, initial, applyDefault 
   const rule: RuleInput = { ...initial, conditionsOp, conditions, actions };
   const complete = isRuleComplete(rule);
 
-  const setCondition = (i: number, c: RuleCondition) => setConditions((cs) => cs.map((x, j) => (j === i ? c : x)));
-  const setAction = (i: number, a: RuleAction) => setActions((as) => as.map((x, j) => (j === i ? a : x)));
+  const setCondition = (i: number, c: RuleCondition) =>
+    setConditions((cs) => cs.map((x, j) => (j === i ? c : x)));
+  const setAction = (i: number, a: RuleAction) =>
+    setActions((as) => as.map((x, j) => (j === i ? a : x)));
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} size="xl">
@@ -138,7 +157,10 @@ export function RuleEditorModal({ isOpen, onClose, title, initial, applyDefault 
             <Button variant="secondary" onClick={onClose}>
               Cancel
             </Button>
-            <Button onClick={() => onSave(rule, applyExisting)} disabled={!complete || saving || !canSave}>
+            <Button
+              onClick={() => onSave(rule, applyExisting)}
+              disabled={!complete || saving || !canSave}
+            >
               {saving ? 'Saving…' : 'Save rule'}
             </Button>
           </div>
@@ -226,7 +248,11 @@ function ConditionValue({
 
   if (c.field === 'direction') {
     return (
-      <select value={c.value} onChange={(e) => set(e.target.value)} className={`${fieldClass} w-40`}>
+      <select
+        value={c.value}
+        onChange={(e) => set(e.target.value)}
+        className={`${fieldClass} w-40`}
+      >
         <option value="outflow">Is an outflow</option>
         <option value="inflow">Is an inflow</option>
       </select>
@@ -250,7 +276,12 @@ function ConditionValue({
   }
   if (c.field === 'date') {
     const input = (value: string, onValue: (v: string) => void) => (
-      <input type="date" value={value} onChange={(e) => onValue(e.target.value)} className={`${fieldClass} w-full`} />
+      <input
+        type="date"
+        value={value}
+        onChange={(e) => onValue(e.target.value)}
+        className={`${fieldClass} w-full`}
+      />
     );
     if (Array.isArray(c.value)) {
       const [a, b] = c.value;
@@ -273,7 +304,13 @@ function ConditionValue({
   const pickFrom = idOptions[c.field];
   if (pickFrom) {
     return Array.isArray(c.value) ? (
-      <OptionPicker multiple options={pickFrom} value={c.value} onChange={set} placeholder="Choose one or more…" />
+      <OptionPicker
+        multiple
+        options={pickFrom}
+        value={c.value}
+        onChange={set}
+        placeholder="Choose one or more…"
+      />
     ) : (
       <OptionPicker options={pickFrom} value={c.value} onChange={set} placeholder="Choose…" />
     );
@@ -299,9 +336,14 @@ function TagInput({ value, onChange }: { value: string[]; onChange: (v: string[]
     setDraft('');
   };
   return (
-    <div className={`${fieldClass} w-full flex flex-wrap items-center gap-1 py-1 focus-within:ring-1 focus-within:ring-brand-400`}>
+    <div
+      className={`${fieldClass} w-full flex flex-wrap items-center gap-1 py-1 focus-within:ring-1 focus-within:ring-brand-400`}
+    >
       {value.map((v) => (
-        <span key={v} className="flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-md bg-surface-alt text-xs text-text">
+        <span
+          key={v}
+          className="flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-md bg-surface-alt text-xs text-text"
+        >
           {v}
           <button
             type="button"
@@ -378,7 +420,9 @@ function ActionRow({
             <input
               value={a.value}
               onChange={(e) => onChange({ ...a, value: e.target.value })}
-              placeholder={a.type === 'set_notes' ? 'Leave empty to clear notes' : 'e.g. #business '}
+              placeholder={
+                a.type === 'set_notes' ? 'Leave empty to clear notes' : 'e.g. #business '
+              }
               maxLength={5000}
               className={`${fieldClass} w-full`}
             />
@@ -400,13 +444,22 @@ function ActionRow({
           </button>
         )}
       </div>
-      {a.type === 'split' && <SplitEditor parts={a.parts} onChange={(parts) => onChange({ ...a, parts })} />}
+      {a.type === 'split' && (
+        <SplitEditor parts={a.parts} onChange={(parts) => onChange({ ...a, parts })} />
+      )}
     </div>
   );
 }
 
-function SplitEditor({ parts, onChange }: { parts: RuleSplitPart[]; onChange: (p: RuleSplitPart[]) => void }) {
-  const set = (i: number, patch: Partial<RuleSplitPart>) => onChange(parts.map((p, j) => (j === i ? { ...p, ...patch } : p)));
+function SplitEditor({
+  parts,
+  onChange,
+}: {
+  parts: RuleSplitPart[];
+  onChange: (p: RuleSplitPart[]) => void;
+}) {
+  const set = (i: number, patch: Partial<RuleSplitPart>) =>
+    onChange(parts.map((p, j) => (j === i ? { ...p, ...patch } : p)));
   const pctTotal = parts.filter((p) => p.kind === 'percent').reduce((s, p) => s + p.value, 0);
   const hasRemainder = parts.some((p) => p.kind === 'remainder');
 
@@ -429,7 +482,11 @@ function SplitEditor({ parts, onChange }: { parts: RuleSplitPart[]; onChange: (p
           </select>
           <div className="w-28">
             {p.kind === 'fixed' && (
-              <CurrencyInput value={p.value} onChange={(n) => set(i, { value: n })} className={`${fieldClass} w-full`} />
+              <CurrencyInput
+                value={p.value}
+                onChange={(n) => set(i, { value: n })}
+                className={`${fieldClass} w-full`}
+              />
             )}
             {p.kind === 'percent' && (
               <div className="relative">
@@ -439,16 +496,26 @@ function SplitEditor({ parts, onChange }: { parts: RuleSplitPart[]; onChange: (p
                   max={100}
                   step="any"
                   value={p.value}
-                  onChange={(e) => set(i, { value: Math.min(100, Math.max(0, Number(e.target.value) || 0)) })}
+                  onChange={(e) =>
+                    set(i, { value: Math.min(100, Math.max(0, Number(e.target.value) || 0)) })
+                  }
                   className={`${fieldClass} w-full pr-6`}
                 />
-                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-text-tertiary">%</span>
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-text-tertiary">
+                  %
+                </span>
               </div>
             )}
-            {p.kind === 'remainder' && <span className="text-xs text-text-tertiary">What's left</span>}
+            {p.kind === 'remainder' && (
+              <span className="text-xs text-text-tertiary">What's left</span>
+            )}
           </div>
           <div className="flex-1 min-w-40">
-            <CategorySelectButton value={p.categoryId} onChange={(id) => set(i, { categoryId: id })} placeholder="Category…" />
+            <CategorySelectButton
+              value={p.categoryId}
+              onChange={(id) => set(i, { categoryId: id })}
+              placeholder="Category…"
+            />
           </div>
           <input
             value={p.notes ?? ''}
@@ -480,7 +547,9 @@ function SplitEditor({ parts, onChange }: { parts: RuleSplitPart[]; onChange: (p
           <span className="text-xs text-negative">Percents add up to more than 100%.</span>
         ) : (
           !hasRemainder && (
-            <span className="text-xs text-text-tertiary">Anything left over stays uncategorized.</span>
+            <span className="text-xs text-text-tertiary">
+              Anything left over stays uncategorized.
+            </span>
           )
         )}
       </div>
@@ -524,13 +593,20 @@ function MatchPreview({
       </div>
       {ready &&
         shown.map((tx) => (
-          <div key={tx.id} className="flex items-center gap-3 px-3 py-1.5 text-xs border-b last:border-b-0 border-border-light">
-            <span className="w-20 shrink-0 text-text-tertiary">{format(parseISO(tx.date), 'MMM d, yyyy')}</span>
+          <div
+            key={tx.id}
+            className="flex items-center gap-3 px-3 py-1.5 text-xs border-b last:border-b-0 border-border-light"
+          >
+            <span className="w-20 shrink-0 text-text-tertiary">
+              {format(parseISO(tx.date), 'MMM d, yyyy')}
+            </span>
             <span className="flex-1 truncate text-text">{tx.payeeName ?? '—'}</span>
             <span className="hidden sm:block w-40 truncate text-text-tertiary">
               {(tx.categoryId && options.lookups.category(tx.categoryId)) || 'Uncategorized'}
             </span>
-            <span className={`w-24 text-right tabular-nums ${tx.amount < 0 ? 'text-text' : 'text-positive'}`}>
+            <span
+              className={`w-24 text-right tabular-nums ${tx.amount < 0 ? 'text-text' : 'text-positive'}`}
+            >
               {formatCurrency(tx.amount)}
             </span>
           </div>

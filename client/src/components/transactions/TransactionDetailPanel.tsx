@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, ArrowLeftRight, Lock, Trash2, Repeat, Unlink, Wand2 } from 'lucide-react';
+import { X, Lock, Trash2, Repeat, Unlink, Wand2 } from 'lucide-react';
 import { useUpdateTransaction, useDeleteTransaction } from '../../hooks/useTransactions';
 import { useSchedules, useUnmatchByTransaction } from '../../hooks/useSchedules';
 import { CategoryPicker } from './CategoryPicker';

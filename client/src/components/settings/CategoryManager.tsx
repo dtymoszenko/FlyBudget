@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Check, X } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import EmojiPicker, { type EmojiClickData } from 'emoji-picker-react';
 import { usePreferencesStore } from '../../store/preferencesStore';
 import {
@@ -136,26 +136,34 @@ function SortableCategoryRow({
     <div
       ref={setNodeRef}
       style={style}
-      onClick={() => onOpenEditModal(cat.id)}
-      role="button"
-      tabIndex={0}
-      aria-label={`Edit ${cat.name}`}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onOpenEditModal(cat.id);
-        }
-      }}
-      className="flex items-center gap-3 px-3 py-2.5 bg-surface rounded-lg hover:bg-hover cursor-pointer hover:shadow-sm transition-all mx-2"
+      className="flex items-center gap-1 pl-2 bg-surface rounded-lg hover:bg-hover hover:shadow-sm transition-all mx-2"
     >
-      {showCategoryIcons && (
-        <div className="shrink-0 text-base w-7 h-7 flex items-center justify-center">
-          {cat.icon || '📦'}
-        </div>
-      )}
-      <div className="flex-1 min-w-0">
-        <span className="text-sm text-text truncate block">{cat.name}</span>
-      </div>
+      <button
+        {...attributes}
+        {...listeners}
+        className="text-text-disabled hover:text-text-tertiary cursor-grab active:cursor-grabbing touch-none shrink-0 p-1"
+        aria-label={`Drag to reorder ${cat.name}`}
+      >
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
+          <circle cx="4" cy="4" r="1.5" />
+          <circle cx="10" cy="4" r="1.5" />
+          <circle cx="4" cy="10" r="1.5" />
+          <circle cx="10" cy="10" r="1.5" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        onClick={() => onOpenEditModal(cat.id)}
+        aria-label={`Edit ${cat.name}`}
+        className="flex-1 min-w-0 flex items-center gap-3 pr-3 py-2.5 text-left cursor-pointer"
+      >
+        {showCategoryIcons && (
+          <span className="shrink-0 text-base w-7 h-7 flex items-center justify-center">
+            {cat.icon || '📦'}
+          </span>
+        )}
+        <span className="flex-1 min-w-0 text-sm text-text truncate">{cat.name}</span>
+      </button>
     </div>
   );
 }

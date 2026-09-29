@@ -25,7 +25,13 @@ const SCOPES: Array<{ value: RuleApplyScope; label: string }> = [
 ];
 
 /** Preview what rules would change on existing transactions, then apply the ticked ones */
-export function ApplyRulesModal({ isOpen, onClose, ruleIds, initialScope = 'uncategorized', title }: Props) {
+export function ApplyRulesModal({
+  isOpen,
+  onClose,
+  ruleIds,
+  initialScope = 'uncategorized',
+  title,
+}: Props) {
   const [scope, setScope] = useState<RuleApplyScope>(initialScope);
   const [excluded, setExcluded] = useState<Set<string>>(new Set());
   const [done, setDone] = useState<number | null>(null);
@@ -41,7 +47,10 @@ export function ApplyRulesModal({ isOpen, onClose, ruleIds, initialScope = 'unca
   });
   useEffect(() => setExcluded(new Set()), [scope]);
 
-  const selected = useMemo(() => (items ?? []).filter((i) => !excluded.has(i.transactionId)), [items, excluded]);
+  const selected = useMemo(
+    () => (items ?? []).filter((i) => !excluded.has(i.transactionId)),
+    [items, excluded],
+  );
   const allOn = !!items?.length && excluded.size === 0;
 
   function toggle(id: string) {
@@ -60,14 +69,16 @@ export function ApplyRulesModal({ isOpen, onClose, ruleIds, initialScope = 'unca
     );
   }
 
-  const category = (id: string | null) => (id ? (lookups.category(id) ?? '(deleted)') : 'Uncategorized');
+  const category = (id: string | null) =>
+    id ? (lookups.category(id) ?? '(deleted)') : 'Uncategorized';
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} size="xl">
       {done !== null ? (
         <div className="space-y-4">
           <p className="text-sm text-text-secondary py-4 text-center">
-            Updated <span className="font-semibold text-text">{done.toLocaleString()}</span> transaction
+            Updated <span className="font-semibold text-text">{done.toLocaleString()}</span>{' '}
+            transaction
             {done === 1 ? '' : 's'}.
           </p>
           <div className="flex justify-end">
@@ -77,7 +88,11 @@ export function ApplyRulesModal({ isOpen, onClose, ruleIds, initialScope = 'unca
       ) : (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex rounded-lg border border-border overflow-hidden" role="radiogroup" aria-label="Which transactions">
+            <div
+              className="flex rounded-lg border border-border overflow-hidden"
+              role="radiogroup"
+              aria-label="Which transactions"
+            >
               {SCOPES.map((s) => (
                 <button
                   key={s.value}
@@ -86,21 +101,26 @@ export function ApplyRulesModal({ isOpen, onClose, ruleIds, initialScope = 'unca
                   aria-checked={scope === s.value}
                   onClick={() => setScope(s.value)}
                   className={`px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
-                    scope === s.value ? 'bg-brand-50 text-brand-700' : 'bg-surface text-text-secondary hover:bg-hover'
+                    scope === s.value
+                      ? 'bg-brand-50 text-brand-700'
+                      : 'bg-surface text-text-secondary hover:bg-hover'
                   }`}
                 >
                   {s.label}
                 </button>
               ))}
             </div>
-            <p className="text-xs text-text-tertiary">Reconciled, transfer and split transactions are never changed.</p>
+            <p className="text-xs text-text-tertiary">
+              Reconciled, transfer and split transactions are never changed.
+            </p>
           </div>
 
           {isLoading || !items ? (
             <p className="text-sm text-text-tertiary py-8 text-center">Checking transactions…</p>
           ) : items.length === 0 ? (
             <p className="text-sm text-text-secondary py-8 text-center">
-              Nothing to change: no {scope === 'uncategorized' ? 'uncategorized ' : ''}transactions would be updated.
+              Nothing to change: no {scope === 'uncategorized' ? 'uncategorized ' : ''}transactions
+              would be updated.
             </p>
           ) : (
             <div className="rounded-lg border border-border-light overflow-hidden">
@@ -112,7 +132,11 @@ export function ApplyRulesModal({ isOpen, onClose, ruleIds, initialScope = 'unca
                         <input
                           type="checkbox"
                           checked={allOn}
-                          onChange={() => setExcluded(allOn ? new Set(items.map((i) => i.transactionId)) : new Set())}
+                          onChange={() =>
+                            setExcluded(
+                              allOn ? new Set(items.map((i) => i.transactionId)) : new Set(),
+                            )
+                          }
                           className="accent-brand-600"
                           aria-label="Select all"
                         />
@@ -143,7 +167,9 @@ export function ApplyRulesModal({ isOpen, onClose, ruleIds, initialScope = 'unca
                         <td className="px-2 py-2 text-text-tertiary whitespace-nowrap">
                           {format(parseISO(item.date), 'MMM d, yyyy')}
                         </td>
-                        <td className="px-2 py-2 text-text max-w-40 truncate">{item.payeeName ?? '—'}</td>
+                        <td className="px-2 py-2 text-text max-w-40 truncate">
+                          {item.payeeName ?? '—'}
+                        </td>
                         <td className="px-2 py-2 text-right tabular-nums text-text whitespace-nowrap">
                           {formatCurrency(item.amount)}
                         </td>
@@ -178,14 +204,22 @@ function Change({ label, from, to }: { label: string; from: string; to: string }
   return (
     <div className="flex items-center gap-1 min-w-0">
       <span className="text-text-tertiary shrink-0">{label}</span>
-      <span className="truncate text-text-secondary line-through decoration-text-disabled">{from}</span>
+      <span className="truncate text-text-secondary line-through decoration-text-disabled">
+        {from}
+      </span>
       <ArrowRight size={11} className="shrink-0 text-text-tertiary" />
       <span className="truncate font-medium text-text">{to}</span>
     </div>
   );
 }
 
-function Changes({ item, category }: { item: RulePreviewItem; category: (id: string | null) => string }) {
+function Changes({
+  item,
+  category,
+}: {
+  item: RulePreviewItem;
+  category: (id: string | null) => string;
+}) {
   const { payee, category: cat, notes, split } = item.changes;
   const blank = (s: string | null) => s || '(empty)';
   return (

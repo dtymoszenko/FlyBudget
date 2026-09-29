@@ -3,9 +3,11 @@ import { Plus } from 'lucide-react';
 import { TransactionTable } from '../components/transactions/TransactionTable';
 import { AddTransactionModal } from '../components/transactions/AddTransactionModal';
 import { Button } from '../components/ui/Button';
+import { useOpenFromLink } from '../hooks/useOpenFromLink';
 
 export default function TransactionsPage() {
   const [showAdd, setShowAdd] = useState(false);
+  useOpenFromLink('add', () => setShowAdd(true));
 
   return (
     <div className="flex flex-col h-full bg-surface">
@@ -15,7 +17,7 @@ export default function TransactionsPage() {
           <Plus size={13} /> Add
         </Button>
       </div>
-      <TransactionTable />
+      <TransactionTable onAddTransaction={() => setShowAdd(true)} />
       <AddTransactionModal isOpen={showAdd} onClose={() => setShowAdd(false)} />
     </div>
   );

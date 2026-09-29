@@ -6,9 +6,6 @@ import type {
   AccountType,
 } from '../types';
 
-export const getSimplefinStatus = () =>
-  apiFetch<{ configured: boolean; connectionCount: number }>('/simplefin/status');
-
 export const setupSimplefin = (setupToken: string) =>
   apiFetch<SimplefinSetupResult>('/simplefin/setup', {
     method: 'POST',

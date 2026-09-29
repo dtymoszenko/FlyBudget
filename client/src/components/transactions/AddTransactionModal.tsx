@@ -20,9 +20,6 @@ interface Props {
 const inputClass =
   'block w-full rounded-md border border-border px-3 py-2 text-sm text-text bg-surface placeholder-text-disabled focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600';
 
-const selectClass =
-  'block w-full rounded-md border border-border px-3 py-2 text-sm bg-surface focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600 appearance-none cursor-pointer';
-
 export function AddTransactionModal({ isOpen, onClose }: Props) {
   const [type, setType] = useState<'debit' | 'credit'>('debit');
   const [amount, setAmount] = useState(0);
@@ -164,7 +161,11 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
               <span className="flex items-center gap-2 truncate">
                 {selectedAccount ? (
                   <>
-                    <AccountIcon name={selectedAccount.name} type={selectedAccount.type} logo={selectedAccount.logo} />
+                    <AccountIcon
+                      name={selectedAccount.name}
+                      type={selectedAccount.type}
+                      logo={selectedAccount.logo}
+                    />
                     <span className="text-text">{selectedAccount.name}</span>
                   </>
                 ) : (
@@ -198,7 +199,9 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
                       >
                         <AccountIcon name={a.name} type={a.type} logo={a.logo} />
                         <span className="truncate flex-1">{a.name}</span>
-                        <span className={`text-xs tabular-nums shrink-0 ${a.balance >= 0 ? 'text-text-tertiary' : 'text-negative'}`}>
+                        <span
+                          className={`text-xs tabular-nums shrink-0 ${a.balance >= 0 ? 'text-text-tertiary' : 'text-negative'}`}
+                        >
                           {formatCurrency(a.balance)}
                         </span>
                       </button>
@@ -225,7 +228,9 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
                       >
                         <AccountIcon name={a.name} type={a.type} logo={a.logo} />
                         <span className="truncate flex-1">{a.name}</span>
-                        <span className={`text-xs tabular-nums shrink-0 ${a.balance >= 0 ? 'text-text-tertiary' : 'text-negative'}`}>
+                        <span
+                          className={`text-xs tabular-nums shrink-0 ${a.balance >= 0 ? 'text-text-tertiary' : 'text-negative'}`}
+                        >
                           {formatCurrency(a.balance)}
                         </span>
                       </button>

@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom';
 import { useSpendingByCategory } from '../../hooks/useReports';
 import { formatCurrency } from '../../utils/currency';
 import { usePreferencesStore } from '../../store/preferencesStore';
+import { PieChart } from 'lucide-react';
 import { Card } from '../ui/Card';
+import { EmptyState } from '../ui/EmptyState';
 import { CATEGORY_COLORS } from '../../utils/chartColors';
 
 interface Props {
@@ -50,7 +52,12 @@ export default function SpendingBreakdown({ currentMonth }: Props) {
       </div>
 
       {topCategories.length === 0 ? (
-        <p className="text-sm text-text-disabled py-4 text-center">No spending this month.</p>
+        <EmptyState
+          compact
+          icon={<PieChart size={20} />}
+          title="No spending this month"
+          description="As you spend, your biggest categories show up here."
+        />
       ) : (
         <div className="space-y-2.5">
           {topCategories.map((cat, i) => {

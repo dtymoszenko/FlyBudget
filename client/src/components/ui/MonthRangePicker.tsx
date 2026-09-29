@@ -19,24 +19,40 @@ interface Props {
 const ym = (year: number, monthIdx: number) => `${year}-${String(monthIdx + 1).padStart(2, '0')}`;
 const label = (v: string) => format(parseISO(`${v}-01`), 'MMM yyyy');
 
-function MonthGrid({ title, value, onPick, isDisabled }: {
+function MonthGrid({
+  title,
+  value,
+  onPick,
+  isDisabled,
+}: {
   title: string;
   value: string;
   onPick: (v: string) => void;
   isDisabled: (v: string) => boolean;
 }) {
   const [year, setYear] = useState(() => parseInt(value.slice(0, 4), 10));
-  const navBtn = 'p-1 rounded text-text-tertiary hover:text-text-secondary hover:bg-hover transition-colors cursor-pointer';
+  const navBtn =
+    'p-1 rounded text-text-tertiary hover:text-text-secondary hover:bg-hover transition-colors cursor-pointer';
 
   return (
     <div className="w-[196px]">
       <p className="text-xs font-medium text-text-tertiary mb-2">{title}</p>
       <div className="flex items-center justify-between mb-2">
-        <button type="button" className={navBtn} onClick={() => setYear(year - 1)} aria-label="Previous year">
+        <button
+          type="button"
+          className={navBtn}
+          onClick={() => setYear(year - 1)}
+          aria-label="Previous year"
+        >
           <ChevronLeft size={14} />
         </button>
         <span className="text-sm font-semibold text-text tabular-nums">{year}</span>
-        <button type="button" className={navBtn} onClick={() => setYear(year + 1)} aria-label="Next year">
+        <button
+          type="button"
+          className={navBtn}
+          onClick={() => setYear(year + 1)}
+          aria-label="Next year"
+        >
           <ChevronRight size={14} />
         </button>
       </div>
@@ -69,7 +85,13 @@ function MonthGrid({ title, value, onPick, isDisabled }: {
 }
 
 /** Compact "Jan 2025 – Dec 2025" button with a from/to month-grid popover. */
-export function MonthRangePicker({ from, to, onChange, max = format(new Date(), 'yyyy-MM'), defaultOpen = false }: Props) {
+export function MonthRangePicker({
+  from,
+  to,
+  onChange,
+  max = format(new Date(), 'yyyy-MM'),
+  defaultOpen = false,
+}: Props) {
   const [open, setOpen] = useState(defaultOpen);
   // Picks are a draft until Done; closing any other way discards them
   const [draftFrom, setDraftFrom] = useState(from);
@@ -77,7 +99,10 @@ export function MonthRangePicker({ from, to, onChange, max = format(new Date(), 
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (open) { setDraftFrom(from); setDraftTo(to); }
+    if (open) {
+      setDraftFrom(from);
+      setDraftTo(to);
+    }
   }, [open, from, to]);
 
   const dirty = draftFrom !== from || draftTo !== to;
@@ -107,7 +132,9 @@ export function MonthRangePicker({ from, to, onChange, max = format(new Date(), 
         type="button"
         onClick={() => setOpen(!open)}
         className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium border rounded-md transition-colors cursor-pointer ${
-          open ? 'border-brand-600 text-brand-600' : 'border-border text-text-secondary hover:bg-hover'
+          open
+            ? 'border-brand-600 text-brand-600'
+            : 'border-border text-text-secondary hover:bg-hover'
         }`}
       >
         <CalendarRange size={13} />
@@ -123,7 +150,10 @@ export function MonthRangePicker({ from, to, onChange, max = format(new Date(), 
             <MonthGrid
               title="From"
               value={draftFrom}
-              onPick={(v) => { setDraftFrom(v); if (v > draftTo) setDraftTo(v); }}
+              onPick={(v) => {
+                setDraftFrom(v);
+                if (v > draftTo) setDraftTo(v);
+              }}
               isDisabled={(v) => v > max}
             />
             <div className="w-px bg-border-light" />

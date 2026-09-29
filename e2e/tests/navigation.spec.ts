@@ -34,13 +34,22 @@ test('every page opens from the sidebar', async ({ page, api }) => {
 
   await open(page, '/dashboard');
   const nav = page.getByRole('complementary');
+  const windowScrolls: string[] = [];
   for (const p of PAGES) {
     await nav.getByRole('link', { name: p.link, exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`#${p.route}$`));
     if (p.heading) {
       await expect(page.getByRole('heading', { level: 1, name: p.heading })).toBeVisible();
     }
+    // Only the content area scrolls: the window itself never does (a second scroll bar
+    // that scrolls the app off screen)
+    await page.waitForLoadState('networkidle');
+    const extra = await page.evaluate(
+      () => document.documentElement.scrollHeight - window.innerHeight,
+    );
+    if (extra > 0) windowScrolls.push(`${p.route} +${extra}px`);
   }
+  expect(windowScrolls, 'pages where the whole window scrolls').toEqual([]);
 });
 
 test('the sidebar lists accounts with their balances and opens them', async ({ page, api }) => {

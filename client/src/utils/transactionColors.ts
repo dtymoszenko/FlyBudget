@@ -1,4 +1,4 @@
-export const PAYEE_COLORS = [
+const PAYEE_COLORS = [
   '#6366F1',
   '#EC4899',
   '#F59E0B',

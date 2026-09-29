@@ -53,16 +53,20 @@ export default function SummaryStats({ currentMonth }: Props) {
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      <StatCard label="Left to Spend" value={formatCurrency(leftToSpend)} valueColor={ltsColor} />
+      {totalBudgeted > 0 ? (
+        <StatCard label="Left to Spend" value={formatCurrency(leftToSpend)} valueColor={ltsColor} />
+      ) : (
+        <StatCard label="Left to Spend" value="—" sub="No budget set this month" />
+      )}
       <StatCard
         label="Avg Monthly Income"
         value={formatCurrency(avgIncome)}
-        valueColor="text-positive"
+        valueColor={avgIncome > 0 ? 'text-positive' : undefined}
       />
       <StatCard
         label="Avg Monthly Expenses"
         value={formatCurrency(avgExpenses)}
-        valueColor="text-negative"
+        valueColor={avgExpenses > 0 ? 'text-negative' : undefined}
       />
       <div className="bg-surface-alt rounded-lg px-4 py-3 border border-border-light">
         <div className="flex items-center justify-between">
@@ -79,11 +83,18 @@ export default function SummaryStats({ currentMonth }: Props) {
             ))}
           </select>
         </div>
-        <p
-          className={`text-lg font-semibold tabular-nums mt-0.5 ${savingsRate >= savingsGoal ? 'text-positive' : 'text-negative'}`}
-        >
-          {savingsRate}%
-        </p>
+        {avgIncome > 0 ? (
+          <p
+            className={`text-lg font-semibold tabular-nums mt-0.5 ${savingsRate >= savingsGoal ? 'text-positive' : 'text-negative'}`}
+          >
+            {savingsRate}%
+          </p>
+        ) : (
+          <>
+            <p className="text-lg font-semibold tabular-nums mt-0.5 text-text">—</p>
+            <p className="text-xs text-text-tertiary mt-0.5">Shown once you have income</p>
+          </>
+        )}
       </div>
     </div>
   );

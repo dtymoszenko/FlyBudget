@@ -66,7 +66,7 @@ export const freezeDateRange = (
 });
 
 /** What a dashboard shows when its range was never changed. */
-export const DEFAULT_DASHBOARD_RANGE: ReportDateRange = { preset: '6m', ...computeDateRange('6m') };
+const DEFAULT_DASHBOARD_RANGE: ReportDateRange = { preset: '6m', ...computeDateRange('6m') };
 
 export const dashboardDateRange = (page: { dateRange: ReportDateRange | null } | undefined) =>
   resolveDateRange(page?.dateRange ?? DEFAULT_DASHBOARD_RANGE);
