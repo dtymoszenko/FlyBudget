@@ -1,0 +1,50 @@
+---
+sidebar_position: 5
+sidebar_label: Connecting a bank
+---
+
+# Connecting a bank
+
+FlyBudget can import transactions automatically through two services. Both are optional: CSV
+import works with almost every bank and costs nothing.
+
+|              | Plaid                                                                       | SimpleFIN Bridge                                                |
+| ------------ | --------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| **Cost**     | Free Plaid developer account                                                | $1.50 per month, paid to SimpleFIN                              |
+| **Setup**    | Sign up for a Plaid developer account, then enter your client ID and secret | Create an account at SimpleFIN Bridge, then paste a setup token |
+| **Best for** | People comfortable with developer dashboards                                | Most people                                                     |
+
+Connect either one from **Settings → Connected Banks**, or from the welcome screen.
+
+## Plaid
+
+1. Create a free developer account at [Plaid](https://dashboard.plaid.com/signup) and copy your
+   **client ID** and **secret**.
+2. Enter them in **Settings → Connected Banks**. Use **Sandbox** to try it with test banks, or
+   **Production** for your real accounts.
+3. Choose **Connect Bank**. Plaid's sign-in opens in your web browser, which is how banks
+   that use their own login page (like Chase) are supported.
+4. Choose which FlyBudget account each bank account belongs to.
+
+Disconnecting a bank revokes its access at Plaid before FlyBudget forgets it.
+
+## SimpleFIN
+
+1. Sign up at [SimpleFIN Bridge](https://bridge.simplefin.org) and connect your banks there.
+2. Create a **setup token** and paste it into FlyBudget.
+3. Choose which FlyBudget account each bank account belongs to.
+
+FlyBudget exchanges the one-time token for a private access link, stored encrypted. To stop
+syncing completely, disconnect in FlyBudget _and_ remove the app in SimpleFIN Bridge.
+
+## How syncing works
+
+- New transactions are imported when FlyBudget starts and whenever you choose **Sync Now**.
+- Your [rules](./rules) run on every imported transaction.
+- Reconciled transactions are never changed by a sync.
+- Account balances are adjusted to match what your bank reports.
+
+## Your credentials
+
+Bank tokens never leave the FlyBudget server, and they are encrypted at rest. They are never
+included in [backups](./backups). See the [security overview](/community/security) for details.

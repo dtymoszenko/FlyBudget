@@ -1,0 +1,42 @@
+---
+sidebar_position: 8
+sidebar_label: Rules
+---
+
+# Rules
+
+Rules categorize, rename and split transactions for you. They run on every new transaction,
+whether you add it by hand, import it from a CSV file or sync it from your bank.
+
+## A rule has two parts
+
+**Conditions** decide which transactions it applies to. Match on the payee, the original bank
+text, notes, account, category, amount, direction (money in or out) or date. Text conditions
+include _is_, _contains_, _starts with_, _ends with_, _one of_ and regular expressions, and
+ignore upper and lower case. Choose whether **all** or **any** conditions must match.
+
+**Actions** say what to change: set the category, set the payee, set or add to the notes, or
+split the transaction into fixed amounts, percentages and a remainder.
+
+For example:
+
+> If **payee** contains `AMZN` → set payee to **Amazon** and category to **Shopping**.
+
+## Order matters
+
+Every matching rule runs, from top to bottom, and each sees the changes made above it. That
+means a rule that renames `SQ *BLUE BOTTLE` to _Blue Bottle Coffee_ can sit above one that
+categorizes _Blue Bottle Coffee_. Once a rule sets a field, rules further down don't change
+it. Drag rules to reorder them.
+
+## Applying rules to past transactions
+
+When you save a rule, FlyBudget offers to run it on the transactions you already have. You'll
+see a preview first and choose which ones to change. Reconciled transactions, transfers and
+splits are never touched.
+
+## Quick ways to create a rule
+
+- From a transaction: open it and choose **Create rule**. The payee and category are filled in.
+- From a payee: set a **default category** on the Payees page. It's used when no rule sets a
+  category.

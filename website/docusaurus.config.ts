@@ -29,9 +29,6 @@ const config: Config = {
 
   onBrokenLinks: 'throw',
 
-  // Even if you don't use internationalization, you can use this field to set
-  // useful metadata like html lang. For example, if your site is Chinese, you
-  // may want to replace "en" with "zh-Hans".
   i18n: {
     defaultLocale: 'en',
     locales: ['en'],
@@ -102,8 +99,7 @@ const config: Config = {
   ],
 
   themeConfig: {
-    // Replace with your project's social card
-    image: 'img/docusaurus-social-card.jpg',
+    image: 'img/logo.png',
     colorMode: {
       respectPrefersColorScheme: true,
     },
@@ -147,12 +143,13 @@ const config: Config = {
     footer: {
       style: 'dark',
       links: [
-        { label: 'GitHub', href: 'https://github.com/dtymoszenko/flybudget' },
-        { label: 'Website Source', href: 'https://github.com/dtymoszenko/flybudget' },
-        { label: 'Privacy Policy', to: '/docs/intro' },
+        { label: 'Docs', to: '/docs/intro' },
+        { label: 'Download', to: '/download' },
         { label: 'Blog', to: '/blog' },
+        { label: 'Security', to: '/community/security' },
+        { label: 'GitHub', href: 'https://github.com/dtymoszenko/flybudget' },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} FlyBudget. Built with Docusaurus.`,
+      copyright: `Copyright © ${new Date().getFullYear()} FlyBudget. Free software under the AGPL-3.0 license.`,
     },
     prism: {
       theme: prismThemes.github,

@@ -47,6 +47,13 @@ docker build -t flybudget .   # Dockerfile at the root; docker-compose.yml is th
 
 The image bundles the server with esbuild (only `better-sqlite3` stays in `node_modules`), serves the built client, runs as the `node` user with data in `/data`, and sets `FLYBUDGET_SERVER_MODE=true`. `.github/workflows/docker.yml` builds and smoke-tests the container on every PR and publishes `ghcr.io/dtymoszenko/flybudget` (amd64 + arm64, with provenance) on `v*` tags. User docs: `website/community/self-hosting.mdx`.
 
+**Formatting** (Prettier, checked in CI):
+
+```bash
+npm run format        # from the root: format everything
+npm run format:check
+```
+
 **Type checking:**
 
 ```bash
@@ -162,7 +169,7 @@ The desktop app and `npm run dev` have no login, so `server/src/middleware/secur
 - **Budget math**: `To Be Budgeted = income received + prior month carry-over − total budgeted`. Category balance = `budgeted + carry-over − spent`. Only on-budget accounts count. Calculation logic lives in `server/src/routes/budget.ts`.
 - **Transfers**: Linked via `transferTransactionId` on both transaction rows — deleting one side nulls the link on the other, and editing one side's date or amount updates the other. Deleting any transaction goes through `deleteTransactionRow` (`services/transactionHelpers.ts`), which also removes split parts and reopens a schedule occurrence it paid.
 - **Custom reports**: Config stored as JSON blob in `custom_reports` table (same pattern as rules). Aggregation handled by a single flexible `GET /reports/custom` endpoint with dynamic SQL.
-- **Shared chart helpers**: `CurrencyTooltip`, `ChartSkeleton`, `EmptyState`, `StatCardRow`, `EXPENSE_COLORS`, `monthLabel` live in `client/src/components/reports/ChartHelpers.tsx` — reuse these for any new chart work.
+- **Shared chart helpers**: `CurrencyTooltip`, `ChartSkeleton`, `EmptyState` (the chart version: message plus a hint), `StatCardRow`, `EXPENSE_COLORS`, `monthLabel` live in `client/src/components/reports/ChartHelpers.tsx` — reuse these for any new chart work.
 - **X-axis labels**: every Recharts `<XAxis>` uses `useXAxisLayout` (`client/src/hooks/useXAxisLayout.tsx`, logic in `utils/axisLayout.ts`). It measures the real label widths against the chart size and picks which labels to draw so they never overlap or get cut off: time axes skip labels evenly (`ordered: true`); category axes tilt and shorten names, or leave them to the tooltip when bars are too thin. Pass the plot `inset` (margin + y-axis width) and spread `axisProps` on the axis; don't set `interval`/`angle`/`tick` by hand.
 - **Zoomed Y axes**: `valueAxis` (`client/src/utils/valueAxis.ts`) gives a `domain` + round `ticks` fitted to the data instead of starting at $0, for line charts where the change matters (the Net Worth report). Never use it for bars: a bar's height is its value, so bar axes must include 0.
 
@@ -184,25 +191,34 @@ The desktop app and `npm run dev` have no login, so `server/src/middleware/secur
 - `ConfirmModal` — wraps Modal, `danger` prop for red confirm button
 - `CurrencyInput` — displays formatted `$1,234.56`, stores/emits integer cents
 - `Badge` — colored pill for account types and states
+- `ButtonLink` (in `Button.tsx`) — a router `Link` styled like `Button`, for buttons that go to another page
+- `EmptyState` — icon, title, description, actions and an optional "Learn more" link to the user guide (`compact` inside cards). Use it whenever a page or card has nothing to show: say what goes there and offer the first step, never just "No data"
+- `ExternalLink` — opens outside the app (new tab / system browser in Electron) with `rel="noopener noreferrer"`
+
+**First run and empty states**: a new budget opens on `/welcome` (add an account, SimpleFIN or Plaid; "Skip for now" sets the persisted `setupSkipped` preference). Buttons on empty states can open a page's add dialog with `?add=1` (or `?import=1` on an account page) via `useOpenFromLink` (`hooks/useOpenFromLink.ts`): `/transactions`, `/accounts`, `/accounts/:id`, `/recurring`, `/rules`. Links to the user guide use `docsUrl(page)` from `utils/project.ts`; the pages live in `website/docs/`, so keep their file names in sync.
 
 ### Pages and routes
 
-| Route                     | Page                                                                               |
-| ------------------------- | ---------------------------------------------------------------------------------- |
-| `/dashboard`              | Dashboard (at-a-glance financial overview — default landing page)                  |
-| `/budget`                 | Budget (zero-based envelope view)                                                  |
-| `/transactions`           | All transactions across all accounts                                               |
-| `/accounts`               | Account overview cards                                                             |
-| `/accounts/:id`           | Single account transaction list                                                    |
-| `/accounts/:id/reconcile` | Account reconciliation flow                                                        |
-| `/reports`                | Report dashboards (`?dashboard=<id>` picks the tab): movable grid of widgets       |
-| `/reports/widget/:id`     | Full view of a built-in report widget (stats, chart, breakdown table, save)        |
-| `/reports/custom`         | Custom Report Builder (configurable chart type, grouping, filtering)               |
-| `/reports/custom/:id`     | Saved custom report (loads saved config by ID)                                     |
-| `/recurring`              | Recurring transactions (bills, subscriptions, recurring income)                    |
-| `/payees`                 | Payees management                                                                  |
-| `/rules`                  | Auto-categorization rules                                                          |
-| `/settings`               | Settings (Categories, Account reorder, Data export/backup, Preferences)            |
+| Route                     | Page                                                                         |
+| ------------------------- | ---------------------------------------------------------------------------- |
+| `/welcome`                | First-run setup (shown while there are no accounts, until "Skip for now")    |
+| `/dashboard`              | Dashboard (at-a-glance financial overview — default landing page)            |
+| `/budget`                 | Budget (zero-based envelope view)                                            |
+| `/budget/category/:id`    | One category: budget history and its transactions                            |
+| `/transactions`           | All transactions across all accounts                                         |
+| `/accounts`               | Account overview cards                                                       |
+| `/accounts/:id`           | Single account transaction list                                              |
+| `/accounts/:id/reconcile` | Account reconciliation flow                                                  |
+| `/reports`                | Report dashboards (`?dashboard=<id>` picks the tab): movable grid of widgets |
+| `/reports/widget/:id`     | Full view of a built-in report widget (stats, chart, breakdown table, save)  |
+| `/reports/custom`         | Custom Report Builder (configurable chart type, grouping, filtering)         |
+| `/reports/custom/:id`     | Saved custom report (loads saved config by ID)                               |
+| `/recurring`              | Recurring transactions (bills, subscriptions, recurring income)              |
+| `/cash-flow`              | Cash flow diagram (income sources to spending)                               |
+| `/goals`                  | Savings goals                                                                |
+| `/payees`                 | Payees management                                                            |
+| `/rules`                  | Auto-categorization rules                                                    |
+| `/settings`               | Settings (Categories, Account reorder, Data export/backup, Preferences)      |
 
 ### DB schema summary
 
@@ -262,20 +278,23 @@ Occurrence status is computed by cross-referencing `recurringTransactionId` on t
 
 Mark-as-paid creates a real transaction linked via `recurringTransactionId`. Auto-create (on server startup) creates transactions for items with `autoCreate=1` that are due today or earlier.
 
-UI components live in `client/src/components/recurring/`. Occurrence computation utility: `server/src/utils/recurrence.ts` (also copied to `client/src/utils/recurrence.ts`).
+UI components live in `client/src/components/recurring/`. Occurrence computation utility: `server/src/utils/recurrence.ts`.
 
 ### Dashboard
 
-The dashboard at `/dashboard` (default landing page) has 8 widget components in `client/src/components/dashboard/`:
+The dashboard at `/dashboard` (default landing page) is built from the components in `client/src/components/dashboard/`, with `HelpFooter` (docs, GitHub and issues links) at the bottom:
 
-- `SummaryStats` — Net Worth, To Be Budgeted, Income, Expenses, Savings Rate
-- `AccountsOverview` — accounts grouped by type with balances
-- `BudgetProgress` — top 6 budget categories with progress bars
-- `NetWorthMini` — compact 6-month area chart
-- `IncomeExpensesMini` — compact 6-month bar chart
-- `SpendingBreakdown` — category spending with colored percentage bars
-- `UpcomingBills` — next 7 upcoming/overdue recurring bills within 30 days
-- `RecentTransactions` — last 8 transactions
+- `GettingStarted` — first-run checklist (add an account, bring in transactions, plan the budget, add recurring, create a rule), ticked off from real data; hidden once every step is done or by the user (`gettingStartedHidden` preference)
+- `NetWorthMini` — net worth with a range picker and area chart
+- `SummaryStats` — Left to Spend, average monthly income/expenses, savings rate (shows "—" with a hint until there's a budget or income)
+- `IncomeExpensesMini` — 6-month income vs. expenses bars
+- `SpendingComparison` — cumulative spending, this period vs. a comparison period
+- `BudgetProgress` — planned vs. spent by budget type this month
+- `UpcomingBills` — next upcoming/due recurring items within 30 days
+- `SpendingBreakdown` — top spending categories this month
+- `RecentTransactions` — the latest transactions
+
+Every card has an empty state with a button to where its data comes from.
 
 ### Bank Sync (Plaid, SimpleFin)
 

@@ -1,43 +1,19 @@
-# Website
+# FlyBudget website
 
-This website is built using [Docusaurus](https://docusaurus.io/), a modern static website generator.
+The source of [flybudget.org](https://flybudget.org): the homepage, the user guide (`docs/`),
+the tour of the app (`tour/`), community pages (`community/`) and the blog (`blog/`). It's built
+with [Docusaurus](https://docusaurus.io/).
 
-## Installation
-
-```bash
-npm install
-```
-
-**Note**: feel free to use the package manager of your choice.
-
-## Local Development
+## Working on it
 
 ```bash
-npm run start
+npm ci          # once
+npm start       # dev server at http://localhost:3000, reloads as you edit
+npm run build   # production build in build/; fails on broken links
+npm run serve   # serve the production build locally
 ```
 
-This command starts a local development server and opens up a browser window. Most changes are reflected live without having to restart the server.
-
-## Build
-
-```bash
-npm run build
-```
-
-This command generates static content into the `build` directory and can be served using any static contents hosting service.
-
-## Deployment
-
-Using SSH:
-
-```bash
-USE_SSH=true npm run deploy
-```
-
-Not using SSH:
-
-```bash
-GIT_USER=<Your GitHub username> npm run deploy
-```
-
-If you are using GitHub Pages for hosting, this command is a convenient way to build the website and push to the `gh-pages` branch.
+Pages are Markdown (`.mdx`). The sidebars are defined in `sidebars.ts` (guide),
+`sidebarsTour.ts` and `sidebarsCommunity.ts`. The app links to guide pages by their file name
+(`docsUrl()` in `client/src/utils/project.ts`), so keep those names when reorganizing, or update
+the links in the app too.

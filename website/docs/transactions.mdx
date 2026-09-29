@@ -1,0 +1,41 @@
+---
+sidebar_position: 4
+---
+
+# Transactions
+
+## Adding a transaction
+
+- **All Transactions → Add** opens a form where you pick the account.
+- On an **account page**, **Add Transaction** adds a row at the top of the list (on a phone it
+  opens as a sheet).
+
+The payee field suggests people and businesses you've used before. If a payee has a default
+category, it's filled in for you, and your [rules](./rules) run as soon as you save.
+
+## Importing a CSV file
+
+Most banks let you download your transactions as a CSV file. Open the account, choose
+**Import CSV**, pick the file, and tell FlyBudget what each column holds: **Date**, **Payee**,
+**Amount** (or separate **Inflow** and **Outflow** columns), **Notes**, or **Skip**. The preview
+marks rows you already have as duplicates, so you can import overlapping date ranges safely.
+
+## Splits
+
+One purchase can cover several categories, like a supermarket trip that's part groceries and
+part household. Open the transaction and split it into parts; the parts always add up to the
+total.
+
+## Transfers
+
+Moving money between two of your accounts (paying a credit card from checking, for example) is
+a transfer, not spending. Transfers are linked: change the amount or date on one side and the
+other follows; delete one side and the other becomes a normal transaction.
+
+## Working offline
+
+On a self-hosted server, if the connection drops, transactions you add are kept on your device
+and sent in order when it comes back. Edits and deletes wait for the connection, so you never
+overwrite a change made on another device.
+
+See the [Transactions tour](/tour/transactions) for filters, the detail panel and more.

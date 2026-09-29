@@ -17,7 +17,44 @@
   <a href="https://github.com/dtymoszenko/FlyBudget/stargazers"><img src="https://img.shields.io/github/stars/dtymoszenko/FlyBudget?style=social" alt="GitHub stars" /></a>
 </p>
 
+<p align="center">
+  <a href="https://flybudget.org">Website</a> ·
+  <a href="https://flybudget.org/docs/getting-started">Getting started</a> ·
+  <a href="https://flybudget.org/tour/intro">Tour</a> ·
+  <a href="https://flybudget.org/download">Download</a>
+</p>
+
 ---
+
+## Features
+
+- **Zero-based budgeting**: plan every dollar by category, with carry-over from month to month
+- **Accounts of every kind**: checking, credit cards, loans, investments, property, and your
+  net worth across all of them
+- **Bank import**: CSV files from any bank, or automatic sync with SimpleFIN or Plaid
+- **Rules** that categorize, rename and split transactions as they arrive
+- **Recurring bills and paychecks**, including finding them in your past transactions
+- **Reports**: dashboards you arrange, a custom report builder, cash flow and a transaction
+  calendar
+- **Goals** for savings targets
+- **Works on your phone** when self-hosted, and keeps working through a dropped connection
+
+## Getting started
+
+- **Desktop app (Windows):** download the installer from the
+  [latest release](https://github.com/dtymoszenko/FlyBudget/releases/latest).
+- **Your own server:** run it in Docker (below) and open it from any browser.
+- **From source:**
+
+  ```bash
+  git clone https://github.com/dtymoszenko/FlyBudget.git
+  cd FlyBudget
+  npm ci && npm ci --prefix client && npm ci --prefix server
+  npm run dev   # opens on http://localhost:5173
+  ```
+
+Then follow the [getting started guide](https://flybudget.org/docs/getting-started). The app
+walks you through it too: a checklist on the dashboard tracks your first steps.
 
 ## Self-hosting
 
@@ -49,15 +86,17 @@ the checks to run, and commit message conventions. Before your first pull reques
 is merged, you'll be asked to accept the [Contributor License Agreement](CLA.md)
 with a one-line comment.
 
-## Future Considerations:
+## Roadmap
 
-- Company/Merchant Logos
-- YNAB imports (and potentially other apps)
-- Investment projections and forecasting
-- FIRE Calculator
-- Supported Hosting plans for ease of access
-- Support for enevelope budgeting
-- MCP Support
+Ideas we're considering (not promises):
+
+- Imports from YNAB and other budgeting apps
+- Investment projections and forecasting, and a FIRE calculator
+- Envelope budgeting
+- Syncing one budget between devices that also work offline
+- MCP support
+
+Have an idea? [Open an issue](https://github.com/dtymoszenko/FlyBudget/issues).
 
 ## License
 

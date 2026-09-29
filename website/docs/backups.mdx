@@ -1,0 +1,35 @@
+---
+sidebar_position: 11
+sidebar_label: Backups and exports
+---
+
+# Backups and exports
+
+Your budget lives on your computer or your server, not in someone else's cloud, so keeping a
+backup is up to you. It only takes a click.
+
+## Download a backup
+
+**Settings → Data → Download Backup** saves one JSON file with everything: accounts,
+transactions, budgets, categories, payees, rules, recurring transactions, goals, reports and
+dashboards. Bank connection credentials and your server password are **not** included, so
+reconnect your banks after restoring on a new computer.
+
+Keep backups somewhere other than the computer running FlyBudget, like an external drive or a
+cloud folder you trust.
+
+## Restore a backup
+
+**Settings → Data → Restore Backup** replaces all of your data with the file you choose. Before
+it does, FlyBudget saves a copy of your current database next to it (named
+`budget-before-restore-…`), so a restore can be undone.
+
+## Export transactions
+
+**Settings → Data → Export Transactions** saves transactions as a CSV file you can open in a
+spreadsheet.
+
+## Self-hosted servers
+
+On a server, also back up the data directory (`/data` in Docker) and your encryption key. See
+the [self-hosting guide](/community/self-hosting#backups).

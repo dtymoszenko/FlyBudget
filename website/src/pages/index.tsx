@@ -25,13 +25,10 @@ function HeroSection(): ReactNode {
               <Link className={styles.ctaPrimary} to="/docs/intro">
                 Get Started <span aria-hidden="true">&rarr;</span>
               </Link>
-              <Link className={styles.ctaSecondary} to="/docs/intro">
-                View Demo
+              <Link className={styles.ctaSecondary} to="/tour/intro">
+                Take the Tour
               </Link>
-              <Link
-                className={styles.ctaSecondary}
-                href="https://github.com/dtymoszenko/flybudget"
-              >
+              <Link className={styles.ctaSecondary} href="https://github.com/dtymoszenko/flybudget">
                 <svg
                   className={styles.githubIcon}
                   viewBox="0 0 16 16"
