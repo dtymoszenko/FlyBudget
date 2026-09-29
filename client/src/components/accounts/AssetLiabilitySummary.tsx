@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { formatCurrency } from '../../utils/currency';
 import { chartColors } from '../../utils/chartColors';
 import { accountTypeInfo } from '../../utils/accountTypes';
@@ -46,14 +47,14 @@ export function AssetLiabilitySummary({ accounts }: Props) {
         title="Assets"
         buckets={ASSET_BUCKETS}
         sums={assets}
-        alwaysShow={['investments', 'cash']}
+        emptyText="No bank accounts, investments or property yet."
       />
       <div className="border-t border-border-light my-4" />
       <Section
         title="Liabilities"
         buckets={LIABILITY_BUCKETS}
         sums={liabilities}
-        alwaysShow={['credit']}
+        emptyText="No credit cards or loans yet."
         owed
       />
     </div>
@@ -64,14 +65,18 @@ interface SectionProps {
   title: string;
   buckets: Bucket[];
   sums: Map<AccountGroup, number>;
-  /** Rows shown even with no accounts, so the card never looks empty */
-  alwaysShow: AccountGroup[];
+  /** Shown when there are no accounts on this side at all */
+  emptyText: string;
   /** Liabilities: balances are negative */
   owed?: boolean;
 }
 
-function Section({ title, buckets, sums, alwaysShow, owed = false }: SectionProps) {
-  const rows = buckets.filter((b) => sums.has(b.group) || alwaysShow.includes(b.group));
+/**
+ * One side of the balance sheet. Only groups with accounts are listed: a "$0" row for a
+ * group you haven't added would read as "you have none", not "not tracked yet".
+ */
+function Section({ title, buckets, sums, emptyText, owed = false }: SectionProps) {
+  const rows = buckets.filter((b) => sums.has(b.group));
   const total = rows.reduce((s, b) => s + (sums.get(b.group) ?? 0), 0);
   // Bar widths use magnitudes; a bucket on the "wrong" side (overpaid card) gets no width
   const sign = owed ? -1 : 1;
@@ -100,6 +105,18 @@ function Section({ title, buckets, sums, alwaysShow, owed = false }: SectionProp
             );
           })}
         </div>
+      )}
+
+      {rows.length === 0 && (
+        <p className="mt-2 text-sm text-text-tertiary">
+          {emptyText}{' '}
+          <Link
+            to="/accounts?add=1"
+            className="font-medium text-brand-600 hover:text-brand-700 whitespace-nowrap"
+          >
+            Add account
+          </Link>
+        </p>
       )}
 
       <div className="mt-3 space-y-1.5">
