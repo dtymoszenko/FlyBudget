@@ -1,8 +1,8 @@
-import { clearOutbox } from '../offline/outbox';
-import { clearOfflineCopy } from '../offline/snapshot';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as authApi from '../api/auth';
 import * as serverApi from '../api/server';
+import { clearOutbox } from '../offline/outbox';
+import { clearOfflineCopy } from '../offline/snapshot';
 
 /** Login status (server mode). Shared with AuthGate, which fetched it on startup. */
 export const useAuthStatus = () =>

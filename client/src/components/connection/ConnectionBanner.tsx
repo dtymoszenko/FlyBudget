@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, CloudOff, Loader2, RefreshCw } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useConnection } from '../../hooks/useConnection';
 import { useOutbox } from '../../offline/outbox';
-import { useOfflineCopy } from '../../offline/snapshot';
+import { shownDataAsOf } from '../../offline/snapshot';
 import { useConnectionStore } from '../../store/connectionStore';
 import { retryLabel } from './RetryStatus';
 
@@ -19,7 +20,7 @@ export function ConnectionBanner() {
   const connection = useConnection();
   const reconnectedAt = useConnectionStore((s) => s.reconnectedAt);
   const [showReconnected, setShowReconnected] = useState(false);
-  const dataAsOf = useOfflineCopy((s) => s.dataAsOf);
+  const qc = useQueryClient();
   const waiting = useOutbox((s) => s.items.length);
   const canWait = useOutbox((s) => s.available);
   const wasOffline = useRef(false);
@@ -38,6 +39,8 @@ export function ConnectionBanner() {
   }, [connection.status, reconnectedAt]);
 
   if (connection.status === 'reconnecting') {
+    // Worked out on each render: the countdown re-renders this every moment while offline
+    const dataAsOf = shownDataAsOf(qc);
     return (
       <div
         role="status"

@@ -4,8 +4,10 @@ import {
   OFFLINE_QUERY_KEYS,
   SNAPSHOT_MAX_AGE_MS,
   SNAPSHOT_VERSION,
+  MAX_SAVED_QUERIES,
   clientIdFrom,
   isOfflineQuery,
+  mergeSavedQueries,
   outboxEntryFor,
   sendable,
   snapshotUsable,
@@ -137,5 +139,63 @@ describe('waiting transactions (property-based)', () => {
         }
       }),
     );
+  });
+});
+
+describe('saving the offline copy (property-based)', () => {
+  const NOW = 2_000_000_000_000;
+  const saved = (keys: readonly string[]) =>
+    fc.record({
+      queryHash: fc.string({ maxLength: 3 }),
+      queryKey: fc.constantFrom(...keys).map((k) => [k]),
+      state: fc.record({
+        dataUpdatedAt: fc.integer({ min: NOW - 2 * SNAPSHOT_MAX_AGE_MS, max: NOW }),
+      }),
+    });
+  const allowed = [...OFFLINE_QUERY_KEYS];
+
+  it('keeps what is loaded now, adds older pages, and stays within the limits', () => {
+    fc.assert(
+      fc.property(
+        fc.uniqueArray(saved(allowed), { selector: (q) => q.queryHash, maxLength: 30 }),
+        fc.array(saved([...allowed, 'auth-status', 'server-info']), { maxLength: 30 }),
+        fc.integer({ min: 1, max: 40 }),
+        (current, previous, max) => {
+          const out = mergeSavedQueries(current, previous, NOW, max);
+          const hashes = out.map((q) => q.queryHash);
+          expect(new Set(hashes).size).toBe(hashes.length);
+          expect(out.length).toBeLessThanOrEqual(max);
+          for (const q of out) {
+            // Never login or server details, and nothing older than the limit from earlier saves
+            expect(isOfflineQuery(q.queryKey)).toBe(true);
+            if (!current.includes(q)) {
+              expect(NOW - q.state.dataUpdatedAt).toBeLessThanOrEqual(SNAPSHOT_MAX_AGE_MS);
+            }
+          }
+          // Everything loaded now is kept first (as loaded, not an older save of it)
+          const loadedKept = Math.min(current.length, max);
+          expect(out.slice(0, loadedKept).every((q) => current.includes(q))).toBe(true);
+          // Earlier saves only fill the room that's left, newest first
+          const older = out.slice(loadedKept);
+          for (let i = 1; i < older.length; i++) {
+            expect(older[i - 1].state.dataUpdatedAt).toBeGreaterThanOrEqual(
+              older[i].state.dataUpdatedAt,
+            );
+          }
+        },
+      ),
+    );
+  });
+
+  it('never keeps more than the default limit', () => {
+    const many = Array.from({ length: MAX_SAVED_QUERIES + 50 }, (_, i) => ({
+      queryHash: String(i),
+      queryKey: ['transactions', i],
+      state: { dataUpdatedAt: NOW - i },
+    }));
+    const loaded = many.slice(-10); // the oldest ten are what's on screen now
+    const out = mergeSavedQueries(loaded, many, NOW);
+    expect(out).toHaveLength(MAX_SAVED_QUERIES);
+    expect(out.slice(0, 10).map((q) => q.queryHash)).toEqual(loaded.map((q) => q.queryHash));
   });
 });

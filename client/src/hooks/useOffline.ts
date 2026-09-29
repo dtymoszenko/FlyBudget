@@ -48,6 +48,5 @@ export function useAddTransaction() {
     allowed,
     onDevice,
     pending: createTx.isPending || createTransfer.isPending,
-    error: createTx.error ?? createTransfer.error,
   };
 }

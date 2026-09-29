@@ -12,7 +12,20 @@ function openDb(): Promise<IDBDatabase | null> {
     try {
       const req = indexedDB.open(DB_NAME, 1);
       req.onupgradeneeded = () => req.result.createObjectStore(STORE);
-      req.onsuccess = () => resolve(req.result);
+      req.onsuccess = () => {
+        const db = req.result;
+        // The browser can close the connection (site data cleared, or a newer version
+        // opened elsewhere): open again next time instead of failing from then on
+        const reopen = () => {
+          dbPromise = null;
+        };
+        db.onclose = reopen;
+        db.onversionchange = () => {
+          db.close();
+          reopen();
+        };
+        resolve(db);
+      };
       req.onerror = () => resolve(null);
       req.onblocked = () => resolve(null);
     } catch {

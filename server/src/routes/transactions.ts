@@ -146,7 +146,6 @@ transactionsRouter.get('/', (req, res) => {
   res.json(result);
 });
 
-// POST /transactions — supports optional splits array
 /** A transaction created earlier with this id, shaped like the create response (null if none) */
 function alreadyCreated(txId: string) {
   const row = db.select().from(transactions).where(eq(transactions.id, txId)).get();
@@ -167,6 +166,7 @@ function alreadyCreated(txId: string) {
   return children.length ? { ...row, children } : row;
 }
 
+// POST /transactions — supports optional splits array
 transactionsRouter.post('/', (req, res) => {
   const parsed = createSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });

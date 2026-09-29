@@ -210,13 +210,22 @@ test('with the server unreachable, the app opens with the offline copy and keeps
   expect(copy).not.toContain('auth-status');
   expect(copy).not.toContain('auth-sessions');
 
-  // The server is gone and the page is opened fresh: the app still opens, with the data
-  await unreachable(owner);
+  // The app itself is kept on the device by its service worker
+  await owner.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
+  await expect.poll(() => owner.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
+
+  // No network at all (so not even the page loads from the server), opened fresh: the app
+  // still opens, with the data
+  await owner.context().setOffline(true);
   await owner.goto(accountUrl);
   await expect(owner.getByRole('heading', { level: 1, name: 'Credit Union' })).toBeVisible();
   const banner = owner.getByRole('status', { name: 'Connection' });
   await expect(banner).toContainText("Can't reach FlyBudget. Showing your data as of");
   await expect(banner).toContainText('New transactions are saved on this device');
+  // Other pages open from the copy too
+  await owner.getByRole('complementary').getByRole('link', { name: 'Budget', exact: true }).click();
+  await expect(owner.getByRole('status', { name: 'To be budgeted' })).toBeVisible();
+  await owner.goBack();
 
   // A new transaction waits on the device, even across a reload
   await owner.getByRole('button', { name: 'Add Transaction' }).click();
@@ -232,7 +241,7 @@ test('with the server unreachable, the app opens with the offline copy and keeps
   await expect(waiting.getByTestId('waiting-transaction')).toContainText('Coffee Cart');
 
   // Back online: it's sent once, by itself
-  await owner.unroute('**/api/**');
+  await owner.context().setOffline(false);
   await expect(waiting).toBeHidden({ timeout: 15_000 });
   await expect(
     owner.getByTestId('transaction-row').filter({ hasText: 'Coffee Cart' }),

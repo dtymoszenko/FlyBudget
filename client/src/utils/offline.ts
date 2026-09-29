@@ -48,6 +48,50 @@ export function snapshotUsable(
   return Math.abs(now - savedAt) <= SNAPSHOT_MAX_AGE_MS;
 }
 
+/** At most this many saved answers (pages, report ranges...), newest first */
+export const MAX_SAVED_QUERIES = 200;
+
+interface SavedQuery {
+  queryHash: string;
+  queryKey: readonly unknown[];
+  state: { dataUpdatedAt: number };
+}
+
+/**
+ * What a new save keeps: everything loaded now, plus pages saved earlier that aren't loaded
+ * any more (the app forgets unused data after a few minutes, but offline you may still want
+ * that page), dropping anything past the age limit and keeping the newest when there's too much.
+ */
+export function mergeSavedQueries<T extends SavedQuery>(
+  current: readonly T[],
+  previous: readonly T[],
+  now: number,
+  max = MAX_SAVED_QUERIES,
+): T[] {
+  const newestFirst = (a: T, b: T) => b.state.dataUpdatedAt - a.state.dataUpdatedAt;
+  // What's loaded now comes first, and is the newest version of anything saved before
+  const kept = [...current].sort(newestFirst).slice(0, max);
+  const taken = new Set(kept.map((q) => q.queryHash));
+  const older = previous
+    .filter((q) => {
+      const age = now - q.state.dataUpdatedAt;
+      return (
+        !taken.has(q.queryHash) &&
+        isOfflineQuery(q.queryKey) &&
+        age >= 0 &&
+        age <= SNAPSHOT_MAX_AGE_MS
+      );
+    })
+    .sort(newestFirst);
+  for (const q of older) {
+    if (kept.length >= max) break;
+    if (taken.has(q.queryHash)) continue;
+    taken.add(q.queryHash);
+    kept.push(q);
+  }
+  return kept;
+}
+
 const ID_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
 
 /**

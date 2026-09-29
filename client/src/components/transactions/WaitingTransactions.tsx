@@ -97,6 +97,7 @@ export function WaitingTransactions({ accountId, categoryName, accountName }: Pr
                 </span>
                 <button
                   onClick={() => void retryWaiting(item.id).then(() => sendWaiting(qc))}
+                  aria-label={`Try again: ${payeeOf(item)}`}
                   disabled={!connected}
                   className="px-2 py-1 max-md:min-h-11 rounded border border-border bg-surface text-text-secondary hover:text-text disabled:opacity-50"
                 >
@@ -104,6 +105,7 @@ export function WaitingTransactions({ accountId, categoryName, accountName }: Pr
                 </button>
                 <button
                   onClick={() => setDiscarding(item)}
+                  aria-label={`Discard ${payeeOf(item)}`}
                   className="px-2 py-1 max-md:min-h-11 rounded border border-border bg-surface text-negative hover:bg-negative-subtle"
                 >
                   Discard

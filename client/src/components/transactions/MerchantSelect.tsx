@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CreditCard, Plus } from 'lucide-react';
+import { useCanSave } from '../../hooks/useConnection';
 import { usePayees, useCreatePayee } from '../../hooks/usePayees';
 import { PayeeIcon } from '../payees/PayeeIcon';
 
@@ -25,6 +26,7 @@ interface Props {
 export function MerchantSelect({ value, onChange, placeholder = 'Search merchants...' }: Props) {
   const { data: payees = [] } = usePayees();
   const createPayee = useCreatePayee();
+  const canSave = useCanSave();
   const [query, setQuery] = useState(value.name);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -90,7 +92,13 @@ export function MerchantSelect({ value, onChange, placeholder = 'Search merchant
               </span>
             </button>
           ))}
-          {query.trim() && !exactMatch && (
+          {query.trim() && !exactMatch && !canSave && (
+            // New merchants are made on the server, so offline only existing ones can be picked
+            <p className="px-3 py-2.5 text-xs text-caution border-t border-border-light">
+              New merchants can be added once FlyBudget reconnects.
+            </p>
+          )}
+          {query.trim() && !exactMatch && canSave && (
             <button
               type="button"
               onMouseDown={(e) => {

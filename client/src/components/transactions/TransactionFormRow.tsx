@@ -55,7 +55,7 @@ export function TransactionFormRow({
   );
   const [splitMode, setSplitMode] = useState(false);
   // New transactions can be saved offline: they wait on this device until it reconnects
-  const { allowed: canSave, onDevice } = useCanAddTransaction();
+  const { allowed: canAdd, onDevice } = useCanAddTransaction();
   const [splits, setSplits] = useState<SplitRow[]>([
     { categoryId: null, amount: '', notes: '' },
     { categoryId: null, amount: '', notes: '' },
@@ -142,14 +142,14 @@ export function TransactionFormRow({
   const saveButton = (
     <button
       onClick={handleSave}
-      disabled={!canSave}
+      disabled={!canAdd}
       className={
         sheet
           ? `${sheetBtn} flex-1 bg-brand-600 text-white`
           : 'p-1.5 rounded text-brand-600 hover:text-brand-700 hover:bg-brand-100 disabled:opacity-40 disabled:pointer-events-none'
       }
       title={
-        !canSave
+        !canAdd
           ? 'Save (paused until FlyBudget reconnects)'
           : onDevice
             ? 'Save on this device (sent when FlyBudget reconnects)'
@@ -158,7 +158,7 @@ export function TransactionFormRow({
       aria-label="Save"
     >
       <Check size={16} />
-      {sheet && (onDevice && canSave ? 'Save on device' : 'Save')}
+      {sheet && (onDevice && canAdd ? 'Save on device' : 'Save')}
     </button>
   );
   const splitButton = !isEditingParent && !isTransfer && (

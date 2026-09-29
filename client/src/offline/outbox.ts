@@ -112,16 +112,27 @@ async function sendAll(qc: QueryClient) {
 }
 
 let running: Promise<void> | null = null;
+let again = false;
 
-/** Sends every waiting transaction, oldest first. One run at a time, across tabs too. */
+/**
+ * Sends every waiting transaction, oldest first. One run at a time, across tabs too; a
+ * call during a run makes it go once more at the end, for anything saved meanwhile.
+ */
 export function sendWaiting(qc: QueryClient): Promise<void> {
-  running ??= (async () => {
+  if (running) {
+    again = true;
+    return running;
+  }
+  running = (async () => {
     try {
-      if (typeof navigator !== 'undefined' && navigator.locks) {
-        await navigator.locks.request('flybudget-outbox', () => sendAll(qc));
-      } else {
-        await sendAll(qc);
-      }
+      do {
+        again = false;
+        if (typeof navigator !== 'undefined' && navigator.locks) {
+          await navigator.locks.request('flybudget-outbox', () => sendAll(qc));
+        } else {
+          await sendAll(qc);
+        }
+      } while (again);
     } finally {
       running = null;
     }

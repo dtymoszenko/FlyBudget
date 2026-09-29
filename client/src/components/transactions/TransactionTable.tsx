@@ -212,11 +212,14 @@ export function TransactionTable({
 
       <div className="flex-1 flex overflow-hidden">
         <div className="flex-1 overflow-y-auto">
-          <WaitingTransactions
-            accountId={accountId}
-            categoryName={(id) => categoryMap.get(id)?.name}
-            accountName={(id) => accountInfoMap.get(id)?.name}
-          />
+          {/* Not in a category or month view: they may not belong there */}
+          {!categoryId && !categoryIds?.length && !categoryGroupId && !month && (
+            <WaitingTransactions
+              accountId={accountId}
+              categoryName={(id) => categoryMap.get(id)?.name}
+              accountName={(id) => accountInfoMap.get(id)?.name}
+            />
+          )}
           {showAdd && accountId && !isPhone && (
             <TransactionFormRow
               accountId={accountId}

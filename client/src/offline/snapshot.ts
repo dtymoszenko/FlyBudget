@@ -3,14 +3,21 @@ import { create } from 'zustand';
 import type { AuthStatus } from '../api/auth';
 import { useConnectionStore } from '../store/connectionStore';
 import { usePreferencesStore } from '../store/preferencesStore';
-import { SNAPSHOT_VERSION, isOfflineQuery, snapshotUsable } from '../utils/offline';
+import {
+  SNAPSHOT_VERSION,
+  isOfflineQuery,
+  mergeSavedQueries,
+  snapshotUsable,
+} from '../utils/offline';
 import { deleteValue, readValue, writeValue } from './storage';
 
 // The offline copy: what the app last loaded (accounts, budget, transactions, reports...)
 // saved on this device, so FlyBudget still opens when its server can't be reached. It's
 // restored before the first render (which also makes every start instant), refreshed a
 // moment after new data arrives while connected, and deleted on sign-out, when the server
-// asks for a login again, or when turned off in Settings → Server.
+// asks for a login again, or when turned off in Settings → Server. Each save keeps pages
+// saved earlier too (see mergeSavedQueries), so offline you can open more than the last
+// page you looked at.
 //
 // Not used in the desktop app: its server runs inside the app, so there is never a
 // window without it, and the budget file is already on the same disk.
@@ -58,9 +65,12 @@ function signedOut(qc: QueryClient) {
   return !!auth && auth.enabled && !auth.authenticated;
 }
 
-function save(qc: QueryClient) {
+const canSave = (qc: QueryClient) =>
   // Only while connected and signed in: never overwrite a good copy with a half-failed cache
-  if (!enabled() || signedOut(qc) || useConnectionStore.getState().status !== 'connected') return;
+  enabled() && !signedOut(qc) && useConnectionStore.getState().status === 'connected';
+
+async function save(qc: QueryClient) {
+  if (!canSave(qc)) return;
   const state = dehydrate(qc, {
     shouldDehydrateQuery: (q) => q.state.data !== undefined && isOfflineQuery(q.queryKey),
     shouldDehydrateMutation: () => false,
@@ -77,11 +87,14 @@ function save(qc: QueryClient) {
       fetchFailureReason: null,
     },
   }));
-  void writeValue(KEY, {
-    version: SNAPSHOT_VERSION,
-    savedAt: Date.now(),
-    state,
-  } satisfies Snapshot);
+  const previous = await readValue<Snapshot>(KEY);
+  // Signed out or turned off while reading: don't bring the copy back
+  if (!canSave(qc)) return;
+  const now = Date.now();
+  if (previous && snapshotUsable(previous, now)) {
+    state.queries = mergeSavedQueries(state.queries, previous.state.queries, now);
+  }
+  await writeValue(KEY, { version: SNAPSHOT_VERSION, savedAt: now, state } satisfies Snapshot);
 }
 
 /** Keeps the copy up to date as data loads. Call once, after restoreOfflineCopy. */
@@ -94,7 +107,7 @@ export function startOfflineCopy(qc: QueryClient) {
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {
       saveTimer = undefined;
-      save(qc);
+      void save(qc);
     }, SAVE_DELAY_MS);
   });
   if (typeof window !== 'undefined') {
@@ -103,9 +116,22 @@ export function startOfflineCopy(qc: QueryClient) {
       if (saveTimer === undefined) return;
       clearTimeout(saveTimer);
       saveTimer = undefined;
-      save(qc);
+      void save(qc);
     });
   }
+}
+
+/**
+ * When the data on screen was last current: the oldest answer the page is showing (a page
+ * from an earlier save can be older than the rest), else the last time anything loaded.
+ */
+export function shownDataAsOf(qc: QueryClient): number | null {
+  let oldest: number | null = null;
+  for (const q of qc.getQueryCache().findAll({ type: 'active' })) {
+    if (q.state.data === undefined || !isOfflineQuery(q.queryKey)) continue;
+    if (oldest === null || q.state.dataUpdatedAt < oldest) oldest = q.state.dataUpdatedAt;
+  }
+  return oldest ?? useOfflineCopy.getState().dataAsOf;
 }
 
 /** Deletes the copy from this device (sign-out, login required again, or turned off). */
