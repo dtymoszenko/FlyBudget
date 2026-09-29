@@ -15,13 +15,17 @@ function getCurrencySymbol(): string {
   return usePreferencesStore.getState().currencySymbol || '$';
 }
 
+// Made once: toLocaleString builds a new formatter on every call, and charts format thousands
+const wholeDollars = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+const withCents = new Intl.NumberFormat('en-US', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
 export function formatCurrency(cents: number): string {
   const sym = getCurrencySymbol();
   const abs = Math.abs(cents);
-  const formatted = (abs / 100).toLocaleString('en-US', {
-    minimumFractionDigits: abs % 100 === 0 ? 0 : 2,
-    maximumFractionDigits: 2,
-  });
+  const formatted = (abs % 100 === 0 ? wholeDollars : withCents).format(abs / 100);
   return cents < 0 ? `-${sym}${formatted}` : `${sym}${formatted}`;
 }
 
