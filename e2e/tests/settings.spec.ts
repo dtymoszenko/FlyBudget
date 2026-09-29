@@ -1,0 +1,115 @@
+import { test, expect, open, isoDay } from './fixtures';
+
+// Settings: managing categories and groups, and preferences.
+
+test.describe('categories', () => {
+  test.beforeEach(async ({ api, page }) => {
+    await api.createAccount('Checking', 0);
+    await open(page, '/settings');
+  });
+
+  test('creates a group and a category in it', async ({ page, api }) => {
+    // The second "Create group" is in the Expenses section
+    await page.getByRole('button', { name: 'Create group' }).nth(1).click();
+    await page.getByPlaceholder('Group name...').fill('Pets');
+    await page.getByRole('button', { name: 'Add group' }).click();
+    await expect(page.getByText('Pets', { exact: true })).toBeVisible();
+
+    // New groups go last, so its "Create Category" is the last one
+    await page.getByRole('button', { name: 'Create Category' }).last().click();
+    await page.getByPlaceholder('Category name...').fill('Vet Bills');
+    await page.getByPlaceholder('Category name...').press('Enter');
+    await expect(page.getByRole('button', { name: 'Edit Vet Bills' })).toBeVisible();
+
+    const pets = (await api.categoryGroups()).find((g) => g.name === 'Pets')!;
+    expect(pets).toMatchObject({ isIncome: 0 });
+    expect(pets.categories.map((c) => c.name)).toEqual(['Vet Bills']);
+  });
+
+  test('renames a category from the keyboard', async ({ page, api }) => {
+    await page.getByRole('button', { name: 'Edit Parking' }).focus();
+    await page.keyboard.press('Enter');
+    const dialog = page.getByRole('dialog', { name: 'Edit Category' });
+    await dialog.getByRole('textbox', { name: 'Category name' }).fill('Parking & Tolls');
+    await dialog.getByRole('button', { name: 'Save' }).click();
+    await expect(page.getByRole('button', { name: 'Edit Parking & Tolls' })).toBeVisible();
+    await expect.poll(() => api.category('Parking & Tolls')).toBeTruthy();
+  });
+
+  test('deleting a used category moves its transactions first', async ({ page, api }) => {
+    const [checking] = await api.accounts();
+    const parking = await api.category('Parking');
+    const transit = await api.category('Public Transit');
+    await api.createTransaction({
+      accountId: checking.id,
+      date: isoDay(),
+      amount: -1_200,
+      payeeName: 'City Garage',
+      categoryId: parking.id,
+    });
+
+    await page.getByRole('button', { name: 'Edit Parking' }).click();
+    await page
+      .getByRole('dialog', { name: 'Edit Category' })
+      .getByRole('button', { name: 'Delete' })
+      .click();
+    const dialog = page.getByRole('dialog', { name: 'Delete Category' });
+    await expect(dialog).toContainText('Parking has 1 transaction');
+    await expect(dialog.getByRole('button', { name: 'Reassign & Delete' })).toBeDisabled();
+    await dialog.getByRole('combobox', { name: 'Move transactions to' }).selectOption(transit.id);
+    await dialog.getByRole('button', { name: 'Reassign & Delete' }).click();
+
+    await expect(page.getByRole('button', { name: 'Edit Parking' })).toBeHidden();
+    const [tx] = await api.transactions();
+    expect(tx.categoryId).toBe(transit.id);
+  });
+});
+
+test.describe('preferences', () => {
+  test('persist across reloads', async ({ page, api }) => {
+    await api.createAccount('Checking', 123_456);
+    await open(page, '/settings');
+    await page.getByRole('button', { name: 'Preferences' }).click();
+    // The dark theme is applied to the page and remembered
+    await page.getByRole('main').getByRole('button', { name: 'Dark', exact: true }).click();
+    await expect(page.locator('html')).toHaveClass(/dark/);
+    await page.reload();
+    await expect(page.locator('html')).toHaveClass(/dark/);
+  });
+});
+
+test.describe('goals', () => {
+  test('adds a savings goal and shows its progress', async ({ page, api }) => {
+    const savings = await api.createAccount('Savings', 0, 'savings');
+    await open(page, '/goals');
+    await page.getByRole('main').getByRole('button', { name: 'Add Goal' }).first().click();
+
+    const dialog = page.getByRole('dialog', { name: 'Add Goal' });
+    await dialog.getByRole('textbox', { name: 'Name' }).fill('Emergency Fund');
+    await dialog.getByRole('textbox', { name: 'Target', exact: true }).fill('10000');
+    await dialog.getByRole('textbox', { name: 'Saved so far' }).fill('2500');
+    await dialog
+      .getByRole('combobox', { name: 'Linked account' })
+      .selectOption({ label: 'Savings' });
+    await dialog.getByRole('button', { name: '🛡️' }).click();
+    await expect(dialog.getByRole('button', { name: '🛡️' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await dialog.getByRole('button', { name: 'Color #059669' }).click();
+    await dialog.getByRole('button', { name: 'Add Goal' }).click();
+    await expect(dialog).toBeHidden();
+
+    await expect(page.getByRole('main')).toContainText('Emergency Fund');
+    await expect(page.getByRole('main')).toContainText('25%');
+    const [goal] = await api.call<any[]>('GET', '/goals');
+    expect(goal).toMatchObject({
+      name: 'Emergency Fund',
+      targetAmount: 1_000_000,
+      currentAmount: 250_000,
+      accountId: savings.id,
+      icon: '🛡️',
+      color: '#059669',
+    });
+  });
+});

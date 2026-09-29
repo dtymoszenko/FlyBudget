@@ -9,6 +9,7 @@
 .git
 .github
 electron
+e2e
 dist-electron
 website
 build

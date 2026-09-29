@@ -61,6 +61,18 @@ cd server && npm test   # src/**/*.test.ts — recurrence dates, rules engine
 
 Tests are property-based: they assert invariants over hundreds of generated inputs rather than fixed examples. Server tests run with `DB_PATH=:memory:` (see `server/vitest.config.ts`) so they never touch `budget.db`. To search harder locally, temporarily set `fc.configureGlobal({ numRuns: 20000 })`.
 
+**End-to-end tests** (Playwright, `e2e/`, run in CI):
+
+```bash
+cd e2e
+npm ci && npx playwright install chromium   # once
+npm test                                    # builds the client, starts two servers, runs everything
+npm test -- --project=desktop               # just the desktop-app suite
+E2E_SKIP_BUILD=1 npm test                   # reuse the last client builds (faster while writing tests)
+```
+
+`global-setup.ts` starts FlyBudget twice on throwaway databases: **desktop** (configured like the Electron app: `--mode electron` client served by the API server, per-launch API token, credential encryption key; tests inject the preload's `__API_BASE__`) and **server-mode** (password login; the setup code is read from the server log). Desktop tests run one at a time and each starts from a snapshot of the fresh database, restored through `POST /api/export/restore`. Fixtures in `tests/fixtures.ts`: `api` seeds data over HTTP, `open(page, route)` uses hash routes, `typeAmount` types into currency fields, and a console guard fails any test whose page throws or logs `console.error` (opt out with an `allow-page-errors` annotation). Prefer role/label selectors; when a control has no accessible name, give it one in the app rather than reaching for CSS selectors.
+
 **Supply chain:**
 
 - Every package (`/`, `client/`, `server/`, `website/`) has an `.npmrc` with `ignore-scripts=true`, so dependency install scripts never run. None are needed: Electron downloads its binary on first run, and `esbuild`/`@swc/core` ship platform binaries as optional dependencies. If a new dependency genuinely needs its install script, run it explicitly (e.g. `npm rebuild <pkg> --ignore-scripts=false`) rather than removing the setting.

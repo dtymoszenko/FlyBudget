@@ -64,6 +64,41 @@ jobs:
       - run: npm audit signatures
       - run: npx tsc -p electron/tsconfig.json --noEmit
 
+  # End-to-end: the real app in a real browser (Playwright), against throwaway databases.
+  # Covers the desktop-app setup and self-hosted server mode; see e2e/global-setup.ts.
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            client/package-lock.json
+            server/package-lock.json
+            e2e/package-lock.json
+      - run: npm ci --prefix client
+      - run: npm ci --prefix server
+      - run: npm ci --prefix e2e
+      - run: npm audit signatures
+        working-directory: e2e
+      # Install scripts are disabled (.npmrc), so the browser is installed explicitly
+      - run: npx playwright install --with-deps chromium
+        working-directory: e2e
+      - run: npx tsc --noEmit
+        working-directory: e2e
+      - run: npm test
+        working-directory: e2e
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            e2e/playwright-report
+            e2e/test-results
+          retention-days: 14
+
   website:
     runs-on: ubuntu-latest
     defaults:
@@ -84,7 +119,7 @@ jobs:
   ci-passed:
     name: CI passed
     if: always()
-    needs: [server, client, electron, website]
+    needs: [server, client, electron, e2e, website]
     runs-on: ubuntu-latest
     steps:
       - if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')

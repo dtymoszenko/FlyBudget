@@ -5,6 +5,7 @@ updates:
       - '/'
       - '/client'
       - '/server'
+      - '/e2e'
       - '/website'
     schedule:
       interval: weekly
