@@ -5,11 +5,13 @@ import {
   transactions,
   accounts,
 } from '../db/schema.js';
+import { logError } from '../utils/log.js';
 import { eq, and } from 'drizzle-orm';
 import {
   fetchAccounts,
   simpleFinAmountToCents,
   simpleFinBalanceToCents,
+  simplefinErrorMessage,
 } from './simplefinService.js';
 import { buildRuleContext, insertNewTransaction, loadRules } from './ruleService.js';
 import { accountTransactionSum } from './balances.js';
@@ -121,7 +123,8 @@ export async function syncSimplefinConnection(connectionId: string): Promise<Sim
       .where(eq(simplefinConnections.id, connectionId))
       .run();
   } catch (err: any) {
-    const errorMessage = err?.message ?? 'Unknown error';
+    logError('SimpleFIN sync failed', err);
+    const errorMessage = simplefinErrorMessage(err, 'Could not reach SimpleFIN');
 
     db.update(simplefinConnections)
       .set({
@@ -151,7 +154,7 @@ export async function syncAllSimplefinConnections(): Promise<SimplefinSyncResult
         connectionId: conn.id,
         connectionName: conn.connectionName,
         added: 0,
-        errors: [err.message],
+        errors: [simplefinErrorMessage(err, 'Could not reach SimpleFIN')],
       });
     }
   }

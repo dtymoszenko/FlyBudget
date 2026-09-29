@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { assertSafeUrl, readTextLimited, safeFetch } from './safeFetch.js';
+import { assertSafeUrl, readTextLimited, safeFetch, UnsafeUrlError } from './safeFetch.js';
 
 // SimpleFIN protocol: https://www.simplefin.org/protocol.html
 // Everything that comes from outside (the setup token the user pastes, the access
@@ -43,8 +43,16 @@ export type SimplefinTransaction = z.infer<typeof transactionSchema>;
 export type SimplefinAccount = z.infer<typeof accountSchema>;
 export type SimplefinResponse = z.infer<typeof responseSchema>;
 
+/** A problem worth showing the user as is (unlike network or database errors, which may carry internal details). */
+export class SimplefinError extends Error {}
+
 /** The user's setup token (or what it decodes to) is unusable — a 400, not a server error. */
-export class InvalidSetupTokenError extends Error {}
+export class InvalidSetupTokenError extends SimplefinError {}
+
+/** The message to show the user for a failed SimpleFIN call: ours, or `fallback` for anything unexpected. */
+export function simplefinErrorMessage(err: unknown, fallback: string): string {
+  return err instanceof SimplefinError || err instanceof UnsafeUrlError ? err.message : fallback;
+}
 
 /** Setup tokens are base64 of a claim URL — reject anything else before decoding. */
 const setupTokenSchema = z
@@ -63,10 +71,10 @@ export function parseAccessUrl(accessUrl: string): { baseUrl: string; authorizat
   try {
     url = assertSafeUrl(accessUrl.trim());
   } catch {
-    throw new Error('Invalid SimpleFIN access URL');
+    throw new SimplefinError('Invalid SimpleFIN access URL');
   }
   if (!url.username || !url.password || url.search || url.hash) {
-    throw new Error('Invalid SimpleFIN access URL');
+    throw new SimplefinError('Invalid SimpleFIN access URL');
   }
   const credentials = `${decodeURIComponent(url.username)}:${decodeURIComponent(url.password)}`;
   url.username = '';
@@ -117,13 +125,13 @@ export async function fetchAccounts(
   const response = await safeFetch(url, { headers: { Authorization: authorization } });
 
   if (response.status === 402) {
-    throw new Error('SimpleFIN subscription required — visit simplefin.org to activate');
+    throw new SimplefinError('SimpleFIN subscription required — visit simplefin.org to activate');
   }
   if (response.status === 403) {
-    throw new Error('SimpleFIN access denied — the connection may have been revoked');
+    throw new SimplefinError('SimpleFIN access denied — the connection may have been revoked');
   }
   if (!response.ok) {
-    throw new Error(`SimpleFIN error (HTTP ${response.status})`);
+    throw new SimplefinError(`SimpleFIN error (HTTP ${response.status})`);
   }
 
   return parseSimplefinResponse(await readTextLimited(response));
@@ -135,10 +143,10 @@ export function parseSimplefinResponse(body: string): SimplefinResponse {
   try {
     json = JSON.parse(body);
   } catch {
-    throw new Error('SimpleFIN returned an invalid response');
+    throw new SimplefinError('SimpleFIN returned an invalid response');
   }
   const parsed = responseSchema.safeParse(json);
-  if (!parsed.success) throw new Error('SimpleFIN returned data in an unexpected format');
+  if (!parsed.success) throw new SimplefinError('SimpleFIN returned data in an unexpected format');
   return parsed.data;
 }
 
@@ -149,7 +157,7 @@ function decimalToCents(value: string): number {
   const cents = Number(whole) * 100 + Number((frac + '00').slice(0, 2));
   // Round half away from zero on the third decimal
   const rounded = Number(frac[2] ?? '0') >= 5 ? cents + 1 : cents;
-  if (!Number.isSafeInteger(rounded)) throw new Error('Amount out of range');
+  if (!Number.isSafeInteger(rounded)) throw new SimplefinError('Amount out of range');
   return negative ? -rounded : rounded;
 }
 

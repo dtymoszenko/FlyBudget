@@ -1,5 +1,6 @@
 import { db } from '../db/index.js';
 import { plaidItems, plaidAccountMappings, transactions, accounts } from '../db/schema.js';
+import { logError } from '../utils/log.js';
 import { eq, and, inArray } from 'drizzle-orm';
 import { syncTransactions, plaidAmountToCents, plaidBalanceToCents } from './plaidService.js';
 import { buildRuleContext, insertNewTransaction, loadRules } from './ruleService.js';
@@ -159,7 +160,9 @@ export async function syncPlaidItem(plaidItemId: string): Promise<SyncResult> {
       .where(eq(plaidItems.id, plaidItemId))
       .run();
   } catch (err: any) {
-    const errorMessage = err?.response?.data?.error_message ?? err?.message ?? 'Unknown error';
+    logError('Plaid sync failed', err);
+    // Plaid's own message is meant for users; anything else may carry internal details
+    const errorMessage = err?.response?.data?.error_message ?? 'Could not reach Plaid';
     const errorCode = err?.response?.data?.error_code ?? '';
 
     const syncStatus = errorCode === 'ITEM_LOGIN_REQUIRED' ? 'login_required' : 'error';
@@ -195,7 +198,7 @@ export async function syncAllItems(): Promise<SyncResult[]> {
         added: 0,
         modified: 0,
         removed: 0,
-        errors: [err.message],
+        errors: [err?.response?.data?.error_message ?? 'Could not reach Plaid'],
       });
     }
   }

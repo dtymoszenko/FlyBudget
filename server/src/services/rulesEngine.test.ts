@@ -45,26 +45,73 @@ const arbCents = fc.integer({ min: 0, max: 1_000_00 });
 const arbStableCondition: fc.Arbitrary<Condition> = fc.oneof(
   fc.record({
     field: fc.constant('notes' as const),
-    op: fc.constantFrom('is', 'is_not', 'contains', 'not_contains', 'starts_with', 'ends_with', 'regex'),
+    op: fc.constantFrom(
+      'is',
+      'is_not',
+      'contains',
+      'not_contains',
+      'starts_with',
+      'ends_with',
+      'regex',
+    ),
     value: arbText,
   }),
-  fc.record({ field: fc.constant('amount' as const), op: fc.constantFrom('is', 'is_not', 'gt', 'gte', 'lt', 'lte', 'approx'), value: arbCents }),
-  fc.record({ field: fc.constant('amount' as const), op: fc.constant('between' as const), value: fc.tuple(arbCents, arbCents) }),
-  fc.record({ field: fc.constant('direction' as const), op: fc.constant('is' as const), value: fc.constantFrom('inflow', 'outflow') }),
-  fc.record({ field: fc.constant('date' as const), op: fc.constantFrom('is', 'before', 'after'), value: arbDate }),
-  fc.record({ field: fc.constant('account' as const), op: fc.constantFrom('is', 'is_not'), value: fc.constantFrom('a1', 'a2') }),
+  fc.record({
+    field: fc.constant('amount' as const),
+    op: fc.constantFrom('is', 'is_not', 'gt', 'gte', 'lt', 'lte', 'approx'),
+    value: arbCents,
+  }),
+  fc.record({
+    field: fc.constant('amount' as const),
+    op: fc.constant('between' as const),
+    value: fc.tuple(arbCents, arbCents),
+  }),
+  fc.record({
+    field: fc.constant('direction' as const),
+    op: fc.constant('is' as const),
+    value: fc.constantFrom('inflow', 'outflow'),
+  }),
+  fc.record({
+    field: fc.constant('date' as const),
+    op: fc.constantFrom('is', 'before', 'after'),
+    value: arbDate,
+  }),
+  fc.record({
+    field: fc.constant('account' as const),
+    op: fc.constantFrom('is', 'is_not'),
+    value: fc.constantFrom('a1', 'a2'),
+  }),
 );
 
 const arbCondition: fc.Arbitrary<Condition> = fc.oneof(
   arbStableCondition,
   fc.record({
     field: fc.constantFrom(...TEXT_FIELDS),
-    op: fc.constantFrom('is', 'is_not', 'contains', 'not_contains', 'starts_with', 'ends_with', 'regex'),
+    op: fc.constantFrom(
+      'is',
+      'is_not',
+      'contains',
+      'not_contains',
+      'starts_with',
+      'ends_with',
+      'regex',
+    ),
     value: arbText,
   }),
-  fc.record({ field: fc.constantFrom(...TEXT_FIELDS, 'payee', 'category'), op: fc.constantFrom('one_of', 'not_one_of'), value: fc.array(arbText, { minLength: 1, maxLength: 3 }) }),
-  fc.record({ field: fc.constantFrom(...TEXT_FIELDS, 'payee', 'account', 'category'), op: fc.constantFrom('is_empty', 'is_not_empty') }),
-  fc.record({ field: fc.constantFrom('payee', 'category'), op: fc.constantFrom('is', 'is_not'), value: fc.constantFrom('p1', 'p2', ...CATEGORIES) }),
+  fc.record({
+    field: fc.constantFrom(...TEXT_FIELDS, 'payee', 'category'),
+    op: fc.constantFrom('one_of', 'not_one_of'),
+    value: fc.array(arbText, { minLength: 1, maxLength: 3 }),
+  }),
+  fc.record({
+    field: fc.constantFrom(...TEXT_FIELDS, 'payee', 'account', 'category'),
+    op: fc.constantFrom('is_empty', 'is_not_empty'),
+  }),
+  fc.record({
+    field: fc.constantFrom('payee', 'category'),
+    op: fc.constantFrom('is', 'is_not'),
+    value: fc.constantFrom('p1', 'p2', ...CATEGORIES),
+  }),
 );
 
 const arbSplitPart: fc.Arbitrary<SplitPart> = fc.record({
@@ -75,10 +122,22 @@ const arbSplitPart: fc.Arbitrary<SplitPart> = fc.record({
 });
 
 const arbAction: fc.Arbitrary<Action> = fc.oneof(
-  fc.record({ type: fc.constant('set_category' as const), value: fc.constantFrom(...CATEGORIES, 'deleted') }),
-  fc.record({ type: fc.constant('set_payee' as const), value: fc.constantFrom('p1', 'p2', 'p3', 'deleted') }),
-  fc.record({ type: fc.constantFrom('set_notes', 'prepend_notes', 'append_notes'), value: arbText }),
-  fc.record({ type: fc.constant('split' as const), parts: fc.array(arbSplitPart, { minLength: 1, maxLength: 4 }) }),
+  fc.record({
+    type: fc.constant('set_category' as const),
+    value: fc.constantFrom(...CATEGORIES, 'deleted'),
+  }),
+  fc.record({
+    type: fc.constant('set_payee' as const),
+    value: fc.constantFrom('p1', 'p2', 'p3', 'deleted'),
+  }),
+  fc.record({
+    type: fc.constantFrom('set_notes', 'prepend_notes', 'append_notes'),
+    value: arbText,
+  }),
+  fc.record({
+    type: fc.constant('split' as const),
+    parts: fc.array(arbSplitPart, { minLength: 1, maxLength: 4 }),
+  }),
 );
 
 const arbRule = (cond = arbCondition, action = arbAction): fc.Arbitrary<EngineRule> =>
@@ -110,7 +169,12 @@ describe('rule conditions (property-based)', () => {
   });
 
   it('negated operators are the exact opposite of their positive form', () => {
-    const opposite = { is: 'is_not', contains: 'not_contains', one_of: 'not_one_of', is_empty: 'is_not_empty' } as const;
+    const opposite = {
+      is: 'is_not',
+      contains: 'not_contains',
+      one_of: 'not_one_of',
+      is_empty: 'is_not_empty',
+    } as const;
     fc.assert(
       fc.property(arbTx, arbCondition, (tx, c) => {
         const neg = opposite[c.op as keyof typeof opposite];
@@ -125,7 +189,9 @@ describe('rule conditions (property-based)', () => {
       fc.property(arbTx, fc.array(arbCondition, { maxLength: 4 }), (tx, conditions) => {
         const each = conditions.map((c) => evalCondition(c, tx));
         expect(matchesRule({ conditionsOp: 'and', conditions }, tx)).toBe(each.every(Boolean));
-        expect(matchesRule({ conditionsOp: 'or', conditions }, tx)).toBe(!conditions.length || each.some(Boolean));
+        expect(matchesRule({ conditionsOp: 'or', conditions }, tx)).toBe(
+          !conditions.length || each.some(Boolean),
+        );
       }),
     );
   });
@@ -152,7 +218,9 @@ describe('rule conditions (property-based)', () => {
             ['one_of', ['zzz', payee]],
           ];
           for (const [op, text] of cases) {
-            const value = Array.isArray(text) ? text.map((t) => recase(t, flips)) : recase(text, flips);
+            const value = Array.isArray(text)
+              ? text.map((t) => recase(t, flips))
+              : recase(text, flips);
             const c = { field: 'payee_name', op, value } as Condition;
             expect(evalCondition(c, tx), `${op} ${JSON.stringify(value)} on "${payee}"`).toBe(true);
           }
@@ -175,7 +243,9 @@ describe('rule conditions (property-based)', () => {
       fc.property(arbTx, arbCents, arbCents, (tx, a, b) => {
         const abs = Math.abs(tx.amount);
         expect(evalCondition({ field: 'amount', op: 'is', value: abs }, tx)).toBe(true);
-        expect(evalCondition({ field: 'amount', op: 'is', value: abs }, { ...tx, amount: -tx.amount })).toBe(true);
+        expect(
+          evalCondition({ field: 'amount', op: 'is', value: abs }, { ...tx, amount: -tx.amount }),
+        ).toBe(true);
         expect(evalCondition({ field: 'amount', op: 'between', value: [a, b] }, tx)).toBe(
           evalCondition({ field: 'amount', op: 'between', value: [b, a] }, tx),
         );
@@ -211,18 +281,27 @@ describe('running rules (property-based)', () => {
 
   it('gives the category of the first matching rule, so rules below never override it', () => {
     fc.assert(
-      fc.property(arbTx, fc.array(categoryRule, { maxLength: 5 }), fc.array(arbRule(), { maxLength: 4 }), (tx, rules, after) => {
-        const first = rules.find((r) => matchesRule(r, tx));
-        const { tx: out } = runRules(tx, [...rules, ...after], ctx);
-        if (first) expect(out.categoryId).toBe((first.actions[0] as { value: string }).value);
-      }),
+      fc.property(
+        arbTx,
+        fc.array(categoryRule, { maxLength: 5 }),
+        fc.array(arbRule(), { maxLength: 4 }),
+        (tx, rules, after) => {
+          const first = rules.find((r) => matchesRule(r, tx));
+          const { tx: out } = runRules(tx, [...rules, ...after], ctx);
+          if (first) expect(out.categoryId).toBe((first.actions[0] as { value: string }).value);
+        },
+      ),
     );
   });
 
   it('never applies disabled rules', () => {
     fc.assert(
       fc.property(arbTx, fc.array(arbRule(), { maxLength: 5 }), (tx, rules) => {
-        const out = runRules(tx, rules.map((r) => ({ ...r, enabled: false })), ctx);
+        const out = runRules(
+          tx,
+          rules.map((r) => ({ ...r, enabled: false })),
+          ctx,
+        );
         expect(out).toEqual({ tx, split: null, matchedRuleIds: [] });
       }),
     );
@@ -237,7 +316,8 @@ describe('running rules (property-based)', () => {
         expect(locked.split).toBeNull();
 
         const { tx: out, split } = runRules(tx, rules, ctx);
-        if (out.categoryId !== tx.categoryId && out.categoryId) expect(CATEGORIES).toContain(out.categoryId);
+        if (out.categoryId !== tx.categoryId && out.categoryId)
+          expect(CATEGORIES).toContain(out.categoryId);
         if (out.payeeId !== tx.payeeId) expect(out.payeeName).toBe(PAYEES[out.payeeId!]);
         for (const p of split ?? []) if (p.categoryId) expect(CATEGORIES).toContain(p.categoryId);
       }),
@@ -246,28 +326,56 @@ describe('running rules (property-based)', () => {
 
   it('lets a rule see what the rules above it changed (rename, then categorize the new name)', () => {
     fc.assert(
-      fc.property(arbTx, fc.constantFrom('p1', 'p2', 'p3'), fc.constantFrom(...CATEGORIES), (base, payee, category) => {
-        const tx = { ...base, payeeId: null, payeeName: 'SQ *RAW 1234', categoryId: null };
-        const rules: EngineRule[] = [
-          { id: 'rename', conditionsOp: 'and', enabled: true, sortOrder: 0,
-            conditions: [{ field: 'payee_name', op: 'starts_with', value: 'sq *raw' }],
-            actions: [{ type: 'set_payee', value: payee }] },
-          { id: 'categorize', conditionsOp: 'and', enabled: true, sortOrder: 1,
-            conditions: [{ field: 'payee', op: 'is', value: payee }],
-            actions: [{ type: 'set_category', value: category }] },
-        ];
-        const out = runRules(tx, rules, ctx);
-        expect(out.tx).toMatchObject({ payeeId: payee, payeeName: PAYEES[payee], categoryId: category });
-        expect(out.matchedRuleIds).toEqual(['rename', 'categorize']);
-      }),
+      fc.property(
+        arbTx,
+        fc.constantFrom('p1', 'p2', 'p3'),
+        fc.constantFrom(...CATEGORIES),
+        (base, payee, category) => {
+          const tx = { ...base, payeeId: null, payeeName: 'SQ *RAW 1234', categoryId: null };
+          const rules: EngineRule[] = [
+            {
+              id: 'rename',
+              conditionsOp: 'and',
+              enabled: true,
+              sortOrder: 0,
+              conditions: [{ field: 'payee_name', op: 'starts_with', value: 'sq *raw' }],
+              actions: [{ type: 'set_payee', value: payee }],
+            },
+            {
+              id: 'categorize',
+              conditionsOp: 'and',
+              enabled: true,
+              sortOrder: 1,
+              conditions: [{ field: 'payee', op: 'is', value: payee }],
+              actions: [{ type: 'set_category', value: category }],
+            },
+          ];
+          const out = runRules(tx, rules, ctx);
+          expect(out.tx).toMatchObject({
+            payeeId: payee,
+            payeeName: PAYEES[payee],
+            categoryId: category,
+          });
+          expect(out.matchedRuleIds).toEqual(['rename', 'categorize']);
+        },
+      ),
     );
   });
 
   it('stacks prepended and appended notes around the original', () => {
     fc.assert(
       fc.property(arbTx, arbText, arbText, (tx, pre, post) => {
-        const rule: EngineRule = { id: 'n', conditionsOp: 'and', conditions: [], enabled: true, sortOrder: 0,
-          actions: [{ type: 'prepend_notes', value: pre }, { type: 'append_notes', value: post }] };
+        const rule: EngineRule = {
+          id: 'n',
+          conditionsOp: 'and',
+          conditions: [],
+          enabled: true,
+          sortOrder: 0,
+          actions: [
+            { type: 'prepend_notes', value: pre },
+            { type: 'append_notes', value: post },
+          ],
+        };
         const { tx: out } = runRules(tx, [rule], ctx);
         expect(out.notes ?? '').toBe(`${pre}${tx.notes ?? ''}${post}`);
       }),
@@ -286,31 +394,44 @@ describe('split amounts (property-based)', () => {
 
   it('always add up to the total, with every part the same sign as the total', () => {
     fc.assert(
-      fc.property(arbTotal, fc.array(arbSplitPart, { minLength: 1, maxLength: 5 }), (total, parts) => {
-        const out = computeSplitAmounts(total, parts);
-        if (!out) return;
-        expect(out.reduce((s, p) => s + p.amount, 0)).toBe(total);
-        for (const p of out) expect(Math.sign(p.amount)).toBe(Math.sign(total));
-      }),
+      fc.property(
+        arbTotal,
+        fc.array(arbSplitPart, { minLength: 1, maxLength: 5 }),
+        (total, parts) => {
+          const out = computeSplitAmounts(total, parts);
+          if (!out) return;
+          expect(out.reduce((s, p) => s + p.amount, 0)).toBe(total);
+          for (const p of out) expect(Math.sign(p.amount)).toBe(Math.sign(total));
+        },
+      ),
     );
   });
 
   it('only refuse when the fixed and percent parts need more than the total', () => {
     fc.assert(
-      fc.property(arbTotal, fc.array(fixedOrPercent, { minLength: 1, maxLength: 4 }), (total, parts) => {
-        const abs = Math.abs(total);
-        const pct = parts.filter((p) => p.kind === 'percent').reduce((s, p) => s + p.value, 0);
-        const fixed = parts.filter((p) => p.kind === 'fixed').reduce((s, p) => s + p.value, 0);
-        const needed = fixed + Math.round((abs * pct) / 100);
-        expect(computeSplitAmounts(total, parts) === null).toBe(needed > abs);
-      }),
+      fc.property(
+        arbTotal,
+        fc.array(fixedOrPercent, { minLength: 1, maxLength: 4 }),
+        (total, parts) => {
+          const abs = Math.abs(total);
+          const pct = parts.filter((p) => p.kind === 'percent').reduce((s, p) => s + p.value, 0);
+          const fixed = parts.filter((p) => p.kind === 'fixed').reduce((s, p) => s + p.value, 0);
+          const needed = fixed + Math.round((abs * pct) / 100);
+          expect(computeSplitAmounts(total, parts) === null).toBe(needed > abs);
+        },
+      ),
     );
   });
 
   it('split evenly-weighted percents to within a cent of each other', () => {
     fc.assert(
       fc.property(arbTotal, fc.integer({ min: 2, max: 4 }), (total, n) => {
-        const parts: SplitPart[] = Array.from({ length: n }, (_, i) => ({ kind: 'percent', value: 100 / n, categoryId: `c${i}`, notes: null }));
+        const parts: SplitPart[] = Array.from({ length: n }, (_, i) => ({
+          kind: 'percent',
+          value: 100 / n,
+          categoryId: `c${i}`,
+          notes: null,
+        }));
         const out = computeSplitAmounts(total, parts)!;
         const amounts = out.map((p) => Math.abs(p.amount));
         expect(Math.max(...amounts) - Math.min(...amounts)).toBeLessThanOrEqual(1);
@@ -323,25 +444,36 @@ describe('split amounts (property-based)', () => {
 describe('rules saved in the original format', () => {
   // The original engine: text match on payee/notes, amount compared as signed cents text
   function legacyMatch(c: { field: string; op: string; value: string }, tx: TxState) {
-    const raw = c.field === 'payee_name' ? tx.payeeName : c.field === 'amount' ? String(tx.amount) : tx.notes;
+    const raw =
+      c.field === 'payee_name' ? tx.payeeName : c.field === 'amount' ? String(tx.amount) : tx.notes;
     const s = (raw ?? '').toLowerCase();
     const v = c.value.toLowerCase();
     if (c.op === 'contains') return s.includes(v);
     if (c.op === 'starts_with') return s.startsWith(v);
     if (c.op === 'ends_with') return s.endsWith(v);
     if (c.op === 'exact') return s === v;
-    try { return new RegExp(c.value, 'i').test(raw ?? ''); } catch { return false; }
+    try {
+      return new RegExp(c.value, 'i').test(raw ?? '');
+    } catch {
+      return false;
+    }
   }
 
   it('match exactly the same transactions after conversion', () => {
     const arbLegacy = fc.oneof(
-      fc.record({ field: fc.constantFrom('payee_name', 'notes'), op: fc.constantFrom('contains', 'starts_with', 'ends_with', 'exact', 'regex'), value: arbText }),
+      fc.record({
+        field: fc.constantFrom('payee_name', 'notes'),
+        op: fc.constantFrom('contains', 'starts_with', 'ends_with', 'exact', 'regex'),
+        value: arbText,
+      }),
       arbTx.map((t) => ({ field: 'amount', op: 'exact', value: String(t.amount) })),
     );
     fc.assert(
       fc.property(arbTx, fc.array(arbLegacy, { maxLength: 3 }), (tx, legacy) => {
         const converted = normalizeConditions(legacy);
-        expect(matchesRule({ conditionsOp: 'and', conditions: converted }, tx)).toBe(legacy.every((c) => legacyMatch(c, tx)));
+        expect(matchesRule({ conditionsOp: 'and', conditions: converted }, tx)).toBe(
+          legacy.every((c) => legacyMatch(c, tx)),
+        );
       }),
     );
   });

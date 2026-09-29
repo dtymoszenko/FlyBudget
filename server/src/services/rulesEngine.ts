@@ -12,7 +12,15 @@ export const ID_FIELDS = ['payee', 'account', 'category'] as const;
 export type TextField = (typeof TEXT_FIELDS)[number];
 export type IdField = (typeof ID_FIELDS)[number];
 
-export const TEXT_OPS = ['is', 'is_not', 'contains', 'not_contains', 'starts_with', 'ends_with', 'regex'] as const;
+export const TEXT_OPS = [
+  'is',
+  'is_not',
+  'contains',
+  'not_contains',
+  'starts_with',
+  'ends_with',
+  'regex',
+] as const;
 export const ID_OPS = ['is', 'is_not'] as const;
 export const LIST_OPS = ['one_of', 'not_one_of'] as const;
 export const EMPTY_OPS = ['is_empty', 'is_not_empty'] as const;
@@ -123,13 +131,20 @@ export function evalCondition(c: Condition, tx: TxState): boolean {
       }
       const v = Math.abs(c.value);
       switch (c.op) {
-        case 'is': return abs === v;
-        case 'is_not': return abs !== v;
-        case 'gt': return abs > v;
-        case 'gte': return abs >= v;
-        case 'lt': return abs < v;
-        case 'lte': return abs <= v;
-        case 'approx': return Math.abs(abs - v) <= Math.round(v * APPROX_TOLERANCE);
+        case 'is':
+          return abs === v;
+        case 'is_not':
+          return abs !== v;
+        case 'gt':
+          return abs > v;
+        case 'gte':
+          return abs >= v;
+        case 'lt':
+          return abs < v;
+        case 'lte':
+          return abs <= v;
+        case 'approx':
+          return Math.abs(abs - v) <= Math.round(v * APPROX_TOLERANCE);
       }
       return false;
     }
@@ -148,21 +163,31 @@ export function evalCondition(c: Condition, tx: TxState): boolean {
 
   const subject = subjectOf(c.field, tx);
   switch (c.op) {
-    case 'is_empty': return !subject;
-    case 'is_not_empty': return !!subject;
-    case 'one_of': return c.value.some((v) => same(c.field, subject, v));
-    case 'not_one_of': return !c.value.some((v) => same(c.field, subject, v));
-    case 'is': return same(c.field, subject, c.value);
-    case 'is_not': return !same(c.field, subject, c.value);
+    case 'is_empty':
+      return !subject;
+    case 'is_not_empty':
+      return !!subject;
+    case 'one_of':
+      return c.value.some((v) => same(c.field, subject, v));
+    case 'not_one_of':
+      return !c.value.some((v) => same(c.field, subject, v));
+    case 'is':
+      return same(c.field, subject, c.value);
+    case 'is_not':
+      return !same(c.field, subject, c.value);
   }
 
   const s = lower(subject);
   const v = c.value.toLowerCase();
   switch (c.op) {
-    case 'contains': return s.includes(v);
-    case 'not_contains': return !s.includes(v);
-    case 'starts_with': return s.startsWith(v);
-    case 'ends_with': return s.endsWith(v);
+    case 'contains':
+      return s.includes(v);
+    case 'not_contains':
+      return !s.includes(v);
+    case 'starts_with':
+      return s.startsWith(v);
+    case 'ends_with':
+      return s.endsWith(v);
     case 'regex':
       try {
         return new RegExp(c.value, 'i').test(subject ?? '');
@@ -172,7 +197,10 @@ export function evalCondition(c: Condition, tx: TxState): boolean {
   }
 }
 
-export function matchesRule(rule: Pick<EngineRule, 'conditions' | 'conditionsOp'>, tx: TxState): boolean {
+export function matchesRule(
+  rule: Pick<EngineRule, 'conditions' | 'conditionsOp'>,
+  tx: TxState,
+): boolean {
   if (!rule.conditions.length) return true;
   return rule.conditionsOp === 'or'
     ? rule.conditions.some((c) => evalCondition(c, tx))
@@ -285,10 +313,16 @@ export function computeSplitAmounts(
 
   let left = abs - used;
   const remIdx = parts.map((p, i) => (p.kind === 'remainder' ? i : -1)).filter((i) => i >= 0);
-  const result = parts.map((p, i) => ({ amount: amounts[i], categoryId: p.categoryId, notes: p.notes }));
+  const result = parts.map((p, i) => ({
+    amount: amounts[i],
+    categoryId: p.categoryId,
+    notes: p.notes,
+  }));
   if (remIdx.length) {
     const share = Math.floor(left / remIdx.length);
-    remIdx.forEach((i, k) => (result[i].amount = share + (k < left - share * remIdx.length ? 1 : 0)));
+    remIdx.forEach(
+      (i, k) => (result[i].amount = share + (k < left - share * remIdx.length ? 1 : 0)),
+    );
     left = 0;
   }
   if (left > 0) result.push({ amount: left, categoryId: null, notes: null });

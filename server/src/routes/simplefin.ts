@@ -12,6 +12,7 @@ import {
   connectionNameFromResponse,
   simpleFinBalanceToCents,
   InvalidSetupTokenError,
+  simplefinErrorMessage,
 } from '../services/simplefinService.js';
 import {
   syncSimplefinConnection,
@@ -99,7 +100,9 @@ simplefinRouter.post('/setup', async (req, res) => {
     });
   } catch (err: any) {
     logError('SimpleFIN setup error', err);
-    res.status(err instanceof InvalidSetupTokenError ? 400 : 502).json({ error: err.message });
+    res
+      .status(err instanceof InvalidSetupTokenError ? 400 : 502)
+      .json({ error: simplefinErrorMessage(err, 'Could not reach SimpleFIN. Try again later.') });
   }
 });
 

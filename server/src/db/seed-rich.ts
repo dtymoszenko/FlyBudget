@@ -104,7 +104,6 @@ if (allGroups.length === 0) {
 
 const allCats = db.select().from(categories).all();
 const catMap = new Map(allCats.map((c) => [c.name, c.id]));
-const groupMap = new Map(allGroups.map((g) => [g.name, g.id]));
 
 function catId(name: string): string {
   const id = catMap.get(name);
@@ -731,7 +730,6 @@ function insertSplit(
 const groceryPayees = ['Kroger', "Trader Joe's", 'Aldi', 'Whole Foods', 'Costco'];
 const restaurantPayees = ['Chipotle', 'Olive Garden', 'Thai Basil', 'Sushi Palace'];
 const fastFoodPayees = ['Pizza Hut', "McDonald's", 'Uber Eats'];
-const coffeePayees = ['Starbucks', "Dunkin'", 'Local Coffee Co'];
 const gasPayees = ['Shell', 'Exxon'];
 const shoppingPayees = ['Amazon', 'Target', 'Walmart', 'TJ Maxx', 'Nike'];
 

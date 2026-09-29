@@ -1,8 +1,8 @@
 import { db } from '../db/index.js';
 import { schedules, scheduleOccurrences, transactions, payees } from '../db/schema.js';
-import { eq, and, isNull, inArray } from 'drizzle-orm';
+import { eq, and, isNull } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import { format, parseISO, addDays, getDay, getDate, getMonth } from 'date-fns';
+import { format, parseISO, addDays } from 'date-fns';
 import {
   computeOccurrenceDates,
   buildRecurrenceRule,
@@ -195,7 +195,6 @@ export function migrateOccurrencesFromLegacy(): number {
 
   if (toMigrate.length === 0) return 0;
 
-  const today = format(new Date(), 'yyyy-MM-dd');
   const horizon = format(addDays(new Date(), 90), 'yyyy-MM-dd');
   let totalCreated = 0;
 

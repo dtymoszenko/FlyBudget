@@ -38,9 +38,19 @@ export function loadRules(): EngineRule[] {
 
 export function buildRuleContext(): RuleContext {
   const payeeNames = new Map(
-    db.select({ id: payees.id, name: payees.name }).from(payees).all().map((p) => [p.id, p.name]),
+    db
+      .select({ id: payees.id, name: payees.name })
+      .from(payees)
+      .all()
+      .map((p) => [p.id, p.name]),
   );
-  const categoryIds = new Set(db.select({ id: categories.id }).from(categories).all().map((c) => c.id));
+  const categoryIds = new Set(
+    db
+      .select({ id: categories.id })
+      .from(categories)
+      .all()
+      .map((c) => c.id),
+  );
   return { payeeName: (id) => payeeNames.get(id), categoryExists: (id) => categoryIds.has(id) };
 }
 
@@ -78,7 +88,9 @@ type InsertOptions = {
 export function insertNewTransaction(input: NewTransactionInput, opts: InsertOptions = {}) {
   let payeeId = input.payeeId;
   if (!payeeId && input.payeeName) {
-    payeeId = db.select({ id: payees.id }).from(payees).where(eq(payees.name, input.payeeName)).get()?.id ?? null;
+    payeeId =
+      db.select({ id: payees.id }).from(payees).where(eq(payees.name, input.payeeName)).get()?.id ??
+      null;
   }
 
   const { tx, split } = runRules(
@@ -93,7 +105,8 @@ export function insertNewTransaction(input: NewTransactionInput, opts: InsertOpt
 
   if (!tx.payeeId && tx.payeeName) tx.payeeId = resolvePayee(tx.payeeName, null).payeeId;
   if (!tx.categoryId && !split && tx.payeeId) {
-    tx.categoryId = db.select().from(payees).where(eq(payees.id, tx.payeeId)).get()?.defaultCategoryId ?? null;
+    tx.categoryId =
+      db.select().from(payees).where(eq(payees.id, tx.payeeId)).get()?.defaultCategoryId ?? null;
   }
 
   const now = new Date().toISOString();
@@ -163,7 +176,12 @@ export type PlannedChange = {
     notes?: { from: string | null; to: string | null };
     split?: Array<{ amount: number; categoryId: string | null; notes: string | null }>;
   };
-  next: { payeeId: string | null; payeeName: string | null; categoryId: string | null; notes: string | null };
+  next: {
+    payeeId: string | null;
+    payeeName: string | null;
+    categoryId: string | null;
+    notes: string | null;
+  };
 };
 
 const txState = (t: TxRow): TxState => ({
@@ -190,7 +208,12 @@ function candidates(opts: PlanOptions): TxRow[] {
     if (!opts.transactionIds.length) return [];
     where.push(inArray(transactions.id, opts.transactionIds));
   }
-  return db.select().from(transactions).where(and(...where)).orderBy(desc(transactions.date)).all();
+  return db
+    .select()
+    .from(transactions)
+    .where(and(...where))
+    .orderBy(desc(transactions.date))
+    .all();
 }
 
 /** Dry run: what running rules over existing transactions would change */
@@ -205,20 +228,25 @@ export function planRules(opts: PlanOptions): PlannedChange[] {
   const defaults = opts.ruleIds
     ? null
     : new Map(
-        db.select({ id: payees.id, cat: payees.defaultCategoryId }).from(payees).all()
+        db
+          .select({ id: payees.id, cat: payees.defaultCategoryId })
+          .from(payees)
+          .all()
           .filter((p) => p.cat && ctx.categoryExists(p.cat))
           .map((p) => [p.id, p.cat!]),
       );
 
   return candidates(opts).flatMap((t): PlannedChange[] => {
     const { tx, split } = runRules(txState(t), selected, ctx);
-    if (defaults && !tx.categoryId && !split && tx.payeeId) tx.categoryId = defaults.get(tx.payeeId) ?? null;
+    if (defaults && !tx.categoryId && !split && tx.payeeId)
+      tx.categoryId = defaults.get(tx.payeeId) ?? null;
 
     const changes: PlannedChange['changes'] = {};
     if (tx.payeeId !== t.payeeId) changes.payee = { from: t.payeeName, to: tx.payeeName };
     const parts = split && computeSplitAmounts(t.amount, split);
     if (parts) changes.split = parts;
-    else if (tx.categoryId !== t.categoryId) changes.category = { from: t.categoryId, to: tx.categoryId };
+    else if (tx.categoryId !== t.categoryId)
+      changes.category = { from: t.categoryId, to: tx.categoryId };
     if ((tx.notes ?? null) !== (t.notes ?? null)) changes.notes = { from: t.notes, to: tx.notes };
     if (!Object.keys(changes).length) return [];
 
@@ -230,7 +258,12 @@ export function planRules(opts: PlanOptions): PlannedChange[] {
         amount: t.amount,
         payeeName: t.payeeName,
         changes,
-        next: { payeeId: tx.payeeId, payeeName: tx.payeeName, categoryId: tx.categoryId, notes: tx.notes },
+        next: {
+          payeeId: tx.payeeId,
+          payeeName: tx.payeeName,
+          categoryId: tx.categoryId,
+          notes: tx.notes,
+        },
       },
     ];
   });
