@@ -4,6 +4,7 @@ import { plaidConfig, plaidItems, plaidAccountMappings, accounts } from '../db/s
 import { and, eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
+import { logError } from '../utils/log.js';
 import { accountTypeSchema, defaultOffBudget } from '../utils/accountTypes.js';
 import {
   isPlaidConfigured,
@@ -169,7 +170,7 @@ plaidRouter.post('/hosted-link', async (_req, res) => {
   try {
     res.json(await startHostedLink({ kind: 'new' }));
   } catch (err: any) {
-    console.error('Plaid hosted-link error:', err?.response?.data ?? err.message);
+    logError('Plaid hosted-link error', err);
     res.status(502).json({ error: plaidErrorMessage(err, 'Could not start connecting to Plaid') });
   }
 });
@@ -187,7 +188,7 @@ plaidRouter.post('/items/:itemId/hosted-link', async (req, res) => {
   try {
     res.json(await startHostedLink({ kind: 'update', itemId }, item.accessToken));
   } catch (err: any) {
-    console.error('Plaid hosted-link (update) error:', err?.response?.data ?? err.message);
+    logError('Plaid hosted-link (update) error', err);
     res
       .status(502)
       .json({ error: plaidErrorMessage(err, 'Could not start reconnecting to Plaid') });
@@ -211,7 +212,7 @@ plaidRouter.get('/hosted-link/:sessionId', async (req, res) => {
     });
     res.json(result);
   } catch (err: any) {
-    console.error('Plaid hosted-link poll error:', err?.response?.data ?? err.message);
+    logError('Plaid hosted-link poll error', err);
     res.status(502).json({ error: plaidErrorMessage(err, 'Could not finish connecting to Plaid') });
   }
 });
@@ -288,11 +289,17 @@ plaidRouter.post('/items/:itemId/map-accounts', (req, res) => {
 plaidRouter.post('/items/:itemId/sync', async (req, res) => {
   if (!requirePlaid(res)) return;
   const { itemId } = req.params;
+  const item = db
+    .select({ id: plaidItems.id })
+    .from(plaidItems)
+    .where(eq(plaidItems.id, itemId))
+    .get();
+  if (!item) return res.status(404).json({ error: 'Item not found' });
   try {
-    const result = await syncPlaidItem(itemId);
+    const result = await syncPlaidItem(item.id);
     res.json(result);
   } catch (err: any) {
-    console.error('Plaid sync error:', err?.message);
+    logError('Plaid sync error', err);
     res.status(500).json({ error: 'Sync failed' });
   }
 });
@@ -303,7 +310,7 @@ plaidRouter.post('/sync-all', async (_req, res) => {
     const results = await syncAllItems();
     res.json({ results });
   } catch (err: any) {
-    console.error('Plaid sync error:', err?.message);
+    logError('Plaid sync error', err);
     res.status(500).json({ error: 'Sync failed' });
   }
 });
@@ -366,7 +373,7 @@ plaidRouter.delete('/items/:itemId', async (req, res) => {
       } catch (err: any) {
         const code = err?.response?.data?.error_code;
         if (code !== 'ITEM_NOT_FOUND' && code !== 'INVALID_ACCESS_TOKEN') {
-          console.error('Plaid item remove error:', err?.response?.data ?? err.message);
+          logError('Plaid item remove error', err);
           return res.status(502).json({
             error:
               'Could not revoke access at Plaid, so the connection was kept. Check your internet connection and try again.',

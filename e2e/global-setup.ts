@@ -1,5 +1,6 @@
 import { spawn, execFileSync, type ChildProcess } from 'child_process';
 import { randomBytes } from 'crypto';
+import { gzipSync } from 'zlib';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -142,12 +143,13 @@ export default async function globalSetup() {
     headers: { cookie: `flybudget_token=${apiToken}` },
   });
   if (!snapshot.ok) throw new Error(`Could not snapshot the database: ${snapshot.status}`);
-  const snapshotFile = path.join(dir, 'fresh-backup.json');
-  fs.writeFileSync(snapshotFile, await snapshot.text());
+  // Kept in memory, handed to the test workers through the environment (compressed: it
+  // holds every default category)
+  const snapshotData = gzipSync(Buffer.from(await snapshot.text())).toString('base64');
 
   process.env.E2E_API_TOKEN = apiToken;
   process.env.E2E_SETUP_CODE = setupCode;
-  process.env.E2E_SNAPSHOT = snapshotFile;
+  process.env.E2E_SNAPSHOT = snapshotData;
   process.env.E2E_DIR = dir;
 
   return async () => {

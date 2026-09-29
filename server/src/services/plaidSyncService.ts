@@ -18,7 +18,7 @@ export interface SyncResult {
 // pulls new/modified/removed txns from plaid, adjusts balances to match
 export async function syncPlaidItem(plaidItemId: string): Promise<SyncResult> {
   const item = db.select().from(plaidItems).where(eq(plaidItems.id, plaidItemId)).get();
-  if (!item) throw new Error(`Plaid item ${plaidItemId} not found`);
+  if (!item) throw new Error('Plaid item not found');
 
   const result: SyncResult = {
     itemId: plaidItemId,

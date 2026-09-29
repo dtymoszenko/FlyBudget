@@ -4,6 +4,7 @@ import { simplefinConnections, simplefinAccountMappings, accounts } from '../db/
 import { and, eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
+import { logError } from '../utils/log.js';
 import { accountTypeSchema, defaultOffBudget } from '../utils/accountTypes.js';
 import {
   claimAccessUrl,
@@ -97,7 +98,7 @@ simplefinRouter.post('/setup', async (req, res) => {
       })),
     });
   } catch (err: any) {
-    console.error('SimpleFIN setup error:', err.message);
+    logError('SimpleFIN setup error', err);
     res.status(err instanceof InvalidSetupTokenError ? 400 : 502).json({ error: err.message });
   }
 });
@@ -171,11 +172,17 @@ simplefinRouter.post('/connections/:id/map-accounts', (req, res) => {
 });
 
 simplefinRouter.post('/connections/:id/sync', async (req, res) => {
+  const conn = db
+    .select({ id: simplefinConnections.id })
+    .from(simplefinConnections)
+    .where(eq(simplefinConnections.id, req.params.id))
+    .get();
+  if (!conn) return res.status(404).json({ error: 'Connection not found' });
   try {
-    const result = await syncSimplefinConnection(req.params.id);
+    const result = await syncSimplefinConnection(conn.id);
     res.json(result);
   } catch (err: any) {
-    console.error('SimpleFIN sync error:', err?.message);
+    logError('SimpleFIN sync error', err);
     res.status(500).json({ error: 'Sync failed' });
   }
 });
@@ -185,7 +192,7 @@ simplefinRouter.post('/sync-all', async (_req, res) => {
     const results = await syncAllSimplefinConnections();
     res.json({ results });
   } catch (err: any) {
-    console.error('SimpleFIN sync error:', err?.message);
+    logError('SimpleFIN sync error', err);
     res.status(500).json({ error: 'Sync failed' });
   }
 });

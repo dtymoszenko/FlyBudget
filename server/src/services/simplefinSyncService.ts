@@ -27,7 +27,7 @@ export async function syncSimplefinConnection(connectionId: string): Promise<Sim
     .from(simplefinConnections)
     .where(eq(simplefinConnections.id, connectionId))
     .get();
-  if (!conn) throw new Error(`SimpleFIN connection ${connectionId} not found`);
+  if (!conn) throw new Error('SimpleFIN connection not found');
 
   const result: SimplefinSyncResult = {
     connectionId,

@@ -1,4 +1,4 @@
-import fs from 'fs';
+import { gunzipSync } from 'zlib';
 import {
   test as base,
   expect,
@@ -78,6 +78,11 @@ export async function open(page: Page, route: string) {
   await page.goto(`/#${route}`);
 }
 
+/** The fresh database, as a backup (from global-setup.ts) */
+let fresh: unknown;
+const freshSnapshot = () =>
+  (fresh ??= JSON.parse(gunzipSync(Buffer.from(process.env.E2E_SNAPSHOT!, 'base64')).toString()));
+
 type Fixtures = { api: Api; resetDatabase: void; consoleGuard: void };
 
 export const test = base.extend<Fixtures>({
@@ -88,7 +93,7 @@ export const test = base.extend<Fixtures>({
         extraHTTPHeaders: { cookie: `flybudget_token=${token()}` },
       });
       const res = await request.post('/api/export/restore', {
-        data: JSON.parse(fs.readFileSync(process.env.E2E_SNAPSHOT!, 'utf8')),
+        data: freshSnapshot(),
       });
       if (!res.ok()) throw new Error(`Database reset failed: ${await res.text()}`);
       await request.dispose();
