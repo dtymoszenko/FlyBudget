@@ -18,6 +18,7 @@ npm run dev          # from project root — runs client (port 5173) and server 
 cd client
 npm run dev          # Vite dev server
 npm run build        # tsc + vite build
+npx vite --mode demo # the website's in-browser demo (server/src/browser/README.md)
 ```
 
 **Server only:**
@@ -28,6 +29,7 @@ npm run dev          # tsx watch (hot reload)
 npm run db:generate  # drizzle-kit generate (after schema changes)
 npm run db:migrate   # drizzle-kit migrate (the server also applies pending migrations on startup)
 npm run db:seed      # add default categories (also runs automatically on server startup for a new budget)
+DB_PATH=demo.db npm run db:seed-demo  # the website demo's sample budget, in a new database
 ```
 
 **Electron:**
@@ -78,10 +80,11 @@ npm ci && npx playwright install chromium   # once
 npm test                                    # builds the client, starts two servers, runs everything
 npm test -- --project=desktop               # just the desktop-app suite
 npm test -- --project=phone                 # the desktop app at 390x844 (tests/phone)
+npm test -- --project=demo                  # the website's in-browser demo (tests/demo)
 E2E_SKIP_BUILD=1 npm test                   # reuse the last client builds (faster while writing tests)
 ```
 
-`global-setup.ts` starts FlyBudget twice on throwaway databases: **desktop** (configured like the Electron app: `--mode electron` client served by the API server, per-launch API token, credential encryption key; tests inject the preload's `__API_BASE__`) and **server-mode** (password login; the setup code is read from the server log). Desktop tests run one at a time and each starts from a snapshot of the fresh database, restored through `POST /api/export/restore`. Fixtures in `tests/fixtures.ts`: `api` seeds data over HTTP, `open(page, route)` uses hash routes, `typeAmount` types into currency fields, and a console guard fails any test whose page throws or logs `console.error` (opt out with an `allow-page-errors` annotation). Prefer role/label selectors; when a control has no accessible name, give it one in the app rather than reaching for CSS selectors. The **phone** project runs `tests/phone/` at 390x844 against the desktop server: it visits every page, saves `phone-*.png` screenshots (uploaded by CI as `phone-screenshots`), and fails if the document or any vertically scrolling area also scrolls sideways, or if content sticks out past the right edge (only boxes that scroll sideways on their own, like tab strips or `max-md:overflow-x-auto` table wrappers, may be wider).
+`global-setup.ts` starts FlyBudget twice on throwaway databases: **desktop** (configured like the Electron app: `--mode electron` client served by the API server, per-launch API token, credential encryption key; tests inject the preload's `__API_BASE__`) and **server-mode** (password login; the setup code is read from the server log). Desktop tests run one at a time and each starts from a snapshot of the fresh database, restored through `POST /api/export/restore`. Fixtures in `tests/fixtures.ts`: `api` seeds data over HTTP, `open(page, route)` uses hash routes, `typeAmount` types into currency fields, and a console guard fails any test whose page throws or logs `console.error` (opt out with an `allow-page-errors` annotation). Prefer role/label selectors; when a control has no accessible name, give it one in the app rather than reaching for CSS selectors. The **phone** project runs `tests/phone/` at 390x844 against the desktop server: it visits every page, saves `phone-*.png` screenshots (uploaded by CI as `phone-screenshots`), and fails if the document or any vertically scrolling area also scrolls sideways, or if content sticks out past the right edge (only boxes that scroll sideways on their own, like tab strips or `max-md:overflow-x-auto` table wrappers, may be wider). The **demo** project builds the client with `--mode demo`, serves it as static files under `/demo/` (like the website) and checks the sample budget, Start over, and that bank connections can't be set up.
 
 **Supply chain:**
 
@@ -139,6 +142,13 @@ The desktop app and `npm run dev` have no login, so `server/src/middleware/secur
 - **CSV export**: `escapeCsv` prefixes cells starting with `=`, `+`, `-`, `@`, tab or CR with `'` (CSV formula injection: payee names come from banks and merchants). Use it for every text cell.
 - **Validation**: dates must be real `YYYY-MM-DD` dates (`isoDate`), recurrence rules are typed (a zero interval would loop forever), imported rows are capped at 100k, and rule regexes must compile and be at most 200 characters.
 - **Packaging** (`electron-builder.json`): the app ships in `app.asar` with embedded integrity validation (a modified file makes the app refuse to start), and Electron fuses disable `ELECTRON_RUN_AS_NODE`, `NODE_OPTIONS` and `--inspect`. `better-sqlite3` is unpacked from the asar because it's a native module. The app icon lives in `electron/resources/` (tracked; `build/` is gitignored).
+
+### In-browser demo (website "Try the demo")
+
+The website serves the real app at `/demo/` with a sample budget and no server: `vite build --mode demo` (`IS_DEMO` in `client/src/demo/demoApi.ts`) sends every `/api` fetch to a Web Worker that runs the server's own routes on sql.js (SQLite in WebAssembly), with stand-ins for Express, the database module, credential encryption and `path` (`server/src/browser/`, see its README). Each visitor gets a private copy that's gone when the tab closes; `DemoBanner` offers Start over and Download. Bank connections (Plaid/SimpleFIN) and sign-in are refused by the worker and replaced by `NotInDemo` in the app; CSV import and backups work (they stay in the tab). `website/scripts/build-demo.mjs` builds it into `website/static/demo/` before `docusaurus build`.
+
+- **Mount new routers in `server/src/browser/app.ts`** as well as `index.ts`, and keep Node-only code (files, `crypto`, network) out of the route modules the demo loads; a `--mode demo` build warns about any Node module it had to leave out. New Express features in routes need the same in `expressShim.ts`.
+- **The sample budget** is `server/src/demo/demoBudget.ts`: a couple on a median income, 18 months ending today, every feature in use. Pure and deterministic (a seeded random generator, readable ids, dates from `today`), loaded by `loadDemoBudget.ts` (which uses the schedule services to create and link occurrences). Every account and payee has a logo (`logos.ts`, drawn by `client/scripts/generate-demo-logos.mjs`). When you add a feature, show it there too, leanly; `demoBudget.test.ts` checks it still adds up for any day.
 
 ### Connection layer (never lock users out)
 

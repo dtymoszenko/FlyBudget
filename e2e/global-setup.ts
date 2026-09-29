@@ -6,7 +6,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { CONTROL_PORT, DESKTOP_PORT, SERVER_PORT } from './ports';
+import { CONTROL_PORT, DEMO_PORT, DESKTOP_PORT, SERVER_PORT } from './ports';
 
 // Starts FlyBudget twice, each on a throwaway database:
 //
@@ -16,6 +16,9 @@ import { CONTROL_PORT, DESKTOP_PORT, SERVER_PORT } from './ports';
 // - server: self-hosted server mode (password login, setup code from the log).
 //
 // Settings the tests need are passed on through environment variables.
+//
+// It also builds the in-browser demo (`--mode demo`, the website's "Try the demo") and serves
+// it as static files under /demo/, like the website does.
 //
 // Tests can also stop and restart the desktop server (to check how the app behaves
 // while it can't reach it) through a small control server on 127.0.0.1:CONTROL_PORT,
@@ -142,22 +145,61 @@ function startControlServer(
   });
 }
 
+const MIME: Record<string, string> = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript',
+  '.css': 'text/css',
+  '.wasm': 'application/wasm',
+  '.png': 'image/png',
+  '.svg': 'image/svg+xml',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.json': 'application/json',
+};
+
+/** Serves the demo build at /demo/, as static files (the website's host does the same). */
+function startDemoServer(root: string): Promise<http.Server> {
+  const server = http.createServer((req, res) => {
+    const url = new URL(req.url ?? '/', 'http://localhost');
+    if (!url.pathname.startsWith('/demo/')) {
+      res.writeHead(404).end();
+      return;
+    }
+    const rel = decodeURIComponent(url.pathname.slice('/demo/'.length)) || 'index.html';
+    const file = path.join(root, rel);
+    if (!file.startsWith(root) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
+      res.writeHead(404).end();
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] ?? 'application/octet-stream' });
+    fs.createReadStream(file).pipe(res);
+  });
+  return new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(DEMO_PORT, '127.0.0.1', () => resolve(server));
+  });
+}
+
 export default async function globalSetup() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'flybudget-e2e-'));
   if (!process.env.E2E_SKIP_BUILD) {
     buildClient(path.join(dir, 'client-desktop'), 'electron');
     buildClient(path.join(dir, 'client-web'));
+    buildClient(path.join(dir, 'client-demo'), 'demo');
   } else {
     // Reuse builds from a previous run (faster while writing tests)
     for (const [target, mode] of [
       ['client-desktop', 'electron'],
       ['client-web', undefined],
+      ['client-demo', 'demo'],
     ] as const) {
       const cached = path.join(os.tmpdir(), `flybudget-e2e-cache-${target}`);
       if (!fs.existsSync(cached)) buildClient(cached, mode);
       fs.cpSync(cached, path.join(dir, target), { recursive: true });
     }
   }
+
+  const demo = await startDemoServer(path.join(dir, 'client-demo'));
 
   const apiToken = randomBytes(32).toString('hex');
   const dataKey = randomBytes(32).toString('base64');
@@ -230,6 +272,7 @@ export default async function globalSetup() {
 
   return async () => {
     control.close();
+    demo.close();
     stop(desktop);
     stop(server);
     // SQLite may hold the files for a moment after the process ends on Windows

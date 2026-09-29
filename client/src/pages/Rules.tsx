@@ -130,7 +130,7 @@ function RuleRow({
               {rule.conditions.map((c, i) => (
                 <span key={i} className="contents">
                   {i > 0 && <span className="text-[11px] text-text-tertiary">{joiner}</span>}
-                  <span className="px-2 py-0.5 rounded-md bg-surface-alt text-xs text-text break-all">
+                  <span className="px-2 py-0.5 rounded-md bg-surface-alt text-xs text-text break-words">
                     {conditionText(c, lookups)}
                   </span>
                 </span>

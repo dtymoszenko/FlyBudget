@@ -5,6 +5,7 @@ import { LogOut, RefreshCw, Settings } from 'lucide-react';
 import { useConnection } from '../../hooks/useConnection';
 import { useAppMode, useServerInfo, useSignOut } from '../../hooks/useServer';
 import { connectionSecurity } from '../../utils/connection';
+import { IS_DEMO } from '../../demo/demoApi';
 
 const MENU_W = 248;
 
@@ -30,9 +31,19 @@ export function ServerStatus({ collapsed }: { collapsed: boolean }) {
   const [pos, setPos] = useState<{ bottom: number; left: number } | null>(null);
 
   const online = connection.status === 'connected';
-  const place = mode === 'server' ? window.location.host : 'On this computer';
+  // The demo's data lives in this browser tab (its "server" runs in the page)
+  const place = IS_DEMO
+    ? 'Demo in this browser'
+    : mode === 'server'
+      ? window.location.host
+      : 'On this computer';
+  const address = IS_DEMO
+    ? 'This browser'
+    : mode === 'server'
+      ? window.location.host
+      : 'This computer';
   const stateText = online ? 'Online' : 'Reconnecting';
-  const label = `Server status: ${stateText}, ${mode === 'server' ? window.location.host : 'on this computer'}`;
+  const label = `Server status: ${stateText}, ${place}`;
   const security = connectionSecurity(window.location.protocol, window.location.hostname);
 
   const close = (refocus = true) => {
@@ -127,9 +138,7 @@ export function ServerStatus({ collapsed }: { collapsed: boolean }) {
               </p>
               <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-text-secondary">
                 <dt className="text-text-tertiary">Address</dt>
-                <dd className="truncate font-mono text-[11px] leading-5">
-                  {mode === 'server' ? window.location.host : 'This computer'}
-                </dd>
+                <dd className="truncate font-mono text-[11px] leading-5">{address}</dd>
                 <dt className="text-text-tertiary">Connection</dt>
                 <dd>{mode === 'server' ? SECURITY_LABEL[security] : SECURITY_LABEL.local}</dd>
                 <dt className="text-text-tertiary">Version</dt>

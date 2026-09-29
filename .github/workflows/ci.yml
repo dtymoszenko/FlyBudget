@@ -36,6 +36,8 @@ jobs:
       # Every installed package must carry a valid npm registry signature
       - run: npm audit signatures
       - run: npx tsc --noEmit
+      # The in-browser demo's stand-ins (excluded from the server's own tsconfig)
+      - run: npx tsc --noEmit -p src/browser
       - run: npm test
 
   client:

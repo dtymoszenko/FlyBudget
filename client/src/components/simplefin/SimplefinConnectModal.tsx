@@ -16,6 +16,8 @@ import type {
   Account,
 } from '../../types';
 import type { SimplefinAccountMappingAction } from '../../api/simplefin';
+import { IS_DEMO } from '../../demo/demoApi';
+import { NotInDemoModal } from '../demo/NotInDemo';
 
 interface Props {
   isOpen: boolean;
@@ -33,7 +35,16 @@ interface MappingChoice {
   accountType: AccountType;
 }
 
-export function SimplefinConnectModal({ isOpen, onClose, initialSetupResult }: Props) {
+// The demo has no server to talk to the bank, so it explains that instead
+export function SimplefinConnectModal(props: Props) {
+  return IS_DEMO ? (
+    <NotInDemoModal isOpen={props.isOpen} onClose={props.onClose} />
+  ) : (
+    <SimplefinConnectModalDialog {...props} />
+  );
+}
+
+function SimplefinConnectModalDialog({ isOpen, onClose, initialSetupResult }: Props) {
   const [step, setStep] = useState<Step>('token');
   const [token, setToken] = useState('');
   const [setupResult, setSetupResult] = useState<SimplefinSetupResult | null>(null);

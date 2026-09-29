@@ -4,6 +4,8 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { PlaidEnvironmentSelect, type PlaidEnvironment } from './PlaidEnvironmentSelect';
 import { useConfigurePlaid } from '../../hooks/usePlaid';
+import { IS_DEMO } from '../../demo/demoApi';
+import { NotInDemoModal } from '../demo/NotInDemo';
 
 interface Props {
   isOpen: boolean;
@@ -11,7 +13,16 @@ interface Props {
   onConfigured: () => void;
 }
 
-export function PlaidSetupModal({ isOpen, onClose, onConfigured }: Props) {
+// The demo has no server to talk to the bank, so it explains that instead
+export function PlaidSetupModal(props: Props) {
+  return IS_DEMO ? (
+    <NotInDemoModal isOpen={props.isOpen} onClose={props.onClose} />
+  ) : (
+    <PlaidSetupModalDialog {...props} />
+  );
+}
+
+function PlaidSetupModalDialog({ isOpen, onClose, onConfigured }: Props) {
   const [clientId, setClientId] = useState('');
   const [secret, setSecret] = useState('');
   const [environment, setEnvironment] = useState<PlaidEnvironment>('production');

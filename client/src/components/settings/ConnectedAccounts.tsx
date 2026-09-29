@@ -10,10 +10,31 @@ import { SimplefinConnectionCard } from '../simplefin/SimplefinConnectionCard';
 import { SimplefinConfigForm } from '../simplefin/SimplefinConfigForm';
 import { Button } from '../ui/Button';
 import type { SimplefinSetupResult } from '../../types';
+import { IS_DEMO } from '../../demo/demoApi';
+import { NotInDemo } from '../demo/NotInDemo';
 
 type Provider = 'plaid' | 'simplefin';
 
 export function ConnectedAccounts() {
+  return IS_DEMO ? <ConnectedAccountsDemo /> : <ConnectedAccountsSettings />;
+}
+
+/** The demo can't connect banks: say so where the setup would be */
+function ConnectedAccountsDemo() {
+  return (
+    <div className="space-y-5 max-w-xl">
+      <div>
+        <h2 className="text-sm font-semibold text-text">Connected Banks</h2>
+        <p className="text-xs text-text-tertiary mt-0.5">
+          Automatically import transactions from your financial institutions.
+        </p>
+      </div>
+      <NotInDemo />
+    </div>
+  );
+}
+
+function ConnectedAccountsSettings() {
   const { data: status, isLoading: statusLoading } = usePlaidStatus();
   const { data: items = [], isLoading: itemsLoading } = usePlaidItems();
   const { data: sfConnections = [], isLoading: sfLoading } = useSimplefinConnections();

@@ -10,3 +10,6 @@ electron/dist
 server/src/db/migrations/meta
 e2e/test-results
 e2e/playwright-report
+
+# The in-browser demo, built by website/scripts/build-demo.mjs
+website/static/demo

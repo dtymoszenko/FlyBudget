@@ -1,9 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
-import { DESKTOP_PORT, SERVER_PORT } from './ports';
+import { DEMO_PORT, DESKTOP_PORT, SERVER_PORT } from './ports';
 
 // End-to-end tests: real browser, real server, throwaway databases (see global-setup.ts).
 //   npm test                      run everything
 //   npm test -- --project=desktop only the desktop-app suite
+//   npm test -- --project=demo    only the website demo
 //   E2E_SKIP_BUILD=1 npm test     reuse the client builds from the last run
 //   E2E_SERVER_LOGS=1 npm test    show the servers' logs
 
@@ -30,7 +31,7 @@ export default defineConfig({
   projects: [
     {
       name: 'desktop',
-      testIgnore: /\/tests\/(server-mode|phone)\//,
+      testIgnore: /\/tests\/(server-mode|phone|demo)\//,
       use: { baseURL: `http://localhost:${DESKTOP_PORT}` },
     },
     // The desktop app's pages on a phone-sized screen (iPhone 13/14: 390×844)
@@ -44,6 +45,12 @@ export default defineConfig({
         isMobile: true,
         hasTouch: true,
       },
+    },
+    // The website's in-browser demo: the app with its API in a Web Worker, on a sample budget
+    {
+      name: 'demo',
+      testMatch: /\/tests\/demo\/.*\.spec\.ts$/,
+      use: { baseURL: `http://localhost:${DEMO_PORT}` },
     },
     {
       name: 'server-mode',

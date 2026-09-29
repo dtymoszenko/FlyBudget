@@ -1,6 +1,7 @@
 import { BrowserRouter, HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppShell } from './components/layout/AppShell';
 import { AuthGate } from './components/auth/AuthGate';
+import { IS_DEMO } from './demo/demoApi';
 import WelcomePage from './pages/Welcome';
 import DashboardPage from './pages/Dashboard';
 import AccountsPage from './pages/Accounts';
@@ -19,9 +20,10 @@ import GoalsPage from './pages/Goals';
 import CashFlowPage from './pages/CashFlow';
 import CategoryDetailPage from './pages/CategoryDetail';
 
-// electron loads via file:// so we need hash routing there
+// electron loads via file:// and the demo is a static page under /demo/ on the website, so
+// both use hash routing
 const isElectron = Boolean((window as any).__API_BASE__);
-const Router = isElectron ? HashRouter : BrowserRouter;
+const Router = isElectron || IS_DEMO ? HashRouter : BrowserRouter;
 
 export default function App() {
   return (

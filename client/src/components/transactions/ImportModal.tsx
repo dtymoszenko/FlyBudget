@@ -16,6 +16,7 @@ import { useImportConfirm } from '../../hooks/useTransactions';
 import { formatCurrency } from '../../utils/currency';
 import type { ImportPreviewRow } from '../../types';
 import type { ImportRow } from '../../api/transactions';
+import { IS_DEMO } from '../../demo/demoApi';
 
 interface Props {
   isOpen: boolean;
@@ -221,6 +222,11 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
             Drag and drop a CSV file, or click to browse
           </p>
           <p className="text-xs text-text-tertiary">Supports .csv files</p>
+          {IS_DEMO && (
+            <p className="text-xs text-text-tertiary">
+              Demo: your file stays in this browser tab and isn't saved.
+            </p>
+          )}
           <input
             id="csv-file-input"
             type="file"

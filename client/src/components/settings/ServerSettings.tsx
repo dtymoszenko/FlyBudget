@@ -30,6 +30,7 @@ import { describeUserAgent } from '../../utils/connection';
 import { SELF_HOSTING_URL } from '../../utils/project';
 import { Button } from '../ui/Button';
 import { MIN_PASSWORD_LENGTH } from '../auth/passwordRules';
+import { IS_DEMO } from '../../demo/demoApi';
 
 const inputClass =
   'w-full px-3 py-2 text-sm border border-border rounded-md bg-surface text-text focus:outline-none focus:ring-1 focus:ring-brand-600 focus:border-brand-600';
@@ -59,18 +60,30 @@ function LocalSettings({ onOpenTab }: { onOpenTab: (tab: 'data') => void }) {
         <div className="mt-3 flex items-start gap-3 p-4 rounded-lg border border-border-light bg-surface-alt">
           <HardDrive size={20} className="text-brand-600 shrink-0 mt-0.5" aria-hidden />
           <div className="text-sm">
-            <p className="font-medium text-text">On this computer</p>
-            <p className="text-text-secondary mt-1 leading-relaxed">
-              Your budget is a file on this computer, and FlyBudget only talks to it through its own
-              local server. Nothing is sent to FlyBudget or anyone else; bank sync contacts Plaid or
-              SimpleFIN only when you connect a bank.
-            </p>
+            {IS_DEMO ? (
+              <>
+                <p className="font-medium text-text">In this browser (demo)</p>
+                <p className="text-text-secondary mt-1 leading-relaxed">
+                  This demo runs entirely in your browser: nothing you change is sent anywhere or
+                  saved. In the app, your budget is a file on your computer or on a server you run.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="font-medium text-text">On this computer</p>
+                <p className="text-text-secondary mt-1 leading-relaxed">
+                  Your budget is a file on this computer, and FlyBudget only talks to it through its
+                  own local server. Nothing is sent to FlyBudget or anyone else; bank sync contacts
+                  Plaid or SimpleFIN only when you connect a bank.
+                </p>
+              </>
+            )}
             {info && <p className="text-xs text-text-tertiary mt-2">Version {info.version}</p>}
           </div>
         </div>
       </section>
 
-      <OfflineCopySettings />
+      {!IS_DEMO && <OfflineCopySettings />}
 
       <section className="p-4 rounded-lg border border-border">
         <div className="flex items-start gap-3">

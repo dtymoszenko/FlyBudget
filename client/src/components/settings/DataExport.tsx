@@ -4,8 +4,13 @@ import { Download, Upload } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { restoreBackup } from '../../api/backup';
+import { IS_DEMO, downloadFromApi } from '../../demo/demoApi';
 
 const API_BASE = '/api/export';
+
+// The server sends these as downloads; the demo's in-browser API can only answer fetch
+const download = (url: string) =>
+  IS_DEMO ? void downloadFromApi(url) : void (window.location.href = url);
 
 export function DataExport() {
   const [from, setFrom] = useState('');
@@ -57,7 +62,7 @@ export function DataExport() {
     if (from) params.set('from', from);
     if (to) params.set('to', to);
     const qs = params.toString();
-    window.location.href = `${API_BASE}/transactions/csv${qs ? `?${qs}` : ''}`;
+    download(`${API_BASE}/transactions/csv${qs ? `?${qs}` : ''}`);
   }
 
   return (
@@ -112,7 +117,7 @@ export function DataExport() {
         </div>
         <button
           onClick={() => {
-            window.location.href = `${API_BASE}/backup`;
+            download(`${API_BASE}/backup`);
           }}
           className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-white bg-text-secondary rounded-md hover:opacity-90 transition-colors"
         >

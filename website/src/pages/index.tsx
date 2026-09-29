@@ -27,8 +27,9 @@ function HeroSection(): ReactNode {
               <Link className={styles.ctaPrimary} to="/download">
                 Download FlyBudget
               </Link>
-              <Link className={styles.ctaSecondary} to="/tour/intro">
-                Take the Tour
+              {/* A static app next to the website (scripts/build-demo.mjs), not a Docusaurus page */}
+              <Link className={styles.ctaSecondary} to="pathname:///demo/" target="_self">
+                Try the Demo
               </Link>
             </div>
             <p className={styles.heroFacts}>

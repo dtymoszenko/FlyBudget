@@ -14,6 +14,8 @@ import type {
   Account,
 } from '../../types';
 import type { AccountMappingAction } from '../../api/plaid';
+import { IS_DEMO } from '../../demo/demoApi';
+import { NotInDemoModal } from '../demo/NotInDemo';
 
 interface Props {
   isOpen: boolean;
@@ -30,7 +32,16 @@ interface MappingChoice {
   accountType: AccountType;
 }
 
-export function ConnectBankModal({ isOpen, onClose }: Props) {
+// The demo has no server to talk to the bank, so it explains that instead
+export function ConnectBankModal(props: Props) {
+  return IS_DEMO ? (
+    <NotInDemoModal isOpen={props.isOpen} onClose={props.onClose} />
+  ) : (
+    <ConnectBankModalDialog {...props} />
+  );
+}
+
+function ConnectBankModalDialog({ isOpen, onClose }: Props) {
   const [step, setStep] = useState<Step>('link');
   const [exchangeResult, setExchangeResult] = useState<PlaidExchangeResult | null>(null);
   const [mappings, setMappings] = useState<MappingChoice[]>([]);

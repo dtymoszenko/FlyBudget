@@ -18,3 +18,6 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# The in-browser demo, built by scripts/build-demo.mjs
+/static/demo
