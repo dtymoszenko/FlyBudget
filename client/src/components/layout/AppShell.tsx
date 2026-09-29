@@ -93,7 +93,7 @@ function PhoneShell() {
             aria-label="Open menu"
             aria-expanded={open}
             aria-controls="app-sidebar"
-            className="p-2 rounded-md text-sidebar-text-hi hover:bg-sidebar-hover"
+            className="p-2 max-md:min-w-11 max-md:min-h-11 flex items-center justify-center rounded-md text-sidebar-text-hi hover:bg-sidebar-hover"
           >
             <Menu size={20} />
           </button>

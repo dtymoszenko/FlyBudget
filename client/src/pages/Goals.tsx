@@ -9,7 +9,7 @@ import { useModalValue } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { StatCardRow } from '../components/reports/ChartHelpers';
-import RowMenu from '../components/recurring/RowMenu';
+import RowMenu from '../components/ui/RowMenu';
 import { formatCurrency } from '../utils/currency';
 import { usePreferencesStore } from '../store/preferencesStore';
 import type { Goal } from '../types';

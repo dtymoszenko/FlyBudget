@@ -4,7 +4,7 @@ import { Check, LayoutGrid, Plus } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { useModalValue } from '../components/ui/Modal';
-import RowMenu from '../components/recurring/RowMenu';
+import RowMenu from '../components/ui/RowMenu';
 import AddWidgetMenu from '../components/reports/dashboard/AddWidgetMenu';
 import DashboardGrid from '../components/reports/dashboard/DashboardGrid';
 import NameModal from '../components/reports/dashboard/NameModal';

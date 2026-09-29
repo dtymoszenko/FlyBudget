@@ -39,7 +39,7 @@ export default function IncomeExpensesMini({ sixMonthsAgo, currentMonth }: Props
     labels: monthLabels,
     kind: 'band',
     ordered: true,
-    fontSize: 10,
+    fontSize: 11,
     inset: { left: 4, right: 4 },
   });
 

@@ -6,6 +6,8 @@ import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { Modal, useModalValue } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
 import { PayeeIcon } from '../components/payees/PayeeIcon';
+import RowMenu from '../components/ui/RowMenu';
+import { useIsPhone } from '../hooks/useIsPhone';
 import type { PayeeWithCount } from '../types';
 
 function MergeModal({
@@ -130,6 +132,7 @@ export default function PayeesPage() {
   }
 
   const deleteTarget = payees.find((p) => p.id === deleteId);
+  const isPhone = useIsPhone();
 
   return (
     <div className="flex flex-col h-full bg-surface">
@@ -140,7 +143,7 @@ export default function PayeesPage() {
             {selected.size >= 2 && (
               <button
                 onClick={() => setShowMerge(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-brand-700 bg-brand-50 border border-brand-200 rounded-md hover:bg-brand-100 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 max-md:min-h-11 text-xs font-medium text-brand-700 bg-brand-50 border border-brand-200 rounded-md hover:bg-brand-100 transition-colors"
               >
                 <GitMerge size={13} />
                 Merge {selected.size} payees
@@ -173,9 +176,94 @@ export default function PayeesPage() {
               ? 'No payees match your search.'
               : "No payees yet. They're created automatically from transactions."}
           </div>
+        ) : isPhone ? (
+          // Phones: a card per payee. Renaming and deleting are in the ⋮ menu (no hover or
+          // double-click on a touch screen), and ticking two or more offers "Merge"
+          <ul aria-label="Payees">
+            <li className="flex items-center min-h-11 px-4 border-b border-border-light bg-surface-alt">
+              <label className="flex items-center gap-3 min-h-11 text-sm text-text-secondary">
+                <input
+                  type="checkbox"
+                  aria-label="Select all payees"
+                  checked={selected.size === filtered.length && filtered.length > 0}
+                  onChange={(e) =>
+                    setSelected(e.target.checked ? new Set(filtered.map((p) => p.id)) : new Set())
+                  }
+                  className="h-5 w-5 accent-brand-600"
+                />
+                Select all
+              </label>
+            </li>
+            {filtered.map((p) => (
+              <li
+                key={p.id}
+                data-testid="payee-card"
+                className={`grid gap-2 px-4 py-3 border-b border-border-light ${selected.has(p.id) ? 'bg-brand-50' : 'bg-surface'}`}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <label className="flex items-center justify-center min-w-11 min-h-11 -ml-3">
+                    <input
+                      type="checkbox"
+                      aria-label={`Select ${p.name}`}
+                      checked={selected.has(p.id)}
+                      onChange={() => toggleSelect(p.id)}
+                      className="h-5 w-5 accent-brand-600"
+                    />
+                  </label>
+                  <PayeeIcon
+                    name={p.name}
+                    logo={p.logo}
+                    size="md"
+                    force
+                    onLogoChange={(logo) => updatePayee.mutate({ id: p.id, logo })}
+                  />
+                  {editingId === p.id ? (
+                    <input
+                      autoFocus
+                      aria-label={`Rename ${p.name}`}
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      onBlur={() => commitEditName(p.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') commitEditName(p.id);
+                        if (e.key === 'Escape') setEditingId(null);
+                      }}
+                      className="flex-1 min-w-0 border border-brand-500 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand-600"
+                    />
+                  ) : (
+                    <span className="flex-1 min-w-0 grid">
+                      <span className="truncate text-[15px] font-medium text-text">{p.name}</span>
+                      <span className="text-xs text-text-tertiary">
+                        {p.transactionCount} transaction{p.transactionCount === 1 ? '' : 's'}
+                      </span>
+                    </span>
+                  )}
+                  <RowMenu
+                    label={`Actions for ${p.name}`}
+                    items={[
+                      { label: 'Rename', onClick: () => startEditName(p) },
+                      { label: 'Delete', danger: true, onClick: () => setDeleteId(p.id) },
+                    ]}
+                  />
+                </div>
+                <select
+                  aria-label={`Default category for ${p.name}`}
+                  value={p.defaultCategoryId ?? ''}
+                  onChange={(e) => handleCategoryChange(p.id, e.target.value)}
+                  className="w-full min-h-11 border border-border rounded-md px-3 bg-surface text-text focus:outline-none focus:ring-1 focus:ring-brand-600"
+                >
+                  <option value="">No default category</option>
+                  {allCategories.map((c: any) => (
+                    <option key={c.id} value={c.id}>
+                      {c.groupName} → {c.name}
+                    </option>
+                  ))}
+                </select>
+              </li>
+            ))}
+          </ul>
         ) : (
-          // Phones: the table scrolls sideways on its own (on wider screens the header stays sticky)
-          <div className="max-md:overflow-x-auto">
+          <div>
             <table className="w-full">
               <thead className="sticky top-0 bg-surface-alt border-b border-border z-10">
                 <tr>

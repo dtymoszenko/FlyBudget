@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { MoreVertical } from 'lucide-react';
+import { PHONE_MAX_WIDTH } from '../../hooks/useIsPhone';
 
 export interface RowMenuItem {
   label: string;
@@ -12,7 +13,14 @@ export interface RowMenuItem {
 const MENU_W = 200;
 
 /** ⋮ button that opens a portal popover of actions. Closes on outside click, scroll, or ESC. */
-export default function RowMenu({ items }: { items: RowMenuItem[] }) {
+export default function RowMenu({
+  items,
+  label = 'Actions',
+}: {
+  items: RowMenuItem[];
+  /** The button's accessible name, e.g. "Actions for Rent" when a page has several */
+  label?: string;
+}) {
   const btnRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
@@ -47,7 +55,9 @@ export default function RowMenu({ items }: { items: RowMenuItem[] }) {
     e.stopPropagation();
     if (pos) return setPos(null);
     const r = btnRef.current!.getBoundingClientRect();
-    const menuH = visible.length * 34 + 8;
+    // Items are taller on phones (touch-sized), which decides whether it opens upward
+    const itemH = window.matchMedia(`(max-width: ${PHONE_MAX_WIDTH}px)`).matches ? 44 : 34;
+    const menuH = visible.length * itemH + 8;
     const top = r.bottom + 4 + menuH > window.innerHeight ? r.top - 4 - menuH : r.bottom + 4;
     setPos({ top, left: Math.max(8, r.right - MENU_W) });
   }
@@ -57,10 +67,10 @@ export default function RowMenu({ items }: { items: RowMenuItem[] }) {
       <button
         ref={btnRef}
         onClick={toggle}
-        aria-label="Actions"
+        aria-label={label}
         aria-haspopup="menu"
         aria-expanded={pos !== null}
-        className={`p-1 rounded text-text-tertiary hover:text-text-secondary hover:bg-hover transition-colors cursor-pointer ${
+        className={`p-1 max-md:min-w-11 max-md:min-h-11 flex items-center justify-center rounded text-text-tertiary hover:text-text-secondary hover:bg-hover transition-colors cursor-pointer ${
           pos ? 'bg-hover text-text-secondary' : ''
         }`}
       >
@@ -83,7 +93,7 @@ export default function RowMenu({ items }: { items: RowMenuItem[] }) {
                   setPos(null);
                   item.onClick();
                 }}
-                className={`w-full text-left px-3 py-2 text-sm transition-colors cursor-pointer ${
+                className={`w-full text-left px-3 py-2 max-md:py-3 text-sm transition-colors cursor-pointer ${
                   item.danger
                     ? 'text-negative hover:bg-negative-subtle'
                     : 'text-text hover:bg-hover'

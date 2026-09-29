@@ -144,14 +144,15 @@ export function TransactionDetailPanel({
   return (
     <aside
       aria-label="Transaction details"
-      className="w-96 shrink-0 border-l border-border bg-surface flex flex-col h-full"
+      // Phones: a full-screen sheet over the register (see TransactionTable)
+      className="w-96 max-md:w-screen max-md:max-w-full max-md:border-l-0 shrink-0 border-l border-border bg-surface flex flex-col h-full max-md:pt-[env(safe-area-inset-top)] max-md:pb-[env(safe-area-inset-bottom)]"
     >
       <div className="px-5 py-3 border-b border-border flex items-center justify-between">
         <span className="text-sm font-medium text-text-secondary">Transaction Details</span>
         <button
           onClick={onClose}
           aria-label="Close details"
-          className="p-1 rounded hover:bg-hover text-text-tertiary hover:text-text-secondary"
+          className="p-1 max-md:min-w-11 max-md:min-h-11 max-md:-mr-2 flex items-center justify-center rounded hover:bg-hover text-text-tertiary hover:text-text-secondary"
         >
           <X size={16} />
         </button>

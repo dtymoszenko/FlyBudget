@@ -85,7 +85,7 @@ export default function NetWorthMini() {
     labels: dateLabels,
     kind: 'point',
     ordered: true,
-    fontSize: 10,
+    fontSize: 11,
     inset: { left: 8, right: 8 },
     edgeRoom: { left: 8, right: 8 },
   });

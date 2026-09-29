@@ -155,6 +155,8 @@ test('adding a transaction works on a phone', async ({ page, api }) => {
   await form.getByRole('textbox', { name: 'Payee' }).fill('Corner Grocery');
   await form.getByRole('spinbutton', { name: 'Outflow' }).fill('12.34');
   await form.getByRole('button', { name: 'Save' }).click();
-  await expect(page.getByRole('button', { name: 'Corner Grocery', exact: true })).toBeVisible();
+  await expect(
+    page.getByTestId('transaction-card').filter({ hasText: 'Corner Grocery' }),
+  ).toBeVisible();
   await expect.poll(() => api.balance(account.id)).toBe(150_000 - 1_234);
 });

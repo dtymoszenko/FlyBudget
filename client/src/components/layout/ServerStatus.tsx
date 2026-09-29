@@ -101,7 +101,7 @@ export function ServerStatus({ collapsed }: { collapsed: boolean }) {
         title={collapsed ? label : undefined}
         aria-haspopup="menu"
         aria-expanded={pos !== null}
-        className="flex items-center gap-2.5 w-full py-1.5 px-3 rounded-md text-[12px] text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-text-hi transition-colors"
+        className="flex items-center gap-2.5 w-full py-1.5 max-md:min-h-11 px-3 rounded-md text-[12px] text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-text-hi transition-colors"
       >
         <span className="w-[18px] flex justify-center shrink-0">{dot}</span>
         <span

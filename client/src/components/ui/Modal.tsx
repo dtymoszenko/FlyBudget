@@ -11,7 +11,7 @@ interface Props {
 }
 
 const sizeClasses = { sm: 'max-w-sm', md: 'max-w-md', lg: 'max-w-lg', xl: 'max-w-3xl' };
-// Matches --animate-dialog-out / --animate-fade-out in index.css
+// Matches --animate-dialog-out / --animate-sheet-out / --animate-fade-out in index.css
 const EXIT_MS = 120;
 
 /**
@@ -70,27 +70,28 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: Props) 
         className={`fixed inset-0 bg-black/30 backdrop-blur-sm cursor-pointer ${closing ? 'animate-fade-out' : 'animate-fade-in'}`}
         onClick={onClose}
       />
-      {/* Tall dialogs scroll with the page instead of getting cut off */}
-      <div className="relative min-h-full flex items-center justify-center p-4 pointer-events-none">
+      {/* Tall dialogs scroll with the page instead of getting cut off. Phones: a sheet that
+          slides up from the bottom edge, full width, clear of the home indicator */}
+      <div className="relative min-h-full flex items-center max-md:items-end justify-center p-4 max-md:p-0 max-md:pt-12 pointer-events-none">
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby={titleId}
-          className={`relative w-full ${sizeClasses[size]} bg-surface rounded-lg shadow-modal ${closing ? 'animate-dialog-out' : 'pointer-events-auto animate-dialog-in'}`}
+          className={`relative w-full ${sizeClasses[size]} max-md:max-w-none bg-surface rounded-lg max-md:rounded-b-none max-md:rounded-t-xl shadow-modal max-md:pb-[env(safe-area-inset-bottom)] ${closing ? 'animate-dialog-out max-md:animate-sheet-out' : 'pointer-events-auto animate-dialog-in max-md:animate-sheet-in'}`}
         >
-          <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <div className="flex items-center justify-between px-6 max-md:px-4 py-4 max-md:py-2 border-b border-border">
             <h2 id={titleId} className="text-base font-semibold text-text">
               {shown.current.title}
             </h2>
             <button
               onClick={onClose}
               aria-label="Close"
-              className="p-1 rounded-md text-text-tertiary hover:text-text-secondary hover:bg-surface-alt transition-colors"
+              className="p-1 max-md:-mr-2 max-md:min-w-11 max-md:min-h-11 flex items-center justify-center rounded-md text-text-tertiary hover:text-text-secondary hover:bg-surface-alt transition-colors"
             >
               <X size={18} />
             </button>
           </div>
-          <div className="px-6 py-5">{shown.current.children}</div>
+          <div className="px-6 max-md:px-4 py-5">{shown.current.children}</div>
         </div>
       </div>
     </div>,

@@ -107,19 +107,20 @@ export function TransactionFilters({ state, onChange, categoryName, externalMont
           <span>{categoryName || 'Category'}</span>
           <button
             onClick={() => onChange({ ...state, categoryId: null })}
-            className="hover:text-brand-900"
+            aria-label="Clear category filter"
+            className="hover:text-brand-900 max-md:min-w-8 max-md:min-h-8 flex items-center justify-center"
           >
             <X size={12} />
           </button>
         </div>
       )}
 
-      <div className="flex gap-0 border-b border-transparent">
+      <div className="flex gap-0 border-b border-transparent max-md:max-w-full max-md:overflow-x-auto [scrollbar-width:none]">
         {DATE_PRESETS.map((p) => (
           <button
             key={p.value}
             onClick={() => onChange({ ...state, datePreset: p.value })}
-            className={`px-2.5 py-1 text-xs font-medium transition-colors border-b-2 -mb-px ${
+            className={`px-2.5 py-1 max-md:min-h-11 max-md:text-sm whitespace-nowrap shrink-0 text-xs font-medium transition-colors border-b-2 -mb-px ${
               !externalMonth && state.datePreset === p.value
                 ? 'border-brand-600 text-brand-600'
                 : 'border-transparent text-text-tertiary hover:text-text-secondary'

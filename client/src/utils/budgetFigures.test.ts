@@ -1,0 +1,54 @@
+import { describe, expect, it } from 'vitest';
+import fc from 'fast-check';
+import { categoryFigures, isActiveCategory } from './budgetFigures';
+import type { BudgetCategory } from '../types';
+
+const cents = fc.integer({ min: -10_000_000, max: 10_000_000 });
+const category = fc
+  .record({ budgeted: cents, spent: fc.nat(10_000_000), carryOver: cents, received: cents })
+  .map(({ budgeted, spent, carryOver, received }): BudgetCategory => ({
+    id: 'c',
+    groupId: 'g',
+    name: 'Category',
+    icon: null,
+    budgetType: null,
+    sortOrder: 0,
+    createdAt: '',
+    budgeted,
+    spent,
+    carryOver,
+    // The server's balance: carry-over + planned + this month's activity
+    balance: carryOver + budgeted + received,
+  }));
+
+describe('categoryFigures (property-based)', () => {
+  it('expenses: remaining is planned minus spent', () => {
+    fc.assert(
+      fc.property(category, (cat) => {
+        const { actual, remaining } = categoryFigures(cat, false);
+        expect(actual).toBe(cat.spent);
+        expect(remaining).toBe(cat.budgeted - cat.spent);
+      }),
+    );
+  });
+
+  it('income: actual is what came in this month, and remaining is never negative', () => {
+    fc.assert(
+      fc.property(category, (cat) => {
+        const { actual, remaining } = categoryFigures(cat, true);
+        expect(actual).toBe(cat.balance - cat.carryOver - cat.budgeted);
+        expect(remaining).toBe(Math.max(cat.budgeted - actual, 0));
+        expect(remaining).toBeGreaterThanOrEqual(0);
+      }),
+    );
+  });
+
+  it('a category is inactive only with nothing planned and nothing happening', () => {
+    fc.assert(
+      fc.property(category, fc.boolean(), (cat, isIncome) => {
+        const idle = cat.budgeted === 0 && categoryFigures(cat, isIncome).actual === 0;
+        expect(isActiveCategory(cat, isIncome)).toBe(!idle);
+      }),
+    );
+  });
+});

@@ -35,7 +35,8 @@ function NavItem({ to, icon, label, collapsed }: NavItemProps) {
       to={to}
       title={collapsed ? label : undefined}
       className={({ isActive }) =>
-        `flex items-center gap-2.5 py-1.5 px-3 rounded-md text-[13px] font-medium relative ${
+        // Phones (the drawer): full-size touch targets
+        `flex items-center gap-2.5 py-1.5 max-md:min-h-11 max-md:text-[15px] px-3 rounded-md text-[13px] font-medium relative ${
           isActive
             ? 'bg-sidebar-active text-sidebar-text-hi before:absolute before:left-0 before:top-1 before:bottom-1 before:w-[3px] before:bg-brand-500 before:rounded-r-full'
             : 'text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-text-hi'
@@ -120,7 +121,7 @@ function SidebarContent({ isExpanded, onClose }: { isExpanded: boolean; onClose?
           <button
             onClick={onClose}
             aria-label="Close menu"
-            className="ml-auto p-1.5 -mr-1.5 rounded-md text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-text-hi"
+            className="ml-auto p-1.5 -mr-1.5 max-md:min-w-11 max-md:min-h-11 flex items-center justify-center rounded-md text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-text-hi"
           >
             <X size={18} />
           </button>

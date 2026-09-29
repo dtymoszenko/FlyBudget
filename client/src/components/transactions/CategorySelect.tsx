@@ -8,6 +8,8 @@ interface Props {
   accounts?: Account[];
   currentAccountId?: string;
   className?: string;
+  /** Replaces the field's own styling (the phone sheet uses full input styling, 16px text) */
+  fieldClassName?: string;
   /** Accessible name; defaults to "Category" */
   label?: string;
 }
@@ -19,6 +21,7 @@ export function CategorySelect({
   accounts,
   currentAccountId,
   className = '',
+  fieldClassName,
   label = 'Category',
 }: Props) {
   const showCategoryIcons = usePreferencesStore((s) => s.showCategoryIcons);
@@ -29,7 +32,10 @@ export function CategorySelect({
       aria-label={label}
       value={value ?? ''}
       onChange={(e) => onChange(e.target.value || null)}
-      className={`block w-full bg-transparent text-sm text-text focus:outline-none ${className}`}
+      className={
+        fieldClassName ??
+        `block w-full bg-transparent text-sm text-text focus:outline-none ${className}`
+      }
     >
       <option value="">Uncategorized</option>
       {groups.map((g) => (

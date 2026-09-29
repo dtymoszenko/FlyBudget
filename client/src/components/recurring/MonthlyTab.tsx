@@ -139,7 +139,7 @@ export default function MonthlyTab({ onEdit, onAdd, onFind, allRecurring, onMatc
   }
 
   const isCurrentMonth = month === format(new Date(), 'yyyy-MM');
-  const navBtn = 'p-1.5 rounded-md text-text-tertiary hover:text-text-secondary hover:bg-hover transition-colors cursor-pointer';
+  const navBtn = 'p-1.5 max-md:min-w-11 max-md:min-h-11 flex items-center justify-center rounded-md text-text-tertiary hover:text-text-secondary hover:bg-hover transition-colors cursor-pointer';
 
   return (
     <div className="p-6 space-y-4">

@@ -9,6 +9,9 @@ import { formatCurrency, parseCents, centsToInput } from '../utils/currency';
 import { BudgetSummaryWidget } from '../components/budget/BudgetSummaryWidget';
 import { BudgetEditPopover } from '../components/budget/BudgetEditPopover';
 import { Button } from '../components/ui/Button';
+import { SpentBar } from '../components/budget/SpentBar';
+import { PhoneBudget } from '../components/budget/PhoneBudget';
+import { useIsPhone } from '../hooks/useIsPhone';
 import { useCanSave } from '../hooks/useConnection';
 import type { BudgetCategory, BudgetGroup, BudgetType } from '../types';
 
@@ -52,39 +55,6 @@ function AmountInput({
       }}
       className="w-28 text-right tabular-nums text-sm bg-surface border border-brand-500 rounded-md px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-brand-600"
     />
-  );
-}
-
-function SpentBar({
-  spent,
-  budgeted,
-  isIncome,
-}: {
-  spent: number;
-  budgeted: number;
-  isIncome?: boolean;
-}) {
-  if (budgeted <= 0 && spent <= 0) return null;
-  const effectiveBudget = Math.max(budgeted, 1);
-  const ratio = spent / effectiveBudget;
-  const fillWidth = Math.min(ratio * 100, 100);
-
-  let color: string;
-  if (isIncome || ratio < 0.8 || ratio === 1) {
-    color = 'bg-positive';
-  } else if (ratio < 1) {
-    color = 'bg-caution';
-  } else {
-    color = 'bg-negative';
-  }
-
-  return (
-    <div className="h-[3px] w-[90%] bg-surface-alt rounded-full overflow-hidden mt-1">
-      <div
-        className={`h-full rounded-full transition-all ${color}`}
-        style={{ width: `${fillWidth.toFixed(1)}%` }}
-      />
-    </div>
   );
 }
 
@@ -427,6 +397,7 @@ export default function BudgetPage() {
   const { data: summary } = useBudgetSummary(selectedMonth);
   const setBudgetMutation = useSetBudget();
   const setBulkMutation = useSetBudgetBulk();
+  const isPhone = useIsPhone();
 
   const monthDate = useMemo(() => parseISO(`${selectedMonth}-01`), [selectedMonth]);
 
@@ -513,14 +484,14 @@ export default function BudgetPage() {
             <button
               onClick={() => setSelectedMonth(format(subMonths(monthDate, 1), 'yyyy-MM'))}
               aria-label="Previous month"
-              className="p-1.5 rounded-md hover:bg-surface-alt text-text-tertiary hover:text-text-secondary transition-colors"
+              className="p-1.5 max-md:min-w-11 max-md:min-h-11 flex items-center justify-center rounded-md hover:bg-surface-alt text-text-tertiary hover:text-text-secondary transition-colors"
             >
               <ChevronLeft size={18} />
             </button>
             <button
               onClick={() => setSelectedMonth(format(addMonths(monthDate, 1), 'yyyy-MM'))}
               aria-label="Next month"
-              className="p-1.5 rounded-md hover:bg-surface-alt text-text-tertiary hover:text-text-secondary transition-colors"
+              className="p-1.5 max-md:min-w-11 max-md:min-h-11 flex items-center justify-center rounded-md hover:bg-surface-alt text-text-tertiary hover:text-text-secondary transition-colors"
             >
               <ChevronRight size={18} />
             </button>
@@ -534,135 +505,161 @@ export default function BudgetPage() {
       {/* Phones: the summary (with To Be Budgeted) goes above the table instead of beside it */}
       <div className="flex max-md:flex-col flex-1 overflow-y-auto">
         <div className="flex-1 max-md:flex-none max-md:order-last max-md:overflow-x-auto">
-          <table className="w-full border-collapse">
-            <colgroup>
-              <col style={{ width: '55%' }} />
-              <col style={{ width: '15%' }} />
-              <col style={{ width: '15%' }} />
-              <col style={{ width: '15%' }} />
-            </colgroup>
-            <tbody>
-              {/* Income section header */}
-              <tr
-                className="bg-surface-alt border-y border-border cursor-pointer select-none hover:bg-hover transition-colors"
-                onClick={() => setIncomeCollapsed((c) => !c)}
-              >
-                <td className="py-2 px-4">
-                  <div className="flex items-center gap-2">
-                    <span className="text-text-tertiary shrink-0">
-                      {incomeCollapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
-                    </span>
-                    <span className="text-xs font-semibold text-text-tertiary uppercase tracking-wide">
-                      Income
-                    </span>
-                  </div>
-                </td>
-                <td className="py-2 px-3 text-right text-xs font-semibold text-text-tertiary">
-                  Planned
-                </td>
-                <td className="py-2 px-3 text-right text-xs font-semibold text-text-tertiary">
-                  Actual
-                </td>
-                <td className="py-2 pl-3 pr-6 text-right text-xs font-bold text-text">Remaining</td>
-              </tr>
-
-              {!incomeCollapsed && (
-                <>
-                  {incomeGroups.map((group) => (
-                    <IncomeGroupSection
-                      key={group.id}
-                      group={group}
-                      editingId={editingId}
-                      month={selectedMonth}
-                      onStartEdit={setEditingId}
-                      onSave={handleSave}
-                      onCancel={() => setEditingId(null)}
-                      onApplyBulk={handleApplyBulk}
-                    />
-                  ))}
-
-                  {/* Total Income row */}
-                  <tr className="bg-surface border-y border-border">
-                    <td className="py-2 px-4 text-sm font-bold text-text">Total Income</td>
-                    <td className="py-2 px-3 text-right tabular-nums text-sm font-semibold text-text-secondary">
-                      {formatCurrency(incomeTotals.budgeted)}
-                    </td>
-                    <td className="py-2 px-3 text-right tabular-nums text-sm font-semibold text-text">
-                      {formatCurrency(incomeTotals.received)}
-                    </td>
-                    <td className="py-2 pl-3 pr-6" />
-                  </tr>
-                </>
-              )}
-
-              {/* Expenses section header */}
-              <tr
-                className="bg-surface-alt border-y border-border cursor-pointer select-none hover:bg-hover transition-colors"
-                onClick={() => setExpensesCollapsed((c) => !c)}
-              >
-                <td className="py-2 px-4">
-                  <div className="flex items-center gap-2">
-                    <span className="text-text-tertiary shrink-0">
-                      {expensesCollapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
-                    </span>
-                    <span className="text-xs font-semibold text-text-tertiary uppercase tracking-wide">
-                      Expenses
-                    </span>
-                  </div>
-                </td>
-                <td className="py-2 px-3 text-right text-xs font-semibold text-text-tertiary">
-                  Planned
-                </td>
-                <td className="py-2 px-3 text-right text-xs font-semibold text-text-tertiary">
-                  Actual
-                </td>
-                <td className="py-2 pl-3 pr-6 text-right text-xs font-bold text-text">Remaining</td>
-              </tr>
-
-              {!expensesCollapsed && (
-                <>
-                  {expensesByType.map((bt) => (
-                    <BudgetTypeSection
-                      key={bt.key}
-                      budgetType={bt.key}
-                      label={bt.label}
-                      categories={bt.categories}
-                      editingId={editingId}
-                      month={selectedMonth}
-                      onStartEdit={setEditingId}
-                      onSave={handleSave}
-                      onCancel={() => setEditingId(null)}
-                      onApplyBulk={handleApplyBulk}
-                    />
-                  ))}
-
-                  {/* Total Expenses row */}
-                  <tr className="bg-surface border-y border-border">
-                    <td className="py-2 px-4 text-sm font-bold text-text">Total Expenses</td>
-                    <td className="py-2 px-3 text-right tabular-nums text-sm font-semibold text-text-secondary">
-                      {formatCurrency(expenseTotals.budgeted)}
-                    </td>
-                    <td className="py-2 px-3 text-right tabular-nums text-sm font-semibold text-text-secondary">
-                      {formatCurrency(expenseTotals.spent)}
-                    </td>
-                    <td
-                      className={`py-2 pl-3 pr-6 text-right tabular-nums text-sm font-semibold ${expBalColor}`}
-                    >
-                      {formatCurrency(expRemaining)}
-                    </td>
-                  </tr>
-                </>
-              )}
-
-              {groups.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="py-16 text-center text-sm text-text-tertiary">
-                    No categories yet. Add some in Settings.
+          {isPhone ? (
+            <PhoneBudget
+              sections={[
+                ...incomeGroups.map((g) => ({
+                  key: g.id,
+                  label: g.name,
+                  isIncome: true,
+                  categories: g.categories,
+                })),
+                ...expensesByType.map((bt) => ({
+                  key: bt.key,
+                  label: bt.label,
+                  isIncome: false,
+                  categories: bt.categories,
+                })),
+              ]}
+              month={selectedMonth}
+              onSave={handleSave}
+              onApplyBulk={handleApplyBulk}
+            />
+          ) : (
+            <table className="w-full border-collapse">
+              <colgroup>
+                <col style={{ width: '55%' }} />
+                <col style={{ width: '15%' }} />
+                <col style={{ width: '15%' }} />
+                <col style={{ width: '15%' }} />
+              </colgroup>
+              <tbody>
+                {/* Income section header */}
+                <tr
+                  className="bg-surface-alt border-y border-border cursor-pointer select-none hover:bg-hover transition-colors"
+                  onClick={() => setIncomeCollapsed((c) => !c)}
+                >
+                  <td className="py-2 px-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-text-tertiary shrink-0">
+                        {incomeCollapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+                      </span>
+                      <span className="text-xs font-semibold text-text-tertiary uppercase tracking-wide">
+                        Income
+                      </span>
+                    </div>
+                  </td>
+                  <td className="py-2 px-3 text-right text-xs font-semibold text-text-tertiary">
+                    Planned
+                  </td>
+                  <td className="py-2 px-3 text-right text-xs font-semibold text-text-tertiary">
+                    Actual
+                  </td>
+                  <td className="py-2 pl-3 pr-6 text-right text-xs font-bold text-text">
+                    Remaining
                   </td>
                 </tr>
-              )}
-            </tbody>
-          </table>
+
+                {!incomeCollapsed && (
+                  <>
+                    {incomeGroups.map((group) => (
+                      <IncomeGroupSection
+                        key={group.id}
+                        group={group}
+                        editingId={editingId}
+                        month={selectedMonth}
+                        onStartEdit={setEditingId}
+                        onSave={handleSave}
+                        onCancel={() => setEditingId(null)}
+                        onApplyBulk={handleApplyBulk}
+                      />
+                    ))}
+
+                    {/* Total Income row */}
+                    <tr className="bg-surface border-y border-border">
+                      <td className="py-2 px-4 text-sm font-bold text-text">Total Income</td>
+                      <td className="py-2 px-3 text-right tabular-nums text-sm font-semibold text-text-secondary">
+                        {formatCurrency(incomeTotals.budgeted)}
+                      </td>
+                      <td className="py-2 px-3 text-right tabular-nums text-sm font-semibold text-text">
+                        {formatCurrency(incomeTotals.received)}
+                      </td>
+                      <td className="py-2 pl-3 pr-6" />
+                    </tr>
+                  </>
+                )}
+
+                {/* Expenses section header */}
+                <tr
+                  className="bg-surface-alt border-y border-border cursor-pointer select-none hover:bg-hover transition-colors"
+                  onClick={() => setExpensesCollapsed((c) => !c)}
+                >
+                  <td className="py-2 px-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-text-tertiary shrink-0">
+                        {expensesCollapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+                      </span>
+                      <span className="text-xs font-semibold text-text-tertiary uppercase tracking-wide">
+                        Expenses
+                      </span>
+                    </div>
+                  </td>
+                  <td className="py-2 px-3 text-right text-xs font-semibold text-text-tertiary">
+                    Planned
+                  </td>
+                  <td className="py-2 px-3 text-right text-xs font-semibold text-text-tertiary">
+                    Actual
+                  </td>
+                  <td className="py-2 pl-3 pr-6 text-right text-xs font-bold text-text">
+                    Remaining
+                  </td>
+                </tr>
+
+                {!expensesCollapsed && (
+                  <>
+                    {expensesByType.map((bt) => (
+                      <BudgetTypeSection
+                        key={bt.key}
+                        budgetType={bt.key}
+                        label={bt.label}
+                        categories={bt.categories}
+                        editingId={editingId}
+                        month={selectedMonth}
+                        onStartEdit={setEditingId}
+                        onSave={handleSave}
+                        onCancel={() => setEditingId(null)}
+                        onApplyBulk={handleApplyBulk}
+                      />
+                    ))}
+
+                    {/* Total Expenses row */}
+                    <tr className="bg-surface border-y border-border">
+                      <td className="py-2 px-4 text-sm font-bold text-text">Total Expenses</td>
+                      <td className="py-2 px-3 text-right tabular-nums text-sm font-semibold text-text-secondary">
+                        {formatCurrency(expenseTotals.budgeted)}
+                      </td>
+                      <td className="py-2 px-3 text-right tabular-nums text-sm font-semibold text-text-secondary">
+                        {formatCurrency(expenseTotals.spent)}
+                      </td>
+                      <td
+                        className={`py-2 pl-3 pr-6 text-right tabular-nums text-sm font-semibold ${expBalColor}`}
+                      >
+                        {formatCurrency(expRemaining)}
+                      </td>
+                    </tr>
+                  </>
+                )}
+
+                {groups.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="py-16 text-center text-sm text-text-tertiary">
+                      No categories yet. Add some in Settings.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
 
         <div className="w-80 max-md:w-full shrink-0 border-l max-md:border-l-0 max-md:border-b border-border p-4 self-start max-md:self-stretch sticky max-md:static top-0">

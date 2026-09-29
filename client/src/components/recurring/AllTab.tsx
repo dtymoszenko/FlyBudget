@@ -12,7 +12,7 @@ import {
 } from '../../hooks/useSchedules';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import StatusBadge, { statusLabel, type RecurringBadgeStatus } from './StatusBadge';
-import RowMenu from './RowMenu';
+import RowMenu from '../ui/RowMenu';
 import {
   FREQ_LABEL,
   formatScheduleAmount,

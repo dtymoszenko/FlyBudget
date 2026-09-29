@@ -73,9 +73,10 @@ function SummaryTiles({ from, to }: { from: string; to: string }) {
   return (
     <div className="h-full grid grid-cols-2 @4xl:grid-cols-4 gap-x-3 gap-y-2 content-center">
       {cards.map((c) => (
-        <div key={c.label} className="text-center">
+        <div key={c.label} className="text-center min-w-0">
+          {/* A size down on narrow cards (a phone), so "$12,345.67" fits two to a row */}
           <p
-            className={`text-xl font-semibold tabular-nums ${c.tone ? TONE_CLASS[c.tone] : 'text-text'}`}
+            className={`text-lg @sm:text-xl font-semibold tabular-nums break-words ${c.tone ? TONE_CLASS[c.tone] : 'text-text'}`}
           >
             {c.value}
           </p>

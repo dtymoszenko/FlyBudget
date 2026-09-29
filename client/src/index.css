@@ -58,6 +58,9 @@
   --animate-dialog-in: dialog-in 160ms cubic-bezier(0.16, 1, 0.3, 1);
   --animate-dialog-out: dialog-out 120ms ease-in forwards;
   --animate-menu-in: menu-in 110ms ease-out;
+  /* Phones: dialogs are sheets that slide up from the bottom (see Modal) */
+  --animate-sheet-in: sheet-in 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-sheet-out: sheet-out 120ms ease-in forwards;
 
   @keyframes fade-in {
     from {
@@ -85,6 +88,16 @@
     from {
       opacity: 0;
       transform: scale(0.97);
+    }
+  }
+  @keyframes sheet-in {
+    from {
+      transform: translateY(100%);
+    }
+  }
+  @keyframes sheet-out {
+    to {
+      transform: translateY(100%);
     }
   }
 
@@ -165,6 +178,18 @@
     --animate-dialog-in: fade-in 150ms ease-out;
     --animate-dialog-out: fade-out 120ms ease-in forwards;
     --animate-menu-in: fade-in 110ms ease-out;
+    --animate-sheet-in: fade-in 150ms ease-out;
+    --animate-sheet-out: fade-out 120ms ease-in forwards;
+  }
+}
+
+/* Phones: text fields at 16px at least, or iOS zooms the page in when one is focused.
+   Outside Tailwind's layers, so it wins over the text-sm utilities on the fields. */
+@media (max-width: 767px) {
+  input:not([type='checkbox'], [type='radio'], [type='range'], [type='file']),
+  select,
+  textarea {
+    font-size: max(16px, 1em);
   }
 }
 

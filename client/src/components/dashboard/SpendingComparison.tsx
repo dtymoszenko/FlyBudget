@@ -91,7 +91,7 @@ export default function SpendingComparison() {
     labels,
     kind: 'point',
     ordered: true,
-    fontSize: 10,
+    fontSize: 11,
     inset: { left: 50, right: 8 },
   });
 
@@ -144,7 +144,7 @@ export default function SpendingComparison() {
               </defs>
               <XAxis dataKey="label" axisLine={false} tickLine={false} {...xAxis.axisProps} />
               <YAxis
-                tick={{ fontSize: 10, fill: chartColors.axis }}
+                tick={{ fontSize: 11, fill: chartColors.axis }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={formatYAxis}

@@ -13,6 +13,9 @@ import { useAccounts } from '../../hooks/useAccounts';
 import { TransactionFilters, DEFAULT_FILTERS, filtersToParams } from './TransactionFilters';
 import { TransactionFormRow } from './TransactionFormRow';
 import { TransactionRow } from './TransactionRow';
+import { TransactionCard } from './TransactionCard';
+import { Modal } from '../ui/Modal';
+import { useIsPhone } from '../../hooks/useIsPhone';
 import { TransactionDetailPanel } from './TransactionDetailPanel';
 import { ImportModal } from './ImportModal';
 import { Button } from '../ui/Button';
@@ -43,7 +46,8 @@ export function TransactionTable({
 }: Props) {
   const [filters, setFilters] = useState<FilterState>(() => ({
     ...DEFAULT_FILTERS,
-    datePreset: categoryId || categoryIds?.length || categoryGroupId ? 'all' : DEFAULT_FILTERS.datePreset,
+    datePreset:
+      categoryId || categoryIds?.length || categoryGroupId ? 'all' : DEFAULT_FILTERS.datePreset,
   }));
   const [showAdd, setShowAdd] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -70,6 +74,9 @@ export function TransactionTable({
 
   const createTx = useCreateTransaction();
   const canSave = useCanSave();
+  // Phones: cards instead of rows, the entry form in a sheet, and details full screen
+  const isPhone = useIsPhone();
+  const overlay = overlayDetail || isPhone;
   const createTransfer = useCreateTransfer();
 
   const categoryMap = useMemo(() => {
@@ -177,7 +184,7 @@ export function TransactionTable({
         categoryName={filters.categoryId ? categoryMap.get(filters.categoryId)?.name : undefined}
         externalMonth={month}
       />
-      <div className="px-4 py-2 border-b border-border-light bg-surface flex justify-between items-center">
+      <div className="px-4 py-2 border-b border-border-light bg-surface flex flex-wrap gap-2 justify-between items-center">
         <span className="text-xs text-text-tertiary">{transactions.length} transactions</span>
         {accountId && (
           <div className="flex items-center gap-2">
@@ -201,7 +208,7 @@ export function TransactionTable({
 
       <div className="flex-1 flex overflow-hidden">
         <div className="flex-1 overflow-y-auto">
-          {showAdd && accountId && (
+          {showAdd && accountId && !isPhone && (
             <TransactionFormRow
               accountId={accountId}
               groups={groups as CategoryGroup[]}
@@ -214,7 +221,7 @@ export function TransactionTable({
 
           {isLoading ? (
             <div className="px-4 py-10 text-center text-sm text-text-tertiary">Loading...</div>
-          ) : transactions.length === 0 && !showAdd ? (
+          ) : transactions.length === 0 && (!showAdd || isPhone) ? (
             <div className="px-4 py-10 text-center text-sm text-text-tertiary">
               No transactions found.
             </div>
@@ -230,40 +237,58 @@ export function TransactionTable({
                   </span>
                 </div>
 
-                {group.txs.map((tx) => (
-                  <TransactionRow
-                    key={tx.id}
-                    tx={tx}
-                    categoryEntry={tx.categoryId ? (categoryMap.get(tx.categoryId) ?? null) : null}
-                    categoryMap={categoryMap}
-                    groups={groups as CategoryGroup[]}
-                    payees={payees}
-                    accountName={
-                      showAccountCol ? accountInfoMap.get(tx.accountId)?.name : undefined
-                    }
-                    accountType={
-                      showAccountCol ? accountInfoMap.get(tx.accountId)?.type : undefined
-                    }
-                    accountLogo={
-                      showAccountCol ? accountInfoMap.get(tx.accountId)?.logo : undefined
-                    }
-                    showAccountCol={showAccountCol}
-                    isSelected={detailId === tx.id}
-                    onOpenDetail={setDetailId}
-                    onFilterCategory={(catId) =>
-                      setFilters((f) => ({ ...f, categoryId: catId, datePreset: 'all' }))
-                    }
-                    onFilterSearch={(search) =>
-                      setFilters((f) => ({ ...f, search, datePreset: 'all' }))
-                    }
-                  />
-                ))}
+                {group.txs.map((tx) =>
+                  isPhone ? (
+                    <TransactionCard
+                      key={tx.id}
+                      tx={tx}
+                      categoryEntry={
+                        tx.categoryId ? (categoryMap.get(tx.categoryId) ?? null) : null
+                      }
+                      payees={payees}
+                      accountName={
+                        showAccountCol ? accountInfoMap.get(tx.accountId)?.name : undefined
+                      }
+                      isSelected={detailId === tx.id}
+                      onOpenDetail={setDetailId}
+                    />
+                  ) : (
+                    <TransactionRow
+                      key={tx.id}
+                      tx={tx}
+                      categoryEntry={
+                        tx.categoryId ? (categoryMap.get(tx.categoryId) ?? null) : null
+                      }
+                      categoryMap={categoryMap}
+                      groups={groups as CategoryGroup[]}
+                      payees={payees}
+                      accountName={
+                        showAccountCol ? accountInfoMap.get(tx.accountId)?.name : undefined
+                      }
+                      accountType={
+                        showAccountCol ? accountInfoMap.get(tx.accountId)?.type : undefined
+                      }
+                      accountLogo={
+                        showAccountCol ? accountInfoMap.get(tx.accountId)?.logo : undefined
+                      }
+                      showAccountCol={showAccountCol}
+                      isSelected={detailId === tx.id}
+                      onOpenDetail={setDetailId}
+                      onFilterCategory={(catId) =>
+                        setFilters((f) => ({ ...f, categoryId: catId, datePreset: 'all' }))
+                      }
+                      onFilterSearch={(search) =>
+                        setFilters((f) => ({ ...f, search, datePreset: 'all' }))
+                      }
+                    />
+                  ),
+                )}
               </div>
             ))
           )}
         </div>
 
-        {panelMounted && panelTx && !overlayDetail && (
+        {panelMounted && panelTx && !overlay && (
           <div className="w-96 shrink-0 overflow-hidden">
             <div
               className={`h-full transition-transform duration-200 ease-out ${panelVisible ? 'translate-x-0' : 'translate-x-full'}`}
@@ -285,6 +310,21 @@ export function TransactionTable({
         )}
       </div>
 
+      {/* Phones: the entry form in a sheet (splits and transfers included) */}
+      {accountId && isPhone && (
+        <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="New transaction">
+          <TransactionFormRow
+            layout="sheet"
+            accountId={accountId}
+            groups={groups as CategoryGroup[]}
+            payees={payees}
+            accounts={accounts}
+            onSave={handleCreate}
+            onCancel={() => setShowAdd(false)}
+          />
+        </Modal>
+      )}
+
       {accountId && (
         <ImportModal
           isOpen={showImport}
@@ -295,9 +335,12 @@ export function TransactionTable({
 
       {panelMounted &&
         panelTx &&
-        overlayDetail &&
+        overlay &&
         createPortal(
-          <div className="fixed inset-0 z-50 flex justify-end cursor-pointer" onClick={() => setDetailId(null)}>
+          <div
+            className="fixed inset-0 z-50 flex justify-end cursor-pointer"
+            onClick={() => setDetailId(null)}
+          >
             <div
               className={`absolute inset-0 bg-black/20 transition-opacity duration-200 ${panelVisible ? 'opacity-100' : 'opacity-0'}`}
             />

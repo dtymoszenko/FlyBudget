@@ -2,7 +2,7 @@ import { format, parseISO, differenceInCalendarDays } from 'date-fns';
 import { formatCurrency } from '../../utils/currency';
 import type { ScheduleOccurrence } from '../../types';
 import StatusBadge from './StatusBadge';
-import RowMenu from './RowMenu';
+import RowMenu from '../ui/RowMenu';
 import { FREQ_LABEL, formatScheduleAmount, occurrenceBadgeStatus } from './scheduleFormat';
 
 /** Shared with the section header in MonthlyTab so columns line up. */

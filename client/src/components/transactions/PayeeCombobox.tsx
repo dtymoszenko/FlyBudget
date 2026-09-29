@@ -11,9 +11,12 @@ interface Props {
   onChange: (v: PayeeValue) => void;
   payees: Payee[];
   className?: string;
+  /** Replaces the field's own styling (the phone sheet uses full input styling, 16px text) */
+  fieldClassName?: string;
 }
 
-export function PayeeCombobox({ value, onChange, payees, className = '' }: Props) {
+export function PayeeCombobox({ value, onChange, payees, className = '', fieldClassName }: Props) {
+  const large = fieldClassName !== undefined;
   const [query, setQuery] = useState(value.name);
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -58,10 +61,15 @@ export function PayeeCombobox({ value, onChange, payees, className = '' }: Props
         onFocus={() => setOpen(true)}
         placeholder="Payee"
         aria-label="Payee"
-        className={`block w-full bg-transparent text-sm text-text placeholder-text-tertiary focus:outline-none ${className}`}
+        className={
+          fieldClassName ??
+          `block w-full bg-transparent text-sm text-text placeholder-text-tertiary focus:outline-none ${className}`
+        }
       />
       {open && (filtered.length > 0 || (query && !exactMatch)) && (
-        <div className="absolute z-30 top-full left-0 mt-1 w-48 bg-surface border border-border rounded-md shadow-hover overflow-hidden origin-top-left animate-menu-in">
+        <div
+          className={`absolute z-30 top-full left-0 mt-1 ${large ? 'w-full' : 'w-48'} bg-surface border border-border rounded-md shadow-hover overflow-hidden origin-top-left animate-menu-in`}
+        >
           {filtered.map((p) => (
             <button
               key={p.id}
@@ -70,7 +78,7 @@ export function PayeeCombobox({ value, onChange, payees, className = '' }: Props
                 e.preventDefault();
                 select(p);
               }}
-              className="block w-full text-left px-3 py-1.5 text-sm text-text-secondary hover:bg-brand-50 hover:text-brand-700"
+              className={`block w-full text-left px-3 ${large ? 'py-3 text-base' : 'py-1.5 text-sm'} text-text-secondary hover:bg-brand-50 hover:text-brand-700`}
             >
               {p.name}
             </button>
