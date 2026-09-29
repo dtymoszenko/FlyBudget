@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+`AGENTS.md` is the same guide for other AI coding tools (Codex and others). When you change this file, make the same change there.
+
 ## Commands
 
 **Start dev (both client + server):**
@@ -278,6 +280,16 @@ We also integrate with **SimpleFin**, and may consider supporting other connecti
 **Client components:** `client/src/components/plaid/` — `usePlaidHostedLink` hook + HostedLinkWaiting, ConnectBankModal (multi-step: link → account mapping → sync → done), ConnectedInstitutionCard, SyncStatusBadge, PlaidConfigForm.
 
 ---
+
+## Keep offline sync possible
+
+FlyBudget may one day sync one budget between devices that also work offline (desktop app, phone, self-hosted server), merging changes made on each. Nothing syncs today, and this isn't a reason to refactor existing code, but new code shouldn't make that harder:
+
+- **Route writes through the shared functions** instead of writing rows directly from a route, so a future change log has one place to hook in: `insertNewTransaction` for new transactions, `deleteTransactionRow` for deletes (both in `services/transactionHelpers.ts`), and the schedule/rule services for their tables. Add a shared function when a new kind of write appears in more than one place.
+- **Give generated data deterministic ids where feasible.** Rows that every device would create on its own (a recurring occurrence for a schedule and date, the default categories of a new budget) should get an id derived from their content (e.g. a hash of `scheduleId + date`) rather than a random `nanoid()`, so two devices generating the same thing produce the same row instead of duplicates. Today they use `nanoid()`; follow this for new generated data and when touching those paths anyway.
+- **Keep schema changes additive**: add nullable columns or columns with defaults, and new tables; avoid renaming or dropping columns, and changing a column's meaning. An older device must be able to read data written by a newer one.
+- **Avoid new unique constraints that two devices could each satisfy differently** (e.g. unique names). If two offline edits would violate one when merged, there's no good way to resolve it. Existing ones (`budget_months` month+category, occurrence schedule+date) describe real identity, which is fine: prefer constraints on ids and natural keys over user-entered text.
+- **Keep business logic in pure modules** (like `rulesEngine.ts` and `utils/recurrence.ts`, with the database side in a separate service such as `ruleService.ts`), taking data in and returning results without touching the database or the clock directly, so the same logic can run on any device and be re-run after a merge.
 
 ## License and contributions
 
