@@ -33,8 +33,10 @@ export function DateRangeControl({
       <div className="flex gap-0">
         {DATE_PRESETS.filter((p) => p.id !== 'custom').map((p) => (
           <button
+            type="button"
             key={p.id}
             title={p.long}
+            aria-pressed={value.preset === p.id}
             onClick={() => onChange({ preset: p.id, ...computeDateRange(p.id) })}
             className={`px-2.5 py-1 text-xs font-medium transition-colors border-b-2 cursor-pointer ${
               value.preset === p.id
@@ -46,6 +48,8 @@ export function DateRangeControl({
           </button>
         ))}
         <button
+          type="button"
+          aria-pressed={frozen}
           title="Keep these dates fixed instead of moving with the current month"
           onClick={() => !frozen && onChange({ ...resolveDateRange(value), preset: 'custom' })}
           className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium transition-colors border-b-2 cursor-pointer ${

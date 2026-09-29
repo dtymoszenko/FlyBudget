@@ -47,6 +47,8 @@ test.describe('reports', () => {
     await open(page, '/reports');
     await expect(page.getByRole('button', { name: 'Overview' })).toBeVisible();
     const main = page.getByRole('main');
+    // A new budget's reports start on this month
+    await expect(main.getByRole('button', { name: '1M', pressed: true })).toBeVisible();
     // Every dollar spent, uncategorized included; no transfer, no double-counted split
     await expect(main).toContainText(/\$2,000\s*Total Income/);
     await expect(main).toContainText(/\$52\.50\s*Total Expenses/);

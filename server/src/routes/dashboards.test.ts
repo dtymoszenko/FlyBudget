@@ -7,6 +7,7 @@ import { readFileSync } from 'fs';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import { eq, sql as sqlRaw } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import { format } from 'date-fns';
 import { db } from '../db/index.js';
 import { dashboardPages, dashboardWidgets } from '../db/schema.js';
 import { GRID_COLS, nextPosition } from '../services/dashboardService.js';
@@ -87,6 +88,13 @@ describe('dashboards API', () => {
     expect(widgets.map((w: { type: string }) => w.type).sort()).toEqual(
       ['calendar', 'income-expenses', 'net-worth', 'spending', 'spending-trends', 'summary'].sort(),
     );
+    // A new budget's reports start on this month (a live range, recomputed from today)
+    const thisMonth = format(new Date(), 'yyyy-MM');
+    expect((pages[0] as { dateRange: unknown }).dateRange).toEqual({
+      preset: '1m',
+      from: thisMonth,
+      to: thisMonth,
+    });
   });
 
   it('adds a new custom report to the chosen dashboard and removes it with the report', async () => {

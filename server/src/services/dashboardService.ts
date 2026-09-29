@@ -1,4 +1,5 @@
 import { asc, eq } from 'drizzle-orm';
+import { format } from 'date-fns';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
 import { db } from '../db/index.js';
@@ -15,6 +16,7 @@ const month = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Expected YYYY-MM');
 export const dateRangeSchema = z
   .object({ preset: z.enum(DATE_PRESETS), from: month, to: month })
   .refine((r) => r.from <= r.to, { message: '`from` must not be after `to`' });
+type DateRange = z.infer<typeof dateRangeSchema>;
 
 export const WIDGET_TYPES = [
   'summary',
@@ -102,13 +104,19 @@ export function insertWidget(
 
 /**
  * The first visit to Reports gets an "Overview" dashboard with the built-in reports and every
- * saved custom report, matching what the page showed before dashboards existed.
+ * saved custom report, matching what the page showed before dashboards existed. It starts on
+ * this month (a live "1M" range, recomputed from today): what a new budget has data for.
+ * The user's own choice replaces it as usual.
  */
 export function ensureDefaultDashboard() {
   db.transaction((tx) => {
     if (tx.select({ id: dashboardPages.id }).from(dashboardPages).limit(1).get()) return;
     const pageId = nanoid();
-    tx.insert(dashboardPages).values({ id: pageId, name: 'Overview', sortOrder: 0 }).run();
+    const thisMonth = format(new Date(), 'yyyy-MM');
+    const dateRange: DateRange = { preset: '1m', from: thisMonth, to: thisMonth };
+    tx.insert(dashboardPages)
+      .values({ id: pageId, name: 'Overview', sortOrder: 0, dateRange: JSON.stringify(dateRange) })
+      .run();
     for (const type of [
       'summary',
       'net-worth',
