@@ -19,7 +19,7 @@
   },
   "keywords": [],
   "author": "David Tymoszenko",
-  "license": "ISC",
+  "license": "GPL-3.0-only",
   "bugs": {
     "url": "https://github.com/dtymoszenko/flybudget/issues"
   },

@@ -10,6 +10,7 @@
     "electron/dist/main.js",
     "electron/dist/preload.js",
     "electron/dist/server.js",
+    "electron/resources/icon.png",
     "client/dist/**",
     {
       "from": "server/node_modules/better-sqlite3",
@@ -30,7 +31,7 @@
   },
   "win": {
     "target": "nsis",
-    "icon": "build/icon.png"
+    "icon": "electron/resources/icon.ico"
   },
   "mac": {
     "target": "dmg"

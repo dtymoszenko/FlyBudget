@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, safeStorage, session, shell } from 'electron';
+import { app, BrowserWindow, dialog, Menu, safeStorage, session, shell } from 'electron';
 import { randomBytes } from 'crypto';
 import fs from 'fs';
 import path from 'path';
@@ -101,9 +101,10 @@ async function waitForServer(port: number, ms = 15000): Promise<void> {
 }
 
 function createWindow(): void {
+  // Dev runs main.ts from electron/; the build runs main.js from electron/dist/
   const iconPath = IS_DEV
-    ? path.join(__dirname, '../../client/public/logo.png')
-    : path.join(__dirname, '../../build/icon.png');
+    ? path.join(__dirname, 'resources/icon.png')
+    : path.join(__dirname, '../resources/icon.png');
 
   const win = new BrowserWindow({
     width: 1280,
@@ -185,8 +186,21 @@ app.whenReady().then(async () => {
     // The server read its secrets on load; don't leave them in the environment
     delete process.env.FLYBUDGET_DATA_KEY;
     delete process.env.FLYBUDGET_API_TOKEN;
-    await startServer(PORT);
-    await waitForServer(PORT);
+    try {
+      await startServer(PORT);
+      await waitForServer(PORT);
+    } catch (err) {
+      // e.g. the port is taken by another program. Don't open a window that would load it.
+      console.error('FlyBudget failed to start:', err);
+      dialog.showErrorBox(
+        'FlyBudget could not start',
+        `FlyBudget's local server could not start on port ${PORT}. If FlyBudget is already ` +
+          'running, close it and try again; otherwise another program may be using the port.\n\n' +
+          String((err as Error)?.message ?? err),
+      );
+      app.quit();
+      return;
+    }
     // Session cookie (no expiry), SameSite=Strict so other sites can never send it
     await session.defaultSession.cookies.set({
       url: `http://localhost:${PORT}`,
