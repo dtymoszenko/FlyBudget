@@ -31,6 +31,8 @@ function startServer(name: string, env: Record<string, string>, log: string[]): 
     cwd: path.join(root, 'server'),
     env: { ...process.env, NODE_ENV: 'test', ...env },
     stdio: ['ignore', 'pipe', 'pipe'],
+    // Its own process group (Linux/macOS), so stopping it also stops the server tsx starts
+    detached: !isWindows,
   });
   const collect = (chunk: Buffer) => {
     log.push(chunk.toString());
@@ -65,7 +67,11 @@ function stop(child: ChildProcess) {
       /* already gone */
     }
   } else {
-    child.kill('SIGTERM');
+    try {
+      process.kill(-child.pid, 'SIGTERM');
+    } catch {
+      /* already gone */
+    }
   }
 }
 
