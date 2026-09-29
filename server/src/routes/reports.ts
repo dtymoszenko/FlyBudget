@@ -196,24 +196,29 @@ reportsRouter.get('/income-vs-expenses', (req, res) => {
   const { from, to } = range;
   const months = monthRange(from, to);
 
-  // Single query grouped by month + isIncome
+  // Single query grouped by month + isIncome. Like Spending by Category, uncategorized
+  // spending counts as an expense; transfers only move money, and a split counts once
+  // (through its parts).
+  const isIncome = sql<number>`coalesce(${categoryGroups.isIncome}, 0)`;
   const txRows = db
     .select({
       month: sql<string>`strftime('%Y-%m', ${transactions.date})`,
-      isIncome: categoryGroups.isIncome,
+      isIncome,
       total: sql<number>`coalesce(sum(${transactions.amount}), 0)`,
       outflowCount: sql<number>`sum(case when ${transactions.amount} < 0 then 1 else 0 end)`,
     })
     .from(transactions)
-    .innerJoin(categories, eq(transactions.categoryId, categories.id))
-    .innerJoin(categoryGroups, eq(categories.groupId, categoryGroups.id))
+    .leftJoin(categories, eq(transactions.categoryId, categories.id))
+    .leftJoin(categoryGroups, eq(categories.groupId, categoryGroups.id))
     .where(
       and(
         gte(transactions.date, monthBounds(from).from),
         lte(transactions.date, monthBounds(to).to),
+        eq(transactions.isParent, 0),
+        isNull(transactions.transferTransactionId),
       ),
     )
-    .groupBy(sql`strftime('%Y-%m', ${transactions.date})`, categoryGroups.isIncome)
+    .groupBy(sql`strftime('%Y-%m', ${transactions.date})`, isIncome)
     .all();
 
   type MonthData = { income: number; expenses: number; expenseNet: number; expenseCount: number };

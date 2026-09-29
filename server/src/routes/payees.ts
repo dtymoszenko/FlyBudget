@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { db } from '../db/index.js';
 import { payees, transactions } from '../db/schema.js';
-import { and, eq, inArray, isNotNull, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
 import { logoSchema } from '../utils/logo.js';
@@ -29,6 +29,8 @@ payeesRouter.get('/', (_req, res) => {
       count: sql<number>`count(*)`,
     })
     .from(transactions)
+    // A split is one transaction, not one per part
+    .where(isNull(transactions.parentTransactionId))
     .groupBy(transactions.payeeId)
     .all();
 

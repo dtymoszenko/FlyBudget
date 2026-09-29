@@ -39,6 +39,7 @@ export default function SaveReportModal({
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="e.g. Monthly Spending by Payee"
+          aria-label="Report name"
           autoFocus
         />
         <div className="flex justify-end gap-2 mt-4">

@@ -22,13 +22,17 @@ export function CurrencyInput({
   const [raw, setRaw] = useState('');
 
   function handleFocus(e: React.FocusEvent<HTMLInputElement>) {
+    const initial = value === 0 ? '' : String(value / 100);
     setFocused(true);
-    setRaw(value === 0 ? '' : String(value / 100));
-    // Select the amount once it's shown for editing, so typing replaces it
+    setRaw(initial);
+    // Select the amount once it's shown for editing, so typing replaces it. Only if nothing
+    // was typed in the meantime, or the first keystroke would be selected and overwritten.
     const input = e.currentTarget;
-    requestAnimationFrame(() => {
-      if (document.activeElement === input) input.select();
-    });
+    if (initial) {
+      requestAnimationFrame(() => {
+        if (document.activeElement === input && input.value === initial) input.select();
+      });
+    }
   }
 
   function handleBlur() {

@@ -87,6 +87,7 @@ export function GoalFormModal({ isOpen, onClose, onSave, editGoal }: Props) {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Emergency Fund"
+            aria-label="Name"
             className="w-full px-3 py-2 text-sm border border-border rounded-md bg-surface text-text focus:outline-none focus:ring-1 focus:ring-brand-600 focus:border-brand-600"
             autoFocus
           />
@@ -95,11 +96,21 @@ export function GoalFormModal({ isOpen, onClose, onSave, editGoal }: Props) {
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-text-secondary">Target</label>
-            <CurrencyInput value={targetAmount} onChange={setTargetAmount} className="w-full" />
+            <CurrencyInput
+              value={targetAmount}
+              onChange={setTargetAmount}
+              className="w-full"
+              aria-label="Target"
+            />
           </div>
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-text-secondary">Saved so far</label>
-            <CurrencyInput value={currentAmount} onChange={setCurrentAmount} className="w-full" />
+            <CurrencyInput
+              value={currentAmount}
+              onChange={setCurrentAmount}
+              className="w-full"
+              aria-label="Saved so far"
+            />
           </div>
         </div>
 
@@ -107,6 +118,7 @@ export function GoalFormModal({ isOpen, onClose, onSave, editGoal }: Props) {
           <label className="text-sm font-medium text-text-secondary">Target date (optional)</label>
           <input
             type="date"
+            aria-label="Target date"
             value={targetDate}
             onChange={(e) => setTargetDate(e.target.value)}
             className="w-full px-3 py-2 text-sm border border-border rounded-md bg-surface text-text focus:outline-none focus:ring-1 focus:ring-brand-600 focus:border-brand-600"
@@ -118,6 +130,7 @@ export function GoalFormModal({ isOpen, onClose, onSave, editGoal }: Props) {
             Linked account (optional)
           </label>
           <select
+            aria-label="Linked account"
             value={accountId}
             onChange={(e) => setAccountId(e.target.value)}
             className="w-full px-3 py-2 text-sm border border-border rounded-md bg-surface text-text focus:outline-none focus:ring-1 focus:ring-brand-600 focus:border-brand-600"
@@ -141,6 +154,7 @@ export function GoalFormModal({ isOpen, onClose, onSave, editGoal }: Props) {
                 key={i}
                 type="button"
                 onClick={() => setIcon(i)}
+                aria-pressed={icon === i}
                 className={`w-9 h-9 text-lg rounded-md border transition-colors ${
                   icon === i ? 'border-brand-500 bg-brand-50' : 'border-border-light hover:bg-hover'
                 }`}
@@ -159,6 +173,8 @@ export function GoalFormModal({ isOpen, onClose, onSave, editGoal }: Props) {
                 key={c}
                 type="button"
                 onClick={() => setColor(c)}
+                aria-label={`Color ${c}`}
+                aria-pressed={color === c}
                 className={`w-7 h-7 rounded-full border-2 transition-all ${
                   color === c ? 'border-text scale-110' : 'border-transparent'
                 }`}

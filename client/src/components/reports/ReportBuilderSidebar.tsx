@@ -108,6 +108,7 @@ export default function ReportBuilderSidebar({ config, onChange }: Props) {
 
       <Section label="Group By">
         <select
+          aria-label="Group by"
           value={config.groupBy}
           onChange={(e) => onChange(set(config, 'groupBy', e.target.value as ReportGroupBy))}
           className="w-full rounded-md border border-border text-sm py-1.5 px-2 bg-surface text-text focus:border-brand-600 focus:ring-1 focus:ring-brand-600 focus:outline-none"

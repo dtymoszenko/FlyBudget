@@ -137,6 +137,15 @@ function SortableCategoryRow({
       ref={setNodeRef}
       style={style}
       onClick={() => onOpenEditModal(cat.id)}
+      role="button"
+      tabIndex={0}
+      aria-label={`Edit ${cat.name}`}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpenEditModal(cat.id);
+        }
+      }}
       className="flex items-center gap-3 px-3 py-2.5 bg-surface rounded-lg hover:bg-hover cursor-pointer hover:shadow-sm transition-all mx-2"
     >
       {showCategoryIcons && (
@@ -282,22 +291,22 @@ function GroupCard({
         <div className="px-4 py-3 border-t border-border-light">
           <div className="flex items-center gap-2">
             {showCategoryIcons && (
-            <div className="relative shrink-0">
-              <button
-                onClick={() => setShowNewCatEmojiPicker(!showNewCatEmojiPicker)}
-                className="text-base w-8 h-8 flex items-center justify-center rounded border border-border-light hover:bg-hover transition-colors"
-                title="Pick icon"
-              >
-                {newCategoryIcon || '📦'}
-              </button>
-              {showNewCatEmojiPicker && (
-                <EmojiPickerPopover
-                  currentEmoji={newCategoryIcon}
-                  onSelect={(emoji) => onNewCategoryIconChange(emoji)}
-                  onClose={() => setShowNewCatEmojiPicker(false)}
-                />
-              )}
-            </div>
+              <div className="relative shrink-0">
+                <button
+                  onClick={() => setShowNewCatEmojiPicker(!showNewCatEmojiPicker)}
+                  className="text-base w-8 h-8 flex items-center justify-center rounded border border-border-light hover:bg-hover transition-colors"
+                  title="Pick icon"
+                >
+                  {newCategoryIcon || '📦'}
+                </button>
+                {showNewCatEmojiPicker && (
+                  <EmojiPickerPopover
+                    currentEmoji={newCategoryIcon}
+                    onSelect={(emoji) => onNewCategoryIconChange(emoji)}
+                    onClose={() => setShowNewCatEmojiPicker(false)}
+                  />
+                )}
+              </div>
             )}
             <input
               autoFocus
@@ -312,6 +321,7 @@ function GroupCard({
             />
             <button
               onClick={onAddCategorySubmit}
+              aria-label="Add category"
               disabled={!newCategoryName.trim()}
               className="p-1.5 text-positive hover:bg-positive-subtle rounded disabled:opacity-40 transition-colors"
             >
@@ -319,6 +329,7 @@ function GroupCard({
             </button>
             <button
               onClick={onAddCategoryCancel}
+              aria-label="Cancel"
               className="p-1.5 text-text-tertiary hover:bg-hover rounded transition-colors"
             >
               <X size={16} />
@@ -459,6 +470,7 @@ function Section({
           />
           <button
             onClick={onAddGroupSubmit}
+            aria-label="Add group"
             disabled={!addingGroupName.trim()}
             className="p-1.5 text-positive hover:bg-positive-subtle rounded disabled:opacity-40 transition-colors"
           >
@@ -466,6 +478,7 @@ function Section({
           </button>
           <button
             onClick={onAddGroupCancel}
+            aria-label="Cancel"
             className="p-1.5 text-text-tertiary hover:bg-hover rounded transition-colors"
           >
             <X size={16} />

@@ -180,6 +180,7 @@ export default function PayeesPage() {
                 <th className="w-10 px-4 py-2">
                   <input
                     type="checkbox"
+                    aria-label="Select all payees"
                     checked={selected.size === filtered.length && filtered.length > 0}
                     onChange={(e) =>
                       setSelected(e.target.checked ? new Set(filtered.map((p) => p.id)) : new Set())
@@ -206,6 +207,7 @@ export default function PayeesPage() {
                   <td className="px-4 py-2">
                     <input
                       type="checkbox"
+                      aria-label={`Select ${p.name}`}
                       checked={selected.has(p.id)}
                       onChange={() => toggleSelect(p.id)}
                       className="accent-brand-600"
@@ -223,6 +225,7 @@ export default function PayeesPage() {
                       {editingId === p.id ? (
                         <input
                           autoFocus
+                          aria-label={`Rename ${p.name}`}
                           value={editingName}
                           onChange={(e) => setEditingName(e.target.value)}
                           onBlur={() => commitEditName(p.id)}
@@ -245,6 +248,7 @@ export default function PayeesPage() {
                   </td>
                   <td className="px-4 py-2">
                     <select
+                      aria-label={`Default category for ${p.name}`}
                       value={p.defaultCategoryId ?? ''}
                       onChange={(e) => handleCategoryChange(p.id, e.target.value)}
                       className="text-sm border border-border rounded-md px-2 py-1 bg-surface text-text focus:outline-none focus:ring-1 focus:ring-brand-600 max-w-[220px]"
@@ -263,7 +267,8 @@ export default function PayeesPage() {
                   <td className="px-4 py-2">
                     <button
                       onClick={() => setDeleteId(p.id)}
-                      className="opacity-0 group-hover:opacity-100 p-1 text-text-tertiary hover:text-negative transition-all"
+                      aria-label={`Delete ${p.name}`}
+                      className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 p-1 text-text-tertiary hover:text-negative transition-all"
                     >
                       <Trash2 size={14} />
                     </button>

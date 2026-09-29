@@ -50,8 +50,10 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   if (!status.enabled || status.authenticated) return <>{children}</>;
 
   const onSignedIn = () => {
-    // Everything cached before signing in is stale
-    qc.clear();
+    // Everything cached before signing in is stale. Not qc.clear(): that would also detach
+    // the auth-status query this component is subscribed to, and the update below would
+    // never reach it (the sign-in screen stayed up until a reload).
+    qc.removeQueries({ predicate: (q) => q.queryKey[0] !== 'auth-status' });
     qc.setQueryData(['auth-status'], { ...status, needsSetup: false, authenticated: true });
   };
   return status.needsSetup ? (

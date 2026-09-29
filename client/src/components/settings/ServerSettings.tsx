@@ -40,8 +40,10 @@ export function ServerSettings() {
 
   async function signOut() {
     await authApi.logout().catch(() => {});
-    qc.clear();
-    qc.invalidateQueries({ queryKey: ['auth-status'] });
+    // Drop the signed-in data, then re-check the status so the login screen shows. Not
+    // qc.clear(): it detaches the auth-status query the app is watching, so nothing changed.
+    qc.removeQueries({ predicate: (q) => q.queryKey[0] !== 'auth-status' });
+    await qc.invalidateQueries({ queryKey: ['auth-status'] });
   }
 
   return (

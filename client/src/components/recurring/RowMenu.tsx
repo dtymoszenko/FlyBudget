@@ -22,7 +22,10 @@ export default function RowMenu({ items }: { items: RowMenuItem[] }) {
     if (!pos) return;
     const close = () => setPos(null);
     const onDown = (e: MouseEvent) => {
-      if (!menuRef.current?.contains(e.target as Node) && !btnRef.current?.contains(e.target as Node))
+      if (
+        !menuRef.current?.contains(e.target as Node) &&
+        !btnRef.current?.contains(e.target as Node)
+      )
         close();
     };
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close();
@@ -55,6 +58,8 @@ export default function RowMenu({ items }: { items: RowMenuItem[] }) {
         ref={btnRef}
         onClick={toggle}
         aria-label="Actions"
+        aria-haspopup="menu"
+        aria-expanded={pos !== null}
         className={`p-1 rounded text-text-tertiary hover:text-text-secondary hover:bg-hover transition-colors cursor-pointer ${
           pos ? 'bg-hover text-text-secondary' : ''
         }`}
@@ -65,6 +70,7 @@ export default function RowMenu({ items }: { items: RowMenuItem[] }) {
         createPortal(
           <div
             ref={menuRef}
+            role="menu"
             onClick={(e) => e.stopPropagation()}
             className="fixed z-50 bg-surface border border-border rounded-md shadow-hover py-1 animate-menu-in"
             style={{ top: pos.top, left: pos.left, width: MENU_W }}
@@ -72,6 +78,7 @@ export default function RowMenu({ items }: { items: RowMenuItem[] }) {
             {visible.map((item) => (
               <button
                 key={item.label}
+                role="menuitem"
                 onClick={() => {
                   setPos(null);
                   item.onClick();

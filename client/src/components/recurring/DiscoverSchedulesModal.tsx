@@ -39,7 +39,10 @@ export default function DiscoverSchedulesModal({ isOpen, onClose }: Props) {
   const [lastClicked, setLastClicked] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!isOpen) { setSelected(new Set()); setLastClicked(null); }
+    if (!isOpen) {
+      setSelected(new Set());
+      setLastClicked(null);
+    }
   }, [isOpen]);
 
   const loading = isLoading || isFetching;
@@ -64,7 +67,8 @@ export default function DiscoverSchedulesModal({ isOpen, onClose }: Props) {
     createMut.mutate(selectedItems, { onSuccess: onClose });
   }
 
-  const cols = 'grid grid-cols-[28px_minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.6fr)_110px] items-center gap-3';
+  const cols =
+    'grid grid-cols-[28px_minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.6fr)_110px] items-center gap-3';
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Search for recurring transactions" size="xl">
@@ -81,7 +85,9 @@ export default function DiscoverSchedulesModal({ isOpen, onClose }: Props) {
       </div>
 
       <div className="mt-4 border border-border-light rounded-lg overflow-hidden">
-        <div className={`${cols} px-3 py-2 bg-surface-alt border-b border-border-light text-xs font-medium text-text-tertiary`}>
+        <div
+          className={`${cols} px-3 py-2 bg-surface-alt border-b border-border-light text-xs font-medium text-text-tertiary`}
+        >
           <input
             type="checkbox"
             aria-label="Select all"
@@ -99,11 +105,17 @@ export default function DiscoverSchedulesModal({ isOpen, onClose }: Props) {
         <div className="max-h-[360px] overflow-y-auto">
           {loading ? (
             <div className="p-3 space-y-2">
-              {[1, 2, 3, 4].map((i) => <div key={i} className="h-8 bg-surface-alt rounded animate-pulse" />)}
-              <p className="text-xs text-center text-text-tertiary pt-1">Scanning your transactions…</p>
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-8 bg-surface-alt rounded animate-pulse" />
+              ))}
+              <p className="text-xs text-center text-text-tertiary pt-1">
+                Scanning your transactions…
+              </p>
             </div>
           ) : found.length === 0 ? (
-            <p className="py-12 text-center text-sm italic text-text-tertiary">No recurring transactions found</p>
+            <p className="py-12 text-center text-sm italic text-text-tertiary">
+              No recurring transactions found
+            </p>
           ) : (
             found.map((item, idx) => {
               const isSel = selected.has(item.id);
@@ -115,22 +127,29 @@ export default function DiscoverSchedulesModal({ isOpen, onClose }: Props) {
                     isSel ? 'bg-brand-50' : 'hover:bg-hover'
                   }`}
                 >
+                  {/* Focusable so the list works from the keyboard: Space clicks it, and the
+                      click reaches the row's handler */}
                   <input
                     type="checkbox"
+                    aria-label={`Track ${item.payeeName}`}
                     checked={isSel}
                     readOnly
-                    tabIndex={-1}
-                    className="accent-brand-600 pointer-events-none"
+                    className="accent-brand-600 cursor-pointer"
                   />
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-text truncate">{item.payeeName}</p>
                     <p className="text-xs text-text-tertiary">
-                      {item.transactionIds.length} past · since {format(parseISO(item.startDate), 'MMM yyyy')}
+                      {item.transactionIds.length} past · since{' '}
+                      {format(parseISO(item.startDate), 'MMM yyyy')}
                     </p>
                   </div>
                   <span className="text-sm text-text-secondary truncate">{item.accountName}</span>
-                  <span className="text-sm text-text-secondary truncate" title={describe(item)}>{describe(item)}</span>
-                  <span className={`text-sm font-medium tabular-nums text-right ${item.amount > 0 ? 'text-positive' : 'text-text'}`}>
+                  <span className="text-sm text-text-secondary truncate" title={describe(item)}>
+                    {describe(item)}
+                  </span>
+                  <span
+                    className={`text-sm font-medium tabular-nums text-right ${item.amount > 0 ? 'text-positive' : 'text-text'}`}
+                  >
                     {formatScheduleAmount(item.amount, item.amountType)}
                   </span>
                 </div>
@@ -142,14 +161,26 @@ export default function DiscoverSchedulesModal({ isOpen, onClose }: Props) {
 
       <div className="flex items-center justify-between mt-4">
         <span className="text-xs text-text-tertiary">
-          {selected.size > 0 ? `${selected.size} selected` : found.length > 0 ? 'Shift+click to select a range' : ''}
+          {selected.size > 0
+            ? `${selected.size} selected`
+            : found.length > 0
+              ? 'Shift+click to select a range'
+              : ''}
         </span>
         <div className="flex gap-2">
-          <Button variant="secondary" size="sm" onClick={onClose}>Cancel</Button>
-          <Button size="sm" disabled={selected.size === 0 || createMut.isPending} onClick={handleCreate}>
+          <Button variant="secondary" size="sm" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            size="sm"
+            disabled={selected.size === 0 || createMut.isPending}
+            onClick={handleCreate}
+          >
             {createMut.isPending
               ? 'Creating…'
-              : selected.size > 0 ? `Create ${selected.size} recurring` : 'Create recurring'}
+              : selected.size > 0
+                ? `Create ${selected.size} recurring`
+                : 'Create recurring'}
           </Button>
         </div>
       </div>

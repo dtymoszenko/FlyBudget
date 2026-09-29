@@ -89,7 +89,7 @@ describe('report endpoints (property-based)', () => {
     }),
   );
 
-  it('counts each split once, by its parts, and leaves out transfers and income', async () => {
+  it('counts each split once, by its parts, and leaves out transfers and income (spending by category, income & expenses)', async () => {
     await fc.assert(
       fc.asyncProperty(fc.array(entry, { maxLength: 12 }), async (entries) => {
         db.delete(transactions).run();
@@ -144,6 +144,14 @@ describe('report endpoints (property-based)', () => {
           [...expected].filter(([, net]) => net < 0).map(([id, net]) => [id, -net]),
         );
         expect(actual).toEqual(want);
+
+        // Income & Expenses agrees: the same spending (uncategorized included), same income
+        const income = entries.reduce((s, e) => s + (e.kind === 'income' ? e.amount : 0), 0);
+        const net = [...expected.values()].reduce((s, v) => s + v, 0);
+        const [month] = await (
+          await fetch(`${base}/income-vs-expenses?from=2026-05&to=2026-05`)
+        ).json();
+        expect(month).toMatchObject({ income, expenseNet: net, expenses: Math.max(-net, 0) });
       }),
       { numRuns: 100 },
     );

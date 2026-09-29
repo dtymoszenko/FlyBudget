@@ -114,12 +114,16 @@ export function EditCategoryModal({ category, groups, isIncome, onClose, onDelet
                 <button
                   type="button"
                   onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  aria-label="Change icon"
                   className="text-xl w-10 h-10 flex items-center justify-center rounded-lg border border-border hover:bg-hover transition-colors"
                 >
                   {icon || '📦'}
                 </button>
                 {showEmojiPicker && (
-                  <EmojiPickerPopover onSelect={setIcon} onClose={() => setShowEmojiPicker(false)} />
+                  <EmojiPickerPopover
+                    onSelect={setIcon}
+                    onClose={() => setShowEmojiPicker(false)}
+                  />
                 )}
               </div>
             )}
@@ -128,6 +132,7 @@ export function EditCategoryModal({ category, groups, isIncome, onClose, onDelet
               onChange={(e) => setName(e.target.value)}
               className="block w-full rounded-lg border border-border px-3 py-2 text-sm bg-surface text-text focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
               placeholder="Category name"
+              aria-label="Category name"
             />
           </div>
         </div>
@@ -135,6 +140,7 @@ export function EditCategoryModal({ category, groups, isIncome, onClose, onDelet
         <div>
           <label className="block text-sm font-medium text-text mb-1.5">Group</label>
           <select
+            aria-label="Group"
             value={groupId}
             onChange={(e) => setGroupId(e.target.value)}
             disabled={groupLocked}

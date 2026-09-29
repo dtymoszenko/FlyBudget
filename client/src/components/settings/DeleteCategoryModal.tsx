@@ -45,6 +45,7 @@ export function DeleteCategoryModal({
           Budget allocations for this category will be removed.
         </p>
         <select
+          aria-label="Move transactions to"
           value={reassignTo}
           onChange={(e) => setReassignTo(e.target.value)}
           className="block w-full text-sm border border-border rounded-md px-3 py-2 bg-surface text-text focus:outline-none focus:ring-1 focus:ring-brand-600 focus:border-brand-600"

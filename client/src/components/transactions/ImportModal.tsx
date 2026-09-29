@@ -90,7 +90,8 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
     });
   }
 
-  function buildImportRows(): ImportRow[] {
+  /** The rows to import, or a message saying why there are none */
+  function buildImportRows(): ImportRow[] | string {
     const dateIdx = roles.indexOf('date');
     const payeeIdx = roles.indexOf('payee');
     const amountIdx = roles.indexOf('amount');
@@ -98,13 +99,9 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
     const outflowIdx = roles.indexOf('outflow');
     const notesIdx = roles.indexOf('notes');
 
-    if (dateIdx === -1) {
-      setError('Date column is required');
-      return [];
-    }
+    if (dateIdx === -1) return 'Date column is required';
     if (amountIdx === -1 && inflowIdx === -1 && outflowIdx === -1) {
-      setError('At least one amount column is required');
-      return [];
+      return 'At least one amount column is required';
     }
 
     const rows: ImportRow[] = [];
@@ -139,8 +136,8 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
   async function handlePreview() {
     setError(null);
     const rows = buildImportRows();
-    if (!rows.length) {
-      if (!error) setError('No valid rows found');
+    if (typeof rows === 'string' || !rows.length) {
+      setError(typeof rows === 'string' ? rows : 'No valid rows found');
       return;
     }
 
