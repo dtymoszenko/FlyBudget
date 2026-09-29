@@ -4,6 +4,8 @@ import { AlertTriangle, Loader2, Lock } from 'lucide-react';
 import { AUTH_REQUIRED_EVENT, NetworkError } from '../../api/client';
 import * as authApi from '../../api/auth';
 import { appModeFrom } from '../../hooks/useServer';
+import { OutboxSender } from '../../offline/OutboxSender';
+import { clearOfflineCopy, useOfflineCopy } from '../../offline/snapshot';
 import { useConnectionStore } from '../../store/connectionStore';
 import { connectionSecurity } from '../../utils/connection';
 import { ReconnectScreen } from '../connection/ReconnectScreen';
@@ -15,7 +17,8 @@ import { MIN_PASSWORD_LENGTH } from './passwordRules';
  * Shows the login (or first-run setup) screen when FlyBudget runs as a server and
  * this browser isn't signed in. In the desktop app and dev mode login is disabled,
  * so this renders the app straight away. If the server can't be reached on startup it
- * shows a reconnect screen that keeps retrying, and the app loads once it answers.
+ * opens with this device's offline copy (read-only, see offline/snapshot.ts) or, without
+ * one, shows a reconnect screen that keeps retrying; the app loads once it answers.
  */
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const qc = useQueryClient();
@@ -38,13 +41,33 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     if (reconnectedAt !== null) void qc.invalidateQueries();
   }, [reconnectedAt, qc]);
 
+  const hasOfflineCopy = useOfflineCopy((s) => s.restored);
+  const loginRequired = !!status && status.enabled && !status.authenticated;
+  // Signed out (expired, signed out elsewhere, password changed): forget this device's copy
+  useEffect(() => {
+    if (loginRequired) void clearOfflineCopy();
+  }, [loginRequired]);
+
   // A request came back "login required" (session expired or signed out elsewhere)
   useEffect(() => {
-    const onAuthRequired = () => qc.invalidateQueries({ queryKey: ['auth-status'] });
+    const onAuthRequired = () => {
+      void clearOfflineCopy();
+      void qc.invalidateQueries({ queryKey: ['auth-status'] });
+    };
     window.addEventListener(AUTH_REQUIRED_EVENT, onAuthRequired);
     return () => window.removeEventListener(AUTH_REQUIRED_EVENT, onAuthRequired);
   }, [qc]);
 
+  const app = (
+    <>
+      {children}
+      <OutboxSender />
+    </>
+  );
+
+  // Can't reach the server (or still asking) but this device has a copy: open with it.
+  // Saving waits for the connection, except new transactions (they wait on the device).
+  if ((isLoading || isError || !status) && hasOfflineCopy) return app;
   if (isLoading) {
     return (
       <div className="h-screen flex items-center justify-center bg-surface-alt">
@@ -55,7 +78,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   if (isError || !status) {
     return <ReconnectScreen mode={appModeFrom(status)} onRetry={() => void refetch()} />;
   }
-  if (!status.enabled || status.authenticated) return <>{children}</>;
+  if (!status.enabled || status.authenticated) return app;
 
   const onSignedIn = () => {
     // Everything cached before signing in is stale. Not qc.clear(): that would also detach

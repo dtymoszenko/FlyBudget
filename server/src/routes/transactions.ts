@@ -14,7 +14,13 @@ const id = z.string().min(1).max(64);
 // Amounts are integer cents; the cap keeps sums far inside Number.MAX_SAFE_INTEGER
 const cents = z.number().int().min(-1e13).max(1e13);
 
+// A transaction saved on a device while offline carries its own random id. Sending it again
+// (the connection dropped before the answer arrived, or two tabs sent it) returns the saved one
+// instead of creating a duplicate.
+const clientId = z.string().regex(/^[A-Za-z0-9_-]{16,64}$/);
+
 const createSchema = z.object({
+  id: clientId.optional(),
   accountId: id,
   date: isoDate,
   amount: cents,
@@ -34,10 +40,11 @@ const createSchema = z.object({
     .optional(),
 });
 
-const updateSchema = createSchema.omit({ splits: true }).partial();
+const updateSchema = createSchema.omit({ id: true, splits: true }).partial();
 
 const transferSchema = z
   .object({
+    id: clientId.optional(),
     fromAccountId: id,
     toAccountId: id,
     date: isoDate,
@@ -140,11 +147,33 @@ transactionsRouter.get('/', (req, res) => {
 });
 
 // POST /transactions — supports optional splits array
+/** A transaction created earlier with this id, shaped like the create response (null if none) */
+function alreadyCreated(txId: string) {
+  const row = db.select().from(transactions).where(eq(transactions.id, txId)).get();
+  if (!row) return null;
+  if (row.transferTransactionId) {
+    const other = db
+      .select()
+      .from(transactions)
+      .where(eq(transactions.id, row.transferTransactionId))
+      .get();
+    return other ? [row, other] : [row];
+  }
+  const children = db
+    .select()
+    .from(transactions)
+    .where(eq(transactions.parentTransactionId, txId))
+    .all();
+  return children.length ? { ...row, children } : row;
+}
+
 transactionsRouter.post('/', (req, res) => {
   const parsed = createSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
-  const { payeeName, payeeId, splits, ...rest } = parsed.data;
+  const { id: txId, payeeName, payeeId, splits, ...rest } = parsed.data;
+  const existing = txId && alreadyCreated(txId);
+  if (existing) return res.status(200).json(existing);
 
   if (splits && splits.length > 0) {
     const payee = resolvePayee(payeeName, payeeId);
@@ -154,7 +183,7 @@ transactionsRouter.post('/', (req, res) => {
       return res.status(400).json({ error: 'Split amounts must equal transaction total' });
     }
 
-    const parentId = nanoid();
+    const parentId = txId ?? nanoid();
     const parent = {
       id: parentId,
       ...rest,
@@ -207,6 +236,7 @@ transactionsRouter.post('/', (req, res) => {
       notes: rest.notes ?? null,
       categoryId: rest.categoryId ?? null,
       importedId: null,
+      id: txId,
     },
     { keepUserCategory: true, keepUserNotes: true },
   );
@@ -218,12 +248,14 @@ transactionsRouter.post('/transfer', (req, res) => {
   const parsed = transferSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
-  const { fromAccountId, toAccountId, date, amount, notes } = parsed.data;
+  const { id: txId, fromAccountId, toAccountId, date, amount, notes } = parsed.data;
+  const existing = txId && alreadyCreated(txId);
+  if (existing) return res.status(200).json(existing);
   const fromAcct = db.select().from(accounts).where(eq(accounts.id, fromAccountId)).get();
   const toAcct = db.select().from(accounts).where(eq(accounts.id, toAccountId)).get();
   if (!fromAcct || !toAcct) return res.status(404).json({ error: 'Account not found' });
 
-  const fromId = nanoid();
+  const fromId = txId ?? nanoid();
   const toId = nanoid();
   const now = new Date().toISOString();
 

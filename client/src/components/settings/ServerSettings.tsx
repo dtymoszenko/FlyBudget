@@ -10,6 +10,7 @@ import {
   Loader2,
   LogOut,
   Smartphone,
+  WifiOff,
 } from 'lucide-react';
 import * as authApi from '../../api/auth';
 import type { SecurityCheck, SignedInDevice } from '../../api/server';
@@ -22,6 +23,9 @@ import {
   useSignOutOtherSessions,
   useSignOutSession,
 } from '../../hooks/useServer';
+import { useOutbox } from '../../offline/outbox';
+import { clearOfflineCopy, offlineCopySupported } from '../../offline/snapshot';
+import { usePreferencesStore } from '../../store/preferencesStore';
 import { describeUserAgent } from '../../utils/connection';
 import { SELF_HOSTING_URL } from '../../utils/project';
 import { Button } from '../ui/Button';
@@ -66,6 +70,8 @@ function LocalSettings({ onOpenTab }: { onOpenTab: (tab: 'data') => void }) {
         </div>
       </section>
 
+      <OfflineCopySettings />
+
       <section className="p-4 rounded-lg border border-border">
         <div className="flex items-start gap-3">
           <Smartphone size={20} className="text-brand-600 shrink-0 mt-0.5" aria-hidden />
@@ -94,6 +100,48 @@ function LocalSettings({ onOpenTab }: { onOpenTab: (tab: 'data') => void }) {
         </div>
       </section>
     </div>
+  );
+}
+
+// --- Offline copy (dev and self-hosted; the desktop app's server is always there) ---
+
+function OfflineCopySettings() {
+  const keep = usePreferencesStore((s) => s.keepOfflineCopy);
+  const setKeep = usePreferencesStore((s) => s.setKeepOfflineCopy);
+  const waiting = useOutbox((s) => s.items.length);
+  if (!offlineCopySupported()) return null;
+  return (
+    <section className="pt-6 border-t border-border-light">
+      <SectionTitle>Offline copy</SectionTitle>
+      <label className="mt-3 flex items-start gap-3 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={keep}
+          onChange={(e) => {
+            setKeep(e.target.checked);
+            if (!e.target.checked) void clearOfflineCopy();
+          }}
+          className="mt-0.5 h-4 w-4 max-md:h-5 max-md:w-5 accent-brand-600 shrink-0"
+        />
+        <span className="text-sm">
+          <span className="font-medium text-text flex items-center gap-1.5">
+            <WifiOff size={14} className="text-text-tertiary" aria-hidden />
+            Keep a copy of my budget on this device
+          </span>
+          <span className="block text-xs text-text-tertiary mt-1 leading-relaxed">
+            When FlyBudget can't reach its server, it opens with what this browser last loaded. You
+            can look through everything and add new transactions; they're sent when it reconnects.
+            The copy is deleted when you sign out. Turn this off on a shared computer.
+          </span>
+        </span>
+      </label>
+      {waiting > 0 && (
+        <p className="text-xs text-caution mt-3">
+          {waiting} transaction{waiting === 1 ? '' : 's'} saved on this device{' '}
+          {waiting === 1 ? 'is' : 'are'} waiting to be sent.
+        </p>
+      )}
+    </section>
   );
 }
 
@@ -327,6 +375,7 @@ function SelfHostedSettings() {
     <div className="max-w-xl space-y-8">
       <SecurityChecks />
       <SignedInDevices />
+      <OfflineCopySettings />
 
       <section className="pt-6 border-t border-border-light max-w-md">
         <SectionTitle>Change password</SectionTitle>

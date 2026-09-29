@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import { Check, X, Split, Plus, Trash2 } from 'lucide-react';
 import { PayeeCombobox } from './PayeeCombobox';
-import { useCanSave } from '../../hooks/useConnection';
+import { useCanAddTransaction } from '../../hooks/useOffline';
 import { CategorySelect } from './CategorySelect';
 import type { Account, CategoryGroup, Payee, Transaction } from '../../types';
 import type { CreateTransactionData, SplitItem } from '../../api/transactions';
@@ -54,7 +54,8 @@ export function TransactionFormRow({
     initial?.amount !== undefined && initial.amount > 0 ? centsToInput(initial.amount) : '',
   );
   const [splitMode, setSplitMode] = useState(false);
-  const canSave = useCanSave();
+  // New transactions can be saved offline: they wait on this device until it reconnects
+  const { allowed: canSave, onDevice } = useCanAddTransaction();
   const [splits, setSplits] = useState<SplitRow[]>([
     { categoryId: null, amount: '', notes: '' },
     { categoryId: null, amount: '', notes: '' },
@@ -147,11 +148,17 @@ export function TransactionFormRow({
           ? `${sheetBtn} flex-1 bg-brand-600 text-white`
           : 'p-1.5 rounded text-brand-600 hover:text-brand-700 hover:bg-brand-100 disabled:opacity-40 disabled:pointer-events-none'
       }
-      title={canSave ? 'Save' : 'Save (paused until FlyBudget reconnects)'}
+      title={
+        !canSave
+          ? 'Save (paused until FlyBudget reconnects)'
+          : onDevice
+            ? 'Save on this device (sent when FlyBudget reconnects)'
+            : 'Save'
+      }
       aria-label="Save"
     >
       <Check size={16} />
-      {sheet && 'Save'}
+      {sheet && (onDevice && canSave ? 'Save on device' : 'Save')}
     </button>
   );
   const splitButton = !isEditingParent && !isTransfer && (

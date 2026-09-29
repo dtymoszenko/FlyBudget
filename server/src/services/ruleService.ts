@@ -57,6 +57,8 @@ export type NewTransactionInput = {
   notes: string | null;
   categoryId: string | null;
   importedId: string | null;
+  /** Chosen by the device for a transaction saved offline, so sending it twice can't duplicate it */
+  id?: string;
 };
 
 type InsertOptions = {
@@ -96,7 +98,7 @@ export function insertNewTransaction(input: NewTransactionInput, opts: InsertOpt
 
   const now = new Date().toISOString();
   const row = {
-    id: nanoid(),
+    id: input.id ?? nanoid(),
     accountId: tx.accountId,
     date: tx.date,
     amount: tx.amount,

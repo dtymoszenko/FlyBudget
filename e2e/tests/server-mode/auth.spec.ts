@@ -176,6 +176,104 @@ test('the sidebar shows the server and can sign out', async ({ baseURL }) => {
   await expect(owner.getByRole('complementary')).toBeVisible();
 });
 
+/** This browser's offline copy as JSON text, or null when there is none */
+function offlineCopy(page: Page) {
+  return page.evaluate(
+    () =>
+      new Promise<string | null>((resolve) => {
+        const req = indexedDB.open('flybudget-offline', 1);
+        req.onupgradeneeded = () => req.result.createObjectStore('kv');
+        req.onerror = () => resolve(null);
+        req.onsuccess = () => {
+          const get = req.result.transaction('kv').objectStore('kv').get('snapshot');
+          get.onsuccess = () => resolve(get.result ? JSON.stringify(get.result) : null);
+          get.onerror = () => resolve(null);
+        };
+      }),
+  );
+}
+
+const unreachable = (page: Page) =>
+  page.route('**/api/**', (route) => route.abort('connectionrefused'));
+
+test('with the server unreachable, the app opens with the offline copy and keeps new transactions', async ({
+  baseURL,
+}) => {
+  await owner.goto(`${baseURL}/accounts`);
+  await owner.getByRole('main').getByText('Credit Union', { exact: true }).click();
+  await expect(owner.getByRole('heading', { level: 1, name: 'Credit Union' })).toBeVisible();
+  const accountUrl = owner.url();
+  // The copy is saved a moment after the data loads
+  await expect.poll(() => offlineCopy(owner)).toContain('Credit Union');
+  const copy = (await offlineCopy(owner))!;
+  // Never the login state or signed-in devices
+  expect(copy).not.toContain('auth-status');
+  expect(copy).not.toContain('auth-sessions');
+
+  // The server is gone and the page is opened fresh: the app still opens, with the data
+  await unreachable(owner);
+  await owner.goto(accountUrl);
+  await expect(owner.getByRole('heading', { level: 1, name: 'Credit Union' })).toBeVisible();
+  const banner = owner.getByRole('status', { name: 'Connection' });
+  await expect(banner).toContainText("Can't reach FlyBudget. Showing your data as of");
+  await expect(banner).toContainText('New transactions are saved on this device');
+
+  // A new transaction waits on the device, even across a reload
+  await owner.getByRole('button', { name: 'Add Transaction' }).click();
+  const form = owner.getByRole('form', { name: 'New transaction' });
+  await form.getByRole('textbox', { name: 'Payee' }).fill('Coffee Cart');
+  await form.getByRole('spinbutton', { name: 'Outflow' }).fill('4.75');
+  await form.getByRole('button', { name: 'Save' }).click();
+  const waiting = owner.getByRole('region', { name: 'Saved on this device' });
+  await expect(waiting.getByTestId('waiting-transaction')).toContainText('Coffee Cart');
+  await expect(waiting).toContainText('Sent when FlyBudget reconnects');
+  await expect(banner).toContainText('1 transaction waiting to send');
+  await owner.reload();
+  await expect(waiting.getByTestId('waiting-transaction')).toContainText('Coffee Cart');
+
+  // Back online: it's sent once, by itself
+  await owner.unroute('**/api/**');
+  await expect(waiting).toBeHidden({ timeout: 15_000 });
+  await expect(
+    owner.getByTestId('transaction-row').filter({ hasText: 'Coffee Cart' }),
+  ).toBeVisible();
+  const all = await (await owner.request.get('/api/transactions')).json();
+  expect(all.filter((t: { payeeName: string }) => t.payeeName === 'Coffee Cart')).toHaveLength(1);
+});
+
+test('the offline copy can be turned off, and signing out deletes it', async ({ baseURL }) => {
+  await owner.goto(`${baseURL}/settings?tab=server`);
+  const keep = owner.getByRole('checkbox', { name: /Keep a copy of my budget on this device/ });
+  await expect(keep).toBeChecked();
+  await expect.poll(() => offlineCopy(owner)).not.toBeNull();
+  await keep.uncheck();
+  await expect.poll(() => offlineCopy(owner)).toBeNull();
+  // Nothing is saved while it's off, even as data loads
+  await owner.goto(`${baseURL}/budget`);
+  await expect(owner.getByRole('status', { name: 'To be budgeted' })).toBeVisible();
+  await owner.waitForTimeout(2_500);
+  expect(await offlineCopy(owner)).toBeNull();
+
+  await owner.goto(`${baseURL}/settings?tab=server`);
+  await keep.check();
+  await owner.goto(`${baseURL}/budget`);
+  await expect.poll(() => offlineCopy(owner)).not.toBeNull();
+
+  await owner.goto(`${baseURL}/settings?tab=server`);
+  await owner.getByRole('button', { name: 'Sign out', exact: true }).click();
+  await expect(owner.getByText('Sign in to FlyBudget')).toBeVisible();
+  expect(await offlineCopy(owner)).toBeNull();
+  // So an unreachable server shows no data at all
+  await unreachable(owner);
+  await owner.reload();
+  await expect(owner.getByText('Try now')).toBeVisible();
+  await expect(owner.getByText('Credit Union')).toBeHidden();
+  await owner.unroute('**/api/**');
+  await owner.getByRole('button', { name: 'Try now' }).click();
+  await signIn(owner, NEW_PASSWORD);
+  await expect(owner.getByRole('complementary')).toBeVisible();
+});
+
 test('warns before sending the password over plain HTTP to another machine', async ({
   playwright,
 }) => {

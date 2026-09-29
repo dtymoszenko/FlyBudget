@@ -215,3 +215,62 @@ test.describe('account register', () => {
     await expect(page.getByRole('button', { name: 'Go to Rainy Day Savings' })).toBeVisible();
   });
 });
+
+test('sending a new transaction twice (offline retry) saves it once', async ({ api }) => {
+  const checking = await api.createAccount('Everyday Checking', 100_000);
+  const savings = await api.createAccount('Savings', 0, 'savings');
+  const post = (path: string, data: object) => api.request.post(`/api${path}`, { data });
+
+  const tx = {
+    id: 'offline-tx-00000000001',
+    accountId: checking.id,
+    date: isoDay(),
+    amount: -475,
+    payeeName: 'Coffee Cart',
+  };
+  const first = await post('/transactions', tx);
+  expect(first.status()).toBe(201);
+  const again = await post('/transactions', { ...tx, amount: -999_999 });
+  // The same saved transaction comes back; nothing new is created or changed
+  expect(again.status()).toBe(200);
+  expect(await again.json()).toMatchObject({ id: tx.id, amount: -475 });
+
+  const split = {
+    id: 'offline-split-000000001',
+    accountId: checking.id,
+    date: isoDay(),
+    amount: -3_000,
+    payeeName: 'Market',
+    splits: [
+      { categoryId: null, amount: -1_000 },
+      { categoryId: null, amount: -2_000 },
+    ],
+  };
+  expect((await post('/transactions', split)).status()).toBe(201);
+  const splitAgain = await post('/transactions', split);
+  expect(splitAgain.status()).toBe(200);
+  expect((await splitAgain.json()).children).toHaveLength(2);
+
+  const transfer = {
+    id: 'offline-transfer-000001',
+    fromAccountId: checking.id,
+    toAccountId: savings.id,
+    date: isoDay(),
+    amount: 10_000,
+  };
+  expect((await post('/transactions/transfer', transfer)).status()).toBe(201);
+  const transferAgain = await post('/transactions/transfer', transfer);
+  expect(transferAgain.status()).toBe(200);
+  expect(await transferAgain.json()).toHaveLength(2);
+
+  // Ids from a device must look like ids
+  expect((await post('/transactions', { ...tx, id: 'short' })).status()).toBe(400);
+  expect((await post('/transactions', { ...tx, id: 'has spaces in it, 1234' })).status()).toBe(400);
+
+  const rows = await api.call<{ id: string }[]>('GET', '/transactions');
+  expect(rows.filter((r) => r.id === tx.id)).toHaveLength(1);
+  // Balances count each one once: 1,000.00 − 4.75 − 30.00 − 100.00
+  const accounts = await api.accounts();
+  expect(accounts.find((a) => a.id === checking.id)!.balance).toBe(100_000 - 475 - 3_000 - 10_000);
+  expect(accounts.find((a) => a.id === savings.id)!.balance).toBe(10_000);
+});

@@ -10,6 +10,8 @@ import '@fontsource/inter/700.css';
 import 'react-grid-layout/css/styles.css';
 import './index.css';
 import { initTheme } from './utils/applyTheme';
+import { restoreOfflineCopy, startOfflineCopy } from './offline/snapshot';
+import { loadOutbox } from './offline/outbox';
 
 initTheme();
 
@@ -19,10 +21,17 @@ const queryClient = new QueryClient({
   },
 });
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <App />
-    </QueryClientProvider>
-  </StrictMode>,
-);
+// Load this device's offline copy and waiting transactions first, so the app opens with
+// data even when the server can't be reached (both give up quickly if storage is slow)
+const withinMs = (p: Promise<unknown>, ms: number) =>
+  Promise.race([p, new Promise((r) => setTimeout(r, ms))]);
+void Promise.all([restoreOfflineCopy(queryClient), withinMs(loadOutbox(), 1_500)]).finally(() => {
+  startOfflineCopy(queryClient);
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <App />
+      </QueryClientProvider>
+    </StrictMode>,
+  );
+});

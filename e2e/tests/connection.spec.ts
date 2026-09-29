@@ -2,8 +2,9 @@ import { test, expect, open, isoDay, thisMonth } from './fixtures';
 import { startDesktopServer, stopDesktopServer } from './serverControl';
 
 // Losing the connection to FlyBudget's server never locks you out: on startup the app
-// shows a reconnect screen that keeps retrying, and mid-session it keeps what's on
-// screen, pauses saving, and picks up again by itself when the server is back.
+// shows a reconnect screen that keeps retrying (or opens with the offline copy, see
+// server-mode/auth.spec.ts), and mid-session it keeps what's on screen, pauses saving
+// except for new transactions (they wait on the device), and picks up again by itself.
 
 test('the reconnect screen retries on its own and the app loads without a reload', async ({
   page,
@@ -38,7 +39,7 @@ test('"Try now" reconnects straight away', async ({ page, api }) => {
   await expect(page.getByRole('link', { name: 'All accounts $1,500' })).toBeVisible();
 });
 
-test('mid-session the app keeps working read-only and recovers when the server is back', async ({
+test('mid-session the app keeps what it loaded, keeps new transactions, and recovers', async ({
   page,
   api,
 }) => {
@@ -64,8 +65,9 @@ test('mid-session the app keeps working read-only and recovers when the server i
     const nav = page.getByRole('complementary');
     await nav.getByRole('link', { name: 'Transactions', exact: true }).click();
     const banner = page.getByRole('status', { name: 'Connection' });
+    await expect(banner).toContainText("Can't reach FlyBudget. Showing your data as of");
     await expect(banner).toContainText(
-      "Can't reach FlyBudget. You can still look around; saving is paused.",
+      'New transactions are saved on this device; other changes wait until it reconnects.',
     );
     await expect(banner).toContainText(/Retrying in \d+s|Checking…/);
     // What was loaded stays on screen, but can't be changed
@@ -77,7 +79,17 @@ test('mid-session the app keeps working read-only and recovers when the server i
     // In-app navigation (no reload) back to the account
     await page.evaluate((id) => (window.location.hash = `#/accounts/${id}`), account.id);
     await expect(page.getByText('Corner Grocery')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Add Transaction' })).toBeDisabled();
+    // A new transaction is kept on this device until the server is back
+    await page.getByRole('button', { name: 'Add Transaction' }).click();
+    const form = page.getByRole('form', { name: 'New transaction' });
+    await form.getByRole('textbox', { name: 'Payee' }).fill('Coffee Cart');
+    await form.getByRole('spinbutton', { name: 'Outflow' }).fill('4.75');
+    await form.getByRole('button', { name: 'Save' }).click();
+    await expect(form).toBeHidden();
+    await expect(
+      page.getByRole('region', { name: 'Saved on this device' }).getByTestId('waiting-transaction'),
+    ).toContainText('Coffee Cart');
+    await expect(banner).toContainText('1 transaction waiting to send');
   } finally {
     await startDesktopServer();
   }
@@ -91,8 +103,17 @@ test('mid-session the app keeps working read-only and recovers when the server i
   await expect(page.getByRole('status', { name: 'Connection' })).toContainText(
     'Reconnected. Everything is up to date.',
   );
-  await expect(page.getByRole('button', { name: 'Add Transaction' })).toBeEnabled();
   await expect(page.getByRole('button', { name: /^Server status: Online/ })).toBeVisible();
+  // The waiting transaction was sent, once
+  await expect(page.getByRole('region', { name: 'Saved on this device' })).toBeHidden();
+  await expect(
+    page.getByTestId('transaction-row').filter({ hasText: 'Coffee Cart' }),
+  ).toBeVisible();
+  const saved = await api.call<{ payeeName: string }[]>(
+    'GET',
+    `/transactions?accountId=${account.id}`,
+  );
+  expect(saved.filter((t) => t.payeeName === 'Coffee Cart')).toHaveLength(1);
 });
 
 test('the sidebar shows where the data lives and links to Settings → Server', async ({

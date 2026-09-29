@@ -1,3 +1,4 @@
+import { NetworkError } from '../api/client';
 import { useState } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 import { Pin, Save, Snowflake } from 'lucide-react';
@@ -19,10 +20,13 @@ import type { BuiltinWidget, DashboardPage, ReportDateRange } from '../types';
 /** Full view of a built-in dashboard widget, where its date range can be explored and saved. */
 export default function ReportWidgetView() {
   const { id } = useParams<{ id: string }>();
-  const { data: widget, isLoading, isError } = useDashboardWidget(id);
+  const { data: widget, isLoading, error } = useDashboardWidget(id);
   const { data: pages } = useDashboards();
 
-  if (isError) return <Navigate to="/reports" replace />;
+  // A deleted widget goes back to the dashboards. Not while offline: the offline copy (or
+  // the page already on screen) keeps showing, and a widget it doesn't have waits
+  if (error && !widget && !(error instanceof NetworkError))
+    return <Navigate to="/reports" replace />;
   if (isLoading || !widget || !pages) {
     return (
       <div className="h-64 p-6">

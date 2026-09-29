@@ -8,6 +8,8 @@ export interface SplitItem {
 }
 
 export interface CreateTransactionData {
+  /** Chosen on this device so a resend can't create it twice (see utils/offline.ts) */
+  id?: string;
   accountId: string;
   date: string;
   amount: number;
@@ -19,6 +21,7 @@ export interface CreateTransactionData {
 }
 
 export interface CreateTransferData {
+  id?: string;
   fromAccountId: string;
   toAccountId: string;
   date: string;

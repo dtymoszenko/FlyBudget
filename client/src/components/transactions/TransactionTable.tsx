@@ -2,11 +2,7 @@ import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { format, parseISO } from 'date-fns';
 import { Plus, Upload } from 'lucide-react';
-import {
-  useTransactions,
-  useCreateTransaction,
-  useCreateTransfer,
-} from '../../hooks/useTransactions';
+import { useTransactions } from '../../hooks/useTransactions';
 import { useCategories } from '../../hooks/useCategories';
 import { usePayees } from '../../hooks/usePayees';
 import { useAccounts } from '../../hooks/useAccounts';
@@ -14,12 +10,13 @@ import { TransactionFilters, DEFAULT_FILTERS, filtersToParams } from './Transact
 import { TransactionFormRow } from './TransactionFormRow';
 import { TransactionRow } from './TransactionRow';
 import { TransactionCard } from './TransactionCard';
+import { WaitingTransactions } from './WaitingTransactions';
 import { Modal } from '../ui/Modal';
 import { useIsPhone } from '../../hooks/useIsPhone';
 import { TransactionDetailPanel } from './TransactionDetailPanel';
 import { ImportModal } from './ImportModal';
 import { Button } from '../ui/Button';
-import { useCanSave } from '../../hooks/useConnection';
+import { useAddTransaction } from '../../hooks/useOffline';
 import { formatCurrency } from '../../utils/currency';
 import type { FilterState } from './TransactionFilters';
 import type { CategoryGroup } from '../../types';
@@ -72,12 +69,10 @@ export function TransactionTable({
   const { data: payees = [] } = usePayees();
   const { data: accounts = [] } = useAccounts();
 
-  const createTx = useCreateTransaction();
-  const canSave = useCanSave();
+  const newTx = useAddTransaction();
   // Phones: cards instead of rows, the entry form in a sheet, and details full screen
   const isPhone = useIsPhone();
   const overlay = overlayDetail || isPhone;
-  const createTransfer = useCreateTransfer();
 
   const categoryMap = useMemo(() => {
     const map = new Map<string, { name: string; icon: string | null }>();
@@ -158,19 +153,22 @@ export function TransactionTable({
   function handleCreate(data: CreateTransactionData) {
     if (data.categoryId?.startsWith('transfer:') && accountId) {
       const toAccountId = data.categoryId.slice('transfer:'.length);
-      createTransfer.mutate(
+      newTx.add(
         {
-          fromAccountId: accountId,
-          toAccountId,
-          date: data.date,
-          amount: Math.abs(data.amount),
-          notes: data.notes,
+          kind: 'transfer',
+          data: {
+            fromAccountId: accountId,
+            toAccountId,
+            date: data.date,
+            amount: Math.abs(data.amount),
+            notes: data.notes,
+          },
         },
-        { onSuccess: () => setShowAdd(false) },
+        () => setShowAdd(false),
       );
       return;
     }
-    createTx.mutate(data, { onSuccess: () => setShowAdd(false) });
+    newTx.add({ kind: 'transaction', data }, () => setShowAdd(false));
   }
 
   return (
@@ -193,8 +191,14 @@ export function TransactionTable({
             </Button>
             <Button
               size="sm"
-              disabled={!canSave}
-              title={canSave ? undefined : 'Saving is paused until FlyBudget reconnects'}
+              disabled={!newTx.allowed}
+              title={
+                !newTx.allowed
+                  ? 'Saving is paused until FlyBudget reconnects'
+                  : newTx.onDevice
+                    ? 'Saved on this device and sent when FlyBudget reconnects'
+                    : undefined
+              }
               onClick={() => {
                 setShowAdd(true);
                 setDetailId(null);
@@ -208,6 +212,11 @@ export function TransactionTable({
 
       <div className="flex-1 flex overflow-hidden">
         <div className="flex-1 overflow-y-auto">
+          <WaitingTransactions
+            accountId={accountId}
+            categoryName={(id) => categoryMap.get(id)?.name}
+            accountName={(id) => accountInfoMap.get(id)?.name}
+          />
           {showAdd && accountId && !isPhone && (
             <TransactionFormRow
               accountId={accountId}

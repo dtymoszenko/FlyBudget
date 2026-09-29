@@ -1,3 +1,5 @@
+import { clearOutbox } from '../offline/outbox';
+import { clearOfflineCopy } from '../offline/snapshot';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as authApi from '../api/auth';
 import * as serverApi from '../api/server';
@@ -29,6 +31,8 @@ export function useSignOut() {
   const qc = useQueryClient();
   return async () => {
     await authApi.logout().catch(() => {});
+    // Nothing of this budget stays on the device after signing out
+    await Promise.all([clearOfflineCopy(), clearOutbox()]);
     // Drop the signed-in data, then re-check the status so the login screen shows. Not
     // qc.clear(): it detaches the auth-status query the app is watching, so nothing changed.
     qc.removeQueries({ predicate: (q) => q.queryKey[0] !== 'auth-status' });

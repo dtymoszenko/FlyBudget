@@ -3,12 +3,11 @@ import { format, isValid as isValidDate, parseISO } from 'date-fns';
 import { MinusCircle, PlusCircle, ChevronDown } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
-import { useCanSave } from '../../hooks/useConnection';
-import { SavingPausedHint } from '../connection/SavingPausedHint';
+import { SavedOnDeviceHint } from '../connection/SavingPausedHint';
 import { CurrencyInput } from '../ui/CurrencyInput';
 import { formatCurrency } from '../../utils/currency';
 import { useAccounts } from '../../hooks/useAccounts';
-import { useCreateTransaction } from '../../hooks/useTransactions';
+import { useAddTransaction } from '../../hooks/useOffline';
 import { MerchantSelect } from './MerchantSelect';
 import { CategorySelectButton } from './CategorySelectButton';
 import { AccountIcon } from '../accounts/AccountIcon';
@@ -34,12 +33,11 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [showAccountPicker, setShowAccountPicker] = useState(false);
   const [notes, setNotes] = useState('');
-  const canSave = useCanSave();
 
   const accountRef = useRef<HTMLDivElement>(null);
 
   const { data: accounts = [] } = useAccounts();
-  const createTransaction = useCreateTransaction();
+  const newTx = useAddTransaction();
 
   const openAccounts = accounts.filter((a) => !a.closedAt);
   const onBudgetAccounts = openAccounts.filter((a) => !a.isOffBudget);
@@ -77,17 +75,20 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
   function handleSubmit() {
     if (!isValid) return;
     const finalAmount = type === 'debit' ? -amount : amount;
-    createTransaction.mutate(
+    newTx.add(
       {
-        accountId,
-        date,
-        amount: finalAmount,
-        payeeId,
-        payeeName,
-        categoryId,
-        notes: notes || null,
+        kind: 'transaction',
+        data: {
+          accountId,
+          date,
+          amount: finalAmount,
+          payeeId,
+          payeeName,
+          categoryId,
+          notes: notes || null,
+        },
       },
-      { onSuccess: () => onClose() },
+      onClose,
     );
   }
 
@@ -255,7 +256,7 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
         </div>
 
         {/* Footer */}
-        <SavingPausedHint className="text-right" />
+        <SavedOnDeviceHint className="text-right" />
         <div className="flex justify-end gap-3 pt-2">
           <Button variant="secondary" size="md" onClick={onClose}>
             Cancel
@@ -263,9 +264,9 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
           <Button
             size="md"
             onClick={handleSubmit}
-            disabled={!isValid || createTransaction.isPending || !canSave}
+            disabled={!isValid || newTx.pending || !newTx.allowed}
           >
-            {createTransaction.isPending ? 'Adding...' : 'Add transaction'}
+            {newTx.pending ? 'Adding...' : newTx.onDevice ? 'Save on device' : 'Add transaction'}
           </Button>
         </div>
       </div>

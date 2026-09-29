@@ -1,20 +1,27 @@
 import { useEffect, useRef, useState } from 'react';
 import { CheckCircle2, CloudOff, Loader2, RefreshCw } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 import { useConnection } from '../../hooks/useConnection';
+import { useOutbox } from '../../offline/outbox';
+import { useOfflineCopy } from '../../offline/snapshot';
 import { useConnectionStore } from '../../store/connectionStore';
 import { retryLabel } from './RetryStatus';
 
 const RECONNECTED_MS = 4_000;
 
 /**
- * Top-of-page notice while FlyBudget can't reach its server mid-session. Everything
- * already loaded stays on screen; save buttons are disabled (useCanSave). When the
- * server is back, AuthGate refreshes the data and this says so briefly.
+ * Top-of-page notice while FlyBudget can't reach its server. Everything already loaded
+ * (or this device's offline copy) stays on screen; save buttons are disabled (useCanSave),
+ * except for new transactions, which wait on the device. When the server is back, AuthGate
+ * refreshes the data, OutboxSender sends what waited, and this says so briefly.
  */
 export function ConnectionBanner() {
   const connection = useConnection();
   const reconnectedAt = useConnectionStore((s) => s.reconnectedAt);
   const [showReconnected, setShowReconnected] = useState(false);
+  const dataAsOf = useOfflineCopy((s) => s.dataAsOf);
+  const waiting = useOutbox((s) => s.items.length);
+  const canWait = useOutbox((s) => s.available);
   const wasOffline = useRef(false);
 
   useEffect(() => {
@@ -39,8 +46,19 @@ export function ConnectionBanner() {
       >
         <CloudOff size={16} className="text-caution shrink-0" aria-hidden />
         <span className="font-medium">
-          Can't reach FlyBudget. You can still look around; saving is paused.
+          Can't reach FlyBudget.{' '}
+          {dataAsOf !== null
+            ? `Showing your data as of ${formatDistanceToNow(dataAsOf, { addSuffix: true })}.`
+            : 'You can still look around.'}{' '}
+          {canWait
+            ? 'New transactions are saved on this device; other changes wait until it reconnects.'
+            : 'Saving is paused.'}
         </span>
+        {waiting > 0 && (
+          <span className="text-text-secondary">
+            {waiting} transaction{waiting === 1 ? '' : 's'} waiting to send
+          </span>
+        )}
         <span className="text-text-secondary tabular-nums" aria-live="off">
           {retryLabel(connection, 'Retrying')}
         </span>

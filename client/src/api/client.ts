@@ -12,6 +12,17 @@ export class NetworkError extends Error {
   }
 }
 
+/** The server answered with an error (the message is safe to show) */
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
 export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   let res: Response;
   try {
@@ -44,7 +55,7 @@ export async function apiFetch<T>(path: string, options?: RequestInit): Promise<
         : body.error
           ? 'Some of the values entered are invalid'
           : res.statusText;
-    throw new Error(message);
+    throw new ApiError(message, res.status);
   }
   if (res.status === 204) return undefined as T;
   return res.json();
