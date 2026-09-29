@@ -47,3 +47,34 @@ it('reports starting balances even when every transaction is dated after the ran
   );
   expect(points.at(-1)).toMatchObject({ month: '2098-12-31', netWorth: 70_000 });
 });
+
+it('draws a daily range in full: flat at the starting balances until the first transaction', async () => {
+  // Alongside the 70_000 Checking above (whose only transaction is after this range)
+  const savings = await send('POST', '/accounts', {
+    name: 'Savings',
+    type: 'savings',
+    startingBalance: 30_000,
+  });
+  await send('POST', '/transactions', {
+    accountId: savings.id,
+    date: '2097-03-15',
+    amount: 10_000,
+  });
+  const points = await send(
+    'GET',
+    '/reports/net-worth?granularity=daily&from=2097-03-01&to=2097-03-31',
+  );
+  expect(points).toHaveLength(31);
+  expect(points[0]).toMatchObject({ month: '2097-03-01', netWorth: 100_000 });
+  expect(points[13]).toMatchObject({ month: '2097-03-14', netWorth: 100_000 });
+  expect(points[14]).toMatchObject({ month: '2097-03-15', netWorth: 110_000 });
+  expect(points.at(-1)).toMatchObject({ month: '2097-03-31', netWorth: 110_000 });
+});
+
+it('"All time" keeps only the 12 months up to the first transaction', async () => {
+  // The first transaction is now 2097-03-15 (above)
+  const points = await send('GET', '/reports/net-worth?from=2000-01&to=2097-06');
+  expect(points[0].month).toBe('2096-04');
+  expect(points.at(-1).month).toBe('2097-06');
+  expect(points).toHaveLength(15);
+});

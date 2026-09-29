@@ -95,15 +95,18 @@ reportsRouter.get('/net-worth', (req, res) => {
     ({ from, to } = range);
   }
 
+  // Long monthly ranges ("All time" starts in 2000) skip the years before the budget's first
+  // transaction, keeping only the 12 months up to it. Shorter ranges, and every daily one, are
+  // drawn in full: before the first transaction the net worth is the starting balances, so a
+  // new budget shows a flat line rather than a single point.
   const earliest = db
     .select({ d: sql<string>`min(${transactions.date})` })
     .from(transactions)
     .get();
-  if (earliest?.d) {
-    const minPeriod = isDaily ? earliest.d : earliest.d.slice(0, 7);
-    // Start at the first transaction, but never past the end of the range (a budget whose
-    // transactions are all dated later still has a net worth: its starting balances)
-    if (from < minPeriod) from = minPeriod < to ? minPeriod : to;
+  if (!isDaily && earliest?.d) {
+    const [y, m] = earliest.d.slice(0, 7).split('-').map(Number);
+    const yearBefore = `${m === 12 ? y : y - 1}-${String(m === 12 ? 1 : m + 1).padStart(2, '0')}`;
+    if (from < yearBefore) from = yearBefore < to ? yearBefore : to;
   }
 
   const periods = isDaily ? dayRange(from, to) : monthRange(from, to);
