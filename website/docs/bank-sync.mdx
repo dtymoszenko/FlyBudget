@@ -8,23 +8,35 @@ sidebar_label: Connecting a bank
 FlyBudget can import transactions automatically through two services. Both are optional: CSV
 import works with almost every bank and costs nothing.
 
-|              | Plaid                                                                       | SimpleFIN Bridge                                                |
-| ------------ | --------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| **Cost**     | Free Plaid developer account                                                | $1.50 per month, paid to SimpleFIN                              |
-| **Setup**    | Sign up for a Plaid developer account, then enter your client ID and secret | Create an account at SimpleFIN Bridge, then paste a setup token |
-| **Best for** | People comfortable with developer dashboards                                | Most people                                                     |
+|              | Plaid                                                                                  | SimpleFIN Bridge                                                |
+| ------------ | -------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| **Cost**     | Free Plaid developer account                                                           | $1.50 per month, paid to SimpleFIN                              |
+| **Setup**    | Sign up for a Plaid developer account, request Production access, then enter your keys | Create an account at SimpleFIN Bridge, then paste a setup token |
+| **Best for** | People comfortable with developer dashboards                                           | Most people                                                     |
 
 Connect either one from **Settings → Connected Banks**, or from the welcome screen.
 
 ## Plaid
 
-1. Create a free developer account at [Plaid](https://dashboard.plaid.com/signup) and copy your
-   **client ID** and **secret**.
-2. Enter them in **Settings → Connected Banks**. Use **Sandbox** to try it with test banks, or
-   **Production** for your real accounts.
-3. Choose **Connect Bank**. Plaid's sign-in opens in your web browser, which is how banks
+Plaid gives you two sets of API keys:
+
+- **Sandbox** keys work as soon as you sign up, but only with Plaid's test banks and made-up
+  transactions. Use them to try FlyBudget's bank sync.
+- **Production** keys connect your real banks. They aren't available at signup: you request
+  Production access in the Plaid dashboard, answering a few questions about how you'll use it,
+  and Plaid reviews the request. That can take anywhere from minutes to a few days.
+
+Plaid's plans and limits for personal use change from time to time; check
+[Plaid's pricing](https://plaid.com/pricing/) for what applies to you.
+
+1. Create a free developer account at [Plaid](https://dashboard.plaid.com/signup).
+2. Request **Production** access in the Plaid dashboard, and wait for Plaid to approve it.
+3. Copy your **client ID** and your Production **secret**, and enter them in **Settings →
+   Connected Banks** with the environment set to **Production** (or use your Sandbox secret with
+   **Sandbox** to try it out first).
+4. Choose **Connect Bank**. Plaid's sign-in opens in your web browser, which is how banks
    that use their own login page (like Chase) are supported.
-4. Choose which FlyBudget account each bank account belongs to.
+5. Choose which FlyBudget account each bank account belongs to.
 
 Disconnecting a bank revokes its access at Plaid before FlyBudget forgets it.
 

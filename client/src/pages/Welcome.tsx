@@ -103,8 +103,8 @@ export default function WelcomePage() {
               icon={<PlaidLogo size={24} className="text-text" />}
               title="Connect with Plaid"
               tag="Free"
-              time="~10 min"
-              description="Set it up once and new transactions arrive on their own. Create a free Plaid developer account, then connect it here."
+              time="~10 min + approval"
+              description="Set it up once and new transactions arrive on their own. Create a free Plaid developer account; Plaid then approves access to your real banks."
               action="Connect Plaid"
               onClick={() => (plaidConfigured ? setShowPlaid(true) : setShowPlaidSetup(true))}
             />
