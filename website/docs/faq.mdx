@@ -1,9 +1,11 @@
 ---
-sidebar_position: 12
+sidebar_position: 17
 sidebar_label: FAQ
 ---
 
 # Frequently asked questions
+
+## General
 
 ### Is FlyBudget really free?
 
@@ -18,10 +20,16 @@ In a single SQLite database file: on your computer for the desktop app, or in th
 directory of your self-hosted server. Nothing is sent to FlyBudget; there is no FlyBudget
 server to send it to.
 
+### Can I try it without installing anything?
+
+Yes: [Try the demo](pathname:///demo/) runs the real app in your browser with a sample budget.
+Nothing you change is saved or sent anywhere, and closing the tab throws it away. Bank connections
+need the installed app.
+
 ### Can I use it on my phone?
 
 Yes, through a [self-hosted server](/community/self-hosting): open it in your phone's browser.
-Every page has a layout made for small screens.
+Every page has a layout made for small screens. See [On your phone](./phone).
 
 ### Can more than one person use the same budget?
 
@@ -31,6 +39,52 @@ are no separate user accounts yet.
 ### Does FlyBudget support multiple currencies?
 
 Each budget uses one currency. You can choose its symbol in **Settings → Preferences**.
+
+### Can I move my budget to another computer, or to a server?
+
+Download a [backup](./backups) on the old one and restore it on the new one. It works between the
+desktop app and a self-hosted server in either direction. Connect your banks again afterwards.
+
+### Can I undo a change?
+
+Press <kbd>Ctrl</kbd>+<kbd>Z</kbd> (<kbd>⌘</kbd>+<kbd>Z</kbd> on a Mac). See
+[Undo](./settings#undo).
+
+## Troubleshooting
+
+### The desktop app says "FlyBudget is starting up again"
+
+Its built-in server stopped for a moment and is restarting. It usually comes back on its own
+within a few seconds. If it doesn't, close FlyBudget and open it again.
+
+### My self-hosted server shows "can't reach the server"
+
+The page is fine; the server isn't answering. Check that the container is running
+(`docker ps`) and what it logged (`docker logs flybudget`). Anything you add in the meantime is
+kept on your device and sent when it's back (see [Working offline](./offline)).
+
+### I forgot my server password
+
+See [Your password](/community/self-hosting#your-password) in the self-hosting guide: a command
+on the server removes it, and you then set a new one.
+
+### Windows says the installer is from an unknown publisher
+
+FlyBudget isn't signed with a paid Windows certificate yet. Choose **More info → Run anyway**. You
+can check that the installer is genuine with its signature (see
+[Verifying your download](/community/security#verifying-your-download)).
+
+### Imported transactions have the wrong sign, or the wrong dates
+
+See [What FlyBudget understands](./importing#what-flybudget-understands) and
+[Credit cards](./importing#credit-cards) on the importing page.
+
+### A transaction didn't get the category I expected
+
+Rules run top to bottom and a higher rule wins; a category you picked yourself always stays. See
+[Order matters](./rules#order-matters).
+
+## Getting help
 
 ### I found a bug or have an idea
 

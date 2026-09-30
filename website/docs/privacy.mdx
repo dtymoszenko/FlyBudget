@@ -1,0 +1,56 @@
+---
+sidebar_position: 16
+sidebar_label: Privacy and security
+---
+
+# Privacy and security
+
+FlyBudget is built so that your financial data stays with you. This page says where your data
+goes and what protects it. For the full details (encryption, how releases are built and signed,
+our security ratings, and how to report a problem), read the [security overview](/community/security).
+
+## Where your data is
+
+| You use…                      | Your budget is…                                                      | Who can open it                              |
+| ----------------------------- | -------------------------------------------------------------------- | -------------------------------------------- |
+| The desktop app               | a file on your computer (see [Installing](./installing#desktop-app)) | only the FlyBudget app, on your user account |
+| A self-hosted server          | in the server's data folder                                          | anyone with the server's password            |
+| The [demo](pathname:///demo/) | in your browser tab's memory, gone when you close it                 | only you, in that tab                        |
+
+There is no FlyBudget account, no FlyBudget cloud service, no analytics and no crash reporting.
+Nothing is sent to the FlyBudget project, ever.
+
+## What leaves your device
+
+Only bank sync talks to the internet, and only if you set it up:
+
+- **SimpleFIN** or **Plaid** send your transactions to FlyBudget over HTTPS. You sign in to your
+  bank on their website or your bank's, never inside FlyBudget, and FlyBudget never sees your
+  bank password.
+- Their access tokens are encrypted on your computer or server and never shown to the app's
+  page. They're left out of backups.
+
+Everything else (the fonts, the icons, the charts) is part of the app. FlyBudget loads nothing
+from other websites.
+
+## What protects it
+
+- **Desktop app**: its built-in server only answers the FlyBudget window, with a secret that
+  changes every launch, so other programs and websites can't read your budget. Bank credentials
+  are encrypted with a key kept by your operating system's keychain.
+- **Self-hosted server**: a password (with a one-time setup code so nobody else can claim a new
+  server), sign-ins that expire after 30 days, protection against password guessing, and a list
+  of signed-in devices you can sign out. Use HTTPS if it's reachable from the internet; the
+  [self-hosting guide](/community/self-hosting#using-it-over-the-internet-https) shows how, and
+  **Settings → Server** checks your setup.
+- **Everywhere**: the app refuses to load code from other websites, bank data is checked before
+  it's saved, and exports are protected against spreadsheet formula tricks.
+
+## What you can do
+
+- Keep your computer or server up to date, and lock it with a password.
+- Download a [backup](./backups) now and then, and keep it somewhere safe: a backup has all your
+  transactions in it.
+- On a server, use a strong, unique password and HTTPS.
+- Download FlyBudget only from [the download page](/download) or GitHub, and
+  [check the signature](/community/security#verifying-your-download) if you want to be sure.

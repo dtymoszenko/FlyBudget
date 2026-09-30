@@ -1,11 +1,38 @@
 ---
-sidebar_position: 3
+sidebar_position: 2
 ---
 
 # Accounts
 
-Every transaction belongs to an account. Add one from **Accounts → Add Account**, or connect a
-bank to create them for you.
+An account is anything that holds money or debt: a checking account, a credit card, cash in
+your wallet, a loan, a retirement account or your home. Every transaction belongs to one
+account.
+
+![The Accounts page](/img/screenshots/accounts.webp)
+
+The **Accounts** page shows your net worth over time, your assets and liabilities by kind, and
+every open account grouped by type, with its balance and how that group changed over the last
+month. The sidebar shows the same balances: **All accounts** is your net worth, **For budget**
+adds up the accounts your budget uses, and **Off budget** the rest.
+
+## Adding an account
+
+Choose **Add Account** (on the Accounts page, or **Add account** in the sidebar), then enter:
+
+- **Account Name**, like "Chase Checking".
+- **Account Type** (see below).
+- **Current Balance** as of today. For a credit card or loan, enter what you owe as a positive
+  number; FlyBudget records it as a debt.
+- **Off budget**, ticked for you on investments, property and loans (see below).
+
+<img
+  className="screenshot-dialog"
+  src="/img/screenshots/add-account.webp"
+  alt="The Add Account dialog"
+/>
+
+To create accounts from your bank instead, [connect a bank](./bank-sync): FlyBudget adds its
+accounts for you, or links them to accounts you already have.
 
 ## Account types
 
@@ -18,21 +45,41 @@ bank to create them for you.
 | Loans       | Mortgage, auto loan, student loan, other loan | No                   |
 | Other       | Other asset, other liability                  | No                   |
 
-Credit cards, lines of credit and loans are **liabilities**: their balances are negative and
-count against your net worth.
+Credit cards, lines of credit, loans and other liabilities are **debts**: their balances are
+negative and count against your net worth.
 
 ## On budget and off budget
 
-Money in **on-budget** accounts is money you can plan with: it counts toward _To Be Budgeted_
-and category spending. **Off-budget** accounts (investments, property, loans) still count
-toward your net worth but stay out of the budget. You can change this for any account in its
-settings.
+Money in **on-budget** accounts is money you plan with: its income counts toward
+[To Be Budgeted](./budgeting#to-be-budgeted) and its spending shows up in your categories.
+**Off-budget** accounts (investments, property, loans) still count toward your net worth, but
+their transactions stay out of the budget. Change it for any account with the **Off budget**
+box in its **Edit** dialog.
+
+## An account's register
+
+Click an account to open its register: its balance, type and every transaction in it. From the
+header you can:
+
+- **Add Transaction** or **Import CSV** (see [Transactions](./transactions) and
+  [Importing transactions](./importing)).
+- **Update value** (or **Update balance** for a debt) for investments, property and loans.
+- **Reconcile** it against a bank statement.
+- **Edit** it.
+
+![An account's register](/img/screenshots/account-register.webp)
 
 ## Updating the value of an investment or property
 
-Homes, cars and investment accounts usually don't have transactions worth tracking one by one.
-Open the account and choose **Update value** (or **Update balance** for a loan): FlyBudget adds
-a dated adjustment so your net worth history stays accurate.
+Homes, cars and investment accounts usually don't have transactions worth entering one by one.
+Choose **Update value**, enter what it's worth today, and FlyBudget adds a dated adjustment for
+the difference, so your net worth history stays right.
+
+<img
+  className="screenshot-dialog"
+  src="/img/screenshots/update-value.webp"
+  alt="Updating the value of a car"
+/>
 
 Adjustments (from **Update value** or from reconciling) change the balance and your net worth,
 but they aren't money earned or spent, so income and spending reports leave them out. If you
@@ -40,14 +87,29 @@ give one a category, it counts like any other transaction.
 
 ## Reconciling
 
-Reconciling checks that FlyBudget agrees with your bank statement. Open an account, choose
-**Reconcile**, enter the statement's ending balance, and tick the transactions that appear on
-the statement until the difference is zero. Reconciled transactions are locked, so rules and
-bank sync never change them.
+Reconciling checks that FlyBudget agrees with your bank. Do it when a statement arrives, or
+whenever the balances look different.
 
-## Closing an account
+1. Open the account and choose **Reconcile**.
+2. Enter the **Statement Balance** from your statement or online banking, and choose
+   **Start Reconciliation**.
+3. Tick each transaction that appears on the statement. FlyBudget shows the balance of what
+   you've ticked and the **Difference** from the statement.
+4. When the difference is zero, choose **Finish**. If you can't find what's missing, choose
+   **Create Adjustment** instead: FlyBudget adds a reconciliation adjustment for the difference.
 
-Close an account from its **Edit** dialog. It disappears from the sidebar and the account list,
-but its transactions stay, so past reports remain correct.
+![Reconciling an account](/img/screenshots/reconcile.webp)
 
-See the [Accounts tour](/tour/accounts) for every button on the page.
+Reconciled transactions get a lock icon and can't be edited or deleted, so rules and bank sync
+never change them.
+
+## Editing and closing an account
+
+**Edit** changes the name, type, starting balance and whether it's off budget, and lets you add
+a **logo** (a PNG, JPEG or WebP image, cropped to a square) in place of the colored initials.
+You can hide account logos everywhere in **Settings → Preferences → Icons**.
+
+**Close Account** (at the bottom of the Edit dialog) takes it off the sidebar and the Accounts
+page. Its transactions stay, so past reports and your net worth history remain correct.
+
+To change the order accounts appear in, use **Settings → Accounts**.

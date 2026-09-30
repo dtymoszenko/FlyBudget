@@ -5,23 +5,35 @@ import type { SidebarsConfig } from '@docusaurus/plugin-content-docs';
 const sidebars: SidebarsConfig = {
   tutorialSidebar: [
     'intro',
+    'installing',
     'getting-started',
     {
       type: 'category',
       label: 'Using FlyBudget',
       collapsed: false,
       items: [
+        'dashboard',
         'accounts',
         'transactions',
+        'importing',
         'bank-sync',
         'budgeting',
         'recurring',
         'rules',
         'reports',
         'goals',
+        'payees',
+        'settings',
       ],
     },
+    {
+      type: 'category',
+      label: 'Other devices',
+      collapsed: false,
+      items: ['phone', 'offline'],
+    },
     'backups',
+    'privacy',
     'faq',
   ],
 };

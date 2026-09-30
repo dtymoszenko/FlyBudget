@@ -6,37 +6,98 @@ sidebar_label: Rules
 # Rules
 
 Rules categorize, rename and split transactions for you. They run on every new transaction,
-whether you add it by hand, import it from a CSV file or sync it from your bank.
+whether you add it by hand, [import a CSV file](./importing) or [sync it from your
+bank](./bank-sync), and you can run them on the transactions you already have.
+
+![The Rules page](/img/screenshots/rules.webp)
 
 ## A rule has two parts
 
-**Conditions** decide which transactions it applies to. Match on the payee, the original bank
-text, notes, account, category, amount, direction (money in or out) or date. Text conditions
-include _is_, _contains_, _starts with_, _ends with_, _one of_ and regular expressions, and
-ignore upper and lower case. Choose whether **all** or **any** conditions must match.
+**Conditions** decide which transactions the rule applies to. Choose whether **all** of them or
+**any** of them must match.
 
-**Actions** say what to change: set the category, set the payee, set or add to the notes, or
-split the transaction into fixed amounts, percentages and a remainder.
+**Actions** say what to change.
 
 For example:
 
-> If **payee** contains `AMZN` → set payee to **Amazon** and category to **Shopping**.
+> If **imported description** contains `DAILY GRIND` → rename the payee to **Daily Grind
+> Coffee** and set the category to **Coffee Shops**.
+
+## Conditions
+
+| Field                    | What it looks at                                                                                         | You can check that it…                                                                                                                                |
+| ------------------------ | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Payee name**           | The payee's name as text                                                                                 | is, is not, contains, doesn't contain, starts with, ends with, matches regex (a regular expression), is one of, is not one of, is empty, is not empty |
+| **Imported description** | The bank's or CSV file's original text (like `SQ *DAILY GRIND 1142`), or the payee name if there is none | the same as above                                                                                                                                     |
+| **Notes**                | The transaction's notes                                                                                  | the same as above                                                                                                                                     |
+| **Payee**                | A payee you pick from your list                                                                          | is, is not, is one of, is not one of, is empty, is not empty                                                                                          |
+| **Account**              | An account                                                                                               | is, is not, is one of, is not one of                                                                                                                  |
+| **Category**             | A category                                                                                               | is, is not, is one of, is not one of, is uncategorized, is categorized                                                                                |
+| **Amount**               | The amount, ignoring whether it's in or out                                                              | is, is not, is more than, is at least, is less than, is at most, is between, is about (within 7.5%)                                                   |
+| **Inflow / outflow**     | Whether money comes in or goes out                                                                       | is an inflow, is an outflow                                                                                                                           |
+| **Date**                 | The transaction's date                                                                                   | is on, is before, is after, is between                                                                                                                |
+
+Text comparisons ignore upper and lower case. Regular expressions can be up to 200 characters.
+
+## Actions
+
+| Action                    | What it does                                                                                                   |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **Set category**          | Puts the transaction in a category.                                                                            |
+| **Rename payee**          | Changes the payee (creating it if it's new).                                                                   |
+| **Set notes**             | Replaces the notes.                                                                                            |
+| **Add text before notes** | Adds text at the start of the notes.                                                                           |
+| **Add text after notes**  | Adds text at the end.                                                                                          |
+| **Split transaction**     | Splits it into parts: fixed amounts, percentages, and one part for whatever is left, each in its own category. |
+
+A split always adds up to the whole amount. If there's no "whatever is left" part, the leftover
+becomes an uncategorized part.
 
 ## Order matters
 
-Every matching rule runs, from top to bottom, and each sees the changes made above it. That
-means a rule that renames `SQ *BLUE BOTTLE` to _Blue Bottle Coffee_ can sit above one that
-categorizes _Blue Bottle Coffee_. Once a rule sets a field, rules further down don't change
-it. Drag rules to reorder them.
+Every matching rule runs, from top to bottom, and each one sees the changes made by the rules
+above it. So a rule that renames `SQ *DAILY GRIND 1142` to _Daily Grind Coffee_ can sit above one
+that categorizes _Daily Grind Coffee_. Once a rule sets a field, rules further down don't change
+it; text added before or after notes adds up. Drag a rule by its handle to move it (on a phone,
+use **Move up** and **Move down** in its menu).
 
-## Applying rules to past transactions
+The switch on each rule turns it on or off without deleting it.
 
-When you save a rule, FlyBudget offers to run it on the transactions you already have. You'll
-see a preview first and choose which ones to change. Reconciled transactions, transfers and
-splits are never touched.
+## Writing a rule
+
+**Add rule** opens the editor. As you type, it shows how many of your transactions the rule
+matches, and the latest few, so you can check it before saving.
+
+![Editing a rule](/img/screenshots/rule-editor.webp)
+
+Tick **Apply to existing transactions after saving** to run it on what you already have.
+
+Each rule's ⋮ menu (or the buttons that appear when you point at it) can **Edit**,
+**Duplicate**, **Apply to existing transactions** or **Delete** it.
+
+## Running rules on past transactions
+
+**Run rules** applies your enabled rules to transactions you already have, to
+**Uncategorized only** or **All transactions**. You'll see every change first, and tick the
+ones to make. Running every rule also fills in [payees' default
+categories](./payees#default-categories).
+
+<img
+  className="screenshot-dialog"
+  src="/img/screenshots/rules-apply.webp"
+  alt="Choosing which past transactions to change"
+/>
+
+Reconciled transactions, transfers and splits are never changed by rules, and neither are
+balance adjustments.
+
+## What rules don't overwrite
+
+When you add a transaction by hand and pick a category or type notes yourself, rules keep them.
+A rule pointing at a payee or category you've since deleted skips that action.
 
 ## Quick ways to create a rule
 
 - From a transaction: open it and choose **Create rule**. The payee and category are filled in.
-- From a payee: set a **default category** on the Payees page. It's used when no rule sets a
-  category.
+- From a payee: set a **default category** on the [Payees](./payees) page. It's used when no rule
+  sets a category.

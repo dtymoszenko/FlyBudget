@@ -5,43 +5,97 @@ sidebar_position: 6
 # How budgeting works
 
 FlyBudget uses **zero-based budgeting**: at the start of each month you give every dollar you
-have a job, until there's nothing left to assign.
+have a job, until there's nothing left to assign. Then, as the month goes on, you can see how
+much is left in each category.
+
+![The Budget page](/img/screenshots/budget.webp)
 
 ## The Budget page
 
-Each row is a category, grouped into income and expenses:
+**Budget** shows one month at a time. The arrows move between months, and **Today** comes back
+to this one.
 
-- **Planned**: how much you expect to earn or spend this month. Click (or tap) an amount to
-  change it. You can also apply the same amount to the months after.
-- **Actual**: what came in or went out, from your on-budget accounts.
-- **Remaining**: what's left to spend. Unspent money carries over to next month; overspending
-  carries over too, so it's covered by next month's plan.
+Each row is a category. Income categories come first, then expense categories grouped by kind:
 
-Expense categories are organized by budget type (Fixed, Flexible, Non-Monthly and
-Savings/Investments), so you can see at a glance which spending you control.
+- **Fixed**: the same every month, like rent, insurance or your phone bill.
+- **Flexible**: what changes with your choices, like groceries, eating out or shopping.
+- **Non-Monthly**: bills that come a few times a year, like car maintenance or gifts.
+- **Savings/Investments**: money you put aside.
+
+For each category you see:
+
+- **Planned**: how much you expect to earn or spend this month.
+- **Actual**: what came in or went out this month, from your on-budget accounts.
+- **Remaining**: what's left. For spending it's green while you're within the plan and red once
+  you're over; for income it's what you still expect to receive.
+
+A bar under each category fills as you spend: green, then amber when you're close to the plan,
+and red when you've gone over. Click the arrow next to a group to collapse it.
+
+![Overspent categories show in red](/img/screenshots/budget-overspent.webp)
+
+Categories with nothing planned or spent this month are tucked away: choose
+**Show _N_ inactive** under a group to see them.
+
+## Planning an amount
+
+Click a planned amount and type a new one; press Enter or click away to save, or Escape to
+cancel. While you're editing, a panel shows what you spent (or earned) in that category last
+month, your monthly average and a small history chart. Tick
+**Apply _amount_ to all future months** to use the same amount from now on.
+
+![Planning an amount, with the category's history](/img/screenshots/budget-edit.webp)
 
 ## To Be Budgeted
 
+The panel on the right starts with how much money still needs a job:
+
 ```text
-To Be Budgeted = income received + carry-over from last month − total planned
+To Be Budgeted = income received this month + left over from earlier months − planned this month
 ```
 
-- **Positive**: you have money without a job yet. Plan it into a category, or into savings.
-- **Zero**: every dollar has a job. That's the goal.
-- **Negative**: you've planned more than you have. Lower a category until it's back to zero.
+"Left over from earlier months" is all the income you've received before this month, minus
+everything you planned for earlier months.
 
-Only on-budget accounts count. Investments, property and loans appear in your net worth but
-not here (see [Accounts](./accounts)).
+| It says             | Which means                                                                       |
+| ------------------- | --------------------------------------------------------------------------------- |
+| **Left to budget**  | You have money without a job. Plan it into a category, or into savings.           |
+| **Almost budgeted** | Only a little is left (up to 2% of your planned income, or $500).                 |
+| **Fully budgeted**  | Every dollar has a job. That's the goal.                                          |
+| **Over budget**     | You've planned more than you have. Lower some categories until it's back to zero. |
+
+Below it, **Summary**, **Income** and **Expenses** tabs compare what you planned with what's
+actually happened this month.
+
+Only on-budget accounts count. Investments, property and loans appear in your net worth but not
+here (see [Accounts](./accounts#on-budget-and-off-budget)).
+
+## A category's page
+
+Click a category's name to open its page: a chart of what you spent (or earned) in it over the
+last months, this month's planned, actual and remaining amounts, its transactions with the usual
+filters, and a summary (number of transactions, the largest and average, and the first and last
+dates).
+
+![A category's page](/img/screenshots/category-detail.webp)
 
 ## Categories
 
-Add, rename, reorder and give emoji icons to categories and groups in **Settings →
-Categories**. Deleting a category asks where its transactions should move.
+Manage categories and groups in **Settings → Categories**:
+
+- **Create group** for income or expenses, and **Create Category** inside a group.
+- **Edit** a category to rename it, move it to another group, pick its emoji icon, and choose
+  its kind (Fixed, Flexible, Non-Monthly or Savings/Investments).
+- Drag categories and groups to reorder them.
+- **Delete** a category and FlyBudget asks where its transactions should move.
+
+A new budget starts with a set of common categories you can change freely.
 
 ## A simple routine
 
 1. When you get paid, plan that income into your categories until To Be Budgeted is zero.
-2. As you spend, keep an eye on **Remaining**.
-3. If a category runs out, move money from one that has some left.
-
-See the [Budget tour](/tour/budget) for every control on the page.
+2. As you spend, keep an eye on **Remaining** (the dashboard's **Left to Spend** shows the same
+   for the whole month).
+3. If a category runs out, lower another one that has money left, so the total stays the same.
+4. At the end of the month, whatever you didn't plan carries over into next month's To Be
+   Budgeted.
