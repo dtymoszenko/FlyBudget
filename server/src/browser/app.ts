@@ -77,6 +77,7 @@ export async function handleRequest(request: DemoRequest): Promise<DemoResponse>
   // No prototype, so a key like "__proto__" is just a key (like Express's own query parser)
   const query: Record<string, string | string[]> = Object.create(null);
   for (const key of new Set(url.searchParams.keys())) {
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
     const values = url.searchParams.getAll(key);
     query[key] = values.length === 1 ? values[0] : values;
   }
