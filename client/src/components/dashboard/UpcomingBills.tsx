@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { format, addDays, parseISO, differenceInDays } from 'date-fns';
+import { format, addDays, parseISO, differenceInCalendarDays } from 'date-fns';
 import { useScheduleOccurrences } from '../../hooks/useSchedules';
 import { formatCurrency } from '../../utils/currency';
 import { CalendarClock } from 'lucide-react';
@@ -72,7 +72,8 @@ export default function UpcomingBills() {
       ) : (
         <div className="divide-y divide-border-light">
           {upcoming.map((occ, i) => {
-            const daysUntil = differenceInDays(parseISO(occ.expectedDate), new Date());
+            // Calendar days: tomorrow is 1 day away even late in the evening
+            const daysUntil = differenceInCalendarDays(parseISO(occ.expectedDate), new Date());
             const isWaiting = occ.displayStatus === 'waiting';
             return (
               <div
