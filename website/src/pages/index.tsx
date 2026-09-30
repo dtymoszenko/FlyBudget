@@ -210,12 +210,12 @@ function HighlightsSection(): ReactNode {
       </div>
       <div className={styles.highlightsContainer}>
         <Heading as="h2" id="highlights-title" className={styles.highlightsTitle}>
-          Your whole financial picture, on one screen
+          Stop wondering where your money went.
         </Heading>
         <p className={styles.highlightsIntro}>
-          The dashboard shows your net worth, what’s left to spend this month, the bills coming up
-          and where your money went. Every number comes from your own accounts, and every card opens
-          the page behind it.
+          Open FlyBudget and it’s all right there: what came in, what went out, what’s left to spend
+          and which bills are coming up. Give every dollar a plan, and the end of the month stops
+          being a surprise.
         </p>
         {HIGHLIGHTS.map((h) => (
           <HighlightRow key={h.title} {...h} />
