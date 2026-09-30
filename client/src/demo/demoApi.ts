@@ -1,6 +1,7 @@
 // The in-browser demo (`vite build --mode demo`): the app's API requests go to a Web Worker
 // that runs the real server routes on a demo budget (server/src/browser/README.md), so the
 // rest of the app works exactly as it does against a real server.
+import { startDemoWorker } from './demoWorker';
 
 /** True in the demo build */
 export const IS_DEMO = import.meta.env.MODE === 'demo';
@@ -34,9 +35,7 @@ function apiPath(input: RequestInfo | URL): string | null {
 
 /** Starts the demo's worker and sends every API request there. */
 export function startDemoApi() {
-  worker = new Worker(new URL('../../../server/src/browser/worker.ts', import.meta.url), {
-    type: 'module',
-  });
+  worker = startDemoWorker();
   worker.onmessage = (event: MessageEvent<Reply>) => {
     pending.get(event.data.id)?.(event.data);
     pending.delete(event.data.id);

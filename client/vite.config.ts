@@ -36,8 +36,31 @@ function demoServerModules(): Plugin {
   };
 }
 
+/**
+ * Every build except the demo: swap the module that starts the demo's worker for a stub, so
+ * none of the demo (or the server code it runs) ends up in the build, and building the
+ * client doesn't need the server's packages installed.
+ */
+function withoutDemoWorker(): Plugin {
+  const real = normalizePath(path.resolve(import.meta.dirname, 'src/demo/demoWorker.ts'));
+  const stub = normalizePath(path.resolve(import.meta.dirname, 'src/demo/demoWorker.stub.ts'));
+  return {
+    name: 'flybudget-without-demo-worker',
+    enforce: 'pre',
+    async resolveId(source, importer, options) {
+      if (!source.endsWith('demoWorker')) return null;
+      const resolved = await this.resolve(source, importer, { ...options, skipSelf: true });
+      return resolved && normalizePath(resolved.id) === real ? stub : null;
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), tailwindcss(), ...(mode === 'demo' ? [demoServerModules()] : [])],
+  plugins: [
+    react(),
+    tailwindcss(),
+    ...(mode === 'demo' ? [demoServerModules()] : [withoutDemoWorker()]),
+  ],
   // The desktop app loads files from disk and the demo lives under /demo/ on the website,
   // so both use relative paths
   base: mode === 'electron' || mode === 'demo' ? './' : '/',
