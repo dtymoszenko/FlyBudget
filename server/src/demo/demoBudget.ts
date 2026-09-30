@@ -788,6 +788,20 @@ export function buildDemoBudget(today: Date): DemoBudget {
         });
     }
 
+    // This month they went out for a birthday dinner they hadn't planned for, so by the end
+    // of the month flexible spending is a little over (the demo shows an overspent budget)
+    if (mi === monthStarts.length - 1) {
+      const date = on(4);
+      if (date)
+        add({
+          account: 'card',
+          date,
+          amount: -11_860,
+          payee: 'sakura',
+          notes: "Sam's birthday dinner 🎂",
+        });
+    }
+
     // Car
     for (const day of [between(2, 9), between(12, 19), between(22, 28)]) {
       const date = on(day);
@@ -1087,6 +1101,13 @@ export function buildDemoBudget(today: Date): DemoBudget {
     const step = fixed ? 100 : 500;
     plan.set(c.id, Math.ceil(amount / step) * step);
   }
+  // The electric bill is planned at its most expensive month plus a little, rounded to $5,
+  // so it's never short: in milder months some of it is left over (the dashboard's Fixed
+  // bar shows a sliver still to spend)
+  const electricMax = Math.max(
+    ...fullMonths.map((month) => spending.get(`${cat.electric}|${month}`) ?? 0),
+  );
+  plan.set(cat.electric, Math.ceil((electricMax + 2_500) / 500) * 500);
   plan.set(cat.vacation, 25_000);
   plan.set(cat.electronics, Math.max(plan.get(cat.electronics) ?? 0, 15_000));
   plan.set(cat.emergencyFund, 0);
