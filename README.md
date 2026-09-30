@@ -49,13 +49,28 @@
 
 ## ✨ Why FlyBudget?
 
-|                                 |                                                                                                                                                                |
-| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 🔒 **Your data stays yours**    | Everything lives in one file on your computer or your own server. There's no FlyBudget cloud, account, telemetry or crash reporting.                           |
-| 💸 **Free, for good**           | No subscription and no premium tier. FlyBudget is [AGPL-3.0](LICENSE) open source, so anyone can read, check and improve the code.                             |
-| 🧭 **Every dollar gets a plan** | Zero-based budgeting with carry-over, rules that sort transactions for you, recurring bills, goals and reports you arrange yourself.                           |
-| 💻 **On every device you use**  | A desktop app for Windows, macOS and Linux, or a self-hosted server you open from any browser, with a layout made for phones and a copy that works offline.    |
-| 🏦 **Bring your bank with you** | Import CSV files from any bank, or sync automatically with [SimpleFIN](https://flybudget.org/docs/bank-sync) or [Plaid](https://flybudget.org/docs/bank-sync). |
+<table>
+  <tr>
+    <td width="30%">🔒 <b>Your data stays yours</b></td>
+    <td>Everything lives in one file on your computer or your own server. There's no FlyBudget cloud, account, telemetry or crash reporting.</td>
+  </tr>
+  <tr>
+    <td width="30%">💸 <b>Free, for good</b></td>
+    <td>No subscription and no premium tier. FlyBudget is <a href="LICENSE">AGPL-3.0</a> open source, so anyone can read, check and improve the code.</td>
+  </tr>
+  <tr>
+    <td width="30%">🧭 <b>Every dollar gets a plan</b></td>
+    <td>Zero-based budgeting with carry-over, rules that sort transactions for you, recurring bills, goals and reports you arrange yourself.</td>
+  </tr>
+  <tr>
+    <td width="30%">💻 <b>On every device you use</b></td>
+    <td>A desktop app for Windows, macOS and Linux, or a self-hosted server you open from any browser, with a layout made for phones and a copy that works offline.</td>
+  </tr>
+  <tr>
+    <td width="30%">🏦 <b>Bring your bank with you</b></td>
+    <td>Import CSV files from any bank, or sync automatically with <a href="https://flybudget.org/docs/bank-sync">SimpleFIN</a> or <a href="https://flybudget.org/docs/bank-sync">Plaid</a>.</td>
+  </tr>
+</table>
 
 ## 🚀 Get started in a minute
 
