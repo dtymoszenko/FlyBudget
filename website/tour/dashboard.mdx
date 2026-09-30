@@ -5,98 +5,23 @@ sidebar_position: 2
 
 # Dashboard
 
-The dashboard is the first thing you see when you open FlyBudget. It gives you a quick snapshot of your finances without having to dig into any specific page. Everything updates automatically as you add transactions and adjust your budget.
+The dashboard is the first thing you see when you open FlyBudget: a snapshot of your money on
+one page, updated as you add transactions and plan your budget.
 
-## Net Worth
+![The dashboard](/img/screenshots/dashboard.webp)
 
-At the very top of the dashboard is a net worth chart. It shows your total net worth over time as a shaded line chart.
+From top to bottom:
 
-The current net worth value is displayed in large text above the chart. If your net worth has changed since the start of the selected period, you will see the dollar change and percentage change next to it, colored green for gains and red for losses.
+- **Net worth** over the range you pick, with the change since the start.
+- **Left to Spend**, your **average monthly income and expenses**, and your **savings rate**
+  against a goal you choose.
+- **Cash Flow**: income and expenses for the last six months.
+- **Spending**: this month's running total next to last month (or another period you pick).
+- **Budget**: planned and spent for each kind of spending this month.
+- **Upcoming Bills**: what's due in the next 30 days.
+- **Spending by Category** and your **Recent Transactions**.
 
-You can adjust the time range using a dropdown in the top right corner of the widget. The options are:
+While you're setting up, a **Get started** checklist at the top ticks itself off as you go.
 
-- 1 month
-- 3 months
-- 6 months
-- Year to date
-- 1 year
-- All time
-
-Shorter ranges (1 month and 3 months) show daily data points, while longer ranges show monthly data points. Hovering over the chart shows the exact net worth value on any given date.
-
-## Summary Stats
-
-Below the net worth chart are four stat cards displayed in a row.
-
-**Left to Spend** shows how much of your budget you have remaining for the current month. It is calculated as total budgeted minus total spent across all expense categories. The color changes based on how much you have used: green when under 80%, yellow between 80% and 100%, and red when you have gone over budget.
-
-**Avg Monthly Income** is your average monthly income over the past 12 months. This gives you a sense of your typical earnings without being thrown off by any single month.
-
-**Avg Monthly Expenses** works the same way but for spending. It averages your expenses over the past 12 months so you can see what a normal month looks like.
-
-**Savings Rate** is calculated from the two averages above. It shows what percentage of your income you are saving, displayed as a whole number. You can set a savings goal using the dropdown on this card (10%, 15%, 20%, 25%, or 30%), and the number turns green when you are meeting your goal or red when you are falling short. Your selected goal is remembered between sessions.
-
-## Cash Flow
-
-The cash flow widget shows a bar chart of your income and expenses side by side for the past six months. Each month gets two bars: a green one for income and a red one for expenses. This makes it easy to see at a glance whether you are consistently spending less than you earn.
-
-The current month's net amount (income minus expenses) is shown in the top right corner, colored green when positive and red when negative. Hovering over any month shows the exact income and expense totals. There is a "View all" link that takes you to the full reports page.
-
-## Spending Comparison
-
-Next to the cash flow chart is a spending comparison widget. It shows your cumulative spending over a period as a filled area chart, with a comparison period overlaid as a gray line. This lets you see whether you are spending faster or slower than your comparison baseline.
-
-You can pick from five comparison modes using the dropdown:
-
-- This week vs. last week
-- This month vs. last month (the default)
-- This month vs. the same month last year
-- This month vs. your average month
-- This year vs. last year
-
-The x-axis shows individual days (Day 1, Day 2, and so on), and the y-axis shows the running total. This is a great way to catch yourself if you are trending toward overspending before the month is over.
-
-## Budget Progress
-
-The budget progress widget gives you a visual breakdown of your spending against your budget. It organizes your budget into groups: Fixed, Flexible, and Non-Monthly. Only groups where you have budgeted money are shown.
-
-For each group, you will see:
-
-- The group name and the total amount you planned to spend
-- A progress bar showing how much you have spent so far
-- The dollar amount spent and the amount remaining
-
-The progress bar changes color based on your status. It stays green when you are under 80% of your budget, turns yellow between 80% and 100%, and goes red when you have gone over. The remaining amount text matches these same colors so you can spot trouble quickly.
-
-The month name at the top is a link that takes you directly to the full budget page.
-
-## Upcoming Bills
-
-This widget shows your upcoming recurring bills and subscriptions for the next 30 days. Each entry displays:
-
-- A status dot (blue for upcoming, yellow for overdue)
-- The bill name
-- The expected date
-- How many days until it is due (or how many days overdue)
-- The expected amount
-
-It shows up to 5 bills at a time, prioritizing anything that is overdue or due soonest. There is a "View all" link that takes you to the recurring transactions page where you can manage all of your scheduled payments.
-
-## Spending by Category
-
-This widget ranks your top 7 spending categories for the current month. Each category shows its name, the total amount spent, and a colored horizontal bar that is proportional to your highest-spending category. The top category always gets a full-width bar, and the rest are scaled relative to it.
-
-This gives you a quick picture of where your money is going without needing to open the full reports page. If you want to dig deeper, the "View all" link takes you to the reports section.
-
-## Recent Transactions
-
-At the bottom of the dashboard is a list of your 5 most recent transactions. Each one shows:
-
-- A colored avatar with the first letter of the payee name
-- The payee name
-- The category it is assigned to
-- The amount (positive amounts in green)
-
-Transfer transactions show a special icon instead of a letter avatar. You can click on any transaction to jump to the full transactions page, and the "View all" link takes you there as well.
-
-This widget is a convenient way to double-check recent activity and make sure everything looks right without leaving the dashboard.
+Read [The dashboard](/docs/dashboard) in the guide for what each card shows and how it's
+calculated.

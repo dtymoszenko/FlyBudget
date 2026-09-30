@@ -1,35 +1,56 @@
 ---
-sidebar_position: 11
+sidebar_position: 15
 sidebar_label: Backups and exports
 ---
 
 # Backups and exports
 
 Your budget lives on your computer or your server, not in someone else's cloud, so keeping a
-backup is up to you. It only takes a click.
+backup is up to you. It only takes a click. Everything here is in **Settings → Data**.
+
+![Settings: Data](/img/screenshots/settings-data.webp)
 
 ## Download a backup
 
-**Settings → Data → Download Backup** saves one JSON file with everything: accounts,
-transactions, budgets, categories, payees, rules, recurring transactions, goals, reports and
-dashboards. Bank connection credentials and your server password are **not** included, so
-reconnect your banks after restoring on a new computer.
+**Download Backup** saves one JSON file with everything: accounts, transactions, budgets,
+categories, payees, rules, recurring transactions, goals, reports and dashboards, including
+account and payee logos.
 
-Keep backups somewhere other than the computer running FlyBudget, like an external drive or a
-cloud folder you trust.
+It never includes bank connection credentials, your server password or your signed-in
+sessions. After restoring on a new computer, connect your banks again.
+
+A backup holds all of your transactions, so keep it somewhere safe and away from the computer
+running FlyBudget: an external drive, or a cloud folder you trust.
 
 ## Restore a backup
 
-**Settings → Data → Restore Backup** replaces all of your data with the file you choose. Before
-it does, FlyBudget saves a copy of your current database next to it (named
-`budget-before-restore-…`), so a restore can be undone.
+**Restore Backup…** replaces **all** of your data with the file you pick, after asking you to
+confirm. Before it does:
+
+- FlyBudget checks the whole file. If anything in it is wrong, nothing is changed.
+- It saves a copy of your current database next to it, named `budget-before-restore-<date>.db`,
+  so a restore can be undone. (Restoring on a self-hosted server saves the copy in the server's
+  data folder.)
+
+The restore happens in one step: either everything is replaced, or nothing is. Bank connections
+you had are linked back to their accounts if the accounts are in the backup.
+
+Backups also move a budget between the desktop app and a self-hosted server, in either
+direction.
 
 ## Export transactions
 
-**Settings → Data → Export Transactions** saves transactions as a CSV file you can open in a
-spreadsheet.
+**Export Transactions** saves transactions as a CSV file for a spreadsheet: all of them, or only
+those between a **From** and a **To** date. The file has the date, account, payee, category,
+notes, amount and whether each transaction is reconciled.
+
+Text that a spreadsheet could run as a formula (starting with `=`, `+`, `-` or `@`) is prefixed
+with a `'`, so a payee name from a bank can't do anything when you open the file.
+
+Reports can be exported too: the full view of every report, the report builder and Cash Flow each
+have an **Export CSV** button.
 
 ## Self-hosted servers
 
-On a server, also back up the data directory (`/data` in Docker) and your encryption key. See
-the [self-hosting guide](/community/self-hosting#backups).
+On a server, also back up the data directory (`/data` in Docker) and keep a copy of your
+encryption key. See the [self-hosting guide](/community/self-hosting#backups).

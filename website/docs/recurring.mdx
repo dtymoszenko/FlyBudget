@@ -6,31 +6,97 @@ sidebar_label: Recurring transactions
 # Recurring transactions
 
 Recurring transactions are the bills, subscriptions and paychecks that repeat. FlyBudget shows
-what's due, what's paid, and what's coming up.
+what's due, what's been paid and what's coming up, and links each payment to the transaction
+that paid it.
+
+![This month's recurring transactions](/img/screenshots/recurring.webp)
 
 ## Adding one
 
-On **Recurring**, choose **Add recurring** and fill in the name, payee, account, amount and how
-often it repeats: weekly, every two weeks, twice a month, monthly, quarterly, twice a year or
-yearly. The amount can be exact, approximate or variable, which helps FlyBudget match it.
+Choose **Add recurring** and fill in:
 
-Tick **Auto-create transactions** and FlyBudget adds the transaction for you on its due date.
+- **Name**, like "Rent" or "Riley's paycheck".
+- **Amount** and **Type**: **Expense** or **Income**.
+- **Amount Precision**: **Exact** (always the same), **Approx** (close to it, within about 7.5%)
+  or **Variable** (it changes, like an electricity bill). This helps FlyBudget recognize the
+  payment when it arrives.
+- **Frequency**: weekly, every two weeks, twice a month, monthly, quarterly, twice a year or
+  yearly.
+- **Account**, **Start Date**, and an optional **End Date**.
+- **Payee**, **Category** and **Notes** (optional). The payee is what FlyBudget matches
+  transactions against.
+- **Auto-create transactions**: FlyBudget adds the transaction for you on its due date (when
+  FlyBudget starts on or after that day).
+
+<img
+  className="screenshot-dialog"
+  src="/img/screenshots/recurring-add.webp"
+  alt="The Add Recurring dialog"
+/>
+
+Under **Advanced**:
+
+- **Weekend Adjustment** moves due dates that fall on a weekend to the Friday before, the Monday
+  after, or the closest weekday.
+- **Date Flexibility** is how many days early or late (0 to 14; 3 by default) a transaction can
+  be and still count as the payment.
 
 ## Find recurring
 
-Already have a few months of transactions? **Find recurring** looks for payees that repeat on a
-regular schedule with similar amounts and suggests them. Tick the ones you want and they're
-created, already linked to the past payments.
+Already have a few months of transactions? **Find recurring** looks through them for payments
+to the same payee, for a similar amount, on a regular schedule (every week, every two weeks, or
+on the same day of each month). Tick the ones you want and choose **Create recurring**: they're
+created with their past payments already linked.
+
+![Finding recurring transactions](/img/screenshots/recurring-find.webp)
+
+Payees you already track aren't suggested. Transactions are only grouped when they share a
+payee, so if a bank spells the same company several ways, [merge the payees](./payees#merging-payees)
+first.
 
 ## Paid, upcoming and missed
 
-When a transaction arrives that matches a recurring item (same payee, close to the expected
-date and amount), FlyBudget links them and marks it paid. Suggestions it isn't sure about
-appear at the top of the page for you to confirm.
+When a transaction arrives that matches a recurring item (the same payee, near the expected date
+and amount), FlyBudget links them and marks it **Paid**. If it isn't sure, a banner at the top
+of the page says a transaction may match; choose **Review now** to accept or dismiss each match.
 
-- **Monthly** shows this month's items as a list or a calendar, with totals for income and
-  expenses.
-- **All recurring** lists everything with its next date and status: missed, due, upcoming or
-  scheduled. How far ahead counts as "upcoming" is up to you.
+Each item's status:
 
-Upcoming bills also appear on the dashboard.
+| Status                    | Meaning                                            |
+| ------------------------- | -------------------------------------------------- |
+| **Paid**                  | A transaction paid it.                             |
+| **Upcoming**              | Due soon (within your upcoming length, see below). |
+| **Scheduled**             | Due later than that.                               |
+| **Due**                   | Due today.                                         |
+| **Missed**                | The date passed without a payment.                 |
+| **Skipped**               | You skipped this date.                             |
+| **Paused** / **Canceled** | The item is on hold, or no longer repeats.         |
+
+## The Monthly tab
+
+One month at a time, with how much income is still to come and how much of this month's bills is
+paid. **List** shows income and expenses in date order; **Calendar** shows each item on its day
+(click a day to jump to its rows).
+
+![The calendar view](/img/screenshots/recurring-calendar.webp)
+
+Each row's ⋮ menu can **Mark as paid** (adds the transaction), **Match to transaction** (links
+one you already have), **Skip** this date, **Unlink transaction**, or **Edit recurring**.
+
+## The All recurring tab
+
+Every item you track, with its payee, account, next date, status, amount and frequency. Search
+by name; canceled items are tucked away under **Show canceled recurring**.
+
+![All recurring transactions](/img/screenshots/recurring-all.webp)
+
+The ⋮ menu has **Mark next as paid**, **Skip next date**, **Pause** / **Resume**, **Edit**,
+**Cancel recurring** (and **Restart**), and **Delete permanently**.
+
+**Upcoming** (at the top of the tab) sets how far ahead counts as upcoming: 1 day, 1 week (the
+default), 2 weeks, 1 month, the end of the current month, or your own number of days, weeks,
+months or years.
+
+## On the dashboard
+
+The dashboard's **Upcoming Bills** card lists what's due in the next 30 days.

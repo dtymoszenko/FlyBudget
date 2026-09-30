@@ -157,8 +157,29 @@ const MIME: Record<string, string> = {
   '.json': 'application/json',
 };
 
+/**
+ * The headers website/static/_headers gives /demo/* (the website's host sends them), so the
+ * tests run the demo under the same policy.
+ */
+function demoHeaders(): Record<string, string> {
+  const file = path.join(root, 'website', 'static', '_headers');
+  const headers: Record<string, string> = {};
+  let inDemo = false;
+  for (const line of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
+    if (!line.trim() || line.startsWith('#')) continue;
+    if (!/^\s/.test(line)) {
+      inDemo = line.trim() === '/demo/*';
+      continue;
+    }
+    const colon = line.indexOf(':');
+    if (inDemo && colon > 0) headers[line.slice(0, colon).trim()] = line.slice(colon + 1).trim();
+  }
+  return headers;
+}
+
 /** Serves the demo build at /demo/, as static files (the website's host does the same). */
 function startDemoServer(root: string): Promise<http.Server> {
+  const headers = demoHeaders();
   const server = http.createServer((req, res) => {
     const url = new URL(req.url ?? '/', 'http://localhost');
     if (!url.pathname.startsWith('/demo/')) {
@@ -167,11 +188,18 @@ function startDemoServer(root: string): Promise<http.Server> {
     }
     const rel = decodeURIComponent(url.pathname.slice('/demo/'.length)) || 'index.html';
     const file = path.join(root, rel);
-    if (!file.startsWith(root) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
+    if (
+      path.relative(root, file).startsWith('..') ||
+      !fs.existsSync(file) ||
+      fs.statSync(file).isDirectory()
+    ) {
       res.writeHead(404).end();
       return;
     }
-    res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] ?? 'application/octet-stream' });
+    res.writeHead(200, {
+      ...headers,
+      'Content-Type': MIME[path.extname(file)] ?? 'application/octet-stream',
+    });
     fs.createReadStream(file).pipe(res);
   });
   return new Promise((resolve, reject) => {

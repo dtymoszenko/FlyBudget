@@ -1,0 +1,127 @@
+---
+sidebar_position: 2
+sidebar_label: Installing FlyBudget
+---
+
+# Installing FlyBudget
+
+There are three ways to run FlyBudget. They all run the same app; they differ in where your
+budget is stored and which devices can open it.
+
+| Option                                    | Your budget lives…                     | Open it from…                            |
+| ----------------------------------------- | -------------------------------------- | ---------------------------------------- |
+| [Desktop app](#desktop-app)               | in a file on your computer             | that computer                            |
+| [Self-hosted server](#self-hosted-server) | on a server you run (home server, VPS) | any browser, including your phone        |
+| [From source](#from-source)               | in the project folder                  | the computer running it (for developers) |
+
+Not sure? Start with the desktop app. You can move to a server later: download a
+[backup](./backups) and restore it there.
+
+:::tip[Just looking?]
+
+[Try the demo](pathname:///demo/) runs FlyBudget in your browser with a sample budget. There's
+nothing to install, and nothing you change is saved.
+
+:::
+
+## Desktop app
+
+The [download page](/download) picks the right file for your computer. FlyBudget runs on
+Windows 10 and 11, macOS 12 Monterey or later (Apple silicon and Intel), and 64-bit Linux (x86
+and ARM).
+
+FlyBudget isn't signed with a paid Microsoft or Apple certificate yet, so the first time you open
+it your system asks whether you trust it. Every release is signed another way, so you can check
+that your download is genuine (see
+[Verifying your download](/community/security#verifying-your-download)).
+
+### Windows
+
+1. Download `FlyBudget-Windows-Setup.exe` and run it.
+2. If Windows says **Windows protected your PC**, choose **More info**, then **Run anyway**.
+3. FlyBudget installs for your user account and opens. It's in the Start menu from then on.
+
+### macOS
+
+1. Download the .dmg for your Mac: **Apple silicon** for Macs with an M1 chip or newer (2020
+   and later), **Intel** for older ones. Not sure? Apple menu → **About This Mac** shows "Chip:
+   Apple M…" or "Processor: …Intel…".
+2. Open the .dmg and drag **FlyBudget** into **Applications**.
+3. Open FlyBudget from Applications. macOS says it can't check it for malicious software;
+   choose **Done**. Then open **System Settings → Privacy & Security**, scroll down to
+   **Security**, and choose **Open Anyway** next to FlyBudget. Confirm with your password. You
+   only do this once.
+
+### Linux
+
+- **Ubuntu, Debian, Linux Mint, Pop!\_OS**: download the .deb and open it with your software
+  installer, or run `sudo apt install ./FlyBudget-Linux-amd64.deb`. FlyBudget appears in your
+  applications menu.
+- **Other distributions**: download the AppImage, make it executable and run it:
+
+  ```bash
+  chmod +x FlyBudget-Linux-x86_64.AppImage
+  ./FlyBudget-Linux-x86_64.AppImage
+  ```
+
+  Ubuntu 24.04 and later block the sandbox Electron apps use when they run from an AppImage, so
+  use the .deb there.
+
+- **ARM** (Raspberry Pi 4 and 5, ARM laptops): the latest release also has an `arm64` .deb and
+  AppImage.
+
+To keep your bank connections encrypted, Linux needs a keyring (GNOME Keyring or KWallet, which
+most desktops have). Without one, FlyBudget still works, but stores bank credentials unencrypted.
+
+### The first time you open it
+
+FlyBudget asks how you'd like to add your accounts; continue with
+[Getting started](./getting-started).
+
+The desktop app keeps your budget in a single file, `budget.db`, in your user folder:
+
+| System  | Folder                                    |
+| ------- | ----------------------------------------- |
+| Windows | `%APPDATA%\FlyBudget`                     |
+| macOS   | `~/Library/Application Support/FlyBudget` |
+| Linux   | `~/.config/FlyBudget`                     |
+
+The same folder holds `credentials.key`, the key that encrypts your bank connections, itself
+protected by your operating system's keychain. You don't need to touch either file: use
+**Settings → Data → Download Backup** to back up your budget.
+
+### Updating
+
+Download the new version from the [download page](/download) and install it over the old one.
+Your budget stays where it is, and FlyBudget updates it for the new version when it starts.
+
+## Self-hosted server
+
+Run FlyBudget in Docker on a home server, a NAS or a small cloud machine, and open it in any
+browser with a password you choose. This is how you use FlyBudget on your phone or share a
+budget with your household.
+
+```bash
+openssl rand -base64 32 > flybudget_data_key.txt   # the key that protects bank credentials
+docker compose up -d                                # with docker-compose.yml from the repository
+```
+
+Then open `http://<your-server>:3001`, enter the setup code from `docker logs flybudget`, and
+choose your password. The [self-hosting guide](/community/self-hosting) covers every step,
+HTTPS, backups and updates.
+
+## From source
+
+For trying the latest changes or contributing. You need [Node.js](https://nodejs.org/) 24 (the
+version FlyBudget is built and tested with) and Git.
+
+```bash
+git clone https://github.com/dtymoszenko/FlyBudget.git
+cd FlyBudget
+npm ci && npm ci --prefix client && npm ci --prefix server
+npm run dev   # opens on http://localhost:5173
+```
+
+Your budget is stored in `server/budget.db`. Bank credentials aren't encrypted in this mode, so
+use the desktop app or a server for your real budget. See
+[Contributing](/community/contributing) for the rest.

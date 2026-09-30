@@ -76,3 +76,33 @@ main {
 .footer .footer__link-item:hover {
   color: #fff;
 }
+
+/* Screenshots of the app in the tour and the guide (static/img/screenshots, taken from the
+   demo by e2e/screenshots.ts): a thin frame so white pages stand out from the background */
+.markdown img[src*='/img/screenshots/'] {
+  display: block;
+  margin: 1.25rem auto 1.5rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(15, 23, 42, 0.08);
+}
+
+/* A dialog or panel on its own: shown smaller than a full screen */
+.markdown img.screenshot-dialog {
+  max-width: min(100%, 560px);
+}
+
+/* Phone screenshots, side by side (they wrap on narrow screens) */
+.phone-screenshots {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.25rem;
+  margin: 1.25rem 0 1.5rem;
+}
+
+.markdown .phone-screenshots img {
+  width: 220px;
+  margin: 0;
+  border-radius: 22px;
+}

@@ -5,134 +5,20 @@ sidebar_position: 4
 
 # Transactions
 
-The transactions page is where you view, add, edit, and manage all of your financial activity. You can see transactions across every account in one place, or view them for a single account at a time.
+**Transactions** shows every transaction from every account in one list, grouped by day. Search
+by payee or notes, pick a period (this month, the last three months, this year or all time),
+and use **Add** to enter a new one.
 
-## Two Views
+![All transactions](/img/screenshots/transactions.webp)
 
-There are two ways to access your transactions:
+Click a transaction to open its details on the right. There you can change the date, category,
+payee and notes, see how a split is divided, turn it into a rule with **Create rule**, or delete
+it.
 
-- **All Transactions** shows every transaction across all of your accounts. You get here from the main "Transactions" link in the sidebar. Because you are looking at multiple accounts, an Account column is included in the list so you can see which account each transaction belongs to. Clicking the arrow next to an account name takes you to that account's dedicated page.
+![A transaction's details](/img/screenshots/transaction-detail.webp)
 
-- **Account Transactions** shows transactions for a single account. You get here by clicking on an account from the [Accounts page](./accounts). This view includes a header with the account name, its type (checking, savings, credit, etc.), the current balance, and a Reconcile button. Since you already know which account you are looking at, the Account column is hidden to save space. This is also the only view where you can add new transactions and import from CSV.
+Transactions can also be split across categories, moved between your accounts as transfers, and
+imported from your bank as a CSV file.
 
-## Transaction List
-
-Transactions are grouped by date. Each date gets its own section header showing the full date (for example, "September 26, 2026") and the total amount of activity for that day. A count of how many transactions match your current filters is displayed above the list.
-
-Each transaction row shows the following from left to right:
-
-- **Payee** with a colored circle avatar showing the first letter of the payee name. Transfer transactions show a double-arrow icon instead.
-- **Category** with an optional emoji icon. Split transactions show "Split (N)" with an expand button. Transfers show "Transfer" in an accent color.
-- **Account** (only on the All Transactions page) with a colored circle based on the account type.
-- **Reconciled indicator** showing a lock icon if the transaction has been reconciled.
-- **Amount** right-aligned. Inflows (positive amounts) appear in green. Outflows appear in the default text color.
-- **Detail arrow** to open the transaction detail panel.
-
-## Filtering
-
-At the top of the transaction list is a filter bar with two controls.
-
-**Search** is a text input that searches across payee names and notes. Results update as you type. A clear button appears when there is text in the search box.
-
-**Date range presets** are four tab-style buttons that control which time period you see:
-
-- This Month (the default)
-- Last 3 Months
-- This Year
-- All Time
-
-You can also filter by category. When you hover over a transaction row, a small arrow button appears next to the category name. Clicking it filters the list to only show transactions in that category and automatically switches to All Time so you do not miss anything. The active category filter shows as a removable pill above the date presets.
-
-The same arrow button trick works for payees. Hovering over a payee name reveals an arrow that searches for all transactions with that payee.
-
-## Adding a Transaction
-
-You can add transactions from two places:
-
-### From the All Transactions page
-
-The All Transactions page has an **+ Add** button in the top-right corner of the header. Clicking it opens a modal dialog with the following fields:
-
-- **Debit / Credit toggle** at the top controls whether the transaction is an expense (debit) or income (credit). Debit is selected by default.
-- **Amount** is a currency input field. This is required.
-- **Merchant** is a searchable text input. As you type, it suggests up to 8 matching merchants from your existing list. If there is no exact match, it offers to create a new merchant. This is required.
-- **Date** defaults to today's date. This is required.
-- **Account** is a dropdown listing all of your open accounts. Since the All Transactions page shows transactions across all accounts, you need to pick which account this transaction belongs to. This is required.
-- **Category** is a dropdown organized by category group. This is optional.
-- **Notes** is a free text field for any additional details. This is optional.
-
-The "Add transaction" button at the bottom of the dialog stays disabled until all four required fields (amount, merchant, date, and account) are filled in.
-
-### From an account page
-
-When viewing a single account's transactions, two buttons appear above the list: "Add Transaction" and "Import CSV."
-
-Clicking "Add Transaction" opens an inline form row at the top of the transaction list. Since you are already viewing a specific account, no account selector is needed. The inline form has the following fields:
-
-- **Date** defaults to today's date.
-- **Payee** is an autocomplete input. As you type, it suggests up to 8 matching payees from your existing list. If there is no exact match, it offers to create a new payee.
-- **Category** is a dropdown organized by category group. It also includes a Transfer section at the bottom listing all of your other open accounts. Selecting a transfer destination here creates a linked transfer between accounts instead of a regular transaction.
-- **Notes** is a free text field for any additional details.
-- **Outflow** and **Inflow** are two separate number fields. Focusing on one automatically clears the other, since a transaction can only be one or the other.
-
-You can save the transaction with the checkmark button or cancel with the X button.
-
-## Split Transactions
-
-When adding a transaction, you can click the Split button to split it across multiple categories. This is useful when a single purchase covers different budget categories, like a grocery trip where you also bought household supplies.
-
-In split mode, the main category field changes to "Split" and a set of split rows appears below the form. Each row has its own category, notes, and amount. You start with two rows and can add more with the "Add split" button.
-
-A balance indicator shows whether your split amounts add up to the main transaction total. It turns green and says "Balanced" when they match, or shows how much is remaining in red when they do not.
-
-In the transaction list, split transactions display "Split (N)" in the category column where N is the number of splits. You can click the chevron to expand and see each split line with its category, notes, and amount indented below the parent row.
-
-## Transfer Transactions
-
-Transfers move money between two of your accounts. To create one, select a "Transfer: [account name]" option from the category dropdown when adding a transaction. This creates two linked transactions: one outflow in the current account and one inflow in the destination account.
-
-Transfer transactions look different from regular ones in the list. They show a double-arrow icon instead of a payee initial, and the category column says "Transfer" in an accent color. You cannot change the category or payee on a transfer since those fields are determined by the link between accounts.
-
-## Inline Editing
-
-You can edit a transaction's payee and category directly from the list without opening the detail panel.
-
-Hovering over a payee name reveals an editable control. Click it to open a payee picker dropdown where you can search for and select a different payee, or create a new one. Payees in the dropdown are sorted by how often you use them, with the most common ones at the top.
-
-Hovering over a category works the same way. Click it to open a category picker where you can search through your categories grouped by category group. You can also create a new category right from the picker by typing a name and selecting the group and budget type.
-
-These inline edits are not available for reconciled transactions (which are locked) or for transfers and split parents (which have special category handling).
-
-## Transaction Detail Panel
-
-Clicking on any transaction row opens a detail panel that slides in from the right side of the screen. This panel gives you a full view of the transaction and lets you edit all of its fields.
-
-At the top of the panel you see the payee name with a large colored avatar, the account name, and the amount. Below that are editable fields:
-
-- **Date** can be changed using a date picker. The new date saves when you click away.
-- **Category** opens the same category picker used for inline editing. For split transactions, this section instead shows a breakdown of each split with its category and amount. For transfers, it shows "Transfer."
-- **Payee** uses an autocomplete input where you can search and select from existing payees. This field is hidden for transfers.
-- **Notes** is a text area for adding or editing notes. Changes save when you click away.
-- **Recurring** appears only if the transaction is linked to a recurring schedule. It shows the schedule name and frequency, along with an Unlink button if you want to disconnect the transaction from the schedule.
-
-At the bottom of the panel is a Delete Transaction button that opens a confirmation dialog before removing the transaction.
-
-The panel closes when you press Escape, click the X button, or click outside the panel.
-
-## Reconciled Transactions
-
-Reconciled transactions are locked to prevent accidental changes. In the transaction list, they show a small lock icon. When you open a reconciled transaction's detail panel, a notice at the top explains that the transaction cannot be edited.
-
-All editing controls are disabled on reconciled transactions: date, category, payee, and notes are all read-only. The delete button is also hidden. To make changes to a reconciled transaction, you would need to un-reconcile it first through the reconciliation flow on the account page.
-
-## CSV Import
-
-The Import CSV button opens a multi-step import wizard for bringing in transactions from your bank or another app.
-
-**Step 1: Upload.** Drag and drop a CSV file or click to browse for one.
-
-**Step 2: Column Mapping.** The wizard shows your CSV headers and tries to automatically guess which column is which based on common header names. You can adjust the mapping using dropdowns to assign each column a role: Date, Payee, Amount, Inflow, Outflow, Notes, or Skip. A preview of the first few rows helps you verify that the mapping looks right. At minimum, you need a Date column and at least one amount column.
-
-**Step 3: Preview.** The wizard processes your file and shows what will be imported. Each row appears with a checkbox, the date, payee, and amount. If the wizard detects duplicates (transactions that match ones you already have based on date, amount, and payee), those rows are flagged with a "duplicate" badge and automatically unchecked. You can toggle individual rows on or off before importing.
-
-**Step 4: Done.** A summary shows how many transactions were imported and how many were skipped.
+Read [Transactions](/docs/transactions) and [Importing transactions](/docs/importing) in the
+guide.

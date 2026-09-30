@@ -1,0 +1,49 @@
+---
+sidebar_position: 14
+sidebar_label: Working offline
+---
+
+# When the connection drops
+
+FlyBudget on a [self-hosted server](/community/self-hosting) keeps working when your phone or
+laptop loses its connection, or the server restarts. (The desktop app doesn't need any of this:
+its server runs inside the app.)
+
+## While it's reconnecting
+
+A banner at the top says FlyBudget can't reach the server, that saving is paused, and when it'll
+try again: after 2 seconds, then 4, 8, 16, and every 30 seconds after that. **Retry now** tries
+straight away, and FlyBudget also tries as soon as your device is back online or you return to the
+tab. Everything already on screen stays there, and the moment the server answers, the banner goes
+away and the page refreshes.
+
+The status line at the bottom of the sidebar turns amber while FlyBudget is reconnecting.
+
+## Adding transactions offline
+
+New transactions and transfers you add while offline are kept on your device and sent, in order,
+when the connection comes back. They're listed as **Saved on this device** at the top of the
+transactions, marked "Sent when FlyBudget reconnects": until then they aren't in your balances or
+the budget. Each one is sent exactly once, even if you have FlyBudget open in several tabs.
+
+If the server refuses one when it arrives (say its account was deleted meanwhile), it stays in the
+list with the reason, so you can **Try again** or **Discard** it.
+
+Edits, deletes and budget changes wait for the connection instead: saving them later could
+overwrite a change someone made on another device in the meantime. Their save buttons say that
+saving is paused.
+
+## Opening FlyBudget while the server is down
+
+FlyBudget keeps a copy of your budget on each device you use (in the browser's storage), so it can
+open with your data even when the server can't be reached. The banner says how old that copy is.
+
+- The copy is updated a moment after new data loads, only while you're signed in.
+- It holds budget data only: never your password, bank connections, devices or server details.
+- It's deleted when you sign out, when your session ends, and if it's more than 30 days old.
+- To turn it off on a device, untick **Keep a copy of my budget on this device** in
+  **Settings → Server**. That deletes the copy.
+
+On a server with HTTPS (or on `localhost`), the browser also keeps the app itself, so FlyBudget
+opens with no connection at all. Over plain HTTP on your home network, it opens offline only in a
+tab that was already open.

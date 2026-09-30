@@ -4,6 +4,8 @@ import useBrokenLinks from '@docusaurus/useBrokenLinks';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Layout from '@theme/Layout';
 import Heading from '@theme/Heading';
+import ThemedImage from '@theme/ThemedImage';
+import useBaseUrl from '@docusaurus/useBaseUrl';
 
 import styles from './index.module.css';
 
@@ -33,7 +35,7 @@ function HeroSection(): ReactNode {
               </Link>
             </div>
             <p className={styles.heroFacts}>
-              Open source (AGPL). Available for Windows or self-host with Docker.
+              Open source (AGPL). For Windows, macOS and Linux, or self-host with Docker.
             </p>
           </div>
           <div className={styles.heroArtwork}>
@@ -56,6 +58,204 @@ function HeroSection(): ReactNode {
         </div>
       </div>
     </header>
+  );
+}
+
+/**
+ * A screenshot of the app (static/img/screenshots, taken from the demo by e2e/screenshots.ts):
+ * the dark-mode version when the website is dark.
+ */
+function Screenshot({
+  name,
+  alt,
+  width,
+  height,
+  className,
+}: {
+  name: string;
+  alt: string;
+  width: number;
+  height: number;
+  className?: string;
+}): ReactNode {
+  return (
+    <ThemedImage
+      className={className}
+      alt={alt}
+      width={width}
+      height={height}
+      loading="lazy"
+      sources={{
+        light: useBaseUrl(`/img/screenshots/${name}.webp`),
+        dark: useBaseUrl(`/img/screenshots/dark-${name}.webp`),
+      }}
+    />
+  );
+}
+
+interface Highlight {
+  title: string;
+  text: string;
+  points: string[];
+  doc: string;
+  docLabel: string;
+  shot: { name: string; alt: string; width: number; height: number; dialog?: boolean };
+}
+
+const HIGHLIGHTS: Highlight[] = [
+  {
+    title: 'Give every dollar a job',
+    text: 'Plan the month category by category, and watch what’s left as you spend. Bars turn amber as a category gets close to its plan and red when it goes over, so you can adjust before the month ends.',
+    points: [
+      'Planned, actual and remaining for every category',
+      'Money you haven’t planned carries into next month',
+      'Each category’s history is one click away',
+    ],
+    doc: '/docs/budgeting',
+    docLabel: 'How budgeting works',
+    shot: { name: 'budget', alt: 'The budget for the month', width: 2880, height: 1800 },
+  },
+  {
+    title: 'Sort transactions once, then never again',
+    text: 'Write a rule in plain words, see which past transactions it matches while you type, and let it rename, categorize or split everything that comes in after.',
+    points: [
+      'Matches bank text, payees, amounts, dates and more',
+      'Splits by amount or percentage',
+      'Runs on imports, bank syncs and what you type',
+    ],
+    doc: '/docs/rules',
+    docLabel: 'How rules work',
+    shot: {
+      name: 'rule-editor',
+      alt: 'Editing a rule that renames and categorizes coffee purchases',
+      width: 1536,
+      height: 1288,
+      dialog: true,
+    },
+  },
+  {
+    title: 'Reports you arrange yourself',
+    text: 'Build dashboards from net worth, income and expenses, spending trends, a transaction calendar and your own custom reports. Drag them into place, and give each one the dates you care about.',
+    points: [
+      'Several dashboards, each with its own date range',
+      'A report builder for everything else',
+      'Every number exports to CSV',
+    ],
+    doc: '/docs/reports',
+    docLabel: 'Using reports',
+    shot: { name: 'reports', alt: 'A report dashboard', width: 2880, height: 1800 },
+  },
+  {
+    title: 'Follow every dollar',
+    text: 'Cash Flow draws your income flowing into each group of spending and on into single categories, with what you saved on top: one picture of where the month went.',
+    points: ['Any period, from one month to a year', 'Totals and your savings rate at the top'],
+    doc: '/docs/reports#cash-flow',
+    docLabel: 'About Cash Flow',
+    shot: {
+      name: 'cash-flow',
+      alt: 'Cash flow from income to spending categories',
+      width: 2880,
+      height: 1800,
+    },
+  },
+];
+
+const PHONES = [
+  { name: 'phone-budget', alt: 'The budget on a phone' },
+  { name: 'phone-dashboard', alt: 'The dashboard on a phone' },
+  { name: 'phone-transactions', alt: 'Transactions on a phone' },
+];
+
+function HighlightRow({ title, text, points, doc, docLabel, shot }: Highlight): ReactNode {
+  return (
+    <div className={styles.highlight}>
+      <div className={styles.highlightText}>
+        <Heading as="h3" className={styles.highlightTitle}>
+          {title}
+        </Heading>
+        <p>{text}</p>
+        <ul className={styles.highlightPoints}>
+          {points.map((p) => (
+            <li key={p}>{p}</li>
+          ))}
+        </ul>
+        <Link className={styles.highlightLink} to={doc}>
+          {docLabel}
+        </Link>
+      </div>
+      <div className={shot.dialog ? styles.highlightDialog : styles.highlightShot}>
+        <Screenshot
+          className={styles.shotFrame}
+          name={shot.name}
+          alt={shot.alt}
+          width={shot.width}
+          height={shot.height}
+        />
+      </div>
+    </div>
+  );
+}
+
+function HighlightsSection(): ReactNode {
+  return (
+    <section className={styles.highlights} aria-labelledby="highlights-title">
+      <div className={styles.productShot}>
+        <Screenshot
+          className={styles.productFrame}
+          name="dashboard"
+          alt="The FlyBudget dashboard: net worth, left to spend, cash flow, spending and upcoming bills"
+          width={2880}
+          height={1800}
+        />
+      </div>
+      <div className={styles.highlightsContainer}>
+        <Heading as="h2" id="highlights-title" className={styles.highlightsTitle}>
+          Stop wondering where your money went.
+        </Heading>
+        <p className={styles.highlightsIntro}>
+          Open FlyBudget and it’s all right there: what came in, what went out, what’s left to spend
+          and which bills are coming up. Give every dollar a plan, and the end of the month stops
+          being a surprise.
+        </p>
+        {HIGHLIGHTS.map((h) => (
+          <HighlightRow key={h.title} {...h} />
+        ))}
+        <div className={`${styles.highlight} ${styles.highlightPhones}`}>
+          <div className={styles.highlightText}>
+            <Heading as="h3" className={styles.highlightTitle}>
+              On your phone, too
+            </Heading>
+            <p>
+              Run FlyBudget on a server of your own and open it from any browser. Every page has a
+              layout made for small screens, and transactions you add without a connection are saved
+              as soon as it’s back.
+            </p>
+            <Link className={styles.highlightLink} to="/docs/phone">
+              Using FlyBudget on your phone
+            </Link>
+          </div>
+          <div className={styles.phones}>
+            {PHONES.map((p) => (
+              <Screenshot
+                key={p.name}
+                className={styles.phoneFrame}
+                name={p.name}
+                alt={p.alt}
+                width={780}
+                height={1688}
+              />
+            ))}
+          </div>
+        </div>
+        <div className={styles.highlightsCta}>
+          {/* A static app next to the website (scripts/build-demo.mjs), not a Docusaurus page */}
+          <Link className={styles.demoButton} to="pathname:///demo/" target="_self">
+            Try it with a sample budget
+          </Link>
+          <p>It runs in your browser: nothing to install, and nothing you change is saved.</p>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -227,11 +427,7 @@ export default function Home(): ReactNode {
     <Layout description={siteConfig.tagline}>
       <HeroSection />
       <main>
-        <section className={styles.featureHighlights}>
-          <div className={styles.featureHighlightsContainer}>
-            <p>Feature Start</p>
-          </div>
-        </section>
+        <HighlightsSection />
         <FeaturesSection />
       </main>
     </Layout>

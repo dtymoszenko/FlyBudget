@@ -170,23 +170,221 @@
 }
 
 /* ============================================================
-   Feature Highlights (white section)
+   Highlights: the app itself, between the hero and the features
    ============================================================ */
 
-.featureHighlights {
-  background: var(--ifm-background-color);
-  padding: 4rem 2rem;
-  text-align: center;
+.highlights {
+  /* The hero's night sky continues behind the top of the dashboard screenshot, so the app
+     rises out of the hero into the page */
+  --highlight-ink: #0f1b33;
+  --highlight-muted: #4b5a73;
+  --highlight-line: #dfe5ee;
+  background:
+    linear-gradient(180deg, #13234a 0, #13234a 11rem, transparent 11rem),
+    var(--ifm-background-color);
+  padding: 1.5rem 1.5rem 7rem;
+  /* Overlap the hero by a pixel, so no line of page shows through between them */
+  margin-top: -1px;
 }
 
-.featureHighlightsContainer {
-  max-width: 900px;
+[data-theme='dark'] .highlights {
+  --highlight-ink: #eef2f8;
+  --highlight-muted: #a6b1c4;
+  --highlight-line: #2e3a50;
+}
+
+.productShot {
+  max-width: 1180px;
   margin: 0 auto;
 }
 
-.featureHighlightsContainer p {
-  font-size: 1.25rem;
-  color: var(--ifm-font-color-base);
+/* The dashboard, framed like a window on a desk */
+.productFrame {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 2px 6px rgba(9, 18, 38, 0.25),
+    0 40px 80px -24px rgba(9, 18, 38, 0.55);
+}
+
+.highlightsContainer {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.highlightsTitle {
+  max-width: 22ch;
+  margin: 4.5rem auto 1rem;
+  text-align: center;
+  font-size: clamp(1.75rem, 3.2vw, 2.6rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+  color: var(--highlight-ink);
+}
+
+.highlightsIntro {
+  max-width: 38rem;
+  margin: 0 auto 5rem;
+  text-align: center;
+  font-size: 1.125rem;
+  line-height: 1.65;
+  color: var(--highlight-muted);
+}
+
+/* One feature: text and its screenshot side by side, alternating sides down the page */
+.highlight {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 4rem;
+  align-items: center;
+  padding: 3.5rem 0;
+  border-top: 1px solid var(--highlight-line);
+}
+
+.highlight:nth-of-type(even) .highlightText {
+  order: 2;
+}
+
+.highlightText p {
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  color: var(--highlight-muted);
+  margin-bottom: 1.25rem;
+}
+
+.highlightTitle {
+  font-size: clamp(1.4rem, 2.2vw, 1.85rem);
+  font-weight: 750;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--highlight-ink);
+  margin-bottom: 0.9rem;
+}
+
+.highlightPoints {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem;
+}
+
+/* Each point hangs off a short blue rule: the same blue as the app's buttons */
+.highlightPoints li {
+  position: relative;
+  padding-left: 1.4rem;
+  margin-bottom: 0.45rem;
+  color: var(--highlight-ink);
+  font-size: 0.975rem;
+  line-height: 1.5;
+}
+
+.highlightPoints li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.72em;
+  width: 0.75rem;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--ifm-color-primary);
+}
+
+.highlightLink {
+  font-weight: 600;
+  color: var(--ifm-color-primary);
+}
+
+.highlightShot,
+.highlightDialog {
+  min-width: 0;
+}
+
+.shotFrame {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  border: 1px solid var(--highlight-line);
+  box-shadow: 0 24px 48px -28px rgba(15, 27, 51, 0.45);
+}
+
+/* A dialog on its own is smaller than a full screen: shown narrower, centered in its column */
+.highlightDialog .shotFrame {
+  max-width: 470px;
+  margin: 0 auto;
+  border-radius: 14px;
+}
+
+/* Three phones, the middle one raised */
+.phones {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 1.25rem;
+}
+
+.phoneFrame {
+  width: 30%;
+  max-width: 210px;
+  height: auto;
+  border-radius: 26px;
+  border: 6px solid #0f1b33;
+  box-shadow: 0 24px 48px -24px rgba(15, 27, 51, 0.5);
+}
+
+.phoneFrame:nth-child(2) {
+  margin-top: -2.5rem;
+}
+
+.phoneFrame:nth-child(odd) {
+  margin-top: 1.5rem;
+}
+
+[data-theme='dark'] .phoneFrame {
+  border-color: #3a4760;
+}
+
+.highlightsCta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding-top: 4rem;
+  border-top: 1px solid var(--highlight-line);
+  text-align: center;
+}
+
+.highlightsCta p {
+  margin: 0;
+  color: var(--highlight-muted);
+  font-size: 0.95rem;
+}
+
+.demoButton {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.8rem 1.75rem;
+  border-radius: 8px;
+  background: #2e7cf6;
+  color: #ffffff;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.demoButton:hover {
+  background: #1e6ae1;
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.demoButton:focus-visible,
+.highlightLink:focus-visible {
+  outline: 2px solid var(--ifm-color-primary);
+  outline-offset: 3px;
 }
 
 /* ============================================================
@@ -386,5 +584,56 @@
     width: 210px;
     right: 25px;
     top: -18px;
+  }
+}
+
+/* Highlights on tablets and phones: one column, the screenshot under its text */
+@media screen and (max-width: 996px) {
+  .highlights {
+    padding: 1rem 1.25rem 5rem;
+    background:
+      linear-gradient(180deg, #13234a 0, #13234a 6rem, transparent 6rem),
+      var(--ifm-background-color);
+  }
+
+  .productFrame {
+    border-radius: 10px;
+  }
+
+  .highlightsTitle {
+    margin-top: 3rem;
+  }
+
+  .highlightsIntro {
+    margin-bottom: 3rem;
+  }
+
+  .highlight {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2rem;
+    padding: 2.5rem 0;
+  }
+
+  .highlight:nth-of-type(even) .highlightText {
+    order: 0;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .phones {
+    gap: 0.6rem;
+  }
+
+  .phoneFrame {
+    border-width: 4px;
+    border-radius: 18px;
+  }
+
+  .phoneFrame:nth-child(2) {
+    margin-top: -1.25rem;
+  }
+
+  .phoneFrame:nth-child(odd) {
+    margin-top: 0.75rem;
   }
 }

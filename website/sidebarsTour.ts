@@ -14,6 +14,7 @@ const sidebars: SidebarsConfig = {
     'payees',
     'rules',
     'settings',
+    'phone',
   ],
 };
 

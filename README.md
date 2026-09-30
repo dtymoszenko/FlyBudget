@@ -41,8 +41,9 @@
 
 ## Getting started
 
-- **Desktop app (Windows):** download the installer from the
-  [latest release](https://github.com/dtymoszenko/FlyBudget/releases/latest).
+- **Desktop app (Windows, macOS, Linux):** get it from the
+  [download page](https://flybudget.org/download), which picks the right file for your
+  computer (or from the [latest release](https://github.com/dtymoszenko/FlyBudget/releases/latest)).
 - **Your own server:** run it in Docker (below) and open it from any browser.
 - **From source:**
 

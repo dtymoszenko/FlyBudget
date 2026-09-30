@@ -2,9 +2,9 @@
 // that runs the real server routes on a demo budget (server/src/browser/README.md), so the
 // rest of the app works exactly as it does against a real server.
 import { startDemoWorker } from './demoWorker';
+import { resetPreferences } from '../store/preferencesStore';
 
-/** True in the demo build */
-export const IS_DEMO = import.meta.env.MODE === 'demo';
+export { IS_DEMO } from './isDemo';
 
 interface DemoResponse {
   status: number;
@@ -35,10 +35,22 @@ function apiPath(input: RequestInfo | URL): string | null {
 
 /** Starts the demo's worker and sends every API request there. */
 export function startDemoApi() {
+  // Earlier versions of the demo kept its preferences in the website's localStorage
+  try {
+    localStorage.removeItem('budget-preferences');
+  } catch {
+    // Storage blocked: nothing to clean up
+  }
   worker = startDemoWorker();
   worker.onmessage = (event: MessageEvent<Reply>) => {
     pending.get(event.data.id)?.(event.data);
     pending.delete(event.data.id);
+  };
+  // The worker couldn't start (or crashed): answer what's waiting instead of leaving the app
+  // loading forever
+  worker.onerror = () => {
+    for (const [id, resolve] of pending) resolve({ id, ok: false });
+    pending.clear();
   };
 
   const networkFetch = window.fetch.bind(window);
@@ -63,9 +75,10 @@ export function startDemoApi() {
   };
 }
 
-/** Throws away every change and loads the demo budget again. */
+/** Throws away every change (preferences too) and loads the demo budget again. */
 export async function resetDemo(): Promise<void> {
   await send({ type: 'reset' });
+  resetPreferences();
 }
 
 /**

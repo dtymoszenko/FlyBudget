@@ -147,7 +147,14 @@ function createWindow(): void {
   if (IS_DEV) win.webContents.openDevTools();
 }
 
-Menu.setApplicationMenu(null);
+// No menu bar on Windows and Linux. macOS always shows one, and its keyboard shortcuts
+// (copy and paste, undo in text fields, hide, quit) only work through menu items, so give
+// it the standard app, Edit and Window menus.
+Menu.setApplicationMenu(
+  process.platform === 'darwin'
+    ? Menu.buildFromTemplate([{ role: 'appMenu' }, { role: 'editMenu' }, { role: 'windowMenu' }])
+    : null,
+);
 
 // Only one instance: a second one would fail to bind the port and show a blank window
 const isPrimaryInstance = app.requestSingleInstanceLock();

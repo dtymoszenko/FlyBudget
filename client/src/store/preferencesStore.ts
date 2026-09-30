@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { IS_DEMO } from '../demo/isDemo';
 
 export type Theme = 'light' | 'dark' | 'system';
 export type DateFormatOption = 'MMM d, yyyy' | 'MM/dd/yyyy' | 'dd/MM/yyyy' | 'yyyy-MM-dd';
@@ -36,6 +37,8 @@ interface PreferencesState {
   setGettingStartedHidden: (hidden: boolean) => void;
 }
 
+const PREFERENCES_KEY = 'budget-preferences';
+
 export const usePreferencesStore = create<PreferencesState>()(
   persist(
     (set) => ({
@@ -64,6 +67,16 @@ export const usePreferencesStore = create<PreferencesState>()(
       setSetupSkipped: (setupSkipped) => set({ setupSkipped }),
       setGettingStartedHidden: (gettingStartedHidden) => set({ gettingStartedHidden }),
     }),
-    { name: 'budget-preferences' },
+    {
+      name: PREFERENCES_KEY,
+      // The demo (website "Try the demo") shares the website's storage: keep its preferences
+      // in this tab only, so they're gone with the demo budget when the tab closes
+      storage: createJSONStorage(() => (IS_DEMO ? sessionStorage : localStorage)),
+    },
   ),
 );
+
+/** Back to the defaults (the demo's "Start over"). */
+export function resetPreferences() {
+  usePreferencesStore.setState(usePreferencesStore.getInitialState(), true);
+}

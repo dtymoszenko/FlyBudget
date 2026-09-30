@@ -171,17 +171,27 @@ function BudgetWidget({
   );
 }
 
+/** What a transaction put in this category: for a split, only its parts in it */
+function amountInCategory(t: Transaction, categoryId: string): number {
+  if (!t.children?.length) return t.amount;
+  return t.children
+    .filter((c) => c.categoryId === categoryId)
+    .reduce((sum, c) => sum + c.amount, 0);
+}
+
 function SummaryWidget({
   transactions,
+  categoryId,
   isIncome,
 }: {
   transactions: Transaction[];
+  categoryId: string;
   isIncome: boolean;
 }) {
   const stats = useMemo(() => {
     if (transactions.length === 0) return null;
 
-    const amounts = transactions.map((t) => Math.abs(t.amount));
+    const amounts = transactions.map((t) => Math.abs(amountInCategory(t, categoryId)));
     const total = amounts.reduce((s, a) => s + a, 0);
     const largest = Math.max(...amounts);
     const average = Math.round(total / amounts.length);
@@ -195,7 +205,7 @@ function SummaryWidget({
       firstDate: dates[0],
       lastDate: dates[dates.length - 1],
     };
-  }, [transactions]);
+  }, [transactions, categoryId]);
 
   const rows = stats
     ? [
@@ -323,7 +333,7 @@ export default function CategoryDetailPage() {
             )}
           </div>
           <div>
-            <SummaryWidget transactions={transactions} isIncome={isIncome} />
+            <SummaryWidget transactions={transactions} categoryId={id ?? ''} isIncome={isIncome} />
           </div>
         </div>
       </div>

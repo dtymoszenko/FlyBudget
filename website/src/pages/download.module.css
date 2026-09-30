@@ -1,0 +1,138 @@
+.page {
+  /* The layout is a flex column: without this, the code block below widens the page */
+  width: 100%;
+  min-width: 0;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 3.5rem 1.5rem 5rem;
+}
+
+.header {
+  margin-bottom: 3rem;
+}
+
+.title {
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  margin-bottom: 0.75rem;
+}
+
+.lead {
+  font-size: 1.15rem;
+  color: var(--ifm-color-emphasis-700);
+  max-width: 36rem;
+}
+
+/* The download for the visitor's own system */
+.recommended {
+  margin-top: 1.75rem;
+}
+
+.primaryButton {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.85rem 1.75rem;
+  border-radius: 8px;
+  background: #2e7cf6;
+  color: #ffffff;
+  font-size: 1.05rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.primaryButton:hover {
+  background: #1e6ae1;
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.primaryButton:focus-visible {
+  outline: 2px solid var(--ifm-color-primary);
+  outline-offset: 3px;
+}
+
+.recommendedNote {
+  margin: 0.75rem 0 0;
+  font-size: 0.925rem;
+  color: var(--ifm-color-emphasis-700);
+}
+
+.section {
+  padding-top: 2.5rem;
+  margin-top: 2.5rem;
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.sectionTitle {
+  font-size: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.platforms {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2rem;
+}
+
+.platformName {
+  font-size: 1.2rem;
+  margin-bottom: 0.2rem;
+}
+
+.requires {
+  font-size: 0.875rem;
+  color: var(--ifm-color-emphasis-600);
+  margin-bottom: 1rem;
+}
+
+.files {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+}
+
+.files li {
+  display: flex;
+  flex-direction: column;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.files li:first-child {
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.files a {
+  font-weight: 600;
+}
+
+.files span {
+  font-size: 0.85rem;
+  color: var(--ifm-color-emphasis-600);
+}
+
+.firstRun {
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--ifm-color-emphasis-700);
+}
+
+.after {
+  margin-top: 1rem;
+}
+
+.command {
+  max-width: 36rem;
+}
+
+.more li {
+  margin-bottom: 0.6rem;
+}
+
+@media screen and (max-width: 860px) {
+  .platforms {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

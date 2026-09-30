@@ -4,33 +4,98 @@ sidebar_position: 9
 
 # Reports
 
+FlyBudget has three places to look at your money over time: **report dashboards**, the
+**custom report builder**, and **Cash Flow**.
+
 ## Dashboards
 
-**Reports** is a set of dashboards, each a grid of charts you can arrange. Choose **Edit
-layout** to drag and resize them, and **Add widget** to add more:
+**Reports** is a set of dashboards, shown as tabs. Each one is a grid of charts (widgets). A new
+budget starts with an **Overview** dashboard; add more with **+** next to the tabs, and rename or
+delete them from the ⋮ menu on the right (**Rename dashboard…**, **Delete dashboard**; the last
+dashboard can't be deleted).
 
-- **Summary**: income, spending and net for the period.
-- **Net worth**: everything you own minus everything you owe, over time.
-- **Income vs. expenses**: month by month.
-- **Spending**: by category.
-- **Spending trends**: up to five categories over time.
-- **Transaction calendar**: money in and out for each day.
-- Any **custom report** you've saved.
+![Report dashboards](/img/screenshots/reports.webp)
 
-Each dashboard has its own date range, and any chart can have its own range too, either a
-moving one like "last 6 months" or fixed months. Choose **Open** from a chart's ⋮ menu for its
-full view, with the numbers behind it and **Export CSV**.
+### Widgets
+
+Choose **Add widget** to add one of these, or any custom report you've saved:
+
+| Widget                   | What it shows                                                                                      |
+| ------------------------ | -------------------------------------------------------------------------------------------------- |
+| **Summary**              | Total income, total expenses, average monthly expenses and average per transaction for the period. |
+| **Net Worth**            | Net worth over time, with assets and liabilities.                                                  |
+| **Income & Expenses**    | Income and expenses for each month.                                                                |
+| **Spending by Category** | Your spending categories, biggest first.                                                           |
+| **Spending Trends**      | How spending in up to five categories changed over time (your top five, unless you pick them).     |
+| **Transaction Calendar** | Money in and out on each day.                                                                      |
+
+Transfers between your accounts and balance adjustments aren't income or spending, so reports
+leave them out. Split transactions count each part in its own category.
+
+### Arranging a dashboard
+
+Choose **Edit layout** to drag widgets around and resize them from their corners; choose
+**Done** when you're finished. Layouts are saved as you go. On a phone, widgets are shown one
+under another.
+
+![Editing a dashboard's layout](/img/screenshots/reports-edit-layout.webp)
+
+Each widget's ⋮ menu can **Open** its full view (**Edit report** for a custom report),
+**Rename** it, give it its own **Date range**, **Freeze dates** or **Unfreeze**, **Move to**
+another dashboard, or **Remove from dashboard**. Removed a widget by mistake? Press
+
+<kbd>Ctrl</kbd>+<kbd>Z</kbd> (<kbd>⌘</kbd>+<kbd>Z</kbd> on a Mac) to [undo](./settings#undo).
+
+### Date ranges
+
+The **Date range** bar at the top of a dashboard sets the period for all of its widgets: 1M, 3M,
+6M, 12M, year to date, last year or all. These ranges are **live**: "last 6 months" moves forward
+as time passes. **Frozen** keeps exact months instead.
+
+A widget can keep its own range; the bar then says how many widgets do, and the widget's title
+shows a pin. Choose **Use dashboard range** in its full view to go back to the dashboard's.
+
+Short ranges show more detail: Net Worth draws a point for each day for ranges up to three
+months, and Spending Trends shows a running total by day for a single month.
+
+### Full view
+
+Open a widget for its full view: four summary figures, a larger chart, and a table of the
+numbers behind it. **Export CSV** saves that table. Change the range here and choose **Save to
+widget** to keep it; for Spending Trends you can also pick which categories to show.
+
+![The Net Worth report](/img/screenshots/report-net-worth.webp)
+
+The **Transaction Calendar** shows each day of up to three months as a square with a green bar
+for money in and a red bar for money out. Longer ranges become a heatmap, one small square per
+day, colored by whether more came in or went out. Click a day to list its transactions.
+
+![The Transaction Calendar](/img/screenshots/report-calendar.webp)
 
 ## Custom reports
 
-**Custom Report** (also in **Add widget**) builds anything else. Pick a chart type (bar, stacked bar, line,
-area, donut or table), group by category, category group, payee, account or month, choose
-expenses, income or net, and filter by accounts and categories. Save it to reopen later, and
-it's added to a dashboard.
+**Custom Report** opens the report builder. Choose:
 
-## Cash flow
+- **Chart Type**: bar, stacked bar, line, area, donut or table.
+- **Mode**: **Total** for the whole period, or **Over Time** for each month.
+- **Group By**: category, category group, payee, account or month.
+- **Balance Type**: expenses, income or net.
+- **Date Range**: 1M, 3M, 6M, 12M, year to date, last year, all, or custom dates.
+- **Accounts** and **Categories** to include.
 
-**Cash Flow** draws where your money came from and where it went for a period, from income
-sources through to spending categories and savings.
+![The custom report builder](/img/screenshots/custom-report.webp)
 
-See the [Reports tour](/tour/reports) for more.
+The chart updates as you change the settings. **Save** it to reopen later from the list at the
+top; saving adds it to a dashboard as a widget, and **Update** saves changes to a saved report.
+**Export** downloads the numbers as CSV.
+
+## Cash Flow
+
+**Cash Flow** draws where your money came from and where it went for a period: income sources on
+the left, flowing into category groups and then single categories, with what you saved on top.
+Above it are your total income, total expenses, net income and savings rate.
+
+![The Cash Flow page](/img/screenshots/cash-flow.webp)
+
+Pick the period at the top (1M, 3M, 6M, this year, last year or custom), and use **Export CSV**
+to save the numbers.

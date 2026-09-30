@@ -1,4 +1,4 @@
-import { readFileSync } from 'fs';
+import { readFileSync, rmSync } from 'fs';
 import path from 'path';
 import { defineConfig, normalizePath, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
@@ -37,6 +37,56 @@ function demoServerModules(): Plugin {
 }
 
 /**
+ * The demo's Content Security Policy, like the one the server sends the app (helmet in
+ * server/src/middleware/security.ts), plus WebAssembly for the worker's SQLite. The website's
+ * host sends the same policy as a header (website/static/_headers), with frame-ancestors,
+ * which only works as a header.
+ */
+const DEMO_CSP = [
+  "default-src 'self'",
+  "script-src 'self' 'wasm-unsafe-eval'",
+  "style-src 'self' 'unsafe-inline'",
+  "font-src 'self'",
+  "img-src 'self' data: blob:",
+  "connect-src 'self'",
+  "worker-src 'self'",
+  "frame-src 'none'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+].join('; ');
+
+/**
+ * The demo's page: the same strict CSP as the app (it runs on the website, whose host may not
+ * send one), no referrer, and no service worker file (the demo never registers one).
+ */
+function demoPage(): Plugin {
+  let outDir = '';
+  return {
+    name: 'flybudget-demo-page',
+    apply: 'build',
+    configResolved(config) {
+      outDir = path.resolve(config.root, config.build.outDir);
+    },
+    transformIndexHtml: () => [
+      {
+        tag: 'meta',
+        attrs: { 'http-equiv': 'Content-Security-Policy', content: DEMO_CSP },
+        injectTo: 'head-prepend',
+      },
+      {
+        tag: 'meta',
+        attrs: { name: 'referrer', content: 'no-referrer' },
+        injectTo: 'head-prepend',
+      },
+    ],
+    closeBundle() {
+      rmSync(path.join(outDir, 'sw.js'), { force: true });
+    },
+  };
+}
+
+/**
  * Every build except the demo: swap the module that starts the demo's worker for a stub, so
  * none of the demo (or the server code it runs) ends up in the build, and building the
  * client doesn't need the server's packages installed.
@@ -59,7 +109,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     tailwindcss(),
-    ...(mode === 'demo' ? [demoServerModules()] : [withoutDemoWorker()]),
+    ...(mode === 'demo' ? [demoServerModules(), demoPage()] : [withoutDemoWorker()]),
   ],
   // The desktop app loads files from disk and the demo lives under /demo/ on the website,
   // so both use relative paths
