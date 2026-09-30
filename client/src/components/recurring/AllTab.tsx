@@ -12,7 +12,8 @@ import {
 } from '../../hooks/useSchedules';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import StatusBadge, { statusLabel, type RecurringBadgeStatus } from './StatusBadge';
-import RowMenu from '../ui/RowMenu';
+import RowMenu, { type RowMenuItem } from '../ui/RowMenu';
+import { useIsPhone } from '../../hooks/useIsPhone';
 import {
   FREQ_LABEL,
   formatScheduleAmount,
@@ -136,6 +137,7 @@ export default function AllTab({
     );
   }, [rows, filter]);
 
+  const isPhone = useIsPhone();
   const active = filtered.filter((r) => r.schedule.status !== 'canceled');
   const canceled = filtered.filter((r) => r.schedule.status === 'canceled');
 
@@ -144,6 +146,92 @@ export default function AllTab({
     const isPaused = s.status === 'paused';
     const isCanceled = s.status === 'canceled';
     const muted = isPaused || isCanceled;
+    const menu: RowMenuItem[] = [
+      {
+        label: 'Mark next as paid',
+        hidden: !r.nextOcc || isCanceled,
+        onClick: () =>
+          r.nextOcc &&
+          markPaid.mutate({
+            scheduleId: s.id,
+            date: r.nextOcc.expectedDate,
+            occurrenceId: r.nextOcc.id,
+          }),
+      },
+      {
+        label: 'Skip next date',
+        hidden: !r.nextOcc || isCanceled,
+        onClick: () => r.nextOcc && skipOcc.mutate(r.nextOcc.id),
+      },
+      {
+        label: isPaused ? 'Resume' : 'Pause',
+        hidden: isCanceled,
+        onClick: () => updateSchedule.mutate({ id: s.id, status: isPaused ? 'active' : 'paused' }),
+      },
+      {
+        label: 'Restart',
+        hidden: !isCanceled,
+        onClick: () => updateSchedule.mutate({ id: s.id, status: 'active' }),
+      },
+      { label: 'Edit', onClick: () => onEdit(s) },
+      {
+        label: 'Cancel recurring',
+        danger: true,
+        hidden: isCanceled,
+        onClick: () => setConfirm({ schedule: s, hard: false }),
+      },
+      {
+        label: 'Delete permanently',
+        danger: true,
+        hidden: !isCanceled,
+        onClick: () => setConfirm({ schedule: s, hard: true }),
+      },
+    ];
+    const amount = (
+      <span
+        className={`text-sm font-medium tabular-nums text-right whitespace-nowrap ${
+          muted ? 'text-text-tertiary' : s.amount > 0 ? 'text-positive' : 'text-text'
+        }`}
+      >
+        {formatScheduleAmount(s.amount, s.amountType)}
+      </span>
+    );
+    const nextDate = r.nextDate ? format(parseISO(r.nextDate), 'MMM d, yyyy') : '—';
+    const frequency = FREQ_LABEL.get(s.recurrenceType) ?? s.recurrenceType;
+
+    // Phones: a card. Name and amount on top; payee, account and frequency, then the status
+    // and next date
+    if (isPhone) {
+      return (
+        <div
+          key={s.id}
+          onClick={() => onEdit(s)}
+          className="flex items-start gap-2 pl-4 pr-1 py-3 border-b border-border-light cursor-pointer"
+        >
+          <div className="min-w-0 flex-1">
+            <div className="flex items-baseline justify-between gap-3">
+              <p
+                className={`text-sm font-medium truncate ${muted ? 'text-text-tertiary' : 'text-text'}`}
+              >
+                {s.name}
+              </p>
+              {amount}
+            </div>
+            <p className="text-xs text-text-tertiary truncate mt-0.5">
+              {[frequency, r.payeeName, r.accountName].filter(Boolean).join(' · ')}
+            </p>
+            <div className="mt-1.5 flex items-center gap-2 text-xs text-text-secondary">
+              <StatusBadge status={r.status} />
+              {r.nextDate && <span className="tabular-nums">Next {nextDate}</span>}
+            </div>
+          </div>
+          <div onClick={(e) => e.stopPropagation()}>
+            <RowMenu label={`Actions for ${s.name}`} items={menu} />
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div
         key={s.id}
@@ -158,67 +246,14 @@ export default function AllTab({
         </span>
         <span className="text-sm text-text-secondary truncate">{r.payeeName || '—'}</span>
         <span className="text-sm text-text-secondary truncate">{r.accountName || '—'}</span>
-        <span className="text-sm text-text-secondary tabular-nums">
-          {r.nextDate ? format(parseISO(r.nextDate), 'MMM d, yyyy') : '—'}
-        </span>
+        <span className="text-sm text-text-secondary tabular-nums">{nextDate}</span>
         <div>
           <StatusBadge status={r.status} />
         </div>
-        <span
-          className={`text-sm font-medium tabular-nums text-right whitespace-nowrap ${
-            muted ? 'text-text-tertiary' : s.amount > 0 ? 'text-positive' : 'text-text'
-          }`}
-        >
-          {formatScheduleAmount(s.amount, s.amountType)}
-        </span>
-        <span className="text-sm text-text-secondary truncate">
-          {FREQ_LABEL.get(s.recurrenceType) ?? s.recurrenceType}
-        </span>
+        {amount}
+        <span className="text-sm text-text-secondary truncate">{frequency}</span>
         <div onClick={(e) => e.stopPropagation()}>
-          <RowMenu
-            items={[
-              {
-                label: 'Mark next as paid',
-                hidden: !r.nextOcc || isCanceled,
-                onClick: () =>
-                  r.nextOcc &&
-                  markPaid.mutate({
-                    scheduleId: s.id,
-                    date: r.nextOcc.expectedDate,
-                    occurrenceId: r.nextOcc.id,
-                  }),
-              },
-              {
-                label: 'Skip next date',
-                hidden: !r.nextOcc || isCanceled,
-                onClick: () => r.nextOcc && skipOcc.mutate(r.nextOcc.id),
-              },
-              {
-                label: isPaused ? 'Resume' : 'Pause',
-                hidden: isCanceled,
-                onClick: () =>
-                  updateSchedule.mutate({ id: s.id, status: isPaused ? 'active' : 'paused' }),
-              },
-              {
-                label: 'Restart',
-                hidden: !isCanceled,
-                onClick: () => updateSchedule.mutate({ id: s.id, status: 'active' }),
-              },
-              { label: 'Edit', onClick: () => onEdit(s) },
-              {
-                label: 'Cancel recurring',
-                danger: true,
-                hidden: isCanceled,
-                onClick: () => setConfirm({ schedule: s, hard: false }),
-              },
-              {
-                label: 'Delete permanently',
-                danger: true,
-                hidden: !isCanceled,
-                onClick: () => setConfirm({ schedule: s, hard: true }),
-              },
-            ]}
-          />
+          <RowMenu label={`Actions for ${s.name}`} items={menu} />
         </div>
       </div>
     );
@@ -226,9 +261,9 @@ export default function AllTab({
 
   return (
     <div className="p-6">
-      <div className="flex items-center justify-between gap-3 mb-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
         <div className="flex items-center gap-2">
-          <Button variant="secondary" size="sm" onClick={onFind}>
+          <Button variant="secondary" size="sm" onClick={onFind} className="max-md:hidden">
             <Sparkles size={13} /> Find recurring
           </Button>
           <Button
@@ -240,7 +275,7 @@ export default function AllTab({
             <Clock size={13} /> Upcoming: {describeUpcomingLength(upcomingLength)}
           </Button>
         </div>
-        <div className="relative w-72">
+        <div className="relative w-72 max-md:w-full">
           <Search
             size={14}
             className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none"
@@ -256,7 +291,7 @@ export default function AllTab({
 
       <div className="bg-surface rounded-lg shadow-card border border-border-light overflow-hidden">
         <div
-          className={`${GRID} px-5 py-2.5 bg-surface-alt border-b border-border-light text-xs font-medium text-text-tertiary sticky top-0 z-10`}
+          className={`${GRID} max-md:hidden px-5 py-2.5 bg-surface-alt border-b border-border-light text-xs font-medium text-text-tertiary sticky top-0 z-10`}
         >
           <span>Name</span>
           <span>Payee</span>

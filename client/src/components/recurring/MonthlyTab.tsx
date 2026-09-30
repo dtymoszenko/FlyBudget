@@ -139,8 +139,12 @@ export default function MonthlyTab({
     if (!items.length) return null;
     return (
       <div>
+        {/* Phones show each item as a card, so the header is just the section's name */}
+        <div className="md:hidden px-4 py-2 bg-surface-alt border-y border-border-light text-xs font-semibold text-text-secondary">
+          {title}
+        </div>
         <div
-          className={`${OCCURRENCE_GRID} px-5 py-2 bg-surface-alt border-y border-border-light text-xs font-medium text-text-tertiary`}
+          className={`${OCCURRENCE_GRID} max-md:hidden px-5 py-2 bg-surface-alt border-y border-border-light text-xs font-medium text-text-tertiary`}
         >
           <span className="text-text-secondary font-semibold">{title}</span>
           <span>Date</span>
@@ -186,7 +190,7 @@ export default function MonthlyTab({
         {/* Card header: month + navigation + view toggle */}
         <div className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 border-b border-border-light">
           <h2 className="text-base font-semibold text-text">{format(monthDate, 'MMMM yyyy')}</h2>
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5 max-md:w-full">
             <button
               className={navBtn}
               onClick={() => setMonth(format(subMonths(monthDate, 1), 'yyyy-MM'))}
@@ -204,12 +208,12 @@ export default function MonthlyTab({
             <button
               onClick={() => setMonth(format(new Date(), 'yyyy-MM'))}
               disabled={isCurrentMonth}
-              className="px-2.5 py-1 text-xs font-medium border border-border rounded-md text-text-secondary hover:bg-hover disabled:opacity-50 disabled:cursor-default transition-colors cursor-pointer"
+              className="px-2.5 py-1 max-md:min-h-11 text-xs font-medium border border-border rounded-md text-text-secondary hover:bg-hover disabled:opacity-50 disabled:cursor-default transition-colors cursor-pointer"
             >
               Today
             </button>
-            <div className="w-px h-5 bg-border mx-1" />
-            <div className="flex border border-border rounded-md overflow-hidden">
+            <div className="w-px h-5 bg-border mx-1 max-md:hidden" />
+            <div className="flex border border-border rounded-md overflow-hidden max-md:ml-auto">
               {(
                 [
                   ['list', 'List', List],
@@ -219,13 +223,14 @@ export default function MonthlyTab({
                 <button
                   key={id}
                   onClick={() => setView(id)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
+                  className={`flex items-center justify-center gap-1.5 px-2.5 py-1 max-md:min-h-11 max-md:min-w-11 text-xs font-medium transition-colors cursor-pointer ${
                     view === id
                       ? 'bg-surface-alt text-text'
                       : 'text-text-tertiary hover:text-text-secondary'
                   } ${id === 'calendar' ? 'border-l border-border' : ''}`}
                 >
-                  <Icon size={13} /> {label}
+                  <Icon size={13} aria-hidden />
+                  <span className="max-md:sr-only">{label}</span>
                 </button>
               ))}
             </div>

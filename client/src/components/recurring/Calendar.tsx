@@ -24,6 +24,16 @@ const CHIP_COLORS: Record<OccurrenceDisplayStatus, string> = {
   cancelled: 'bg-surface-alt text-text-disabled line-through',
 };
 
+/** Phones: a dot per item instead of a name chip (names don't fit a seventh of a phone) */
+const DOT_COLORS: Record<OccurrenceDisplayStatus, string> = {
+  upcoming: 'bg-brand-600',
+  due: 'bg-caution',
+  waiting: 'bg-negative',
+  paid: 'bg-positive',
+  skipped: 'bg-text-disabled',
+  cancelled: 'bg-text-disabled',
+};
+
 interface Props {
   month: string;
   occurrences: ScheduleOccurrence[];
@@ -70,7 +80,7 @@ export default function Calendar({ month, occurrences, onDateClick }: Props) {
           <div
             key={dateStr}
             onClick={() => dayOccs.length > 0 && onDateClick?.(dateStr)}
-            className={`bg-surface min-h-[96px] p-1.5 flex flex-col gap-1 ${
+            className={`bg-surface min-h-[96px] max-md:min-h-14 p-1.5 flex flex-col gap-1 ${
               dayOccs.length > 0 ? 'cursor-pointer hover:bg-hover' : ''
             } ${!inMonth ? 'opacity-40' : ''}`}
           >
@@ -83,17 +93,27 @@ export default function Calendar({ month, occurrences, onDateClick }: Props) {
             >
               {format(day, 'd')}
             </span>
+            {dayOccs.length > 0 && (
+              <span className="md:hidden flex flex-wrap gap-1 px-0.5" aria-hidden>
+                {dayOccs.map((occ) => (
+                  <span
+                    key={occ.id}
+                    className={`w-2 h-2 rounded-full ${DOT_COLORS[occ.displayStatus]}`}
+                  />
+                ))}
+              </span>
+            )}
             {dayOccs.slice(0, MAX_CHIPS).map((occ) => (
               <span
                 key={occ.id}
-                className={`text-[11px] leading-tight px-1.5 py-0.5 rounded truncate ${CHIP_COLORS[occ.displayStatus]}`}
+                className={`max-md:hidden text-[11px] leading-tight px-1.5 py-0.5 rounded truncate ${CHIP_COLORS[occ.displayStatus]}`}
                 title={occ.scheduleName}
               >
                 {occ.scheduleName}
               </span>
             ))}
             {dayOccs.length > MAX_CHIPS && (
-              <span className="text-[11px] text-text-tertiary px-1">
+              <span className="max-md:hidden text-[11px] text-text-tertiary px-1">
                 +{dayOccs.length - MAX_CHIPS} more
               </span>
             )}

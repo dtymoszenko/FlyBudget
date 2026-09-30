@@ -2,7 +2,8 @@ import { format, parseISO, differenceInCalendarDays } from 'date-fns';
 import { formatCurrency } from '../../utils/currency';
 import type { ScheduleOccurrence } from '../../types';
 import StatusBadge from './StatusBadge';
-import RowMenu from '../ui/RowMenu';
+import RowMenu, { type RowMenuItem } from '../ui/RowMenu';
+import { useIsPhone } from '../../hooks/useIsPhone';
 import { FREQ_LABEL, formatScheduleAmount, occurrenceBadgeStatus } from './scheduleFormat';
 
 /** Shared with the section header in MonthlyTab so columns line up. */
@@ -32,6 +33,7 @@ export default function RecurringItemRow({
   onMatch,
   onUnmatch,
 }: Props) {
+  const isPhone = useIsPhone();
   const daysUntil = differenceInCalendarDays(parseISO(occ.expectedDate), new Date());
   const isPaid = occ.displayStatus === 'paid';
   const isPending =
@@ -53,6 +55,76 @@ export default function RecurringItemRow({
     };
   }
 
+  const menu: RowMenuItem[] = [
+    {
+      label: 'Mark as paid',
+      onClick: () => onMarkPaid?.(),
+      hidden: !isPending || !onMarkPaid,
+    },
+    {
+      label: 'Match to transaction',
+      onClick: () => onMatch?.(),
+      hidden: !isPending || !onMatch,
+    },
+    { label: 'Skip', onClick: () => onSkip?.(), hidden: !isPending || !onSkip },
+    {
+      label: 'Unlink transaction',
+      onClick: () => onUnmatch?.(),
+      hidden: !isPaid || !onUnmatch,
+    },
+    { label: 'Edit recurring', onClick: () => onEdit?.(), hidden: !onEdit },
+  ];
+  const amount = (
+    <p
+      className={`text-sm font-medium tabular-nums whitespace-nowrap ${
+        isMuted ? 'text-text-tertiary' : occ.expectedAmount > 0 ? 'text-positive' : 'text-text'
+      }`}
+    >
+      {formatScheduleAmount(occ.expectedAmount, occ.amountType)}
+    </p>
+  );
+  const frequency = FREQ_LABEL.get(occ.recurrenceType) ?? occ.recurrenceType;
+
+  // Phones: a card. Name and amount on top; date, account and status below
+  if (isPhone) {
+    return (
+      <div
+        data-date={occ.expectedDate}
+        onClick={onEdit}
+        className={`flex items-start gap-2 pl-4 pr-1 py-3 border-b border-border-light last:border-b-0 cursor-pointer ${
+          highlighted ? 'bg-brand-50' : ''
+        }`}
+      >
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline justify-between gap-3">
+            <p
+              className={`text-sm font-medium truncate ${isMuted ? 'text-text-tertiary' : 'text-text'}`}
+            >
+              {occ.scheduleName}
+            </p>
+            {amount}
+          </div>
+          <p className="text-xs text-text-tertiary truncate mt-0.5">
+            {format(parseISO(occ.expectedDate), 'MMM d')}
+            {relative && <span className={relative.tone}> · {relative.text}</span>} · {frequency}
+            {accountName ? ` · ${accountName}` : ''}
+          </p>
+          <div className="mt-1.5 flex items-center gap-2">
+            <StatusBadge status={occurrenceBadgeStatus(occ, upcomingDays)} />
+            {hasDifferentAmount && (
+              <span className="text-xs text-caution tabular-nums" title="Actual paid amount">
+                Paid {formatCurrency(occ.matchedAmount!)}
+              </span>
+            )}
+          </div>
+        </div>
+        <div onClick={(e) => e.stopPropagation()}>
+          <RowMenu label={`Actions for ${occ.scheduleName}`} items={menu} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       data-date={occ.expectedDate}
@@ -67,9 +139,7 @@ export default function RecurringItemRow({
         >
           {occ.scheduleName}
         </p>
-        <p className="text-xs text-text-tertiary truncate">
-          {FREQ_LABEL.get(occ.recurrenceType) ?? occ.recurrenceType}
-        </p>
+        <p className="text-xs text-text-tertiary truncate">{frequency}</p>
       </div>
 
       <div className="min-w-0">
@@ -86,13 +156,7 @@ export default function RecurringItemRow({
       </div>
 
       <div className="text-right">
-        <p
-          className={`text-sm font-medium tabular-nums whitespace-nowrap ${
-            isMuted ? 'text-text-tertiary' : occ.expectedAmount > 0 ? 'text-positive' : 'text-text'
-          }`}
-        >
-          {formatScheduleAmount(occ.expectedAmount, occ.amountType)}
-        </p>
+        {amount}
         {hasDifferentAmount && (
           <p className="text-xs text-caution tabular-nums" title="Actual paid amount">
             {formatCurrency(occ.matchedAmount!)}
@@ -101,27 +165,7 @@ export default function RecurringItemRow({
       </div>
 
       <div onClick={(e) => e.stopPropagation()}>
-        <RowMenu
-          items={[
-            {
-              label: 'Mark as paid',
-              onClick: () => onMarkPaid?.(),
-              hidden: !isPending || !onMarkPaid,
-            },
-            {
-              label: 'Match to transaction',
-              onClick: () => onMatch?.(),
-              hidden: !isPending || !onMatch,
-            },
-            { label: 'Skip', onClick: () => onSkip?.(), hidden: !isPending || !onSkip },
-            {
-              label: 'Unlink transaction',
-              onClick: () => onUnmatch?.(),
-              hidden: !isPaid || !onUnmatch,
-            },
-            { label: 'Edit recurring', onClick: () => onEdit?.(), hidden: !onEdit },
-          ]}
-        />
+        <RowMenu label={`Actions for ${occ.scheduleName}`} items={menu} />
       </div>
     </div>
   );

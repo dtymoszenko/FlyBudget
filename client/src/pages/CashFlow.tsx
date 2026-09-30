@@ -7,7 +7,8 @@ import { usePreferencesStore } from '../store/preferencesStore';
 import { chartColors } from '../utils/chartColors';
 import { Button } from '../components/ui/Button';
 import { MonthRangePicker } from '../components/ui/MonthRangePicker';
-import { Download, X, Info } from 'lucide-react';
+import { Download, X, Info, ChevronDown, ChevronRight } from 'lucide-react';
+import { useIsPhone } from '../hooks/useIsPhone';
 import { TransactionTable } from '../components/transactions/TransactionTable';
 import {
   ChartSkeleton,
@@ -39,6 +40,11 @@ const MIN_SLOT = 30; // vertical room reserved per node so its two-line label fi
 const NODE_GAP = 10;
 const SANKEY_MARGIN_Y = 32;
 const SANKEY_MIN_H = 420;
+/**
+ * The diagram's labels need about 350px beside the bars, so on phones it's drawn at a fixed
+ * width inside a box that scrolls sideways (see CashFlowPage)
+ */
+const SANKEY_BOX = 'w-full max-md:w-[760px]';
 
 interface SankeyNode {
   name: string;
@@ -614,19 +620,19 @@ function SankeyDiagram({ from, to, selectedNode, onNodeClick }: SankeyDiagramPro
 
   if (il || sl)
     return (
-      <div ref={containerRef} className="w-full" style={{ height: SANKEY_MIN_H }}>
+      <div ref={containerRef} className={SANKEY_BOX} style={{ height: SANKEY_MIN_H }}>
         <ChartSkeleton />
       </div>
     );
   if (!graph)
     return (
-      <div ref={containerRef} className="w-full" style={{ height: SANKEY_MIN_H }}>
+      <div ref={containerRef} className={SANKEY_BOX} style={{ height: SANKEY_MIN_H }}>
         <EmptyState />
       </div>
     );
 
   return (
-    <div ref={containerRef} className="relative w-full">
+    <div ref={containerRef} className={`relative ${SANKEY_BOX}`}>
       {width > 0 && layout && (
         <svg width={width} height={height} className="select-none">
           {/* Links */}
@@ -899,6 +905,179 @@ function SankeyTooltip({
   );
 }
 
+// ─── Phone list ──────────────────────────────────────────────────────────────
+
+const pct = (n: number | undefined) =>
+  n == null ? '' : `${n < 10 ? n.toFixed(1) : Math.round(n)}%`;
+
+/**
+ * Phones: the same numbers as the diagram, as a list. Money in, then where it went: savings and
+ * each spending group with a bar for its share of income. Tap a group to see its categories,
+ * and a category (or "All of …") to list its transactions below.
+ */
+function CashFlowList({ from, to, selectedNode, onNodeClick }: SankeyDiagramProps) {
+  const showIcons = usePreferencesStore((s) => s.showCategoryIcons);
+  const { data: incomeData = [], isLoading: il } = useIncomeByCategory(from, to);
+  const { data: spendingData = [], isLoading: sl } = useSpendingByCategory(from, to);
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
+  const graph = useMemo(
+    () => buildSankeyGraph(incomeData, spendingData, showIcons),
+    [incomeData, spendingData, showIcons],
+  );
+
+  if (il || sl)
+    return (
+      <div style={{ height: SANKEY_MIN_H }}>
+        <ChartSkeleton />
+      </div>
+    );
+  if (!graph)
+    return (
+      <div style={{ height: SANKEY_MIN_H }}>
+        <EmptyState />
+      </div>
+    );
+
+  const income = graph.nodes.filter((n) => n.nodeType === 'income');
+  const savings = graph.nodes.find((n) => n.nodeType === 'savings');
+  const groups = graph.nodes.filter((n) => n.nodeType === 'expense-group');
+  // Bars are shares of income (or of spending, when more went out than came in)
+  const base = Math.max(graph.totalIncome, graph.totalExpenses, 1);
+  const isSelected = (n: SankeyNode) =>
+    !!selectedNode &&
+    selectedNode.nodeType === n.nodeType &&
+    (n.nodeType === 'subcategory'
+      ? selectedNode.categoryId === n.categoryId
+      : selectedNode.groupName === n.groupName);
+  const select = (n: SankeyNode) =>
+    onNodeClick(
+      isSelected(n)
+        ? null
+        : {
+            categoryId: n.categoryId,
+            groupId: n.groupId,
+            groupName: n.groupName,
+            name: n.name,
+            nodeType: n.nodeType,
+          },
+    );
+
+  const bar = (amount: number, color: string) => (
+    <div className="h-1.5 mt-1.5 rounded-full bg-surface-alt overflow-hidden">
+      <div
+        className="h-full rounded-full"
+        style={{ width: `${Math.max((amount / base) * 100, 1)}%`, background: color }}
+      />
+    </div>
+  );
+
+  return (
+    <div className="space-y-4">
+      <section className="bg-surface rounded-lg shadow-card border border-border-light">
+        <h3 className="px-4 pt-3 pb-1 text-xs font-semibold text-text-secondary">Money in</h3>
+        {income.map((n) => (
+          <div
+            key={n.name}
+            className="px-4 py-2.5 border-t border-border-light first-of-type:border-t-0"
+          >
+            <div className="flex items-baseline justify-between gap-3 text-sm">
+              <span className="truncate text-text">{n.name}</span>
+              <span className="tabular-nums font-medium text-positive">
+                {formatCurrency(n.amount)}
+              </span>
+            </div>
+            {bar(n.amount, n.color)}
+          </div>
+        ))}
+      </section>
+
+      <section className="bg-surface rounded-lg shadow-card border border-border-light overflow-hidden">
+        <h3 className="px-4 pt-3 pb-1 text-xs font-semibold text-text-secondary">Where it went</h3>
+        {savings && (
+          <div className="px-4 py-2.5">
+            <div className="flex items-baseline justify-between gap-3 text-sm">
+              <span className="text-text font-medium">Saved</span>
+              <span className="tabular-nums font-medium text-positive">
+                {formatCurrency(savings.amount)}
+                <span className="ml-1.5 text-xs font-normal text-text-tertiary">
+                  {' '}
+                  {pct(savings.savingsRate)}
+                </span>
+              </span>
+            </div>
+            {bar(savings.amount, savings.color)}
+          </div>
+        )}
+        {groups.map((g) => {
+          const open = openGroup === g.groupName;
+          const subs = graph.nodes.filter(
+            (n) => n.nodeType === 'subcategory' && n.groupName === g.groupName,
+          );
+          return (
+            <div key={g.name} className="border-t border-border-light">
+              <button
+                type="button"
+                aria-expanded={open}
+                onClick={() => setOpenGroup(open ? null : (g.groupName ?? null))}
+                className="w-full min-h-11 px-4 py-2.5 text-left cursor-pointer"
+              >
+                <div className="flex items-baseline justify-between gap-3 text-sm">
+                  <span className="flex items-center gap-1.5 min-w-0 text-text font-medium">
+                    {open ? (
+                      <ChevronDown size={14} className="shrink-0 text-text-tertiary" aria-hidden />
+                    ) : (
+                      <ChevronRight size={14} className="shrink-0 text-text-tertiary" aria-hidden />
+                    )}
+                    <span className="truncate">{g.name}</span>
+                  </span>
+                  <span className="tabular-nums text-text whitespace-nowrap">
+                    {formatCurrency(g.amount)}
+                    <span className="ml-1.5 text-xs text-text-tertiary">
+                      {' '}
+                      {pct(g.pctOfIncome)}
+                      <span className="sr-only"> of income</span>
+                    </span>
+                  </span>
+                </div>
+                {bar(g.amount, g.color)}
+              </button>
+              {open && (
+                <ul className="pb-2">
+                  {subs.map((c) => (
+                    <li key={`${c.categoryId}-${c.name}`}>
+                      <button
+                        type="button"
+                        onClick={() => select(c)}
+                        className={`w-full min-h-11 flex items-center justify-between gap-3 pl-9 pr-4 text-sm text-left cursor-pointer ${
+                          isSelected(c) ? 'bg-brand-50 text-brand-700' : 'text-text-secondary'
+                        }`}
+                      >
+                        <span className="truncate">{c.name}</span>
+                        <span className="tabular-nums whitespace-nowrap">
+                          {formatCurrency(c.amount)}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                  <li>
+                    <button
+                      type="button"
+                      onClick={() => select(g)}
+                      className="w-full min-h-11 pl-9 pr-4 text-left text-sm font-medium text-brand-600 cursor-pointer"
+                    >
+                      {isSelected(g) ? 'Hide transactions' : `All ${g.name} transactions`}
+                    </button>
+                  </li>
+                </ul>
+              )}
+            </div>
+          );
+        })}
+      </section>
+    </div>
+  );
+}
+
 // ─── Page Component ──────────────────────────────────────────────────────────
 
 export default function CashFlowPage() {
@@ -909,6 +1088,10 @@ export default function CashFlowPage() {
   const [to, setTo] = useState(() => format(today, 'yyyy-MM'));
   const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null);
   const txSectionRef = useRef<HTMLDivElement>(null);
+  // Phones start with the list; the diagram is there too, scrolling sideways
+  const isPhone = useIsPhone();
+  const [phoneView, setPhoneView] = useState<'list' | 'diagram'>('list');
+  const showList = isPhone && phoneView === 'list';
 
   useEffect(() => {
     if (preset === 'custom') return;
@@ -1017,14 +1200,55 @@ export default function CashFlowPage() {
 
       <div className="flex-1 overflow-y-auto px-6 py-6">
         <StatCardRow cards={statCards} variant="hero" />
-        <div className="w-full">
-          <SankeyDiagram
+        {isPhone && (
+          <div className="flex items-center justify-between gap-3 mt-5 mb-3">
+            <div
+              role="group"
+              aria-label="Show as"
+              className="flex border border-border rounded-md overflow-hidden"
+            >
+              {(
+                [
+                  ['list', 'List'],
+                  ['diagram', 'Diagram'],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  aria-pressed={phoneView === id}
+                  onClick={() => setPhoneView(id)}
+                  className={`min-h-11 px-4 text-sm font-medium cursor-pointer ${
+                    phoneView === id ? 'bg-surface-alt text-text' : 'text-text-tertiary'
+                  } ${id === 'diagram' ? 'border-l border-border' : ''}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {!showList && (
+              <p className="text-xs text-text-tertiary text-right">Swipe to see it all</p>
+            )}
+          </div>
+        )}
+        {showList ? (
+          <CashFlowList
             from={from}
             to={to}
             selectedNode={selectedNode}
             onNodeClick={handleNodeClick}
           />
-        </div>
+        ) : (
+          // Phones: the diagram scrolls sideways on its own, edge to edge
+          <div className="w-full max-md:overflow-x-auto max-md:-mx-6 max-md:px-6 max-md:w-auto">
+            <SankeyDiagram
+              from={from}
+              to={to}
+              selectedNode={selectedNode}
+              onNodeClick={handleNodeClick}
+            />
+          </div>
+        )}
 
         {selectedNode && (
           <div ref={txSectionRef} className="mt-6">

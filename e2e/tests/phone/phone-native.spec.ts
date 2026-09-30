@@ -325,3 +325,63 @@ test('report summary figures fit their card', async ({ page, api }) => {
   );
   expect(clipped).toEqual([]);
 });
+
+test.describe('recurring', () => {
+  test('shows each item as a card, and the month controls fit', async ({ page, api }) => {
+    const { checking } = await seedAccount(api);
+    await api.call('POST', '/schedules', {
+      name: 'Rent',
+      amount: -150_000,
+      recurrenceType: 'monthly',
+      startDate: isoDay(),
+      accountId: checking.id,
+    });
+    await open(page, '/recurring');
+
+    // The name is on the card (the desktop columns squeezed it out), and the column
+    // headers are gone
+    await expect(page.getByText('Rent', { exact: true })).toBeVisible();
+    await expect(page.getByText('Account', { exact: true })).toBeHidden();
+    await expectTouchSize(page.getByRole('button', { name: 'Actions for Rent' }));
+
+    // Month navigation and the list/calendar switch stay inside the screen
+    const viewport = page.viewportSize()!;
+    for (const name of ['Previous month', 'Next month', 'List', 'Calendar']) {
+      const button = page.getByRole('button', { name, exact: true });
+      await expectTouchSize(button);
+      const box = (await button.boundingBox())!;
+      expect(box.x + box.width, name).toBeLessThanOrEqual(viewport.width);
+    }
+
+    await page.getByRole('button', { name: 'All recurring' }).click();
+    await expect(page.getByText('Rent', { exact: true })).toBeVisible();
+    await expect(page.getByText('Frequency', { exact: true })).toBeHidden();
+    await expect(page.getByPlaceholder('Filter recurring…')).toBeVisible();
+  });
+});
+
+test.describe('cash flow', () => {
+  test('lists where the money went, and the diagram scrolls sideways', async ({ page, api }) => {
+    await seedAccount(api);
+    await open(page, '/cash-flow');
+
+    await expect(page.getByText('Where it went')).toBeVisible();
+    const list = page.locator('section', { hasText: 'Where it went' });
+    const group = list.getByRole('button', { expanded: false }).first();
+    await expectTouchSize(group);
+    await group.click();
+    await list.getByRole('button', { name: /Groceries/ }).click();
+    await expect(page.getByText(/Transactions: .*Groceries/)).toBeVisible();
+    await expect(page.getByText('Corner Grocery').first()).toBeVisible();
+
+    await page.getByRole('button', { name: 'Diagram' }).click();
+    const svg = page.locator('main svg.select-none');
+    await expect(svg).toBeVisible();
+    // Drawn wider than the phone, in a box that scrolls on its own
+    const scrolls = await svg.evaluate((el) => {
+      const box = el.parentElement!.parentElement!;
+      return box.scrollWidth > box.clientWidth;
+    });
+    expect(scrolls).toBe(true);
+  });
+});
