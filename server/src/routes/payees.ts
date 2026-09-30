@@ -95,7 +95,17 @@ payeesRouter.put('/:id', (req, res) => {
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
   if (Object.keys(parsed.data).length) {
-    db.update(payees).set(parsed.data).where(eq(payees.id, req.params.id)).run();
+    db.transaction((tx) => {
+      tx.update(payees).set(parsed.data).where(eq(payees.id, req.params.id)).run();
+      // Transactions keep a copy of the payee's name (it's what the lists show and rules
+      // match), so a rename changes it on every transaction of this payee
+      if (parsed.data.name !== undefined) {
+        tx.update(transactions)
+          .set({ payeeName: parsed.data.name })
+          .where(eq(transactions.payeeId, req.params.id))
+          .run();
+      }
+    });
   }
   const updated = db.select().from(payees).where(eq(payees.id, req.params.id)).get();
   if (!updated) return res.status(404).json({ error: 'Not found' });

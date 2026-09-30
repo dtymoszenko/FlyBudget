@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { db } from '../db/index.js';
 import { transactions, payees, accounts, categories } from '../db/schema.js';
-import { eq, and, like, gte, lte, sql, isNull, inArray } from 'drizzle-orm';
+import { eq, and, or, like, gte, lte, sql, isNull, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
 import { deleteTransactionRow, resolvePayee } from '../services/transactionHelpers.js';
@@ -66,6 +66,18 @@ const importRowSchema = z.object({
 const importRowsSchema = z.array(importRowSchema).max(100_000);
 
 // GET /transactions — excludes split children; attaches children array to parents
+/**
+ * Transactions in any of these categories. The list shows split parents (their parts are
+ * nested under them), so a split with a part in one of them counts too.
+ */
+function inCategories(ids: string[]) {
+  const parentsWithPart = db
+    .select({ id: transactions.parentTransactionId })
+    .from(transactions)
+    .where(inArray(transactions.categoryId, ids));
+  return or(inArray(transactions.categoryId, ids), inArray(transactions.id, parentsWithPart))!;
+}
+
 transactionsRouter.get('/', (req, res) => {
   const {
     account_id,
@@ -91,9 +103,9 @@ transactionsRouter.get('/', (req, res) => {
   if (to) conditions.push(lte(transactions.date, to));
   if (category_ids) {
     const ids = category_ids.split(',').filter(Boolean);
-    if (ids.length) conditions.push(inArray(transactions.categoryId, ids));
+    if (ids.length) conditions.push(inCategories(ids));
   } else if (category_id) {
-    conditions.push(eq(transactions.categoryId, category_id));
+    conditions.push(inCategories([category_id]));
   }
   if (category_group_id) {
     const catIds = db
@@ -102,7 +114,7 @@ transactionsRouter.get('/', (req, res) => {
       .where(eq(categories.groupId, category_group_id))
       .all()
       .map((r) => r.id);
-    if (catIds.length) conditions.push(inArray(transactions.categoryId, catIds));
+    if (catIds.length) conditions.push(inCategories(catIds));
   }
   if (search) conditions.push(like(transactions.payeeName, `%${search}%`));
   if (reconciled === '0' || reconciled === '1')
