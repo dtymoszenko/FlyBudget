@@ -77,14 +77,23 @@ main {
   color: #fff;
 }
 
-/* Screenshots of the app in the tour and the guide (static/img/screenshots, taken from the
-   demo by e2e/screenshots.ts): a thin frame so white pages stand out from the background */
-.markdown img[src*='/img/screenshots/'] {
+/* Screenshots of the app in the tour and the guide (<Screenshot>, src/components/Screenshot.tsx):
+   a thin frame so the app's pages stand out from the background */
+.markdown img.screenshot {
   display: block;
   margin: 1.25rem auto 1.5rem;
   border: 1px solid var(--ifm-color-emphasis-300);
   border-radius: 10px;
   box-shadow: 0 6px 24px rgba(15, 23, 42, 0.08);
+}
+
+/* Each screenshot comes in a light and a dark copy, and the rules above and on the homepage
+   make them `display: block`: keep the other theme's copy hidden until the page has loaded
+   (after that ThemedImage only draws the right one) */
+[data-theme='light'] img.screenshot[class*='themedComponent--dark'],
+[data-theme='dark'] img.screenshot[class*='themedComponent--light'],
+html:not([data-theme]) img.screenshot[class*='themedComponent--dark'] {
+  display: none;
 }
 
 /* A dialog or panel on its own: shown smaller than a full screen */

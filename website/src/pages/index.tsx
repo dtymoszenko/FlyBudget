@@ -4,8 +4,7 @@ import useBrokenLinks from '@docusaurus/useBrokenLinks';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Layout from '@theme/Layout';
 import Heading from '@theme/Heading';
-import ThemedImage from '@theme/ThemedImage';
-import useBaseUrl from '@docusaurus/useBaseUrl';
+import Screenshot from '@site/src/components/Screenshot';
 
 import styles from './index.module.css';
 
@@ -58,38 +57,6 @@ function HeroSection(): ReactNode {
         </div>
       </div>
     </header>
-  );
-}
-
-/**
- * A screenshot of the app (static/img/screenshots, taken from the demo by e2e/screenshots.ts):
- * the dark-mode version when the website is dark.
- */
-function Screenshot({
-  name,
-  alt,
-  width,
-  height,
-  className,
-}: {
-  name: string;
-  alt: string;
-  width: number;
-  height: number;
-  className?: string;
-}): ReactNode {
-  return (
-    <ThemedImage
-      className={className}
-      alt={alt}
-      width={width}
-      height={height}
-      loading="lazy"
-      sources={{
-        light: useBaseUrl(`/img/screenshots/${name}.webp`),
-        dark: useBaseUrl(`/img/screenshots/dark-${name}.webp`),
-      }}
-    />
   );
 }
 

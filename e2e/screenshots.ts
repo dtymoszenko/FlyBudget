@@ -5,8 +5,10 @@
 //   cd e2e && node screenshots.ts        # take every screenshot
 //   cd e2e && node screenshots.ts budget # just the ones whose name contains "budget"
 //
-// They're saved as WebP to website/static/img/screenshots/. The demo's dates come from
-// today, so taking them again shows the same budget on a later day.
+// They're saved as WebP to website/static/img/screenshots/, each twice: `<name>.webp` in the
+// light theme and `dark-<name>.webp` in the dark one, which the website shows to visitors
+// using its dark theme. The demo's dates come from today, so taking them again shows the same
+// budget on a later day.
 import fs from 'fs';
 import http from 'http';
 import path from 'path';
@@ -23,6 +25,7 @@ interface Shot {
   name: string;
   /** Hash route in the demo */
   route: string;
+  /** Set for the `dark-` copy of each screenshot */
   dark?: boolean;
   phone?: boolean;
   /** Wait for this text before anything else */
@@ -241,7 +244,7 @@ const SHOTS: Shot[] = [
   { name: 'settings-data', route: '/settings?tab=data', waitFor: 'Download Backup' },
   { name: 'settings-preferences', route: '/settings?tab=preferences', waitFor: 'Theme' },
 
-  // --- Phones and dark mode ---
+  // --- Phones ---
   { name: 'phone-dashboard', route: '/dashboard', phone: true, waitFor: 'Left to Spend' },
   { name: 'phone-budget', route: '/budget', phone: true, waitFor: 'Left to budget' },
   {
@@ -256,44 +259,6 @@ const SHOTS: Shot[] = [
     phone: true,
     waitFor: 'Left to Spend',
     prepare: (page) => page.getByRole('button', { name: /menu/i }).first().click(),
-  },
-  { name: 'dark-dashboard', route: '/dashboard', dark: true, waitFor: 'Left to Spend' },
-  { name: 'dark-budget', route: '/budget', dark: true, waitFor: 'Left to budget' },
-
-  // --- The homepage: the same screens in dark mode, for visitors using the dark theme ---
-  { name: 'dark-reports', route: '/reports', dark: true, waitFor: 'Where the money goes' },
-  { name: 'dark-cash-flow', route: '/cash-flow', dark: true, waitFor: 'Total income' },
-  {
-    name: 'dark-rule-editor',
-    route: '/rules',
-    dark: true,
-    waitFor: 'Rename payee to Daily Grind Coffee',
-    prepare: async (page) => {
-      await clickText(page, 'Imported description contains "DAILY GRIND"');
-      await dialog(page).waitFor();
-    },
-    element: dialog,
-  },
-  {
-    name: 'dark-phone-dashboard',
-    route: '/dashboard',
-    phone: true,
-    dark: true,
-    waitFor: 'Left to Spend',
-  },
-  {
-    name: 'dark-phone-budget',
-    route: '/budget',
-    phone: true,
-    dark: true,
-    waitFor: 'Left to budget',
-  },
-  {
-    name: 'dark-phone-transactions',
-    route: '/transactions',
-    phone: true,
-    dark: true,
-    waitFor: 'Fresh Fields Market',
   },
 ];
 
@@ -400,7 +365,9 @@ if (!fs.existsSync(path.join(demoDir, 'index.html'))) {
 }
 fs.mkdirSync(outDir, { recursive: true });
 const filters = process.argv.slice(2);
-const wanted = SHOTS.filter((s) => !filters.length || filters.some((f) => s.name.includes(f)));
+// Every screenshot in both themes
+const ALL_SHOTS = SHOTS.flatMap((s) => [s, { ...s, name: `dark-${s.name}`, dark: true }]);
+const wanted = ALL_SHOTS.filter((s) => !filters.length || filters.some((f) => s.name.includes(f)));
 
 const server = await serveDemo();
 const browser = await chromium.launch();

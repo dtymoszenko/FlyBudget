@@ -29,6 +29,9 @@ npm run build:demo                # build the demo into static/demo
 cd ../e2e && npm run screenshots  # every screenshot (or: node screenshots.ts budget)
 ```
 
-Each one is listed in `e2e/screenshots.ts` with the page and the clicks that set it up. In a
-page, use a Markdown image for a full screen, `<img className="screenshot-dialog" …>` for a
-dialog, and a `<div className="phone-screenshots">` for phone screenshots side by side.
+Each one is listed in `e2e/screenshots.ts` with the page and the clicks that set it up, and is
+taken twice: `<name>.webp` in the app's light theme and `dark-<name>.webp` in its dark theme. In
+a page, show one with `<Screenshot name="budget" alt="The Budget page" />` (no import needed),
+which picks the version matching the website's theme; add `dialog` for a dialog, and put phone
+screenshots side by side in a `<div className="phone-screenshots">`. Don't use Markdown images
+or `<img>` for screenshots: they'd show the light version in the dark theme.

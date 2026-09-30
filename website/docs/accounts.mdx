@@ -8,7 +8,7 @@ An account is anything that holds money or debt: a checking account, a credit ca
 your wallet, a loan, a retirement account or your home. Every transaction belongs to one
 account.
 
-![The Accounts page](/img/screenshots/accounts.webp)
+<Screenshot name="accounts" alt="The Accounts page" />
 
 The **Accounts** page shows your net worth over time, your assets and liabilities by kind, and
 every open account grouped by type, with its balance and how that group changed over the last
@@ -25,11 +25,7 @@ Choose **Add Account** (on the Accounts page, or **Add account** in the sidebar)
   number; FlyBudget records it as a debt.
 - **Off budget**, ticked for you on investments, property and loans (see below).
 
-<img
-  className="screenshot-dialog"
-  src="/img/screenshots/add-account.webp"
-  alt="The Add Account dialog"
-/>
+<Screenshot name="add-account" alt="The Add Account dialog" dialog />
 
 To create accounts from your bank instead, [connect a bank](./bank-sync): FlyBudget adds its
 accounts for you, or links them to accounts you already have.
@@ -67,7 +63,7 @@ header you can:
 - **Reconcile** it against a bank statement.
 - **Edit** it.
 
-![An account's register](/img/screenshots/account-register.webp)
+<Screenshot name="account-register" alt="An account's register" />
 
 ## Updating the value of an investment or property
 
@@ -75,11 +71,7 @@ Homes, cars and investment accounts usually don't have transactions worth enteri
 Choose **Update value**, enter what it's worth today, and FlyBudget adds a dated adjustment for
 the difference, so your net worth history stays right.
 
-<img
-  className="screenshot-dialog"
-  src="/img/screenshots/update-value.webp"
-  alt="Updating the value of a car"
-/>
+<Screenshot name="update-value" alt="Updating the value of a car" dialog />
 
 Adjustments (from **Update value** or from reconciling) change the balance and your net worth,
 but they aren't money earned or spent, so income and spending reports leave them out. If you
@@ -98,7 +90,7 @@ whenever the balances look different.
 4. When the difference is zero, choose **Finish**. If you can't find what's missing, choose
    **Create Adjustment** instead: FlyBudget adds a reconciliation adjustment for the difference.
 
-![Reconciling an account](/img/screenshots/reconcile.webp)
+<Screenshot name="reconcile" alt="Reconciling an account" />
 
 Reconciled transactions get a lock icon and can't be edited or deleted, so rules and bank sync
 never change them.
