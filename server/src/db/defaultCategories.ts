@@ -3,7 +3,7 @@ import { nanoid } from 'nanoid';
 import { db } from './index.js';
 import { categoryGroups, categories, transactions } from './schema.js';
 
-type BudgetType = 'fixed' | 'flexible' | 'non_monthly';
+type BudgetType = 'fixed' | 'flexible' | 'non_monthly' | 'savings';
 
 const defaultGroups: {
   name: string;

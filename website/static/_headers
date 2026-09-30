@@ -1,0 +1,11 @@
+# Response headers for hosts that read a _headers file (Cloudflare Pages, Netlify). The
+# in-browser demo gets the same strict policy the app's own server sends: nothing loads from
+# or connects to another origin, and no other site can frame it. The demo page also carries
+# this CSP (minus frame-ancestors) in a <meta> tag, for hosts that ignore this file.
+/demo/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Cross-Origin-Opener-Policy: same-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()

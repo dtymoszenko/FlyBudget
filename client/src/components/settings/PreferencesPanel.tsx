@@ -6,6 +6,7 @@ import {
   type SidebarMode,
 } from '../../store/preferencesStore';
 import { ConfirmModal } from '../ui/ConfirmModal';
+import { IS_DEMO } from '../../demo/isDemo';
 
 const themeOptions: { value: Theme; label: string }[] = [
   { value: 'light', label: 'Light' },
@@ -61,7 +62,9 @@ export function PreferencesPanel() {
         <div>
           <h2 className="text-sm font-semibold text-text">Preferences</h2>
           <p className="text-xs text-text-tertiary mt-0.5">
-            Settings are saved automatically to your browser.
+            {IS_DEMO
+              ? 'Settings are kept in this tab while you try the demo.'
+              : 'Settings are saved automatically to your browser.'}
           </p>
         </div>
         <button
