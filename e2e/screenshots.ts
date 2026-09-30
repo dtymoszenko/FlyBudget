@@ -379,6 +379,8 @@ async function take(browser: Browser, shot: Shot) {
     }, HIDE_DEMO_BANNER);
     await page.goto(`http://localhost:${PORT}/demo/#${shot.route}`);
     if (shot.waitFor) await page.getByText(shot.waitFor).first().waitFor({ timeout: 15_000 });
+    // Show the on-budget accounts in the sidebar (they start collapsed)
+    if (!shot.phone) await page.getByRole('button', { name: /^For budget/ }).click();
     if (shot.prepare) await shot.prepare(page);
     // Let charts finish animating
     await page.waitForTimeout(1500);
