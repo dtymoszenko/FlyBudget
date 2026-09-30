@@ -74,13 +74,14 @@ export interface DemoResponse {
 /** Handles one API request, like the Express app in index.ts would. */
 export async function handleRequest(request: DemoRequest): Promise<DemoResponse> {
   const url = new URL(request.url, 'http://demo');
-  // No prototype, so a key like "__proto__" is just a key (like Express's own query parser)
-  const query: Record<string, string | string[]> = Object.create(null);
-  for (const key of new Set(url.searchParams.keys())) {
-    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
-    const values = url.searchParams.getAll(key);
-    query[key] = values.length === 1 ? values[0] : values;
-  }
+  // Object.fromEntries only defines the object's own properties: a key like "__proto__"
+  // can't change its prototype
+  const query: Record<string, string | string[]> = Object.fromEntries(
+    [...new Set(url.searchParams.keys())].map((key) => {
+      const values = url.searchParams.getAll(key);
+      return [key, values.length === 1 ? values[0] : values];
+    }),
+  );
   const headers = Object.fromEntries(
     Object.entries(request.headers).map(([k, v]) => [k.toLowerCase(), v]),
   );
