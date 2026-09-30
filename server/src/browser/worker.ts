@@ -40,6 +40,9 @@ async function openDemo(): Promise<void> {
 let ready = openDemo();
 
 self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
+  // A dedicated worker only hears from the page that started it (whose messages have an
+  // empty origin or this one), but check anyway
+  if (event.origin && event.origin !== self.location.origin) return;
   const message = event.data;
   try {
     if (message.type === 'reset') {

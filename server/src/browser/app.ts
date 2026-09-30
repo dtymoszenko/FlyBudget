@@ -74,7 +74,8 @@ export interface DemoResponse {
 /** Handles one API request, like the Express app in index.ts would. */
 export async function handleRequest(request: DemoRequest): Promise<DemoResponse> {
   const url = new URL(request.url, 'http://demo');
-  const query: Record<string, string | string[]> = {};
+  // No prototype, so a key like "__proto__" is just a key (like Express's own query parser)
+  const query: Record<string, string | string[]> = Object.create(null);
   for (const key of new Set(url.searchParams.keys())) {
     const values = url.searchParams.getAll(key);
     query[key] = values.length === 1 ? values[0] : values;
