@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Download, Loader2, RotateCcw } from 'lucide-react';
+import { Download, House, Loader2, RotateCcw } from 'lucide-react';
 import { IS_DEMO, resetDemo } from '../../demo/demoApi';
 
 /** The website's download page (the demo is served from the website, under /demo/) */
 export const DOWNLOAD_URL = '/download';
+/** The website's homepage, which the demo was opened from */
+export const HOME_URL = '/';
 
 /**
  * The demo (website "Try the demo"): says this is a sample budget that isn't saved, and offers
- * to start over or download the app. Renders nothing outside the demo build.
+ * to start over, go back to the website's homepage or download the app. Renders nothing outside the demo build.
  */
 export function DemoBanner() {
   const qc = useQueryClient();
@@ -46,6 +48,15 @@ export function DemoBanner() {
         </span>
       </p>
       <div className="flex items-center gap-2 shrink-0">
+        <a
+          href={HOME_URL}
+          aria-label="Back to home"
+          title="Back to the FlyBudget homepage"
+          className={`${button} max-md:min-w-11 border border-border bg-surface text-text-secondary hover:text-text hover:bg-surface-alt`}
+        >
+          <House size={14} aria-hidden />
+          <span className="max-md:hidden">Back to home</span>
+        </a>
         <button
           type="button"
           onClick={() => void startOver()}

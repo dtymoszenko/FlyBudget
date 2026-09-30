@@ -53,6 +53,15 @@ test('the demo opens on a finished budget, and every page works', async ({ page 
   expect(requests.filter((p) => !p.startsWith('/demo/'))).toEqual([]);
 });
 
+test('the banner leads back to the website: its homepage and the download page', async ({
+  page,
+}) => {
+  await openDemo(page);
+  const banner = page.getByRole('region', { name: 'Demo' });
+  await expect(banner.getByRole('link', { name: 'Back to home' })).toHaveAttribute('href', '/');
+  await expect(banner.getByRole('link', { name: /Download/ })).toHaveAttribute('href', '/download');
+});
+
 test('every payee shows its logo', async ({ page }) => {
   await openDemo(page, '/payees');
   const rows = page.getByRole('row').filter({ has: page.getByRole('checkbox') });

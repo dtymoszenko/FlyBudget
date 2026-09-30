@@ -10,7 +10,7 @@ visitor gets a private copy that disappears when they close the tab, and nothing
 - `client/`: `vite build --mode demo` builds the app with `IS_DEMO` (`client/src/demo/demoApi.ts`)
   set. `startDemoApi()` starts the worker and sends every `fetch` to `/api/...` there, so the rest
   of the app works unchanged. The demo also uses hash routing, relative asset paths, no offline
-  copy or service worker, and shows `DemoBanner` ("Start over", "Download FlyBudget").
+  copy or service worker, and shows `DemoBanner` ("Back to home", "Start over", "Download FlyBudget").
 - `vite.config.ts` (`demoServerModules`) swaps the server's Node-only modules for the stand-ins in
   this folder, for files under `server/src` only:
   - `express` → `expressShim.ts`: routers with plain and `:param` segments, `router.param`,
