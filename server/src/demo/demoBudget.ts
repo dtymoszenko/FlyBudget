@@ -802,6 +802,38 @@ export function buildDemoBudget(today: Date): DemoBudget {
         });
     }
 
+    // Last month was an expensive one early on: a weekend away and new tires, so the
+    // dashboard's "this month vs. last month" spending lines pull clearly apart
+    if (mi === monthStarts.length - 2) {
+      const flights = on(5);
+      if (flights)
+        add({
+          account: 'card',
+          date: flights,
+          amount: -38_960,
+          payee: 'skyhop',
+          notes: 'Flights for the lake weekend',
+        });
+      const hotel = on(7);
+      if (hotel)
+        add({
+          account: 'card',
+          date: hotel,
+          amount: -48_620,
+          payee: 'lakesideInn',
+          notes: 'Weekend at the lake',
+        });
+      const tires = on(10);
+      if (tires)
+        add({
+          account: 'card',
+          date: tires,
+          amount: -61_240,
+          payee: 'quickLube',
+          notes: 'New tires',
+        });
+    }
+
     // Car
     for (const day of [between(2, 9), between(12, 19), between(22, 28)]) {
       const date = on(day);
