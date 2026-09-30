@@ -259,6 +259,42 @@ const SHOTS: Shot[] = [
   },
   { name: 'dark-dashboard', route: '/dashboard', dark: true, waitFor: 'Left to Spend' },
   { name: 'dark-budget', route: '/budget', dark: true, waitFor: 'Left to budget' },
+
+  // --- The homepage: the same screens in dark mode, for visitors using the dark theme ---
+  { name: 'dark-reports', route: '/reports', dark: true, waitFor: 'Where the money goes' },
+  { name: 'dark-cash-flow', route: '/cash-flow', dark: true, waitFor: 'Total income' },
+  {
+    name: 'dark-rule-editor',
+    route: '/rules',
+    dark: true,
+    waitFor: 'Rename payee to Daily Grind Coffee',
+    prepare: async (page) => {
+      await clickText(page, 'Imported description contains "DAILY GRIND"');
+      await dialog(page).waitFor();
+    },
+    element: dialog,
+  },
+  {
+    name: 'dark-phone-dashboard',
+    route: '/dashboard',
+    phone: true,
+    dark: true,
+    waitFor: 'Left to Spend',
+  },
+  {
+    name: 'dark-phone-budget',
+    route: '/budget',
+    phone: true,
+    dark: true,
+    waitFor: 'Left to budget',
+  },
+  {
+    name: 'dark-phone-transactions',
+    route: '/transactions',
+    phone: true,
+    dark: true,
+    waitFor: 'Fresh Fields Market',
+  },
 ];
 
 const MIME: Record<string, string> = {
