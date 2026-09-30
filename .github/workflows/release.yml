@@ -36,6 +36,7 @@ concurrency:
 
 jobs:
   build:
+    name: build (${{ matrix.name }})
     strategy:
       fail-fast: false
       matrix:
@@ -92,6 +93,8 @@ jobs:
           # don't let electron-builder look for them. macOS builds are ad-hoc signed
           # (electron-builder.json), which Apple Silicon requires to run at all.
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          # Sign pull request builds the same way (ad-hoc on macOS), so they test what ships
+          CSC_FOR_PULL_REQUEST: 'true'
 
       # Start the packaged app and wait for its built-in server to answer, so a release can't
       # ship an app that doesn't start (a missing native module, a broken fuse or asar).

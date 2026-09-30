@@ -30,14 +30,24 @@
     "winCodeSign": "1.1.0"
   },
   "win": {
-    "target": [{ "target": "nsis", "arch": ["x64"] }],
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      }
+    ],
     "icon": "electron/resources/icon.ico"
   },
   "nsis": {
     "artifactName": "FlyBudget-Windows-Setup.${ext}"
   },
   "mac": {
-    "target": [{ "target": "dmg", "arch": ["arm64", "x64"] }],
+    "target": [
+      {
+        "target": "dmg",
+        "arch": ["arm64", "x64"]
+      }
+    ],
     "icon": "electron/resources/icon-1024.png",
     "category": "public.app-category.finance",
     "identity": "-",
@@ -49,8 +59,14 @@
   },
   "linux": {
     "target": [
-      { "target": "AppImage", "arch": ["x64", "arm64"] },
-      { "target": "deb", "arch": ["x64", "arm64"] }
+      {
+        "target": "AppImage",
+        "arch": ["x64", "arm64"]
+      },
+      {
+        "target": "deb",
+        "arch": ["x64", "arm64"]
+      }
     ],
     "icon": "electron/resources/icon-1024.png",
     "category": "Office",
@@ -58,7 +74,8 @@
     "synopsis": "Budgeting that keeps your financial data on your computer",
     "description": "FlyBudget is a free, open-source budgeting app. Plan every dollar, track your accounts, and keep your financial data on your own computer.",
     "maintainer": "David Tymoszenko <dtymoszenko@users.noreply.github.com>",
-    "vendor": "FlyBudget"
+    "vendor": "FlyBudget",
+    "syncDesktopName": true
   },
   "appImage": {
     "artifactName": "FlyBudget-Linux-${arch}.${ext}"

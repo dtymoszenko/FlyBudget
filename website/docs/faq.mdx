@@ -68,11 +68,18 @@ kept on your device and sent when it's back (see [Working offline](./offline)).
 See [Your password](/community/self-hosting#your-password) in the self-hosting guide: a command
 on the server removes it, and you then set a new one.
 
-### Windows says the installer is from an unknown publisher
+### Windows or macOS won't open FlyBudget the first time
 
-FlyBudget isn't signed with a paid Windows certificate yet. Choose **More info → Run anyway**. You
-can check that the installer is genuine with its signature (see
+FlyBudget isn't signed with a paid Microsoft certificate or notarized by Apple yet. On Windows,
+choose **More info → Run anyway**. On a Mac, open **System Settings → Privacy & Security** and
+choose **Open Anyway** next to FlyBudget (see [Installing](./installing#macos)). You can check that
+the download is genuine with its signature (see
 [Verifying your download](/community/security#verifying-your-download)).
+
+### FlyBudget won't start from the AppImage on Ubuntu
+
+Ubuntu 24.04 and later block the sandbox Electron apps use when they run from an AppImage. Install
+the .deb instead (see [Installing](./installing#linux)).
 
 ### Imported transactions have the wrong sign, or the wrong dates
 

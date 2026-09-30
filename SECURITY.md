@@ -147,7 +147,8 @@ Access tokens are never sent to the app's own UI, logs, or backup exports.
   and the app refuses to start if its files have been modified (asar integrity).
 - Releases are built by GitHub Actions and signed with Sigstore, with SLSA build
   provenance. Verify a download with:
-  `gh attestation verify FlyBudget-Setup-<version>.exe -R dtymoszenko/FlyBudget`
+  `gh attestation verify FlyBudget-Windows-Setup.exe -R dtymoszenko/FlyBudget` (the same
+  for the macOS and Linux files; each release also has `SHA256SUMS.txt`)
 
 ### Development and supply chain
 

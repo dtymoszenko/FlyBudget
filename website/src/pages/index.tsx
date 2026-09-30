@@ -35,7 +35,7 @@ function HeroSection(): ReactNode {
               </Link>
             </div>
             <p className={styles.heroFacts}>
-              Open source (AGPL). Available for Windows or self-host with Docker.
+              Open source (AGPL). For Windows, macOS and Linux, or self-host with Docker.
             </p>
           </div>
           <div className={styles.heroArtwork}>

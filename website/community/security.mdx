@@ -101,15 +101,15 @@ Your budget and transactions themselves are protected by your operating system a
 
 ## Verifying your download
 
-Every release is built by GitHub from the public source code and signed with [Sigstore](https://www.sigstore.dev/), with [SLSA build provenance](https://slsa.dev/) that records exactly how and where it was built. You can check that the installer you downloaded is genuine with the [GitHub CLI](https://cli.github.com/):
+Every release is built by GitHub from the public source code and signed with [Sigstore](https://www.sigstore.dev/), with [SLSA build provenance](https://slsa.dev/) that records exactly how and where it was built. You can check that the file you downloaded is genuine with the [GitHub CLI](https://cli.github.com/) (use the name of the file you downloaded):
 
 ```bash
-gh attestation verify FlyBudget-Setup-<version>.exe -R dtymoszenko/FlyBudget
+gh attestation verify FlyBudget-Windows-Setup.exe -R dtymoszenko/FlyBudget
 ```
 
-If the file was modified in any way, even by a single byte, verification fails. Only download FlyBudget from our [GitHub Releases page](https://github.com/dtymoszenko/FlyBudget/releases).
+If the file was modified in any way, even by a single byte, verification fails. Only download FlyBudget from [our download page](/download) or our [GitHub Releases page](https://github.com/dtymoszenko/FlyBudget/releases). Each release also lists every file's SHA-256 in `SHA256SUMS.txt`.
 
-The installer isn't Windows code-signed yet, so Windows may show an "unknown publisher" warning the first time you run it. Code signing is next on our list; until then, the command above is the way to confirm your download is genuine.
+The app isn't signed with a paid Microsoft certificate or notarized by Apple yet, so Windows may show an "unknown publisher" warning and macOS asks you to allow it in Privacy & Security the first time you open it (the [install guide](/docs/installing#desktop-app) shows how). Code signing is next on our list; until then, the command above is the way to confirm your download is genuine.
 
 ## How we build FlyBudget
 
