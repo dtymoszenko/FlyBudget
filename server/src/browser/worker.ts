@@ -1,7 +1,7 @@
 // The in-browser demo's Web Worker (see README.md here). It opens a fresh in-memory
 // database, applies the real migrations, loads the demo budget, then answers the page's
 // API requests with the real routes, off the page's main thread.
-import initSqlJs, { type SqlJsStatic } from 'sql.js';
+import initSqlJs, { type Database, type SqlJsStatic } from 'sql.js';
 import wasmUrl from 'sql.js/dist/sql-wasm-browser.wasm?url';
 import { useDatabase } from './db.js';
 import { handleRequest, type DemoRequest } from './app.js';
@@ -21,6 +21,7 @@ export type WorkerMessage =
   { type: 'request'; id: number; request: DemoRequest } | { type: 'reset'; id: number };
 
 let sqlJs: Promise<SqlJsStatic> | null = null;
+let current: Database | null = null;
 
 async function openDemo(): Promise<void> {
   sqlJs ??= initSqlJs({ locateFile: () => wasmUrl });
@@ -34,6 +35,9 @@ async function openDemo(): Promise<void> {
   }
   useDatabase(database);
   loadDemoBudget(new Date());
+  // "Start over": free the previous budget's memory (every query now uses the new one)
+  current?.close();
+  current = database;
 }
 
 // Requests wait until the demo budget is ready, and for a reset to finish

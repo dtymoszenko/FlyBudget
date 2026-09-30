@@ -30,6 +30,25 @@ visitor gets a private copy that disappears when they close the tab, and nothing
 - `website/scripts/build-demo.mjs` builds it into `website/static/demo/` before `docusaurus build`,
   so the site serves it at `/demo/`.
 
+## Privacy and security
+
+The demo is public, so it's built so that nothing a visitor types can reach anyone else:
+
+- **Every tab is its own demo.** The budget lives in the tab's worker, in memory. Nothing is
+  shared between tabs or visitors, and there's no server to share it through. Reloading or
+  closing the tab throws it away; "Start over" replaces it (and frees the old one's memory).
+- **Nothing leaves the browser.** Bank connections and sign-in are refused (`app.ts`), and the
+  app shows `NotInDemo` instead of their setup screens, so the demo never asks for bank
+  credentials. CSV imports, backups and restores run in the worker; downloads are saved from the
+  page (`downloadFromApi`). The e2e tests check that no request leaves `/demo/`.
+- **The same strict CSP as the app**: only the demo's own files, plus WebAssembly for SQLite.
+  The page carries it in a `<meta>` tag (`demoPage` in `client/vite.config.ts`), and
+  `website/static/_headers` sends it as a header with `frame-ancestors 'none'`, `X-Frame-Options`
+  and `no-referrer` on hosts that read that file. Keep the two in sync.
+- **No storage that outlives the tab**: preferences go to `sessionStorage` in the demo (not the
+  website's `localStorage`), and are reset by "Start over". The offline copy, waiting
+  transactions and the service worker are off (the demo build doesn't even ship `sw.js`).
+
 ## Working on it
 
 ```bash
