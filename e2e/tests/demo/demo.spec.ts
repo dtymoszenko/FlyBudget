@@ -35,8 +35,8 @@ test('the demo opens on a finished budget, and every page works', async ({ page 
   await expect(page.getByText('Upcoming Bills')).toBeVisible();
 
   for (const [route, text] of [
-    ['/budget', 'Left to budget'],
-    ['/transactions', 'Fresh Fields Market'],
+    ['/budget', 'Renters Insurance'],
+    ['/transactions', 'Maple Court Apartments'],
     ['/accounts', 'Northstar Auto Loan'],
     ['/recurring', "Riley's paycheck"],
     ['/reports', 'Where the money goes'],

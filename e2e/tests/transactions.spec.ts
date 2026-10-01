@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { test, expect, open, isoDay, type Api } from './fixtures';
+import { test, expect, open, isoDay, otherDayThisMonth, type Api } from './fixtures';
 
 // Entering and editing transactions in an account register, checking both what the
 // page shows and what the server stored.
@@ -120,7 +120,7 @@ test.describe('account register', () => {
     const { checking } = await setup(api);
     const tx = await api.createTransaction({
       accountId: checking.id,
-      date: isoDay(-1),
+      date: isoDay(),
       amount: -1_999,
       payeeName: 'Streamflix',
     });
@@ -138,7 +138,7 @@ test.describe('account register', () => {
 
     await panel.getByRole('textbox', { name: 'Notes' }).fill('family plan');
     await panel.getByRole('textbox', { name: 'Notes' }).blur();
-    await panel.getByRole('textbox', { name: 'Date' }).fill(isoDay(-2));
+    await panel.getByRole('textbox', { name: 'Date' }).fill(otherDayThisMonth());
     await panel.getByRole('textbox', { name: 'Date' }).blur();
 
     await expect
@@ -146,7 +146,7 @@ test.describe('account register', () => {
       .toMatchObject({
         id: tx.id,
         notes: 'family plan',
-        date: isoDay(-2),
+        date: otherDayThisMonth(),
         categoryId: (await api.category('Streaming Services')).id,
       });
     await page.getByRole('button', { name: 'Close details' }).click();

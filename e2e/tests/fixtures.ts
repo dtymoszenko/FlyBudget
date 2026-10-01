@@ -161,6 +161,10 @@ export function isoDay(offsetDays = 0) {
 
 export const thisMonth = () => isoDay().slice(0, 7);
 
+/** A day other than today in this month (registers open on This Month): yesterday, or tomorrow on the 1st */
+export const otherDayThisMonth = () =>
+  isoDay(-1).slice(0, 7) === thisMonth() ? isoDay(-1) : isoDay(1);
+
 /**
  * Types into an amount field the way a person does: click it (which selects the current
  * amount) and type over it. `fill()` doesn't work here: the field switches from "$1,234"

@@ -1,5 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
-import { test, expect, open, isoDay, thisMonth, type Api } from '../fixtures';
+import { test, expect, open, isoDay, thisMonth, otherDayThisMonth, type Api } from '../fixtures';
 
 // Phone-native layouts (390×844, the "phone" project): the register, budget, payees and
 // rules as cards, dialogs as bottom sheets, transaction details full screen, and touch
@@ -42,7 +42,7 @@ async function seedAccount(api: Api) {
   });
   await api.createTransaction({
     accountId: checking.id,
-    date: isoDay(-1),
+    date: otherDayThisMonth(),
     amount: -1_999,
     payeeName: 'Streamflix',
     notes: 'family plan',
@@ -78,7 +78,12 @@ test.describe('register', () => {
     await page.getByRole('button', { name: /Streaming Services/ }).click();
     const streaming = await api.category('Streaming Services');
     await expect
-      .poll(async () => (await api.transactions(`?account_id=${checking.id}`))[1].categoryId)
+      .poll(
+        async () =>
+          (await api.transactions(`?account_id=${checking.id}`)).find(
+            (t) => t.payeeName === 'Streamflix',
+          )?.categoryId,
+      )
       .toBe(streaming.id);
 
     await details.getByRole('button', { name: 'Close details' }).click();
