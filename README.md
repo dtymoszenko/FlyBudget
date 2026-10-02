@@ -296,6 +296,8 @@ Ideas we're considering (not promises):
 - Envelope budgeting
 - Syncing one budget between devices that also work offline
 - MCP support
+- Bank connections for European banks
+- Multiple currencies
 
 Have an idea? [Open an issue](https://github.com/dtymoszenko/FlyBudget/issues).
 
