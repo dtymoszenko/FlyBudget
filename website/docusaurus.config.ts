@@ -137,6 +137,9 @@ const config: Config = {
           href: 'https://github.com/dtymoszenko/flybudget',
           label: 'GitHub',
           position: 'right',
+          // Shown as an icon next to the dark mode toggle on phones (src/css/custom.css)
+          className: 'header-github-link',
+          'aria-label': 'FlyBudget on GitHub',
         },
       ],
     },
