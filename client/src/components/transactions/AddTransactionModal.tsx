@@ -40,10 +40,16 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
   const onBudgetAccounts = openAccounts.filter((a) => !a.isOffBudget);
   const offBudgetAccounts = openAccounts.filter((a) => a.isOffBudget);
   const selectedAccount = openAccounts.find((a) => a.id === accountId);
+  // Once an account is chosen, the category list also offers a transfer to any other account
+  const transferAccounts = accountId ? openAccounts.filter((a) => a.id !== accountId) : [];
+  const transferToId = categoryId?.startsWith('transfer:')
+    ? categoryId.slice('transfer:'.length)
+    : null;
 
   const hasConfirmedMerchant = payeeId !== null;
   const dateValid = date !== '' && /^\d{4}-\d{2}-\d{2}$/.test(date) && isValidDate(parseISO(date));
-  const isValid = amount > 0 && hasConfirmedMerchant && dateValid && accountId !== '';
+  const isValid =
+    amount > 0 && (hasConfirmedMerchant || transferToId !== null) && dateValid && accountId !== '';
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -69,8 +75,32 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
     }
   }, [isOpen]);
 
+  function chooseAccount(id: string) {
+    setAccountId(id);
+    setShowAccountPicker(false);
+    // A transfer to the account just chosen would go nowhere
+    if (categoryId === `transfer:${id}`) setCategoryId(null);
+  }
+
   function handleSubmit() {
     if (!isValid) return;
+    if (transferToId) {
+      // A debit moves money out of this account, a credit brings it in
+      newTx.add(
+        {
+          kind: 'transfer',
+          data: {
+            fromAccountId: type === 'debit' ? accountId : transferToId,
+            toAccountId: type === 'debit' ? transferToId : accountId,
+            date,
+            amount,
+            notes: notes || null,
+          },
+        },
+        onClose,
+      );
+      return;
+    }
     const finalAmount = type === 'debit' ? -amount : amount;
     newTx.add(
       {
@@ -123,20 +153,27 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
         {/* Amount */}
         <div>
           <label className="block text-sm font-medium text-text mb-1">Amount *</label>
-          <CurrencyInput value={amount} onChange={setAmount} placeholder="$0.00" />
-        </div>
-
-        {/* Merchant */}
-        <div>
-          <label className="block text-sm font-medium text-text mb-1">Merchant *</label>
-          <MerchantSelect
-            value={{ id: payeeId, name: payeeName }}
-            onChange={(v) => {
-              setPayeeId(v.id);
-              setPayeeName(v.name);
-            }}
+          <CurrencyInput
+            value={amount}
+            onChange={setAmount}
+            placeholder="$0.00"
+            aria-label="Amount"
           />
         </div>
+
+        {/* Merchant (a transfer has none: it's named after the other account) */}
+        {!transferToId && (
+          <div>
+            <label className="block text-sm font-medium text-text mb-1">Merchant *</label>
+            <MerchantSelect
+              value={{ id: payeeId, name: payeeName }}
+              onChange={(v) => {
+                setPayeeId(v.id);
+                setPayeeName(v.name);
+              }}
+            />
+          </div>
+        )}
 
         {/* Date */}
         <div>
@@ -190,8 +227,7 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
                         type="button"
                         onMouseDown={(e) => {
                           e.preventDefault();
-                          setAccountId(a.id);
-                          setShowAccountPicker(false);
+                          chooseAccount(a.id);
                         }}
                         className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2.5 hover:bg-hover cursor-pointer ${
                           accountId === a.id ? 'bg-brand-50 text-brand-700' : 'text-text'
@@ -219,8 +255,7 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
                         type="button"
                         onMouseDown={(e) => {
                           e.preventDefault();
-                          setAccountId(a.id);
-                          setShowAccountPicker(false);
+                          chooseAccount(a.id);
                         }}
                         className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2.5 hover:bg-hover cursor-pointer ${
                           accountId === a.id ? 'bg-brand-50 text-brand-700' : 'text-text'
@@ -245,7 +280,12 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
         {/* Category */}
         <div>
           <label className="block text-sm font-medium text-text mb-1">Category</label>
-          <CategorySelectButton value={categoryId} onChange={setCategoryId} position="above" />
+          <CategorySelectButton
+            value={categoryId}
+            onChange={setCategoryId}
+            position="above"
+            transferAccounts={transferAccounts}
+          />
         </div>
 
         {/* Notes */}

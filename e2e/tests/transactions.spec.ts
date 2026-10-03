@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { test, expect, open, isoDay, otherDayThisMonth, type Api } from './fixtures';
+import { test, expect, open, isoDay, otherDayThisMonth, typeAmount, type Api } from './fixtures';
 
 // Entering and editing transactions in an account register, checking both what the
 // page shows and what the server stored.
@@ -214,6 +214,30 @@ test.describe('account register', () => {
     await expect(page.getByRole('button', { name: 'B-Bank', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Go to Rainy Day Savings' })).toBeVisible();
   });
+});
+
+test('the Add transaction dialog makes transfers too', async ({ page, api }) => {
+  const { checking, savings } = await setup(api);
+  await open(page, '/transactions?add=1');
+  const dialog = page.getByRole('dialog', { name: 'Add transaction' });
+
+  await dialog.getByRole('button', { name: 'Credit' }).click();
+  await typeAmount(dialog.getByLabel('Amount', { exact: true }), '300');
+  await dialog.getByRole('button', { name: /Select account/ }).click();
+  await dialog.getByRole('button', { name: /Everyday Checking/ }).click();
+  await dialog.getByRole('button', { name: /^Category:/ }).click();
+  await dialog.getByRole('button', { name: 'Transfer: Rainy Day Savings' }).click();
+
+  // A transfer is named after the other account, so it needs no merchant
+  await expect(dialog.getByText('Merchant')).toBeHidden();
+  await dialog.getByRole('button', { name: 'Add transaction' }).click();
+  await expect(dialog).toBeHidden();
+
+  // A credit brings the money into the chosen account
+  expect(await api.balance(checking.id)).toBe(130_000);
+  expect(await api.balance(savings.id)).toBe(470_000);
+  const [into] = await api.transactions(`?account_id=${checking.id}`);
+  expect(into.transferTransactionId).not.toBeNull();
 });
 
 test('sending a new transaction twice (offline retry) saves it once', async ({ api }) => {
