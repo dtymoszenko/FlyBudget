@@ -1,4 +1,4 @@
-import { generateImportId, readImportAmount } from './csv';
+import { decodeCsvBytes, generateImportId, normalizeDate, readImportAmount } from './csv';
 
 /**
  * ISO 20022 bank statements (CAMT.053, also the CAMT.052 report and CAMT.054 notification),
@@ -37,18 +37,20 @@ export function looksLikeCamt(text: string): boolean {
 }
 
 /**
- * The text of a CAMT file, in the encoding its XML declaration names (UTF-8 if none).
- * Some banks still write ISO-8859-1.
+ * The text of a CAMT file, in the encoding its XML declaration names (some banks still write
+ * ISO-8859-1). A UTF-16 byte order mark wins, as in any XML reader; with neither it's UTF-8.
  */
 export function decodeCamtBytes(bytes: ArrayBuffer): string {
-  const head = new TextDecoder('ascii').decode(
-    new Uint8Array(bytes, 0, Math.min(200, bytes.byteLength)),
-  );
-  const declared = head.match(/^\s*<\?xml[^>]*encoding=["']([\w.:-]+)["']/i)?.[1];
+  const head = new Uint8Array(bytes, 0, Math.min(200, bytes.byteLength));
+  const utf16 = (head[0] === 0xff && head[1] === 0xfe) || (head[0] === 0xfe && head[1] === 0xff);
+  if (utf16) return decodeCsvBytes(bytes, 'auto');
+  const declared = new TextDecoder('ascii')
+    .decode(head)
+    .match(/^\s*<\?xml[^>]*encoding=["']([\w.:-]+)["']/i)?.[1];
   try {
     return new TextDecoder(declared ?? 'utf-8').decode(bytes);
   } catch {
-    return new TextDecoder('utf-8').decode(bytes);
+    return new TextDecoder('utf-8').decode(bytes); // a label the browser doesn't know
   }
 }
 
@@ -83,12 +85,18 @@ function descendants(root: Element | Document, name: string): Element[] {
   return Array.from(root.getElementsByTagNameNS('*', name));
 }
 
-/** `YYYY-MM-DD` from a `Dt` or `DtTm` (the bank's local time) */
+/** `YYYY-MM-DD` from a `Dt` or `DtTm` (the bank's local time), if it's a real day */
 function dateOf(el: Element | null): string | null {
   const value = text(find(el, 'Dt')) ?? text(find(el, 'DtTm'));
-  const date = value?.slice(0, 10);
-  return date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null;
+  const date = value?.slice(0, 10) ?? '';
+  return /^\d{4}-\d{2}-\d{2}$/.test(date) ? normalizeDate(date) || null : null;
 }
+
+/** Cents in an `Amt`, never negative (the indicator says which way the money went) */
+const amountOf = (el: Element | null) => {
+  const cents = readImportAmount(text(el) ?? undefined, 'dot');
+  return cents === null ? null : Math.abs(cents);
+};
 
 /** The other party's name: who was paid for money out, who paid for money in */
 function partyName(details: Element | null, isDebit: boolean): string | null {
@@ -114,7 +122,7 @@ function detailAmount(details: Element, entryIsDebit: boolean): number | null {
     find(details, 'AmtDtls', 'TxAmt', 'Amt') ??
     find(details, 'Amt') ??
     find(details, 'AmtDtls', 'InstdAmt', 'Amt');
-  const cents = readImportAmount(text(amountEl) ?? undefined, 'dot');
+  const cents = amountOf(amountEl);
   if (cents === null) return null;
   const indicator = text(find(details, 'CdtDbtInd'));
   const isDebit = indicator ? indicator === 'DBIT' : entryIsDebit;
@@ -124,6 +132,11 @@ function detailAmount(details: Element, entryIsDebit: boolean): number | null {
 interface Draft extends Omit<CamtTransaction, 'importedId'> {
   /** The bank's own reference, if it gave one */
   ref: string | null;
+}
+
+/** A reference that names one transaction: banks write NONREF or NOTPROVIDED when there's none */
+function realRef(ref: string | null): string | null {
+  return ref && !/^(NONREF|NOTPROVIDED)$/i.test(ref) ? ref : null;
 }
 
 const clip = (s: string | null, max: number) => (s ? s.slice(0, max) : null);
@@ -140,7 +153,10 @@ function draft(
   return { date, amount, payeeName: clip(payee, 500), notes: clip(cleanNotes, 5000), ref };
 }
 
-/** The transactions in one entry (`Ntry`), or null if it can't be imported */
+/**
+ * The transactions in one entry (`Ntry`), or null if it can't be imported. Zero amounts are
+ * left out, as in a CSV import.
+ */
 function readEntry(entry: Element): Draft[] | null {
   // Version 2 to 7: <Sts>BOOK</Sts>; version 8 and later: <Sts><Cd>BOOK</Cd></Sts>
   const status = text(find(entry, 'Sts'));
@@ -149,12 +165,13 @@ function readEntry(entry: Element): Draft[] | null {
   const indicator = text(find(entry, 'CdtDbtInd'));
   if (indicator !== 'DBIT' && indicator !== 'CRDT') return null;
   const isDebit = indicator === 'DBIT';
-  const cents = readImportAmount(text(find(entry, 'Amt')) ?? undefined, 'dot');
+  const cents = amountOf(find(entry, 'Amt'));
   const date = dateOf(find(entry, 'BookgDt')) ?? dateOf(find(entry, 'ValDt'));
   if (cents === null || !date) return null;
+  if (cents === 0) return [];
   const amount = isDebit ? -cents : cents;
 
-  const entryRef = text(find(entry, 'AcctSvcrRef'));
+  const entryRef = realRef(text(find(entry, 'AcctSvcrRef')));
   const entryInfo = text(find(entry, 'AddtlNtryInf'));
   const details = findAll(entry, 'NtryDtls', 'TxDtls').concat(
     // Some banks repeat NtryDtls once per transaction instead of listing them in one
@@ -170,15 +187,21 @@ function readEntry(entry: Element): Draft[] | null {
       0,
     );
     if (sum === amount) {
-      return details.map((d, i) =>
+      // The parts' own references only if each has a different one: many banks repeat the
+      // entry's reference on every part
+      const partRefs = details.map((d) => realRef(text(find(d, 'Refs', 'AcctSvcrRef'))));
+      const ownRefs =
+        partRefs.every((r) => r && r !== entryRef) && new Set(partRefs).size === partRefs.length;
+      const parts = details.map((d, i) =>
         draft(
           date,
           amounts[i]!,
           partyName(d, (amounts[i] ?? 0) < 0) ?? text(find(d, 'AddtlTxInf')),
           remittance(d),
-          text(find(d, 'Refs', 'AcctSvcrRef')) ?? (entryRef ? `${entryRef}:${i + 1}` : null),
+          ownRefs ? partRefs[i] : entryRef ? `${entryRef}:${i + 1}` : null,
         ),
       );
+      return parts.filter((p) => p.amount !== 0);
     }
     // The parts don't add up (or have no amounts): one transaction, as the account saw it
     return [draft(date, amount, entryInfo, `${details.length} payments`, entryRef)];
@@ -187,7 +210,8 @@ function readEntry(entry: Element): Draft[] | null {
   const only = details[0] ?? null;
   const payee = partyName(only, isDebit) ?? text(find(only, 'AddtlTxInf')) ?? entryInfo;
   const notes = remittance(only) ?? (entryInfo !== payee ? entryInfo : null);
-  return [draft(date, amount, payee, notes, entryRef ?? text(find(only, 'Refs', 'AcctSvcrRef')))];
+  const ref = entryRef ?? realRef(text(find(only, 'Refs', 'AcctSvcrRef')));
+  return [draft(date, amount, payee, notes, ref)];
 }
 
 function accountId(statement: Element): string | null {
@@ -212,40 +236,63 @@ export function parseCamt(xml: string): CamtStatement[] | null {
     .find(Boolean);
   if (!root) return null;
 
-  const byAccount = new Map<string | null, { drafts: Draft[]; skipped: number }>();
+  // Each statement's transactions, by account
+  const byAccount = new Map<string | null, { statements: Draft[][]; skipped: number }>();
+  const statementIds = new Set<string>();
   for (const statement of elements(root).filter((e) =>
     ['Stmt', 'Rpt', 'Ntfctn'].includes(e.localName),
   )) {
     const account = accountId(statement);
-    const group = byAccount.get(account) ?? { drafts: [], skipped: 0 };
+    // The same statement twice in one file: its entries are already in. Banks number
+    // statements per account, so the number alone isn't enough.
+    const id = text(find(statement, 'Id'));
+    if (id) {
+      const key = JSON.stringify([account, id]);
+      if (statementIds.has(key)) continue;
+      statementIds.add(key);
+    }
+    const group = byAccount.get(account) ?? { statements: [], skipped: 0 };
     byAccount.set(account, group);
+    const drafts: Draft[] = [];
     for (const entry of findAll(statement, 'Ntry')) {
-      const drafts = readEntry(entry);
-      if (drafts) group.drafts.push(...drafts);
+      const read = readEntry(entry);
+      if (read) drafts.push(...read);
       else group.skipped++;
     }
+    group.statements.push(drafts);
   }
 
-  return [...byAccount].map(([account, { drafts, skipped }]) => {
-    const seen = new Set<string>();
-    const occurrences = new Map<string, number>();
+  return [...byAccount].map(([account, { statements, skipped }]) => {
+    // Ids already given, with the transaction they were given to (date and amount)
+    const given = new Map<string, string>();
     const transactions: CamtTransaction[] = [];
-    for (const d of drafts) {
-      let importedId: string;
-      if (d.ref) {
-        importedId = `camt:${d.ref}`.slice(0, 500);
-        // The same entry in two overlapping statements of one file
-        if (seen.has(importedId)) continue;
-      } else {
-        // No reference: the same id a CSV row would get
-        const key = generateImportId(d.date, d.amount, d.payeeName ?? '');
-        const occurrence = (occurrences.get(key) ?? 0) + 1;
-        occurrences.set(key, occurrence);
-        importedId = generateImportId(d.date, d.amount, d.payeeName ?? '', occurrence);
+    for (const drafts of statements) {
+      // Identical transactions without a reference are numbered within their statement, so
+      // the same one in an overlapping statement gets the same id and is left out
+      const occurrences = new Map<string, number>();
+      for (const d of drafts) {
+        const what = `${d.date}|${d.amount}`;
+        let importedId: string;
+        if (d.ref) {
+          importedId = `camt:${d.ref}`.slice(0, 500);
+          // A bank that reuses a reference for another transaction: tell them apart
+          const earlier = given.get(importedId);
+          if (earlier !== undefined && earlier !== what) {
+            importedId = `camt:${d.ref}|${what}`.slice(0, 500);
+          }
+        } else {
+          // No reference: the same id a CSV row would get
+          const key = generateImportId(d.date, d.amount, d.payeeName ?? '');
+          const occurrence = (occurrences.get(key) ?? 0) + 1;
+          occurrences.set(key, occurrence);
+          importedId = generateImportId(d.date, d.amount, d.payeeName ?? '', occurrence);
+        }
+        // The same transaction again, from an overlapping statement
+        if (given.has(importedId)) continue;
+        given.set(importedId, what);
+        const { ref: _, ...transaction } = d;
+        transactions.push({ ...transaction, importedId });
       }
-      seen.add(importedId);
-      const { ref: _, ...transaction } = d;
-      transactions.push({ ...transaction, importedId });
     }
     return { account, transactions, skipped };
   });

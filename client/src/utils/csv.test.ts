@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
 import {
+  columnKeys,
   columnRolesFor,
   decodeCsvBytes,
   detectDateFormat,
@@ -129,6 +130,8 @@ describe('readImportAmount (property-based)', () => {
     ['1 234,56', 'comma', 123456],
     ['EUR -5,00', 'comma', -500],
     ['12,50', 'dot', null],
+    ['100000000000.00', 'dot', 10_000_000_000_000], // the largest the server takes
+    ['100000000000.01', 'dot', null],
     ['1,234.56', 'comma', null],
     ['', 'dot', null],
     ['n/a', 'dot', null],
@@ -217,6 +220,13 @@ describe('normalizeDate (property-based)', () => {
     expect(normalizeDate('20240703', 'dmy')).toBe('2024-07-03');
   });
 
+  it('reads ISO timestamps, taking the date as written', () => {
+    expect(normalizeDate('2024-01-05T10:00:00Z')).toBe('2024-01-05');
+    expect(normalizeDate('2024-01-05T23:30:00+01:00')).toBe('2024-01-05');
+    expect(normalizeDate('2024-01-05 10:00:00.123')).toBe('2024-01-05');
+    expect(normalizeDate('05.01.2024 10:00:00,5 +0100', 'dmy')).toBe('2024-01-05');
+  });
+
   it('rejects days that do not exist instead of guessing', () => {
     expect(normalizeDate('2024-02-30')).toBe('');
     expect(normalizeDate('31/12/2024', 'mdy')).toBe('');
@@ -289,6 +299,15 @@ describe('detectSkipRows (property-based)', () => {
     );
   });
 
+  it('never takes account details for the header of a narrow table', () => {
+    const records = [
+      ['Konto', 'DE89370400440532013000'],
+      ['Datum', 'Text', 'Betrag'],
+      ['01.02.2025', 'Miete', '-500,00'],
+    ];
+    expect(detectSkipRows(records)).toBe(1);
+  });
+
   it('skips nothing in a plain file', () => {
     expect(
       detectSkipRows([
@@ -338,6 +357,18 @@ describe('columnRolesFor', () => {
         Code: 'direction',
       }),
     ).toEqual(['date', 'notes', 'direction', 'amount']);
+    // Repeated (or blank) headers each keep their own role
+    expect(columnKeys(['Datum', 'Text', 'Datum', '', ''])).toEqual([
+      'Datum',
+      'Text',
+      'Datum#2',
+      '',
+      '#2',
+    ]);
+    expect(columnRolesFor(['Datum', 'Datum'], { Datum: 'skip', 'Datum#2': 'date' })).toEqual([
+      'skip',
+      'date',
+    ]);
     // A header named like an object property is still just a header
     expect(columnRolesFor(['constructor', 'Amount'], {})).toEqual(['skip', 'amount']);
   });

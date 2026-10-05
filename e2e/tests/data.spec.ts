@@ -244,8 +244,8 @@ test.describe('CSV import', () => {
 
     await dialog.getByRole('combobox', { name: 'Column Opis' }).selectOption('payee');
     await dialog.getByRole('combobox', { name: 'Encoding' }).selectOption('windows-1250');
-    // Changing the encoding reads the file again; the mapping is guessed again too
-    await dialog.getByRole('combobox', { name: 'Column Opis' }).selectOption('payee');
+    // Reading the file again in another encoding keeps the mapping
+    await expect(dialog.getByRole('combobox', { name: 'Column Opis' })).toHaveValue('payee');
     await expect(dialog.getByRole('cell', { name: 'Łódź' })).toBeVisible();
     await dialog.getByRole('button', { name: 'Preview' }).click();
     await dialog.getByRole('button', { name: 'Import 1 Transactions' }).click();

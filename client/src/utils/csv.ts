@@ -83,8 +83,8 @@ export function parseCsv(
  * How many rows sit above the header: those with clearly fewer columns than the table under
  * them (account details like `Kontonummer:;DE12…`). The table is the widest part of the
  * file: its width is the widest seen twice, or one less than the widest row (so one row
- * with a stray separator doesn't count). The header may be a column shorter than the rows,
- * when every row ends with a separator.
+ * with a stray separator doesn't count). The header may be a column shorter than the rows
+ * only when the rows end with a separator (an empty last field) and the header doesn't.
  */
 export function detectSkipRows(records: string[][]): number {
   const widths = records.map((r) => r.length).filter((w) => w >= 2);
@@ -98,8 +98,15 @@ export function detectSkipRows(records: string[][]): number {
     widest = Math.max(widest, w);
   }
   const width = Math.max(widestTwice, widest - 1);
+  const rows = records.filter((r) => r.length === width);
+  const trailingSeparator = rows.filter((r) => r[r.length - 1] === '').length * 2 > rows.length;
   return Math.max(
-    records.findIndex((r) => r.length >= 2 && r.length >= width - 1),
+    records.findIndex(
+      (r) =>
+        r.length >= 2 &&
+        (r.length >= width ||
+          (trailingSeparator && r.length === width - 1 && r[r.length - 1] !== '')),
+    ),
     0,
   );
 }
@@ -137,8 +144,10 @@ export function decodeCsvBytes(bytes: ArrayBuffer, encoding: CsvEncoding = 'auto
 /** Order of day and month in dates like 03/04/2026. Year-first dates are always read as such. */
 export type DateFormat = 'mdy' | 'dmy';
 
-// A time after the date: 14:05, 14:05:09, 2:05 PM, 2:05:09 p.m.
-const TIME = '(?:[ T]\\d{1,2}:\\d{2}(?::\\d{2})?(?: ?[ap]\\.?m\\.?)?)?';
+// A time after the date: 14:05, 14:05:09, 2:05 PM, 2:05:09 p.m., and ISO timestamps with
+// fractions and a time zone (10:00:00.123Z, 10:00:00+01:00). The date is taken as written.
+const TIME =
+  '(?:[ T]\\d{1,2}:\\d{2}(?::\\d{2}(?:[.,]\\d+)?)?(?: ?[ap]\\.?m\\.?)?(?: ?(?:Z|[+-]\\d{2}(?::?\\d{2})?))?)?';
 // 31/12/2026, 31.12.2026, 31-12-26, optionally followed by a time
 const DAY_MONTH = new RegExp(`^(\\d{1,2})([./-])(\\d{1,2})\\2(\\d{4}|\\d{2})${TIME}$`, 'i');
 // 2026-12-31, 2026/12/31, 2026.12.31, optionally followed by a time
@@ -259,6 +268,9 @@ export function detectNumberFormat(values: string[]): NumberFormat | null {
   return ambiguous ? null : 'dot';
 }
 
+/** The largest amount the server takes (100 billion), in cents */
+const MAX_IMPORT_CENTS = 1e13;
+
 // Thousands groups of exactly three digits, then optional decimals
 const AMOUNT_PATTERN: Record<NumberFormat, RegExp> = {
   dot: /^(\d{1,3}(,\d{3})+|\d*)(\.\d*)?$/,
@@ -268,7 +280,7 @@ const AMOUNT_PATTERN: Record<NumberFormat, RegExp> = {
 /**
  * An amount as banks write it: "$1,234.56", "-12.00", "(12.00)" or "12.00-" for negatives,
  * or with `format: 'comma'` "1.234,56 €" and "-12,50". Returns integer cents (rounded to the
- * nearest cent), or null if it isn't a number in that format.
+ * nearest cent), or null if it isn't a number in that format or is more than the server takes.
  */
 export function readImportAmount(
   raw: string | undefined,
@@ -299,7 +311,7 @@ export function readImportAmount(
     Number(whole || '0') * 100 +
     Number(fraction.padEnd(2, '0').slice(0, 2)) +
     (fraction[2] >= '5' ? 1 : 0);
-  if (!Number.isSafeInteger(cents)) return null;
+  if (!Number.isSafeInteger(cents) || cents > MAX_IMPORT_CENTS) return null;
   return negative ? -cents : cents;
 }
 
@@ -435,13 +447,28 @@ export interface ImportSettings {
   outWord: string | null;
 }
 
-/** Roles for these headers: saved ones where the header was seen before, else a guess */
+/**
+ * What saved settings call each column: its header, with `#2`, `#3`… for a header that
+ * appears again (two "Datum" columns, or blank headers), so each keeps its own role
+ */
+export function columnKeys(headers: string[]): string[] {
+  const count = new Map<string, number>();
+  return headers.map((h) => {
+    const n = (count.get(h) ?? 0) + 1;
+    count.set(h, n);
+    return n === 1 ? h : `${h}#${n}`;
+  });
+}
+
+/** Roles for these headers: saved ones where the column was seen before, else a guess */
 export function columnRolesFor(
   headers: string[],
   saved?: Record<string, ColumnRole>,
 ): ColumnRole[] {
   const guessed = guessColumnRoles(headers);
-  return headers.map((h, i) => (saved && Object.hasOwn(saved, h) ? saved[h] : guessed[i]));
+  return columnKeys(headers).map((key, i) =>
+    saved && Object.hasOwn(saved, key) ? saved[key] : guessed[i],
+  );
 }
 
 export function guessColumnRoles(headers: string[]): ColumnRole[] {

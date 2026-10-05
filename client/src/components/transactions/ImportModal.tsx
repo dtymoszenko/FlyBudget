@@ -12,6 +12,7 @@ import {
   readDirection,
   unknownDirectionWords,
   columnRolesFor,
+  columnKeys,
   decodeCsvBytes,
   detectDelimiter,
   detectSkipRows,
@@ -52,6 +53,9 @@ const selectClass = 'w-full text-xs border border-border rounded px-1.5 py-1 bg-
 const optionLabelClass = 'text-xs font-medium text-text-tertiary space-y-1';
 
 const settingsKey = (accountId: string) => ['import-settings', accountId];
+
+/** The most rows one import may send (the server's limit) */
+const MAX_IMPORT_ROWS = 100_000;
 
 export function ImportModal({ isOpen, onClose, accountId }: Props) {
   const [step, setStep] = useState<Step>('upload');
@@ -116,14 +120,24 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
     onClose();
   }
 
-  /** Shows the rows under the header, with columns mapped as last time or guessed */
+  /**
+   * Shows the rows under the header, with columns mapped as last time or guessed, or as
+   * `keepRoles` when the table has as many columns (the same file, read in another encoding)
+   */
   const showTable = useCallback(
-    (all: string[][], skip: number, savedSettings: ImportSettings | null) => {
+    (
+      all: string[][],
+      skip: number,
+      savedSettings: ImportSettings | null,
+      keepRoles?: ColumnRole[],
+    ) => {
       const h = all[skip] ?? [];
       setSkipRows(skip);
       setHeaders(h);
       setRawRows(all.slice(skip + 1));
-      setRoles(columnRolesFor(h, savedSettings?.columns));
+      setRoles(
+        keepRoles?.length === h.length ? keepRoles : columnRolesFor(h, savedSettings?.columns),
+      );
     },
     [],
   );
@@ -135,6 +149,7 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
       sep: Delimiter,
       skip: number | null,
       savedSettings: ImportSettings | null,
+      keepRoles?: ColumnRole[],
     ) => {
       const all = parseCsvRecords(content, sep);
       if (all.length === 0) {
@@ -144,13 +159,21 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
       setError(null);
       setRecords(all);
       setDelimiter(sep);
-      showTable(all, Math.min(skip ?? detectSkipRows(all), all.length - 1), savedSettings);
+      const header = Math.min(skip ?? detectSkipRows(all), all.length - 1);
+      showTable(all, header, savedSettings, keepRoles);
       setStep('map');
     },
     [showTable],
   );
 
   async function runPreview(rows: ImportRow[], unreadableCount: number) {
+    // The server's limit: say so, rather than fail the whole file with a generic error
+    if (rows.length > MAX_IMPORT_ROWS) {
+      setError(
+        `This file has ${rows.length.toLocaleString()} transactions. FlyBudget imports up to ${MAX_IMPORT_ROWS.toLocaleString()} at a time: split it into smaller files.`,
+      );
+      return;
+    }
     setLoading(true);
     try {
       const preview = await importPreview(accountId, rows);
@@ -176,6 +199,14 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
 
   async function handleFile(file: File) {
     setError(null);
+    try {
+      await readFile(file);
+    } catch {
+      setError("Couldn't read this file");
+    }
+  }
+
+  async function readFile(file: File) {
     const buffer = await file.arrayBuffer();
 
     const start = new TextDecoder('utf-8').decode(buffer.slice(0, 4096));
@@ -200,6 +231,7 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
         await queryClient.fetchQuery({
           queryKey: settingsKey(accountId),
           queryFn: () => getImportSettings(accountId),
+          retry: false, // offline, don't keep the file waiting
         })
       ).settings;
     } catch {
@@ -216,7 +248,8 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
       const content = decodeCsvBytes(buffer, savedSettings.encoding);
       const header = parseCsvRecords(content, savedSettings.delimiter)[savedSettings.skipRows];
       const known = savedSettings.columns;
-      if (header && header.length >= 2 && header.every((h) => Object.hasOwn(known, h))) {
+      const sameColumns = header && columnKeys(header).every((key) => Object.hasOwn(known, key));
+      if (header && header.length >= 2 && sameColumns) {
         setEncoding(savedSettings.encoding);
         setUsingSaved(true);
         loadCsv(content, savedSettings.delimiter, savedSettings.skipRows, savedSettings);
@@ -245,7 +278,7 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
     if (!bytes) return;
     setEncoding(next);
     setUsingSaved(false);
-    loadCsv(decodeCsvBytes(bytes, next), delimiter, skipRows, saved);
+    loadCsv(decodeCsvBytes(bytes, next), delimiter, skipRows, saved, roles);
   }
 
   function changeDelimiter(next: Delimiter) {
@@ -377,9 +410,11 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
   async function rememberSettings() {
     if (source !== 'csv' || !dateFormat || !numberFormat) return;
     const columns: Record<string, ColumnRole> = {};
-    headers.slice(0, 200).forEach((h, i) => {
-      if (h.length <= 200) columns[h] = roles[i];
-    });
+    columnKeys(headers)
+      .slice(0, 200)
+      .forEach((key, i) => {
+        if (key.length <= 200) columns[key] = roles[i];
+      });
     const settings: ImportSettings = {
       delimiter,
       encoding,

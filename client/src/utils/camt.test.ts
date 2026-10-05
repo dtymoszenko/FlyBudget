@@ -88,7 +88,11 @@ const text = fc
   // XML readers collapse runs of spaces, and so do we
   .map((s) => s.replace(/\s+/g, ' ').trim())
   .filter((s) => s !== '');
-const ref = fc.option(fc.stringMatching(/^[A-Z0-9]{4,12}$/), { nil: null });
+// Short references collide often, as when a bank reuses one; NONREF means there is none
+const ref = fc.option(fc.oneof(fc.stringMatching(/^[A-Z0-9]{1,3}$/), fc.constant('NONREF')), {
+  nil: null,
+});
+const realRef = (r: string | null) => (r === 'NONREF' ? null : r);
 const part = fc.record<Part>({
   cents: fc.integer({ min: 1, max: 10_000_000 }),
   name: text,
@@ -145,20 +149,28 @@ describe('parseCamt (property-based)', () => {
         expect(statement.account).toBe('DE89370400440532013000');
         expect(statement.skipped).toBe(entries.filter((e) => !e.booked).length);
 
-        // Entries with the same bank reference are the same entry: only the first counts
-        const seenRefs = new Set<string>();
+        // The same bank reference on the same day for the same amount is the same transaction
+        // (in an overlapping statement): only the first counts. Anything else is imported.
+        const seen = new Set<string>();
         const wanted = entries
           .filter((e) => e.booked)
           .flatMap((e) => {
-            const rows = expected(e);
-            return rows.filter((_, i) => {
+            const entryRef = realRef(e.ref);
+            const partRefs = e.parts.map((p) => realRef(p.ref));
+            const ownRefs =
+              partRefs.every((r) => r && r !== entryRef) &&
+              new Set(partRefs).size === partRefs.length;
+            return expected(e).filter((row, i) => {
               const r =
                 e.parts.length > 1 && e.partsAddUp
-                  ? (e.parts[i].ref ?? (e.ref ? `${e.ref}:${i + 1}` : null))
-                  : (e.ref ?? e.parts[0]?.ref ?? null);
+                  ? ownRefs
+                    ? partRefs[i]
+                    : entryRef && `${entryRef}:${i + 1}`
+                  : (entryRef ?? partRefs[0] ?? null);
               if (!r) return true;
-              if (seenRefs.has(r)) return false;
-              seenRefs.add(r);
+              const key = `${r}|${row.date}|${row.amount}`;
+              if (seen.has(key)) return false;
+              seen.add(key);
               return true;
             });
           });
@@ -183,6 +195,48 @@ describe('parseCamt (property-based)', () => {
         expect(ids()).toEqual(ids());
       }),
     );
+  });
+
+  it('keeps statements of different accounts that share a number', () => {
+    const stmt = (iban: string, amount: string) =>
+      `<Stmt><Id>1</Id><Acct><Id><IBAN>${iban}</IBAN></Id></Acct><Ntry><Amt>${amount}</Amt>` +
+      `<CdtDbtInd>DBIT</CdtDbtInd><BookgDt><Dt>2025-01-02</Dt></BookgDt></Ntry></Stmt>`;
+    const statements = parseCamt(
+      `<Document><BkToCstmrStmt>${stmt('NL91ABNA0417164300', '1.00')}${stmt('DE89370400440532013000', '2.00')}</BkToCstmrStmt></Document>`,
+    )!;
+    expect(statements.map((s) => [s.account, s.transactions[0].amount])).toEqual([
+      ['NL91ABNA0417164300', -100],
+      ['DE89370400440532013000', -200],
+    ]);
+  });
+
+  it('keeps every payment of a batch whose parts repeat the entry reference or say NONREF', () => {
+    const part = (amount: string, name: string, ref: string) =>
+      `<TxDtls><Refs><AcctSvcrRef>${ref}</AcctSvcrRef></Refs>` +
+      `<AmtDtls><TxAmt><Amt>${amount}</Amt></TxAmt></AmtDtls>` +
+      `<RltdPties><Cdtr><Nm>${name}</Nm></Cdtr></RltdPties></TxDtls>`;
+    const batch = (ref: string, partRef: string) =>
+      `<Ntry><AcctSvcrRef>${ref}</AcctSvcrRef><Amt>30.00</Amt><CdtDbtInd>DBIT</CdtDbtInd>` +
+      `<BookgDt><Dt>2025-01-02</Dt></BookgDt><NtryDtls>` +
+      `${part('10.00', 'Anna', partRef)}${part('20.00', 'Ben', partRef)}</NtryDtls></Ntry>`;
+    const [statement] = parseCamt(
+      `<Document><BkToCstmrStmt><Stmt>${batch('B1', 'B1')}${batch('NONREF', 'NONREF')}</Stmt></BkToCstmrStmt></Document>`,
+    )!;
+    expect(statement.transactions.map((t) => [t.payeeName, t.amount, t.importedId])).toEqual([
+      ['Anna', -1000, 'camt:B1:1'],
+      ['Ben', -2000, 'camt:B1:2'],
+      ['Anna', -1000, '2025-01-02|-1000|anna'],
+      ['Ben', -2000, '2025-01-02|-2000|ben'],
+    ]);
+  });
+
+  it('imports an entry without a reference once, when overlapping statements both have it', () => {
+    const coffee = `<Ntry><Amt>3.50</Amt><CdtDbtInd>DBIT</CdtDbtInd><BookgDt><Dt>2025-01-02</Dt></BookgDt><AddtlNtryInf>Cafe</AddtlNtryInf></Ntry>`;
+    // Two coffees that day in the first statement; the second statement repeats one of them
+    const [statement] = parseCamt(
+      `<Document><BkToCstmrStmt><Stmt><Id>A</Id>${coffee}${coffee}</Stmt><Stmt><Id>B</Id>${coffee}</Stmt></BkToCstmrStmt></Document>`,
+    )!;
+    expect(statement.transactions).toHaveLength(2);
   });
 
   it('keeps one transaction per statement account', () => {
@@ -254,6 +308,18 @@ describe('parseCamt', () => {
     ]);
   });
 
+  it('rejects impossible dates, leaves out zero amounts, and reads each statement once', () => {
+    const entry = (amount: string, day: string) =>
+      `<Ntry><Amt>${amount}</Amt><CdtDbtInd>DBIT</CdtDbtInd><BookgDt><Dt>${day}</Dt></BookgDt></Ntry>`;
+    const stmt = `<Stmt><Id>2025-001</Id>${entry('5.00', '2025-02-28')}${entry('0.00', '2025-02-28')}${entry('7.00', '2025-02-30')}</Stmt>`;
+    // The same statement twice, as when daily files are joined
+    const [statement] = parseCamt(
+      `<Document><BkToCstmrStmt>${stmt}${stmt}</BkToCstmrStmt></Document>`,
+    )!;
+    expect(statement.transactions.map((t) => [t.date, t.amount])).toEqual([['2025-02-28', -500]]);
+    expect(statement.skipped).toBe(1); // February 30
+  });
+
   it('refuses files that are not CAMT statements', () => {
     expect(parseCamt('<html><body>hi</body></html>')).toBeNull();
     expect(parseCamt('not xml at all <<<')).toBeNull();
@@ -263,6 +329,16 @@ describe('parseCamt', () => {
     expect(looksLikeCamt('<?xml version="1.0"?><Document><BkToCstmrStmt>')).toBe(true);
     expect(looksLikeCamt('<Document><ns2:BkToCstmrAcctRpt>')).toBe(true);
     expect(looksLikeCamt('Date,Amount\n2025-01-01,5')).toBe(false);
+  });
+
+  it('follows a UTF-16 byte order mark over the declaration', () => {
+    const xml = '﻿<?xml version="1.0" encoding="UTF-16"?><Nm>Łódź</Nm>';
+    const le = new Uint8Array(xml.length * 2);
+    [...xml].forEach((ch, i) => {
+      le[2 * i] = ch.charCodeAt(0) & 0xff;
+      le[2 * i + 1] = ch.charCodeAt(0) >> 8;
+    });
+    expect(decodeCamtBytes(le.buffer)).toContain('Łódź');
   });
 
   it('decodes the encoding the XML declaration names', () => {
