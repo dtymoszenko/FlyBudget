@@ -8,6 +8,7 @@ import {
   normalizeDate,
   generateImportId,
   readImportAmount,
+  readDirection,
   guessColumnRoles,
   decodeCsvBytes,
   detectDelimiter,
@@ -161,6 +162,7 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
     const inflowIdx = roles.indexOf('inflow');
     const outflowIdx = roles.indexOf('outflow');
     const notesIdx = roles.indexOf('notes');
+    const directionIdx = roles.indexOf('direction');
 
     if (dateIdx === -1) return 'Date column is required';
     if (amountIdx === -1 && inflowIdx === -1 && outflowIdx === -1) {
@@ -203,6 +205,15 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
           continue;
         }
         amount = inf !== 0 ? Math.abs(inf) : -Math.abs(out);
+      }
+      if (directionIdx !== -1) {
+        // Banks like ING write every amount as positive and the direction beside it
+        const direction = readDirection(raw[directionIdx]);
+        if (!direction) {
+          unreadableRows++;
+          continue;
+        }
+        amount = direction === 'out' ? -Math.abs(amount) : Math.abs(amount);
       }
       if (amount === 0) continue;
 
@@ -277,6 +288,7 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
     { value: 'amount', label: 'Amount' },
     { value: 'inflow', label: 'Inflow' },
     { value: 'outflow', label: 'Outflow' },
+    { value: 'direction', label: 'Direction (in/out)' },
     { value: 'notes', label: 'Notes' },
     { value: 'skip', label: 'Skip' },
   ];

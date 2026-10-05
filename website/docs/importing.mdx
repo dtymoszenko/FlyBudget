@@ -51,6 +51,10 @@ hand _and_ import files for the same account, check the preview for rows you alr
 - **Amounts**: `1,234.56` or `1.234,56` (also `1 234,56`), with or without a currency symbol,
   and `-12.00`, `(12.00)` or `12.00-` for money going out. With separate inflow and outflow
   columns, FlyBudget works out the sign.
+- **Direction columns**: some banks (ING in the Netherlands, for one) write every amount as a
+  positive number and say which way the money went in a column of its own: `Af`/`Bij`,
+  `Debit`/`Credit` or `S`/`H`. Map that column as **Direction (in/out)** and FlyBudget signs
+  the amounts from it.
 - **Text**: UTF-8 and the older Windows encoding many banks still use, so names like _Müller_ or
   _Café_ come through intact.
 - Files up to 100,000 rows. Rows with an amount of zero are left out.

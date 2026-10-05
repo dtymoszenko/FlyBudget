@@ -7,6 +7,7 @@ import {
   generateImportId,
   normalizeDate,
   parseCsv,
+  readDirection,
   readImportAmount,
   type DateFormat,
   type Delimiter,
@@ -172,19 +173,19 @@ const dateStyle = fc.record({
   sep: fc.constantFrom('/', '.', '-'),
   pad: fc.boolean(),
   shortYear: fc.boolean(),
-  time: fc.boolean(),
+  time: fc.constantFrom('', ' 14:05', 'T14:05:09', ' 2:05 PM', ' 2:05:09 p.m.', ' 9:30am'),
 });
 
 function formatDate(
   iso: string,
   format: DateFormat,
-  style: { sep: string; pad: boolean; shortYear: boolean; time: boolean },
+  style: { sep: string; pad: boolean; shortYear: boolean; time: string },
 ): string {
   const [y, m, d] = iso.split('-');
   const p = (s: string) => (style.pad ? s : String(+s));
   const year = style.shortYear ? y.slice(2) : y;
   const parts = format === 'mdy' ? [p(m), p(d), year] : [p(d), p(m), year];
-  return parts.join(style.sep) + (style.time ? ' 14:05' : '');
+  return parts.join(style.sep) + style.time;
 }
 
 describe('normalizeDate (property-based)', () => {
@@ -237,9 +238,36 @@ describe('detectDateFormat (property-based)', () => {
     );
   });
 
+  it('follows the chosen order when a 12-hour time follows the date', () => {
+    expect(normalizeDate('05/03/2024 10:00 AM', 'dmy')).toBe('2024-03-05');
+    expect(normalizeDate('05/03/2024 10:00 AM', 'mdy')).toBe('2024-05-03');
+    expect(detectDateFormat(['13/03/2024 10:00 PM'])).toBe('dmy');
+    expect(detectDateFormat(['05/03/2024 10:00 PM'])).toBeNull();
+    // Never left to the browser, which would read it month first
+    expect(normalizeDate('05/03/2024 at 10:00', 'dmy')).toBe('');
+  });
+
   it('asks when no day is over 12', () => {
     expect(detectDateFormat(['01.02.2026', '03.04.2026'])).toBeNull();
     expect(detectDateFormat(['2026-01-02', 'Jan 5, 2026'])).toBe('mdy'); // nothing to decide
+  });
+});
+
+describe('readDirection', () => {
+  it.each<[string, 'in' | 'out' | null]>([
+    ['Af', 'out'],
+    ['Bij', 'in'],
+    [' debit ', 'out'],
+    ['CREDIT', 'in'],
+    ['DBIT', 'out'],
+    ['CRDT', 'in'],
+    ['Dr.', 'out'],
+    ['S', 'out'],
+    ['H', 'in'],
+    ['', null],
+    ['Betaalautomaat', null],
+  ])('%s', (raw, expected) => {
+    expect(readDirection(raw)).toBe(expected);
   });
 });
 

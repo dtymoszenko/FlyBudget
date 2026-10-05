@@ -85,11 +85,12 @@ export function decodeCsvBytes(bytes: ArrayBuffer): string {
 /** Order of day and month in dates like 03/04/2026. Year-first dates are always read as such. */
 export type DateFormat = 'mdy' | 'dmy';
 
-const TIME = '(?:[ T]\\d{1,2}:\\d{2}(?::\\d{2})?)?';
+// A time after the date: 14:05, 14:05:09, 2:05 PM, 2:05:09 p.m.
+const TIME = '(?:[ T]\\d{1,2}:\\d{2}(?::\\d{2})?(?: ?[ap]\\.?m\\.?)?)?';
 // 31/12/2026, 31.12.2026, 31-12-26, optionally followed by a time
-const DAY_MONTH = new RegExp(`^(\\d{1,2})([./-])(\\d{1,2})\\2(\\d{4}|\\d{2})${TIME}$`);
+const DAY_MONTH = new RegExp(`^(\\d{1,2})([./-])(\\d{1,2})\\2(\\d{4}|\\d{2})${TIME}$`, 'i');
 // 2026-12-31, 2026/12/31, 2026.12.31, optionally followed by a time
-const YEAR_FIRST = new RegExp(`^(\\d{4})([./-])(\\d{1,2})\\2(\\d{1,2})${TIME}$`);
+const YEAR_FIRST = new RegExp(`^(\\d{4})([./-])(\\d{1,2})\\2(\\d{1,2})${TIME}$`, 'i');
 // 20261231, as some banks (ING in the Netherlands) write it
 const COMPACT = /^(\d{4})(\d{2})(\d{2})$/;
 
@@ -122,9 +123,11 @@ export function normalizeDate(raw: string, format: DateFormat = 'mdy'): string {
     return format === 'mdy' ? isoDateOf(year, a, b) : isoDateOf(year, b, a);
   }
 
-  // Written-out dates like "Jan 5, 2024". Dates made only of digits are never left to the
-  // browser (it reads 05.03.2024 as May 3), nor dates without a year ("Mar 5" is 2001).
+  // Written-out dates like "Jan 5, 2024". Numeric dates are never left to the browser,
+  // whatever follows them (it reads 05.03.2024 as May 3), nor dates without a year ("Mar 5"
+  // is 2001).
   if (!/[a-z]/i.test(trimmed) || !/\d{4}/.test(trimmed)) return '';
+  if (/^\d{1,4}[./-]\d{1,2}[./-]/.test(trimmed)) return '';
   const parsed = new Date(trimmed);
   if (!isNaN(parsed.getTime())) {
     // Local date parts: "Jan 5, 2024" parses as local midnight, and toISOString() (UTC)
@@ -316,9 +319,32 @@ const COLUMN_HINTS: Record<string, ColumnRole> = {
   crédit: 'inflow',
   verwendungszweck: 'notes', // German
   mededelingen: 'notes', // Dutch
+  // Columns saying which way the money went, when amounts have no sign
+  'af bij': 'direction', // ING Netherlands
+  'af/bij': 'direction',
+  'debit/credit': 'direction',
+  'credit/debit': 'direction',
+  'soll/haben': 'direction', // German
+  's/h': 'direction',
 };
 
-export type ColumnRole = 'date' | 'payee' | 'amount' | 'inflow' | 'outflow' | 'notes' | 'skip';
+export type ColumnRole =
+  'date' | 'payee' | 'amount' | 'inflow' | 'outflow' | 'direction' | 'notes' | 'skip';
+
+// What banks write in a direction column, lowercased and without dots
+const MONEY_OUT = new Set(['af', 'debit', 'dbit', 'd', 'dr', 'db', 'soll', 's', 'out']);
+const MONEY_IN = new Set(['bij', 'credit', 'crdt', 'c', 'cr', 'haben', 'h', 'in']);
+
+/**
+ * Which way the money went according to a direction column ("Af"/"Bij" at ING, "Debit"/
+ * "Credit", "S"/"H"), or null if the cell says neither.
+ */
+export function readDirection(raw: string | undefined): 'in' | 'out' | null {
+  const value = (raw ?? '').trim().toLowerCase().replace(/\./g, '');
+  if (MONEY_OUT.has(value)) return 'out';
+  if (MONEY_IN.has(value)) return 'in';
+  return null;
+}
 
 export function guessColumnRoles(headers: string[]): ColumnRole[] {
   return headers.map((h) => COLUMN_HINTS[h.trim().toLowerCase()] ?? 'skip');

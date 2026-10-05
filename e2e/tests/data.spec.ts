@@ -116,6 +116,39 @@ test.describe('CSV import', () => {
     ]);
   });
 
+  test('signs amounts from an Af/Bij column, as ING Netherlands exports them', async ({
+    page,
+    api,
+  }) => {
+    const checking = await api.createAccount('Betaalrekening', 0);
+    await open(page, `/accounts/${checking.id}`);
+    // Every amount is positive: "Af" (off) is money out, "Bij" (on) is money in
+    const dialog = await importCsv(
+      page,
+      '"Datum","Naam / Omschrijving","Rekening","Af Bij","Bedrag (EUR)","Mededelingen"\r\n' +
+        '"20250115","Albert Heijn","NL01INGB0001234567","Af","12,50","Boodschappen"\r\n' +
+        '"20250125","Werkgever BV","NL01INGB0001234567","Bij","2500,00","Salaris"\r\n',
+    );
+
+    await expect(dialog.getByRole('combobox', { name: 'Column Af Bij' })).toHaveValue('direction');
+    await expect(dialog.getByRole('combobox', { name: 'Column Bedrag (EUR)' })).toHaveValue(
+      'amount',
+    );
+    await expect(dialog.getByRole('combobox', { name: 'Amounts' })).toHaveValue('comma');
+    await dialog.getByRole('button', { name: 'Preview' }).click();
+    await dialog.getByRole('button', { name: 'Import 2 Transactions' }).click();
+    await expect(dialog).toContainText('2 imported, 0 skipped');
+
+    const txs = await api.transactions(`?account_id=${checking.id}&from=2025-01-01`);
+    const summary = txs
+      .map((t) => [t.date, t.payeeName, t.amount])
+      .sort((a, b) => String(a).localeCompare(String(b)));
+    expect(summary).toEqual([
+      ['2025-01-15', 'Albert Heijn', -1_250],
+      ['2025-01-25', 'Werkgever BV', 250_000],
+    ]);
+  });
+
   test('asks for the format when the file could be read two ways', async ({ page, api }) => {
     const checking = await api.createAccount('Checking', 0);
     await open(page, `/accounts/${checking.id}`);
