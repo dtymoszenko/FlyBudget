@@ -43,13 +43,23 @@ hand _and_ import files for the same account, check the preview for rows you alr
 
 ## What FlyBudget understands
 
-- **Dates**: `2026-01-05`, `01/05/2026` (month first) and written-out dates like `Jan 5, 2026`.
-- **Amounts**: `-12.00`, `$1,234.56`, `(12.00)` and `12.00-` for money going out. With separate
-  inflow and outflow columns, FlyBudget works out the sign.
+- **Separators**: commas, semicolons (common in Europe, where the comma is the decimal
+  separator) and tabs. FlyBudget picks the one in the file's header row; change it under
+  **Separator** if the columns look wrong.
+- **Dates**: `2026-01-05`, `20260105`, month first (`01/05/2026`), day first (`05/01/2026`, `05.01.2026`,
+  `05-01-26`), with or without a time after them, and written-out dates like `Jan 5, 2026`.
+- **Amounts**: `1,234.56` or `1.234,56` (also `1 234,56`), with or without a currency symbol,
+  and `-12.00`, `(12.00)` or `12.00-` for money going out. With separate inflow and outflow
+  columns, FlyBudget works out the sign.
+- **Text**: UTF-8 and the older Windows encoding many banks still use, so names like _Müller_ or
+  _Café_ come through intact.
 - Files up to 100,000 rows. Rows with an amount of zero are left out.
 
-If your bank writes the day before the month (`05/01/2026` for 5 January), or uses a comma as the
-decimal separator, change the format in a spreadsheet before importing.
+FlyBudget works out from the file whether dates have the day or the month first, and whether
+amounts use a decimal point or a decimal comma, and shows its choice under **Dates** and
+**Amounts**. When the file can't tell (every day in it is 12 or less, or every amount looks like
+`1.234`), it asks you instead of guessing: a wrong guess would swap days and months, or make
+amounts a hundred times too big. Rows it can't read are left out, and the preview says how many.
 
 ## Credit cards
 

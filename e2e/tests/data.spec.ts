@@ -13,13 +13,21 @@ const BANK_CSV =
   '01/16/2025,"Acme, Inc. Payroll",2500.00,"Direct deposit\r\nJanuary"\r\n' +
   '01/17/2025,Hardware Store,-89.99,\r\n';
 
-async function importCsv(page: Page, csv: string) {
+// A German bank's export: semicolons, day-first dates, decimal commas, and Windows-1252
+// rather than UTF-8 (so the umlauts are single bytes).
+const GERMAN_CSV =
+  'Buchungstag;Auftraggeber / Empfänger;Verwendungszweck;Betrag\r\n' +
+  '15.01.2025;Bäckerei Müller;Brötchen;-4,50\r\n' +
+  '16.01.2025;"Arbeitgeber GmbH";Gehalt Januar;2.500,00\r\n' +
+  '17.01.2025;Baumarkt;;-1.089,99\r\n';
+
+async function importCsv(page: Page, csv: string, encoding: BufferEncoding = 'utf8') {
   await page.getByRole('button', { name: 'Import CSV' }).click();
   const dialog = page.getByRole('dialog', { name: 'Import Transactions' });
   await dialog.getByLabel('CSV file').setInputFiles({
     name: 'bank-export.csv',
     mimeType: 'text/csv',
-    buffer: Buffer.from(csv, 'utf8'),
+    buffer: Buffer.from(csv, encoding),
   });
   return dialog;
 }
@@ -73,6 +81,60 @@ test.describe('CSV import', () => {
     await dialog.getByRole('button', { name: 'Import 1 Transactions' }).click();
     await expect(dialog).toContainText('1 imported, 0 skipped');
     expect(await api.transactions(`?account_id=${checking.id}&from=2025-01-01`)).toHaveLength(5);
+  });
+
+  test('reads European exports: semicolons, day-first dates and decimal commas', async ({
+    page,
+    api,
+  }) => {
+    const checking = await api.createAccount('Girokonto', 0);
+    await open(page, `/accounts/${checking.id}`);
+    const dialog = await importCsv(page, GERMAN_CSV, 'latin1');
+
+    await expect(dialog).toContainText('Found 3 rows');
+    await expect(dialog.getByRole('combobox', { name: 'Separator' })).toHaveValue(';');
+    await expect(dialog.getByRole('combobox', { name: 'Dates' })).toHaveValue('dmy');
+    await expect(dialog.getByRole('combobox', { name: 'Amounts' })).toHaveValue('comma');
+    await expect(dialog.getByRole('combobox', { name: 'Column Buchungstag' })).toHaveValue('date');
+    await expect(
+      dialog.getByRole('combobox', { name: 'Column Auftraggeber / Empfänger' }),
+    ).toHaveValue('payee');
+    await expect(dialog.getByRole('combobox', { name: 'Column Betrag' })).toHaveValue('amount');
+
+    await dialog.getByRole('button', { name: 'Preview' }).click();
+    await dialog.getByRole('button', { name: 'Import 3 Transactions' }).click();
+    await expect(dialog).toContainText('3 imported, 0 skipped');
+
+    const txs = await api.transactions(`?account_id=${checking.id}&from=2025-01-01`);
+    const summary = txs
+      .map((t) => [t.date, t.payeeName, t.amount, t.notes])
+      .sort((a, b) => String(a).localeCompare(String(b)));
+    expect(summary).toEqual([
+      ['2025-01-15', 'Bäckerei Müller', -450, 'Brötchen'],
+      ['2025-01-16', 'Arbeitgeber GmbH', 250_000, 'Gehalt Januar'],
+      ['2025-01-17', 'Baumarkt', -108_999, null],
+    ]);
+  });
+
+  test('asks for the format when the file could be read two ways', async ({ page, api }) => {
+    const checking = await api.createAccount('Checking', 0);
+    await open(page, `/accounts/${checking.id}`);
+    // 01.02.2025 could be January 2 or 1 February; 1.234 could be 1234 or 1.234
+    const dialog = await importCsv(page, 'Date;Description;Amount\r\n01.02.2025;Rent;-1.234\r\n');
+
+    await expect(dialog).toContainText('Choose the format your bank uses');
+    await dialog.getByRole('button', { name: 'Preview' }).click();
+    await expect(dialog).toContainText('Choose how this file writes dates');
+
+    await dialog.getByRole('combobox', { name: 'Dates' }).selectOption('dmy');
+    await dialog.getByRole('combobox', { name: 'Amounts' }).selectOption('comma');
+    await expect(dialog).not.toContainText('Choose the format your bank uses');
+    await dialog.getByRole('button', { name: 'Preview' }).click();
+    await dialog.getByRole('button', { name: 'Import 1 Transactions' }).click();
+    await expect(dialog).toContainText('1 imported, 0 skipped');
+
+    const [tx] = await api.transactions(`?account_id=${checking.id}&from=2025-01-01`);
+    expect([tx.date, tx.amount]).toEqual(['2025-02-01', -123_400]);
   });
 
   test('unreadable files explain what went wrong', async ({ page, api }) => {

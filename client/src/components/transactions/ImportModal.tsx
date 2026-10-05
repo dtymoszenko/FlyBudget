@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { Upload, AlertTriangle, CheckCircle, X } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { useCanSave } from '../../hooks/useConnection';
@@ -7,9 +7,16 @@ import {
   parseCsv,
   normalizeDate,
   generateImportId,
-  parseImportAmount,
+  readImportAmount,
   guessColumnRoles,
+  decodeCsvBytes,
+  detectDelimiter,
+  detectDateFormat,
+  detectNumberFormat,
   type ColumnRole,
+  type DateFormat,
+  type Delimiter,
+  type NumberFormat,
 } from '../../utils/csv';
 import { importPreview } from '../../api/transactions';
 import { useImportConfirm } from '../../hooks/useTransactions';
@@ -26,9 +33,23 @@ interface Props {
 
 type Step = 'upload' | 'map' | 'preview' | 'done';
 
+const DELIMITERS: { value: Delimiter; label: string }[] = [
+  { value: ',', label: 'Comma' },
+  { value: ';', label: 'Semicolon' },
+  { value: '\t', label: 'Tab' },
+];
+
+const selectClass = 'w-full text-xs border border-border rounded px-1.5 py-1 bg-surface text-text';
+
 export function ImportModal({ isOpen, onClose, accountId }: Props) {
   const [step, setStep] = useState<Step>('upload');
   const canSave = useCanSave();
+  const [text, setText] = useState('');
+  const [delimiter, setDelimiter] = useState<Delimiter>(',');
+  // null = what the file looks like (detectDateFormat / detectNumberFormat)
+  const [dateFormatChoice, setDateFormatChoice] = useState<DateFormat | null>(null);
+  const [numberFormatChoice, setNumberFormatChoice] = useState<NumberFormat | null>(null);
+  const [unreadable, setUnreadable] = useState(0);
   const [headers, setHeaders] = useState<string[]>([]);
   const [rawRows, setRawRows] = useState<string[][]>([]);
   const [roles, setRoles] = useState<ColumnRole[]>([]);
@@ -42,6 +63,11 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
 
   function reset() {
     setStep('upload');
+    setText('');
+    setDelimiter(',');
+    setDateFormatChoice(null);
+    setNumberFormatChoice(null);
+    setUnreadable(0);
     setHeaders([]);
     setRawRows([]);
     setRoles([]);
@@ -57,23 +83,35 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
     onClose();
   }
 
-  const handleFile = useCallback((file: File) => {
+  const loadText = useCallback((content: string, sep: Delimiter) => {
+    const { headers: h, rows: r } = parseCsv(content, sep);
+    if (h.length === 0) {
+      setError('Could not parse CSV file');
+      return;
+    }
     setError(null);
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const text = e.target?.result as string;
-      const { headers: h, rows: r } = parseCsv(text);
-      if (h.length === 0) {
-        setError('Could not parse CSV file');
-        return;
-      }
-      setHeaders(h);
-      setRawRows(r.filter((row) => row.some((cell) => cell.length > 0)));
-      setRoles(guessColumnRoles(h));
-      setStep('map');
-    };
-    reader.readAsText(file);
+    setText(content);
+    setDelimiter(sep);
+    setHeaders(h);
+    setRawRows(r.filter((row) => row.some((cell) => cell.length > 0)));
+    setRoles(guessColumnRoles(h));
+    setDateFormatChoice(null);
+    setNumberFormatChoice(null);
+    setStep('map');
   }, []);
+
+  const handleFile = useCallback(
+    (file: File) => {
+      setError(null);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = decodeCsvBytes(e.target?.result as ArrayBuffer);
+        loadText(content, detectDelimiter(content));
+      };
+      reader.readAsArrayBuffer(file);
+    },
+    [loadText],
+  );
 
   function handleDrop(e: React.DragEvent) {
     e.preventDefault();
@@ -94,8 +132,29 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
     });
   }
 
-  /** The rows to import, or a message saying why there are none */
-  function buildImportRows(): ImportRow[] | string {
+  // How the file writes dates and amounts, judged from the columns mapped to them
+  const detected = useMemo(() => {
+    const column = (role: ColumnRole) => {
+      const idx = roles.indexOf(role);
+      return idx === -1 ? [] : rawRows.map((row) => row[idx] ?? '');
+    };
+    const amounts = [...column('amount'), ...column('inflow'), ...column('outflow')];
+    return {
+      dateFormat: detectDateFormat(column('date')),
+      numberFormat: detectNumberFormat(amounts),
+      // Values that really could be read two ways, to quote in the warning
+      dateSample: column('date').find((d) => {
+        const m = d.trim().match(/^(\d{1,2})[./-](\d{1,2})[./-]/);
+        return m && +m[1] <= 12 && +m[2] <= 12 && +m[1] !== +m[2];
+      }),
+      amountSample: amounts.find((a) => /^[^\d.,]*\d{1,3}[.,]\d{3}[^\d.,]*$/.test(a.trim())),
+    };
+  }, [rawRows, roles]);
+  const dateFormat = dateFormatChoice ?? detected.dateFormat;
+  const numberFormat = numberFormatChoice ?? detected.numberFormat;
+
+  /** The rows to import and how many couldn't be read, or a message saying why there are none */
+  function buildImportRows(): { rows: ImportRow[]; unreadable: number } | string {
     const dateIdx = roles.indexOf('date');
     const payeeIdx = roles.indexOf('payee');
     const amountIdx = roles.indexOf('amount');
@@ -107,21 +166,43 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
     if (amountIdx === -1 && inflowIdx === -1 && outflowIdx === -1) {
       return 'At least one amount column is required';
     }
+    // Never guess: swapped days and months, or amounts off by 100x, would look plausible
+    if (!dateFormat) return 'Choose how this file writes dates';
+    if (!numberFormat) return 'Choose how this file writes amounts';
+
+    /** Cents, 0 for an empty cell, or null if the cell holds something that isn't a number */
+    const cellAmount = (idx: number, raw: string[]) => {
+      const cell = raw[idx]?.trim() ?? '';
+      return cell === '' ? 0 : readImportAmount(cell, numberFormat);
+    };
 
     const rows: ImportRow[] = [];
+    let unreadableRows = 0;
     const seen = new Map<string, number>();
     for (const raw of rawRows) {
-      const date = normalizeDate(raw[dateIdx] ?? '');
-      if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
+      const date = normalizeDate(raw[dateIdx] ?? '', dateFormat);
+      if (!date) {
+        unreadableRows++;
+        continue;
+      }
 
       let amount: number;
       if (amountIdx !== -1) {
-        amount = parseImportAmount(raw[amountIdx]);
+        const value = cellAmount(amountIdx, raw);
+        if (value === null) {
+          unreadableRows++;
+          continue;
+        }
+        amount = value;
       } else {
         // Some banks write debits in the outflow column as negative numbers
-        const inf = Math.abs(inflowIdx !== -1 ? parseImportAmount(raw[inflowIdx]) : 0);
-        const out = Math.abs(outflowIdx !== -1 ? parseImportAmount(raw[outflowIdx]) : 0);
-        amount = inf > 0 ? inf : -out;
+        const inf = inflowIdx !== -1 ? cellAmount(inflowIdx, raw) : 0;
+        const out = outflowIdx !== -1 ? cellAmount(outflowIdx, raw) : 0;
+        if (inf === null || out === null) {
+          unreadableRows++;
+          continue;
+        }
+        amount = inf !== 0 ? Math.abs(inf) : -Math.abs(out);
       }
       if (amount === 0) continue;
 
@@ -134,20 +215,21 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
       const importedId = generateImportId(date, amount, payeeName ?? '', occurrence);
       rows.push({ date, amount, payeeName, notes, importedId });
     }
-    return rows;
+    return { rows, unreadable: unreadableRows };
   }
 
   async function handlePreview() {
     setError(null);
-    const rows = buildImportRows();
-    if (typeof rows === 'string' || !rows.length) {
-      setError(typeof rows === 'string' ? rows : 'No valid rows found');
+    const built = buildImportRows();
+    if (typeof built === 'string' || !built.rows.length) {
+      setError(typeof built === 'string' ? built : 'No valid rows found');
       return;
     }
 
     setLoading(true);
     try {
-      const preview = await importPreview(accountId, rows);
+      const preview = await importPreview(accountId, built.rows);
+      setUnreadable(built.unreadable);
       setPreviewRows(preview);
       setExcluded(new Set(preview.map((r, i) => (r.isDuplicate ? i : -1)).filter((i) => i >= 0)));
       setStep('preview');
@@ -230,7 +312,7 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
           <input
             id="csv-file-input"
             type="file"
-            accept=".csv"
+            accept=".csv,.tsv,.txt"
             aria-label="CSV file"
             className="hidden"
             onChange={handleFileInput}
@@ -243,6 +325,62 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
           <p className="text-sm text-text-secondary">
             Map each column to a field. Found {rawRows.length} rows.
           </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <label className="text-xs font-medium text-text-tertiary space-y-1">
+              <span>Separator</span>
+              <select
+                value={delimiter}
+                onChange={(e) => loadText(text, e.target.value as Delimiter)}
+                className={selectClass}
+              >
+                {DELIMITERS.map((d) => (
+                  <option key={d.value} value={d.value}>
+                    {d.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-xs font-medium text-text-tertiary space-y-1">
+              <span>Dates</span>
+              <select
+                value={dateFormat ?? ''}
+                onChange={(e) => setDateFormatChoice(e.target.value as DateFormat)}
+                className={selectClass}
+              >
+                {!dateFormat && <option value="">Choose…</option>}
+                <option value="mdy">MM/DD/YYYY</option>
+                <option value="dmy">DD/MM/YYYY</option>
+              </select>
+            </label>
+            <label className="text-xs font-medium text-text-tertiary space-y-1">
+              <span>Amounts</span>
+              <select
+                value={numberFormat ?? ''}
+                onChange={(e) => setNumberFormatChoice(e.target.value as NumberFormat)}
+                className={selectClass}
+              >
+                {!numberFormat && <option value="">Choose…</option>}
+                <option value="dot">1,234.56</option>
+                <option value="comma">1.234,56</option>
+              </select>
+            </label>
+          </div>
+          {(!dateFormat || !numberFormat) && (
+            <div className="flex items-start gap-2 px-3 py-2 text-sm bg-caution-subtle text-caution rounded-lg">
+              <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+              <span>
+                {!dateFormat &&
+                  (detected.dateSample
+                    ? `This file doesn't show whether ${detected.dateSample} has the day or the month first. `
+                    : 'Rows in this file write dates in different orders. ')}
+                {!numberFormat &&
+                  (detected.amountSample
+                    ? `This file doesn't show whether ${detected.amountSample} uses a decimal point or a decimal comma. `
+                    : 'Rows in this file write amounts in different formats. ')}
+                Choose the format your bank uses.
+              </span>
+            </div>
+          )}
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
@@ -254,7 +392,7 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
                         value={roles[i]}
                         aria-label={`Column ${h}`}
                         onChange={(e) => setRole(i, e.target.value as ColumnRole)}
-                        className="w-full text-xs border border-border rounded px-1.5 py-1 bg-surface text-text"
+                        className={selectClass}
                       >
                         {roleOptions.map((o) => (
                           <option key={o.value} value={o.value}>
@@ -306,6 +444,8 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
             {previewRows.length} transactions found.{' '}
             {previewRows.filter((r) => r.isDuplicate).length} duplicates detected.{' '}
             {previewRows.length - excluded.size} will be imported.
+            {unreadable > 0 &&
+              ` ${unreadable} ${unreadable === 1 ? "row couldn't be read and is" : "rows couldn't be read and are"} left out.`}
           </p>
           <div className="max-h-64 overflow-y-auto border border-border rounded-lg">
             <table className="w-full text-sm border-collapse">

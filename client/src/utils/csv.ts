@@ -1,10 +1,33 @@
-import { parseCents } from './currency';
+export type Delimiter = ',' | ';' | '\t';
 
 /**
- * Parses CSV text (RFC 4180): quoted fields may contain commas, doubled quotes and
+ * The separator a file uses, judged by its first line that has any (the header row):
+ * whichever of comma, semicolon or tab appears most often outside quotes, ties going to the
+ * comma. Many European banks use semicolons, because the comma is their decimal separator.
+ */
+export function detectDelimiter(text: string): Delimiter {
+  const counts: Record<Delimiter, number> = { ',': 0, ';': 0, '\t': 0 };
+  let inQuotes = false;
+  for (const ch of text.charCodeAt(0) === 0xfeff ? text.slice(1) : text) {
+    if (ch === '"') inQuotes = !inQuotes;
+    else if (inQuotes) continue;
+    else if (ch === '\n' || ch === '\r') {
+      if (counts[','] + counts[';'] + counts['\t'] > 0) break;
+    } else if (ch === ',' || ch === ';' || ch === '\t') counts[ch]++;
+  }
+  if (counts[';'] > counts[','] && counts[';'] >= counts['\t']) return ';';
+  if (counts['\t'] > counts[','] && counts['\t'] > counts[';']) return '\t';
+  return ',';
+}
+
+/**
+ * Parses CSV text (RFC 4180): quoted fields may contain the delimiter, doubled quotes and
  * line breaks (bank memos often do). A UTF-8 byte order mark (Excel) is ignored.
  */
-export function parseCsv(text: string): { headers: string[]; rows: string[][] } {
+export function parseCsv(
+  text: string,
+  delimiter: Delimiter = ',',
+): { headers: string[]; rows: string[][] } {
   const records: string[][] = [];
   let record: string[] = [];
   let field = '';
@@ -31,7 +54,7 @@ export function parseCsv(text: string): { headers: string[]; rows: string[][] } 
       }
     } else if (ch === '"') {
       inQuotes = true;
-    } else if (ch === ',') {
+    } else if (ch === delimiter) {
       record.push(field.trim());
       field = '';
     } else if (ch === '\n' || ch === '\r') {
@@ -47,34 +70,156 @@ export function parseCsv(text: string): { headers: string[]; rows: string[][] } 
   return { headers: records[0], rows: records.slice(1) };
 }
 
-export function normalizeDate(raw: string): string {
+/**
+ * The text of a file: UTF-8 if it is valid UTF-8, else Windows-1252, which many banks (and
+ * Excel on Windows) still export, so "Café" and "Müller" aren't garbled.
+ */
+export function decodeCsvBytes(bytes: ArrayBuffer): string {
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch {
+    return new TextDecoder('windows-1252').decode(bytes);
+  }
+}
+
+/** Order of day and month in dates like 03/04/2026. Year-first dates are always read as such. */
+export type DateFormat = 'mdy' | 'dmy';
+
+const TIME = '(?:[ T]\\d{1,2}:\\d{2}(?::\\d{2})?)?';
+// 31/12/2026, 31.12.2026, 31-12-26, optionally followed by a time
+const DAY_MONTH = new RegExp(`^(\\d{1,2})([./-])(\\d{1,2})\\2(\\d{4}|\\d{2})${TIME}$`);
+// 2026-12-31, 2026/12/31, 2026.12.31, optionally followed by a time
+const YEAR_FIRST = new RegExp(`^(\\d{4})([./-])(\\d{1,2})\\2(\\d{1,2})${TIME}$`);
+// 20261231, as some banks (ING in the Netherlands) write it
+const COMPACT = /^(\d{4})(\d{2})(\d{2})$/;
+
+/** `YYYY-MM-DD`, or '' if there is no such day (February 30) */
+function isoDateOf(y: number, m: number, d: number): string {
+  const date = new Date(Date.UTC(y, m - 1, d));
+  if (date.getUTCFullYear() !== y || date.getUTCMonth() !== m - 1 || date.getUTCDate() !== d) {
+    return '';
+  }
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${y}-${pad(m)}-${pad(d)}`;
+}
+
+/**
+ * A date as `YYYY-MM-DD`, or '' if it isn't a real date. `format` says whether 03/04/2026 is
+ * March 4 (`mdy`) or 3 April (`dmy`); two-digit years are 20xx.
+ */
+export function normalizeDate(raw: string, format: DateFormat = 'mdy'): string {
   const trimmed = raw.trim();
 
-  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+  const yearFirst = trimmed.match(YEAR_FIRST);
+  if (yearFirst) return isoDateOf(+yearFirst[1], +yearFirst[3], +yearFirst[4]);
+  const compact = trimmed.match(COMPACT);
+  if (compact) return isoDateOf(+compact[1], +compact[2], +compact[3]);
 
-  const slash = trimmed.match(/^(\d{1,2})[/\-](\d{1,2})[/\-](\d{4})$/);
-  if (slash) {
-    const [, m, d, y] = slash;
-    return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+  const dayMonth = trimmed.match(DAY_MONTH);
+  if (dayMonth) {
+    const [a, b] = [+dayMonth[1], +dayMonth[3]];
+    const year = dayMonth[4].length === 2 ? 2000 + +dayMonth[4] : +dayMonth[4];
+    return format === 'mdy' ? isoDateOf(year, a, b) : isoDateOf(year, b, a);
   }
 
+  // Written-out dates like "Jan 5, 2024". Dates made only of digits are never left to the
+  // browser (it reads 05.03.2024 as May 3), nor dates without a year ("Mar 5" is 2001).
+  if (!/[a-z]/i.test(trimmed) || !/\d{4}/.test(trimmed)) return '';
   const parsed = new Date(trimmed);
   if (!isNaN(parsed.getTime())) {
     // Local date parts: "Jan 5, 2024" parses as local midnight, and toISOString() (UTC)
     // would give the previous day east of UTC
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())}`;
+    return isoDateOf(parsed.getFullYear(), parsed.getMonth() + 1, parsed.getDate());
   }
 
-  return trimmed;
+  return '';
 }
 
 /**
- * An amount as banks write it: "$1,234.56", "-12.00", "(12.00)" or "12.00-" for
- * negatives. Returns integer cents (0 if unreadable).
+ * Whether a column of dates puts the month or the day first, or null when the file can't
+ * tell (no day above 12, or rows that disagree). Then the user has to say: a wrong guess
+ * would silently swap days and months.
  */
-export function parseImportAmount(raw: string | undefined): number {
-  let s = (raw ?? '').replace(/[\s$€£,]/g, '');
+export function detectDateFormat(values: string[]): DateFormat | null {
+  let monthFirst = false;
+  let dayFirst = false;
+  let ambiguous = false;
+  for (const value of values) {
+    const m = value.trim().match(DAY_MONTH);
+    if (!m) continue;
+    const [a, b] = [+m[1], +m[3]];
+    if (a > 12 && b <= 12) dayFirst = true;
+    else if (b > 12 && a <= 12) monthFirst = true;
+    else if (a !== b) ambiguous = true;
+  }
+  if (monthFirst && dayFirst) return null;
+  if (monthFirst) return 'mdy';
+  if (dayFirst) return 'dmy';
+  // Nothing to decide: year-first or written-out dates, or days that equal their month
+  return ambiguous ? null : 'mdy';
+}
+
+/** How amounts are written: `1,234.56` (`dot` decimal) or `1.234,56` (`comma` decimal) */
+export type NumberFormat = 'dot' | 'comma';
+
+/** The digits, separators and signs of an amount, without currency symbols or spaces */
+function amountChars(raw: string): string {
+  return raw.replace(/[−–]/g, '-').replace(/[^0-9.,()+-]/g, '');
+}
+
+/** What one amount says about the format, if anything */
+function numberFormatHint(raw: string): NumberFormat | 'ambiguous' | null {
+  const s = amountChars(raw).replace(/[()+-]/g, '');
+  const lastDot = s.lastIndexOf('.');
+  const lastComma = s.lastIndexOf(',');
+  if (lastDot !== -1 && lastComma !== -1) return lastDot > lastComma ? 'dot' : 'comma';
+  const sep = lastDot !== -1 ? '.' : lastComma !== -1 ? ',' : null;
+  if (!sep) return null;
+  // The same separator twice can only group thousands: 1.234.567 or 1,234,567
+  if (s.indexOf(sep) !== s.lastIndexOf(sep)) return sep === '.' ? 'comma' : 'dot';
+  // Exactly three digits after it could be either: 1.234 is 1234 in Germany
+  if (s.length - s.indexOf(sep) - 1 === 3 && s.indexOf(sep) > 0) return 'ambiguous';
+  return sep === '.' ? 'dot' : 'comma';
+}
+
+/**
+ * The format of a column of amounts, or null when it can't tell (only values like `1.234`,
+ * or rows that disagree). Then the user has to say: a wrong guess would be off by a factor
+ * of 100 or 1000.
+ */
+export function detectNumberFormat(values: string[]): NumberFormat | null {
+  let dot = false;
+  let comma = false;
+  let ambiguous = false;
+  for (const value of values) {
+    const hint = numberFormatHint(value);
+    if (hint === 'dot') dot = true;
+    else if (hint === 'comma') comma = true;
+    else if (hint === 'ambiguous') ambiguous = true;
+  }
+  if (dot && comma) return null;
+  if (dot) return 'dot';
+  if (comma) return 'comma';
+  // Whole numbers without separators read the same either way
+  return ambiguous ? null : 'dot';
+}
+
+// Thousands groups of exactly three digits, then optional decimals
+const AMOUNT_PATTERN: Record<NumberFormat, RegExp> = {
+  dot: /^(\d{1,3}(,\d{3})+|\d*)(\.\d*)?$/,
+  comma: /^(\d{1,3}(\.\d{3})+|\d*)(,\d*)?$/,
+};
+
+/**
+ * An amount as banks write it: "$1,234.56", "-12.00", "(12.00)" or "12.00-" for negatives,
+ * or with `format: 'comma'` "1.234,56 €" and "-12,50". Returns integer cents (rounded to the
+ * nearest cent), or null if it isn't a number in that format.
+ */
+export function readImportAmount(
+  raw: string | undefined,
+  format: NumberFormat = 'dot',
+): number | null {
+  let s = amountChars(raw ?? '');
   let negative = false;
   if (/^\(.*\)$/.test(s)) {
     negative = true;
@@ -84,7 +229,22 @@ export function parseImportAmount(raw: string | undefined): number {
     negative = !negative;
     s = s.slice(0, -1);
   }
-  const cents = parseCents(s);
+  if (s.startsWith('-')) {
+    negative = !negative;
+    s = s.slice(1);
+  } else if (s.startsWith('+')) {
+    s = s.slice(1);
+  }
+  if (!/\d/.test(s) || !AMOUNT_PATTERN[format].test(s)) return null;
+
+  // Exact decimal arithmetic on the digits: parseFloat would turn 0.29 into 28.999… cents
+  const [thousands, decimal] = format === 'dot' ? [',', '.'] : ['.', ','];
+  const [whole, fraction = ''] = s.split(thousands).join('').split(decimal);
+  const cents =
+    Number(whole || '0') * 100 +
+    Number(fraction.padEnd(2, '0').slice(0, 2)) +
+    (fraction[2] >= '5' ? 1 : 0);
+  if (!Number.isSafeInteger(cents)) return null;
   return negative ? -cents : cents;
 }
 
@@ -103,7 +263,7 @@ export function generateImportId(
   return occurrence > 1 ? `${id}|${occurrence}` : id;
 }
 
-const COLUMN_HINTS: Record<string, string> = {
+const COLUMN_HINTS: Record<string, ColumnRole> = {
   date: 'date',
   'transaction date': 'date',
   'posted date': 'date',
@@ -124,10 +284,42 @@ const COLUMN_HINTS: Record<string, string> = {
   notes: 'notes',
   note: 'notes',
   reference: 'notes',
+  // Common headers in European bank exports
+  datum: 'date', // German, Dutch, Swedish
+  buchungstag: 'date',
+  buchungsdatum: 'date',
+  fecha: 'date', // Spanish
+  data: 'date', // Italian, Portuguese, Polish
+  'date opération': 'date', // French
+  'date operation': 'date',
+  'naam / omschrijving': 'payee', // Dutch
+  omschrijving: 'payee',
+  'auftraggeber / empfänger': 'payee', // German
+  'begünstigter/zahlungspflichtiger': 'payee',
+  empfänger: 'payee',
+  libellé: 'payee', // French
+  libelle: 'payee',
+  concepto: 'payee', // Spanish
+  descrizione: 'payee', // Italian
+  betrag: 'amount', // German
+  'betrag (eur)': 'amount',
+  bedrag: 'amount', // Dutch
+  'bedrag (eur)': 'amount',
+  montant: 'amount', // French
+  importe: 'amount', // Spanish
+  importo: 'amount', // Italian
+  belopp: 'amount', // Swedish
+  beløb: 'amount', // Danish
+  beløp: 'amount', // Norwegian
+  kwota: 'amount', // Polish
+  débit: 'outflow',
+  crédit: 'inflow',
+  verwendungszweck: 'notes', // German
+  mededelingen: 'notes', // Dutch
 };
 
 export type ColumnRole = 'date' | 'payee' | 'amount' | 'inflow' | 'outflow' | 'notes' | 'skip';
 
 export function guessColumnRoles(headers: string[]): ColumnRole[] {
-  return headers.map((h) => (COLUMN_HINTS[h.toLowerCase()] as ColumnRole) ?? 'skip');
+  return headers.map((h) => COLUMN_HINTS[h.trim().toLowerCase()] ?? 'skip');
 }
