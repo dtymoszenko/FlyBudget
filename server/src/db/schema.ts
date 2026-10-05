@@ -26,6 +26,8 @@ export const accounts = sqliteTable('accounts', {
   closedAt: text('closed_at'),
   /** Custom logo as a small image data URL; null = colored initials */
   logo: text('logo'),
+  /** How this account's bank writes its CSV files (JSON `ImportSettings`), from the last import */
+  importSettings: text('import_settings'),
   createdAt: text('created_at')
     .notNull()
     .default(sql`(datetime('now'))`),

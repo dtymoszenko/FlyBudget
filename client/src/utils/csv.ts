@@ -24,10 +24,7 @@ export function detectDelimiter(text: string): Delimiter {
  * Parses CSV text (RFC 4180): quoted fields may contain the delimiter, doubled quotes and
  * line breaks (bank memos often do). A UTF-8 byte order mark (Excel) is ignored.
  */
-export function parseCsv(
-  text: string,
-  delimiter: Delimiter = ',',
-): { headers: string[]; rows: string[][] } {
+export function parseCsvRecords(text: string, delimiter: Delimiter = ','): string[][] {
   const records: string[][] = [];
   let record: string[] = [];
   let field = '';
@@ -65,16 +62,71 @@ export function parseCsv(
     }
   }
   endRecord();
+  return records;
+}
 
+/**
+ * The header and the rows under it. `skipRows` leaves out rows above the header: some banks
+ * (DKB, Comdirect) start with account details.
+ */
+export function parseCsv(
+  text: string,
+  delimiter: Delimiter = ',',
+  skipRows = 0,
+): { headers: string[]; rows: string[][] } {
+  const records = parseCsvRecords(text, delimiter).slice(skipRows);
   if (records.length === 0) return { headers: [], rows: [] };
   return { headers: records[0], rows: records.slice(1) };
 }
 
 /**
- * The text of a file: UTF-8 if it is valid UTF-8, else Windows-1252, which many banks (and
- * Excel on Windows) still export, so "Café" and "Müller" aren't garbled.
+ * How many rows sit above the header: those with clearly fewer columns than the table under
+ * them (account details like `Kontonummer:;DE12…`). The table is the widest part of the
+ * file: its width is the widest seen twice, or one less than the widest row (so one row
+ * with a stray separator doesn't count). The header may be a column shorter than the rows,
+ * when every row ends with a separator.
  */
-export function decodeCsvBytes(bytes: ArrayBuffer): string {
+export function detectSkipRows(records: string[][]): number {
+  const widths = records.map((r) => r.length).filter((w) => w >= 2);
+  if (!widths.length) return 0;
+  const seen = new Set<number>();
+  let widest = 0;
+  let widestTwice = 0;
+  for (const w of widths) {
+    if (seen.has(w)) widestTwice = Math.max(widestTwice, w);
+    seen.add(w);
+    widest = Math.max(widest, w);
+  }
+  const width = Math.max(widestTwice, widest - 1);
+  return Math.max(
+    records.findIndex((r) => r.length >= 2 && r.length >= width - 1),
+    0,
+  );
+}
+
+export const CSV_ENCODINGS = [
+  { value: 'auto', label: 'Detect' },
+  { value: 'utf-8', label: 'UTF-8' },
+  { value: 'utf-16le', label: 'UTF-16 LE' },
+  { value: 'utf-16be', label: 'UTF-16 BE' },
+  { value: 'windows-1252', label: 'Western European (Windows-1252)' },
+  { value: 'windows-1250', label: 'Central European (Windows-1250)' },
+  { value: 'iso-8859-2', label: 'Central European (ISO-8859-2)' },
+] as const;
+
+export type CsvEncoding = (typeof CSV_ENCODINGS)[number]['value'];
+
+/**
+ * The text of a file. `auto` follows a byte order mark (UTF-16 from Excel's "Unicode text"),
+ * then reads UTF-8 if the file is valid UTF-8, else Windows-1252, which many banks still
+ * export. Polish or Czech files in Windows-1250 need it chosen: they are valid 1252 too, just
+ * with the wrong letters.
+ */
+export function decodeCsvBytes(bytes: ArrayBuffer, encoding: CsvEncoding = 'auto'): string {
+  if (encoding !== 'auto') return new TextDecoder(encoding).decode(bytes);
+  const head = new Uint8Array(bytes, 0, Math.min(bytes.byteLength, 2));
+  if (head[0] === 0xff && head[1] === 0xfe) return new TextDecoder('utf-16le').decode(bytes);
+  if (head[0] === 0xfe && head[1] === 0xff) return new TextDecoder('utf-16be').decode(bytes);
   try {
     return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
   } catch {
@@ -335,17 +387,67 @@ export type ColumnRole =
 const MONEY_OUT = new Set(['af', 'debit', 'dbit', 'd', 'dr', 'db', 'soll', 's', 'out']);
 const MONEY_IN = new Set(['bij', 'credit', 'crdt', 'c', 'cr', 'haben', 'h', 'in']);
 
+const directionWord = (raw: string | undefined) =>
+  (raw ?? '').trim().toLowerCase().replace(/\./g, '');
+
 /**
  * Which way the money went according to a direction column ("Af"/"Bij" at ING, "Debit"/
- * "Credit", "S"/"H"), or null if the cell says neither.
+ * "Credit", "S"/"H"), or null if the cell says neither. With `outWord` (what the user said
+ * this bank writes for money out, like Actual's "out value"), that word means out and any
+ * other word in.
  */
-export function readDirection(raw: string | undefined): 'in' | 'out' | null {
-  const value = (raw ?? '').trim().toLowerCase().replace(/\./g, '');
+export function readDirection(
+  raw: string | undefined,
+  outWord?: string | null,
+): 'in' | 'out' | null {
+  const value = directionWord(raw);
+  if (value === '') return null;
+  if (outWord?.trim()) return value === directionWord(outWord) ? 'out' : 'in';
   if (MONEY_OUT.has(value)) return 'out';
   if (MONEY_IN.has(value)) return 'in';
   return null;
 }
 
+/** The different words in a direction column that FlyBudget doesn't know, as written */
+export function unknownDirectionWords(values: string[]): string[] {
+  const unknown = new Map<string, string>();
+  for (const raw of values) {
+    const value = directionWord(raw);
+    if (value && !MONEY_OUT.has(value) && !MONEY_IN.has(value) && !unknown.has(value)) {
+      unknown.set(value, raw.trim());
+    }
+  }
+  return [...unknown.values()];
+}
+
+/**
+ * How an account's bank writes its CSV files, saved after each import and used for the next
+ * (keep in sync with server/src/utils/importSettings.ts)
+ */
+export interface ImportSettings {
+  delimiter: Delimiter;
+  encoding: CsvEncoding;
+  skipRows: number;
+  /** Column header → what it holds */
+  columns: Record<string, ColumnRole>;
+  dateFormat: DateFormat | null;
+  numberFormat: NumberFormat | null;
+  outWord: string | null;
+}
+
+/** Roles for these headers: saved ones where the header was seen before, else a guess */
+export function columnRolesFor(
+  headers: string[],
+  saved?: Record<string, ColumnRole>,
+): ColumnRole[] {
+  const guessed = guessColumnRoles(headers);
+  return headers.map((h, i) => (saved && Object.hasOwn(saved, h) ? saved[h] : guessed[i]));
+}
+
 export function guessColumnRoles(headers: string[]): ColumnRole[] {
-  return headers.map((h) => COLUMN_HINTS[h.trim().toLowerCase()] ?? 'skip');
+  return headers.map((h) => {
+    const key = h.trim().toLowerCase();
+    // hasOwn: a column named "constructor" isn't Object.prototype's
+    return Object.hasOwn(COLUMN_HINTS, key) ? COLUMN_HINTS[key] : 'skip';
+  });
 }

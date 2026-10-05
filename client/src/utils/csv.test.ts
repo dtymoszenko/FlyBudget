@@ -1,13 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
 import {
+  columnRolesFor,
+  decodeCsvBytes,
   detectDateFormat,
   detectDelimiter,
   detectNumberFormat,
+  detectSkipRows,
   generateImportId,
   normalizeDate,
   parseCsv,
+  parseCsvRecords,
   readDirection,
+  unknownDirectionWords,
   readImportAmount,
   type DateFormat,
   type Delimiter,
@@ -253,7 +258,110 @@ describe('detectDateFormat (property-based)', () => {
   });
 });
 
+describe('detectSkipRows (property-based)', () => {
+  // Account details above the table, as DKB or Comdirect write them: fewer columns
+  const preambleRow = (width: number) =>
+    fc.array(field, { minLength: 1, maxLength: Math.max(1, width - 2) });
+
+  it('finds the header under any rows of account details', () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 4, max: 10 }).chain((width) =>
+          fc.tuple(
+            fc.array(preambleRow(width), { maxLength: 8 }),
+            fc.array(fc.array(field, { minLength: width, maxLength: width }), {
+              minLength: 2,
+              maxLength: 20,
+            }),
+            fc.boolean(),
+          ),
+        ),
+        delimiter,
+        ([preamble, table, trailingSeparator], sep) => {
+          // Some banks end every data row with a separator, making it a column wider
+          const rows = table.map((r, i) => (trailingSeparator && i > 0 ? [...r, ''] : r));
+          const text = [...preamble, ...rows].map((r) => r.map(quote).join(sep)).join('\n');
+          const records = parseCsvRecords(text, sep);
+          expect(detectSkipRows(records)).toBe(preamble.length);
+          expect(parseCsv(text, sep, preamble.length).headers).toEqual(table[0]);
+        },
+      ),
+    );
+  });
+
+  it('skips nothing in a plain file', () => {
+    expect(
+      detectSkipRows([
+        ['Date', 'Amount'],
+        ['2026-01-02', '5'],
+      ]),
+    ).toBe(0);
+    expect(detectSkipRows([['just one column'], ['5']])).toBe(0);
+    expect(detectSkipRows([])).toBe(0);
+  });
+});
+
+describe('decodeCsvBytes', () => {
+  const bytes = (...b: number[]) => new Uint8Array(b).buffer;
+
+  it('reads UTF-8, and falls back to Windows-1252 for files that are not', () => {
+    expect(decodeCsvBytes(new TextEncoder().encode('Müller;Café').buffer)).toBe('Müller;Café');
+    expect(decodeCsvBytes(bytes(0x4d, 0xfc, 0x6c, 0x6c, 0x65, 0x72))).toBe('Müller');
+  });
+
+  it('follows a UTF-16 byte order mark', () => {
+    // Each character as two bytes, low first (LE) or high first (BE), after a byte order mark
+    const utf16 = (s: string, bigEndian: boolean) =>
+      bytes(
+        ...[...('﻿' + s)].flatMap((ch) => {
+          const code = ch.charCodeAt(0);
+          return bigEndian ? [code >> 8, code & 0xff] : [code & 0xff, code >> 8];
+        }),
+      );
+    expect(decodeCsvBytes(utf16('Datum;Betrag', false))).toBe('Datum;Betrag');
+    expect(decodeCsvBytes(utf16('Datum;Kwota', true))).toBe('Datum;Kwota');
+  });
+
+  it('reads Central European files when told to', () => {
+    const lodz = bytes(0xa3, 0xf3, 0x64, 0x9f); // "Łódź" in Windows-1250
+    expect(decodeCsvBytes(lodz, 'windows-1250')).toBe('Łódź');
+    expect(decodeCsvBytes(bytes(0xa3, 0xf3, 0x64, 0xbc), 'iso-8859-2')).toBe('Łódź');
+    expect(decodeCsvBytes(lodz)).not.toBe('Łódź'); // valid 1252, just the wrong letters
+  });
+});
+
+describe('columnRolesFor', () => {
+  it('maps columns as last time, and guesses the ones it has not seen', () => {
+    expect(
+      columnRolesFor(['Datum', 'Omschrijving', 'Code', 'Bedrag'], {
+        Omschrijving: 'notes',
+        Code: 'direction',
+      }),
+    ).toEqual(['date', 'notes', 'direction', 'amount']);
+    // A header named like an object property is still just a header
+    expect(columnRolesFor(['constructor', 'Amount'], {})).toEqual(['skip', 'amount']);
+  });
+});
+
 describe('readDirection', () => {
+  it('uses the word the user gave for money out, and counts every other word as in', () => {
+    fc.assert(
+      fc.property(
+        fc.string({ unit: fc.constantFrom('a', 'B', 'c'), minLength: 1, maxLength: 8 }),
+        fc.string({ unit: fc.constantFrom('x', 'Y', 'z'), minLength: 1, maxLength: 8 }),
+        (word, other) => {
+          expect(readDirection(` ${word.toUpperCase()} `, word)).toBe('out');
+          expect(readDirection(other, word)).toBe('in');
+          expect(readDirection('', word)).toBeNull();
+        },
+      ),
+    );
+  });
+
+  it('lists the words it does not know, once each', () => {
+    expect(unknownDirectionWords(['Af', 'Uit', 'uit ', 'Bij', '', 'In'])).toEqual(['Uit']);
+  });
+
   it.each<[string, 'in' | 'out' | null]>([
     ['Af', 'out'],
     ['Bij', 'in'],

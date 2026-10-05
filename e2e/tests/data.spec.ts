@@ -24,7 +24,7 @@ const GERMAN_CSV =
 async function importCsv(page: Page, csv: string, encoding: BufferEncoding = 'utf8') {
   await page.getByRole('button', { name: 'Import CSV' }).click();
   const dialog = page.getByRole('dialog', { name: 'Import Transactions' });
-  await dialog.getByLabel('CSV file').setInputFiles({
+  await dialog.getByLabel('Bank file').setInputFiles({
     name: 'bank-export.csv',
     mimeType: 'text/csv',
     buffer: Buffer.from(csv, encoding),
@@ -168,6 +168,170 @@ test.describe('CSV import', () => {
 
     const [tx] = await api.transactions(`?account_id=${checking.id}&from=2025-01-01`);
     expect([tx.date, tx.amount]).toEqual(['2025-02-01', -123_400]);
+  });
+
+  test("remembers each account's settings for the next import", async ({ page, api }) => {
+    const checking = await api.createAccount('Girokonto', 0);
+    await open(page, `/accounts/${checking.id}`);
+    // Every day is 12 or less, and 1.234 could be either: the first import has to ask
+    const csv = (rows: string) => `Datum;Empfänger;Betrag\r\n${rows}`;
+    let dialog = await importCsv(page, csv('01.02.2025;Miete;-1.234\r\n'));
+    await dialog.getByRole('combobox', { name: 'Dates' }).selectOption('dmy');
+    await dialog.getByRole('combobox', { name: 'Amounts' }).selectOption('comma');
+    await dialog.getByRole('combobox', { name: 'Column Empfänger' }).selectOption('notes');
+    await dialog.getByRole('button', { name: 'Preview' }).click();
+    await dialog.getByRole('button', { name: 'Import 1 Transactions' }).click();
+    await dialog.getByRole('button', { name: 'Done' }).click();
+
+    // Next month's file is just as ambiguous, but this account has answered before
+    dialog = await importCsv(page, csv('03.04.2025;Miete;-1.234\r\n'));
+    await expect(dialog).toContainText('Using the settings from your last import');
+    await expect(dialog).not.toContainText('Choose the format your bank uses');
+    await expect(dialog.getByRole('combobox', { name: 'Dates' })).toHaveValue('dmy');
+    await expect(dialog.getByRole('combobox', { name: 'Amounts' })).toHaveValue('comma');
+    await expect(dialog.getByRole('combobox', { name: 'Column Empfänger' })).toHaveValue('notes');
+    await dialog.getByRole('button', { name: 'Preview' }).click();
+    await dialog.getByRole('button', { name: 'Import 1 Transactions' }).click();
+    await expect(dialog).toContainText('1 imported, 0 skipped');
+
+    const txs = await api.transactions(`?account_id=${checking.id}&from=2025-01-01`);
+    expect(txs.map((t) => [t.date, t.amount, t.notes]).sort()).toEqual([
+      ['2025-02-01', -123_400, 'Miete'],
+      ['2025-04-03', -123_400, 'Miete'],
+    ]);
+  });
+
+  test('skips account details above the header', async ({ page, api }) => {
+    const checking = await api.createAccount('Girokonto', 0);
+    await open(page, `/accounts/${checking.id}`);
+    // As DKB exports it: a few lines about the account, a blank line, then the table
+    const dialog = await importCsv(
+      page,
+      '"Konto:";"DE89 3704 0044 0532 0130 00";\r\n' +
+        '"Zeitraum:";"01.01.2025 - 31.01.2025";\r\n' +
+        '"Kontostand vom 31.01.2025:";"1.234,56 EUR";\r\n' +
+        '\r\n' +
+        '"Buchungstag";"Auftraggeber / Empfänger";"Verwendungszweck";"Betrag";\r\n' +
+        '"15.01.2025";"Bäckerei";"Brötchen";"-4,50";\r\n' +
+        '"20.01.2025";"Arbeitgeber";"Gehalt";"2.500,00";\r\n',
+    );
+
+    await expect(dialog.getByRole('spinbutton', { name: 'Rows above the header' })).toHaveValue(
+      '3',
+    );
+    await expect(dialog).toContainText('Found 2 rows');
+    await expect(dialog.getByRole('combobox', { name: 'Column Betrag' })).toHaveValue('amount');
+    await dialog.getByRole('button', { name: 'Preview' }).click();
+    await dialog.getByRole('button', { name: 'Import 2 Transactions' }).click();
+    await expect(dialog).toContainText('2 imported, 0 skipped');
+    expect(await api.balance(checking.id)).toBe(249_550);
+  });
+
+  test('reads Central European files in the encoding the user picks', async ({ page, api }) => {
+    const checking = await api.createAccount('Konto', 0);
+    await open(page, `/accounts/${checking.id}`);
+    // "Łódź" in Windows-1250, as Polish banks export it: valid Windows-1252 too, but wrong
+    const header = Buffer.from('Data;Opis;Kwota\r\n2025-01-15;', 'latin1');
+    const lodz = Buffer.from([0xa3, 0xf3, 0x64, 0x9f]);
+    const rest = Buffer.from(';-12,50\r\n', 'latin1');
+    await page.getByRole('button', { name: 'Import CSV' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Import Transactions' });
+    await dialog.getByLabel('Bank file').setInputFiles({
+      name: 'wyciag.csv',
+      mimeType: 'text/csv',
+      buffer: Buffer.concat([header, lodz, rest]),
+    });
+
+    await dialog.getByRole('combobox', { name: 'Column Opis' }).selectOption('payee');
+    await dialog.getByRole('combobox', { name: 'Encoding' }).selectOption('windows-1250');
+    // Changing the encoding reads the file again; the mapping is guessed again too
+    await dialog.getByRole('combobox', { name: 'Column Opis' }).selectOption('payee');
+    await expect(dialog.getByRole('cell', { name: 'Łódź' })).toBeVisible();
+    await dialog.getByRole('button', { name: 'Preview' }).click();
+    await dialog.getByRole('button', { name: 'Import 1 Transactions' }).click();
+    await expect(dialog).toContainText('1 imported, 0 skipped');
+
+    const [tx] = await api.transactions(`?account_id=${checking.id}&from=2025-01-01`);
+    expect([tx.payeeName, tx.amount]).toEqual(['Łódź', -1_250]);
+  });
+
+  test("asks for the bank's word for money out when it doesn't know it", async ({ page, api }) => {
+    const checking = await api.createAccount('Rekening', 0);
+    await open(page, `/accounts/${checking.id}`);
+    const dialog = await importCsv(
+      page,
+      'Datum,Omschrijving,Richting,Bedrag\r\n' +
+        '2025-01-15,Albert Heijn,Uit,"12,50"\r\n' +
+        '2025-01-25,Werkgever,In,"2500,00"\r\n',
+    );
+    await dialog.getByRole('combobox', { name: 'Column Richting' }).selectOption('direction');
+    await expect(dialog).toContainText('doesn\'t know what "Uit"');
+    await dialog.getByRole('button', { name: 'Preview' }).click();
+    await expect(dialog).toContainText('Type the word your bank uses for money going out');
+
+    await dialog.getByRole('textbox', { name: 'Word for money out' }).fill('Uit');
+    await dialog.getByRole('button', { name: 'Preview' }).click();
+    await dialog.getByRole('button', { name: 'Import 2 Transactions' }).click();
+    await expect(dialog).toContainText('2 imported, 0 skipped');
+    expect(await api.balance(checking.id)).toBe(248_750);
+  });
+
+  test('imports CAMT.053 statements: booked entries only, and duplicates on re-import', async ({
+    page,
+    api,
+  }) => {
+    const checking = await api.createAccount('Girokonto', 0);
+    await open(page, `/accounts/${checking.id}`);
+    const entry = (
+      ref: string,
+      amount: string,
+      ind: string,
+      sts: string,
+      day: string,
+      name: string,
+    ) => `
+      <Ntry>
+        <AcctSvcrRef>${ref}</AcctSvcrRef>
+        <Amt Ccy="EUR">${amount}</Amt><CdtDbtInd>${ind}</CdtDbtInd><Sts>${sts}</Sts>
+        <BookgDt><Dt>${day}</Dt></BookgDt><ValDt><Dt>2025-01-31</Dt></ValDt>
+        <NtryDtls><TxDtls><RltdPties>
+          <${ind === 'DBIT' ? 'Cdtr' : 'Dbtr'}><Nm>${name}</Nm></${ind === 'DBIT' ? 'Cdtr' : 'Dbtr'}>
+        </RltdPties><RmtInf><Ustrd>Ref ${ref}</Ustrd></RmtInf></TxDtls></NtryDtls>
+      </Ntry>`;
+    const statement = `<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.02"><BkToCstmrStmt><Stmt>
+  <Acct><Id><IBAN>DE89370400440532013000</IBAN></Id></Acct>
+  ${entry('A1', '12.50', 'DBIT', 'BOOK', '2025-01-15', 'Bäckerei Müller')}
+  ${entry('A2', '2500.00', 'CRDT', 'BOOK', '2025-01-20', 'Arbeitgeber GmbH')}
+  ${entry('A3', '99.00', 'DBIT', 'PDNG', '2025-01-30', 'Pending Shop')}
+</Stmt></BkToCstmrStmt></Document>`;
+    const importStatement = async () => {
+      await page.getByRole('button', { name: 'Import CSV' }).click();
+      const dialog = page.getByRole('dialog', { name: 'Import Transactions' });
+      await dialog.getByLabel('Bank file').setInputFiles({
+        name: 'statement.xml',
+        mimeType: 'application/xml',
+        buffer: Buffer.from(statement, 'utf8'),
+      });
+      return dialog;
+    };
+
+    let dialog = await importStatement();
+    // No columns to map: straight to the preview
+    await expect(dialog).toContainText('2 transactions found. 0 duplicates detected.');
+    await expect(dialog).toContainText("1 entry is pending or couldn't be read");
+    await dialog.getByRole('button', { name: 'Import 2 Transactions' }).click();
+    await expect(dialog).toContainText('2 imported, 0 skipped');
+    await dialog.getByRole('button', { name: 'Done' }).click();
+
+    const txs = await api.transactions(`?account_id=${checking.id}&from=2025-01-01`);
+    expect(txs.map((t) => [t.date, t.payeeName, t.amount, t.notes]).sort()).toEqual([
+      ['2025-01-15', 'Bäckerei Müller', -1_250, 'Ref A1'],
+      ['2025-01-20', 'Arbeitgeber GmbH', 250_000, 'Ref A2'],
+    ]);
+
+    dialog = await importStatement();
+    await expect(dialog).toContainText('2 transactions found. 2 duplicates detected. 0 will be');
   });
 
   test('unreadable files explain what went wrong', async ({ page, api }) => {

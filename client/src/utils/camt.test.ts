@@ -1,0 +1,273 @@
+import { beforeAll, describe, expect, it } from 'vitest';
+import fc from 'fast-check';
+import { DOMParser as XmlDomParser } from '@xmldom/xmldom';
+import { decodeCamtBytes, looksLikeCamt, parseCamt } from './camt';
+
+// The app uses the browser's DOMParser; tests run in Node, which has none
+beforeAll(() => {
+  globalThis.DOMParser = XmlDomParser as unknown as typeof DOMParser;
+});
+
+const esc = (s: string) =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+const money = (cents: number) =>
+  `${Math.floor(cents / 100)}.${String(cents % 100).padStart(2, '0')}`;
+
+interface Part {
+  cents: number;
+  name: string;
+  memo: string | null;
+  ref: string | null;
+}
+
+interface Entry {
+  cents: number; // always positive, like the file
+  debit: boolean;
+  booked: boolean;
+  bookingDate: string;
+  valueDate: string;
+  ref: string | null;
+  parts: Part[]; // 0 or 1: a plain entry; more: a batch
+  partsAddUp: boolean;
+}
+
+/** Writes entries as a bank would, in the old (v2) or new (v8) layout of CAMT.053 */
+function camtFile(entries: Entry[], { v8 = false, iban = 'DE89370400440532013000' } = {}) {
+  const party = (name: string) =>
+    v8 ? `<Pty><Nm>${esc(name)}</Nm></Pty>` : `<Nm>${esc(name)}</Nm>`;
+  const details = (e: Entry, p: Part) => `
+        <TxDtls>
+          ${p.ref ? `<Refs><AcctSvcrRef>${esc(p.ref)}</AcctSvcrRef></Refs>` : ''}
+          <AmtDtls><TxAmt><Amt Ccy="EUR">${money(p.cents)}</Amt></TxAmt></AmtDtls>
+          <RltdPties>
+            <Dbtr>${party(e.debit ? 'Account Holder' : p.name)}</Dbtr>
+            <Cdtr>${party(e.debit ? p.name : 'Account Holder')}</Cdtr>
+          </RltdPties>
+          ${p.memo ? `<RmtInf><Ustrd>${esc(p.memo)}</Ustrd></RmtInf>` : ''}
+        </TxDtls>`;
+  const status = (booked: boolean) => {
+    const code = booked ? 'BOOK' : 'PDNG';
+    return v8 ? `<Sts><Cd>${code}</Cd></Sts>` : `<Sts>${code}</Sts>`;
+  };
+  const ns = v8
+    ? 'urn:iso:std:iso:20022:tech:xsd:camt.053.001.08'
+    : 'urn:iso:std:iso:20022:tech:xsd:camt.053.001.02';
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="${ns}">
+  <BkToCstmrStmt>
+    <GrpHdr><MsgId>1</MsgId></GrpHdr>
+    <Stmt>
+      <Id>S1</Id>
+      <Acct><Id><IBAN>${iban}</IBAN></Id></Acct>
+      ${entries
+        .map(
+          (e) => `
+      <Ntry>
+        ${e.ref ? `<AcctSvcrRef>${esc(e.ref)}</AcctSvcrRef>` : ''}
+        <Amt Ccy="EUR">${money(e.cents)}</Amt>
+        <CdtDbtInd>${e.debit ? 'DBIT' : 'CRDT'}</CdtDbtInd>
+        ${status(e.booked)}
+        <BookgDt><Dt>${e.bookingDate}</Dt></BookgDt>
+        <ValDt><Dt>${e.valueDate}</Dt></ValDt>
+        <NtryDtls>${e.parts.map((p) => details(e, p)).join('')}</NtryDtls>
+      </Ntry>`,
+        )
+        .join('')}
+    </Stmt>
+  </BkToCstmrStmt>
+</Document>`;
+}
+
+const day = fc
+  .date({ min: new Date('2020-01-01T00:00:00Z'), max: new Date('2030-12-31T00:00:00Z') })
+  .filter((d) => !isNaN(d.getTime()))
+  .map((d) => d.toISOString().slice(0, 10));
+const text = fc
+  .string({ unit: fc.constantFrom('a', 'B', ' ', '&', '<', 'ü', '1'), minLength: 1, maxLength: 20 })
+  // XML readers collapse runs of spaces, and so do we
+  .map((s) => s.replace(/\s+/g, ' ').trim())
+  .filter((s) => s !== '');
+const ref = fc.option(fc.stringMatching(/^[A-Z0-9]{4,12}$/), { nil: null });
+const part = fc.record<Part>({
+  cents: fc.integer({ min: 1, max: 10_000_000 }),
+  name: text,
+  memo: fc.option(text, { nil: null }),
+  ref,
+});
+
+const entry = fc
+  .record({
+    debit: fc.boolean(),
+    booked: fc.boolean(),
+    bookingDate: day,
+    valueDate: day,
+    ref,
+    parts: fc.array(part, { maxLength: 4 }),
+    partsAddUp: fc.boolean(),
+    single: fc.integer({ min: 1, max: 10_000_000 }),
+  })
+  .map(({ parts, partsAddUp, single, ...e }): Entry => {
+    const sum = parts.reduce((s, p) => s + p.cents, 0);
+    const cents =
+      parts.length > 1
+        ? partsAddUp
+          ? sum
+          : sum + 1
+        : parts.length === 1
+          ? parts[0].cents
+          : single;
+    return { ...e, parts, partsAddUp: parts.length > 1 && partsAddUp, cents };
+  });
+
+/** What the importer should make of an entry */
+function expected(e: Entry) {
+  const sign = e.debit ? -1 : 1;
+  if (e.parts.length > 1 && e.partsAddUp) {
+    return e.parts.map((p) => ({ date: e.bookingDate, amount: sign * p.cents, payeeName: p.name }));
+  }
+  return [
+    {
+      date: e.bookingDate,
+      amount: sign * e.cents,
+      payeeName: e.parts.length === 1 ? e.parts[0].name : null,
+    },
+  ];
+}
+
+describe('parseCamt (property-based)', () => {
+  it('imports booked entries only, signed, on their booking date, from either layout', () => {
+    fc.assert(
+      fc.property(fc.array(entry, { maxLength: 15 }), fc.boolean(), (entries, v8) => {
+        const statements = parseCamt(camtFile(entries, { v8 }));
+        expect(statements).toHaveLength(1);
+        const [statement] = statements!;
+        expect(statement.account).toBe('DE89370400440532013000');
+        expect(statement.skipped).toBe(entries.filter((e) => !e.booked).length);
+
+        // Entries with the same bank reference are the same entry: only the first counts
+        const seenRefs = new Set<string>();
+        const wanted = entries
+          .filter((e) => e.booked)
+          .flatMap((e) => {
+            const rows = expected(e);
+            return rows.filter((_, i) => {
+              const r =
+                e.parts.length > 1 && e.partsAddUp
+                  ? (e.parts[i].ref ?? (e.ref ? `${e.ref}:${i + 1}` : null))
+                  : (e.ref ?? e.parts[0]?.ref ?? null);
+              if (!r) return true;
+              if (seenRefs.has(r)) return false;
+              seenRefs.add(r);
+              return true;
+            });
+          });
+        expect(
+          statement.transactions.map(({ date, amount, payeeName }) => ({
+            date,
+            amount,
+            payeeName,
+          })),
+        ).toEqual(wanted);
+        // Every transaction can be told apart from the others when importing again
+        const ids = statement.transactions.map((t) => t.importedId);
+        expect(new Set(ids).size).toBe(ids.length);
+      }),
+    );
+  });
+
+  it('gives the same ids to the same statement read twice, so a re-import finds duplicates', () => {
+    fc.assert(
+      fc.property(fc.array(entry, { maxLength: 10 }), (entries) => {
+        const ids = () => parseCamt(camtFile(entries))![0].transactions.map((t) => t.importedId);
+        expect(ids()).toEqual(ids());
+      }),
+    );
+  });
+
+  it('keeps one transaction per statement account', () => {
+    const file = camtFile([]).replace(
+      /<Stmt>[\s\S]*<\/Stmt>/,
+      ['NL91ABNA0417164300', 'DE89370400440532013000']
+        .map((iban) => `<Stmt><Acct><Id><IBAN>${iban}</IBAN></Id></Acct></Stmt>`)
+        .join(''),
+    );
+    expect(parseCamt(file)!.map((s) => s.account)).toEqual([
+      'NL91ABNA0417164300',
+      'DE89370400440532013000',
+    ]);
+  });
+});
+
+describe('parseCamt', () => {
+  it('reads a typical German statement entry', () => {
+    const [statement] = parseCamt(`<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.02">
+  <BkToCstmrStmt><Stmt>
+    <Acct><Id><IBAN>DE02120300000000202051</IBAN></Id></Acct>
+    <Ntry>
+      <Amt Ccy="EUR">12.50</Amt><CdtDbtInd>DBIT</CdtDbtInd><Sts>BOOK</Sts>
+      <BookgDt><Dt>2025-01-15</Dt></BookgDt><ValDt><Dt>2025-01-16</Dt></ValDt>
+      <AcctSvcrRef>2025011512345</AcctSvcrRef>
+      <AddtlNtryInf>KARTENZAHLUNG</AddtlNtryInf>
+      <NtryDtls><TxDtls>
+        <RltdPties><Cdtr><Nm>Bäckerei Müller</Nm></Cdtr></RltdPties>
+        <RmtInf><Ustrd>Brötchen</Ustrd><Ustrd>Filiale 12</Ustrd></RmtInf>
+      </TxDtls></NtryDtls>
+    </Ntry>
+    <Ntry>
+      <Amt Ccy="EUR">99.00</Amt><CdtDbtInd>DBIT</CdtDbtInd><Sts>PDNG</Sts>
+      <BookgDt><Dt>2025-01-17</Dt></BookgDt>
+    </Ntry>
+  </Stmt></BkToCstmrStmt>
+</Document>`)!;
+    expect(statement).toEqual({
+      account: 'DE02120300000000202051',
+      skipped: 1,
+      transactions: [
+        {
+          date: '2025-01-15',
+          amount: -1250,
+          payeeName: 'Bäckerei Müller',
+          notes: 'Brötchen Filiale 12',
+          importedId: 'camt:2025011512345',
+        },
+      ],
+    });
+  });
+
+  it('falls back to the entry text when there are no details, and to CSV-style ids', () => {
+    const [statement] = parseCamt(`<Document><BkToCstmrStmt><Stmt>
+      <Ntry><Amt>40.00</Amt><CdtDbtInd>CRDT</CdtDbtInd>
+        <BookgDt><DtTm>2025-03-01T09:30:00+01:00</DtTm></BookgDt>
+        <AddtlNtryInf>Gutschrift</AddtlNtryInf></Ntry>
+    </Stmt></BkToCstmrStmt></Document>`)!;
+    expect(statement.account).toBeNull();
+    expect(statement.transactions).toEqual([
+      {
+        date: '2025-03-01',
+        amount: 4000,
+        payeeName: 'Gutschrift',
+        notes: null,
+        importedId: '2025-03-01|4000|gutschrift',
+      },
+    ]);
+  });
+
+  it('refuses files that are not CAMT statements', () => {
+    expect(parseCamt('<html><body>hi</body></html>')).toBeNull();
+    expect(parseCamt('not xml at all <<<')).toBeNull();
+  });
+
+  it('recognizes CAMT files before parsing them', () => {
+    expect(looksLikeCamt('<?xml version="1.0"?><Document><BkToCstmrStmt>')).toBe(true);
+    expect(looksLikeCamt('<Document><ns2:BkToCstmrAcctRpt>')).toBe(true);
+    expect(looksLikeCamt('Date,Amount\n2025-01-01,5')).toBe(false);
+  });
+
+  it('decodes the encoding the XML declaration names', () => {
+    const xml = '<?xml version="1.0" encoding="ISO-8859-1"?><Nm>Müller</Nm>';
+    const latin1 = Uint8Array.from(xml, (ch) => ch.charCodeAt(0)).buffer; // ü is one byte
+    expect(decodeCamtBytes(latin1)).toContain('Müller');
+  });
+});
