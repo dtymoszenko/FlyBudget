@@ -98,7 +98,10 @@ says whether it's money in or out, so there are no formats to work out.
   statement.
 - When one entry bundles several payments (a batch of transfers, say), FlyBudget lists each
   payment separately, as long as their amounts add up to the entry. If they don't, the entry is
-  imported as one transaction, so the account balance is always right.
+  imported as one transaction, so the account balance is always right. (If you import an
+  intraday CAMT.052 report and later the day's CAMT.053 statement, check the preview: a batch
+  the report showed as one total is listed payment by payment in the statement, and can't be
+  matched as a duplicate.)
 - Importing a statement that overlaps an earlier one is safe: FlyBudget recognizes the
   transactions it already has by the bank's own reference for each one.
 - A file with statements for more than one account asks which one belongs to the account you're

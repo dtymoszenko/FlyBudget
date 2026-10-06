@@ -465,6 +465,24 @@ test.describe('CSV import', () => {
     await expect(dialog).toContainText('2 imported, 0 skipped');
   });
 
+  test('a placeholder in the unused inflow or outflow column is read as empty', async ({
+    page,
+    api,
+  }) => {
+    const checking = await api.createAccount('Checking', 0);
+    await open(page, `/accounts/${checking.id}`);
+    const dialog = await importCsv(
+      page,
+      'Date,Description,Debit,Credit\r\n2026-03-01,Coffee,4.50,-\r\n2026-03-02,Refund,n/a,10.00\r\n',
+    );
+    await expect(dialog.getByRole('combobox', { name: 'Column Debit' })).toHaveValue('outflow');
+    await expect(dialog.getByRole('combobox', { name: 'Column Credit' })).toHaveValue('inflow');
+    await dialog.getByRole('button', { name: 'Preview' }).click();
+    await dialog.getByRole('button', { name: 'Import 2 Transactions' }).click();
+    await expect(dialog).toContainText('2 imported, 0 skipped');
+    expect(await api.balance(checking.id)).toBe(-450 + 1_000);
+  });
+
   test('unreadable files explain what went wrong', async ({ page, api }) => {
     const checking = await api.createAccount('Checking', 0);
     await open(page, `/accounts/${checking.id}`);

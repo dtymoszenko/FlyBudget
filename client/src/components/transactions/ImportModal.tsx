@@ -367,6 +367,9 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
       const cell = raw[idx]?.trim() ?? '';
       return cell === '' ? 0 : readImportAmount(cell, numberFormat);
     };
+    /** Inflow/outflow cells: the unused one may say "-" or "n/a" instead of being empty */
+    const sideAmount = (idx: number, raw: string[]) =>
+      /\d/.test(raw[idx] ?? '') ? cellAmount(idx, raw) : 0;
 
     const rows: ImportRow[] = [];
     let unreadableRows = 0;
@@ -388,8 +391,8 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
         amount = value;
       } else {
         // Some banks write debits in the outflow column as negative numbers
-        const inf = inflowIdx !== -1 ? cellAmount(inflowIdx, raw) : 0;
-        const out = outflowIdx !== -1 ? cellAmount(outflowIdx, raw) : 0;
+        const inf = inflowIdx !== -1 ? sideAmount(inflowIdx, raw) : 0;
+        const out = outflowIdx !== -1 ? sideAmount(outflowIdx, raw) : 0;
         if (inf === null || out === null) {
           unreadableRows++;
           continue;
