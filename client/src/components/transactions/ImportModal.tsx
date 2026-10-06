@@ -191,7 +191,7 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
       setExcluded(new Set(preview.map((r, i) => (r.isDuplicate ? i : -1)).filter((i) => i >= 0)));
       setStep('preview');
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Preview failed');
+      if (load === loadId.current) setError(e instanceof Error ? e.message : 'Preview failed');
     } finally {
       setLoading(false);
     }
@@ -208,15 +208,15 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
 
   async function handleFile(file: File) {
     setError(null);
+    const load = ++loadId.current;
     try {
-      await readFile(file);
+      await readFile(file, load);
     } catch {
-      setError("Couldn't read this file");
+      if (load === loadId.current) setError("Couldn't read this file");
     }
   }
 
-  async function readFile(file: File) {
-    const load = ++loadId.current;
+  async function readFile(file: File, load: number) {
     const buffer = await file.arrayBuffer();
     if (load !== loadId.current) return;
 

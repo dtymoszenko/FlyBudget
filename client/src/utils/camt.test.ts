@@ -182,6 +182,20 @@ describe('parseCamt (property-based)', () => {
     );
   });
 
+  it('gives each transaction the same id whatever else the file holds', () => {
+    fc.assert(
+      fc.property(fc.array(entry, { maxLength: 8 }), fc.array(entry, { maxLength: 8 }), (a, b) => {
+        // A statement read on its own, and after another one in the same file
+        const alone = parseCamt(camtFile(b))![0].transactions;
+        const both = camtFile([...a, ...b]);
+        const ids = new Set(parseCamt(both)![0].transactions.map((t) => t.importedId));
+        // Transactions from b with a reference keep their id (or are found in a as the same)
+        for (const t of alone)
+          if (t.importedId.startsWith('camt:')) expect(ids.has(t.importedId)).toBe(true);
+      }),
+    );
+  });
+
   it('gives the same ids to the same statement read twice, so a re-import finds duplicates', () => {
     fc.assert(
       fc.property(fc.array(entry, { maxLength: 10 }), (entries) => {
@@ -197,8 +211,8 @@ describe('parseCamt (property-based)', () => {
       `<Document><BkToCstmrStmt><Stmt>${card}${card}</Stmt></BkToCstmrStmt></Document>`,
     )!;
     expect(statement.transactions.map((t) => t.importedId)).toEqual([
-      'camt:2025-01-02|CARD',
-      'camt:2025-01-02|CARD#2',
+      'camt:2025-01-02|-350|CARD',
+      'camt:2025-01-02|-350|CARD#2',
     ]);
   });
 
@@ -245,8 +259,8 @@ describe('parseCamt (property-based)', () => {
       `<Document><BkToCstmrStmt><Stmt>${batch('B1', 'B1')}${batch('NONREF', 'NONREF')}</Stmt></BkToCstmrStmt></Document>`,
     )!;
     expect(statement.transactions.map((t) => [t.payeeName, t.amount, t.importedId])).toEqual([
-      ['Anna', -1000, 'camt:2025-01-02|B1:1'],
-      ['Ben', -2000, 'camt:2025-01-02|B1:2'],
+      ['Anna', -1000, 'camt:2025-01-02|-1000|B1:1'],
+      ['Ben', -2000, 'camt:2025-01-02|-2000|B1:2'],
       ['Anna', -1000, '2025-01-02|-1000|anna'],
       ['Ben', -2000, '2025-01-02|-2000|ben'],
     ]);
@@ -306,7 +320,7 @@ describe('parseCamt', () => {
           amount: -1250,
           payeeName: 'Bäckerei Müller',
           notes: 'Brötchen Filiale 12',
-          importedId: 'camt:2025-01-15|2025011512345',
+          importedId: 'camt:2025-01-15|-1250|2025011512345',
         },
       ],
     });

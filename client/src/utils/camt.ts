@@ -263,8 +263,6 @@ export function parseCamt(xml: string): CamtStatement[] | null {
   }
 
   return [...byAccount].map(([account, { statements, skipped }]) => {
-    // A reference's first transaction (date and amount), to spot a bank reusing it
-    const firstUse = new Map<string, string>();
     // Ids from earlier statements: the same id again is the same transaction, repeated by an
     // overlapping statement
     const earlier = new Set<string>();
@@ -274,15 +272,12 @@ export function parseCamt(xml: string): CamtStatement[] | null {
       const occurrences = new Map<string, number>();
       const ids: string[] = [];
       for (const d of drafts) {
-        const what = `${d.date}|${d.amount}`;
         let base: string;
         if (d.ref) {
-          // With the booking date: banks that restart their references each day or statement
-          // reuse them in later files for other transactions
-          base = `camt:${d.date}|${d.ref}`.slice(0, 450);
-          const first = firstUse.get(base);
-          if (first === undefined) firstUse.set(base, what);
-          else if (first !== what) base = `${base}|${d.amount}`; // reused the same day
+          // With the booking date and amount: banks that restart their references each day or
+          // statement reuse them for other transactions. Made from the transaction alone, so
+          // it's the same id whatever else a file holds.
+          base = `camt:${d.date}|${d.amount}|${d.ref.slice(0, 400)}`;
         } else {
           base = generateImportId(d.date, d.amount, d.payeeName ?? '');
         }
