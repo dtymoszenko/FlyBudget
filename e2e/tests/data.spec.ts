@@ -409,6 +409,62 @@ test.describe('CSV import', () => {
     await expect(dialog).not.toContainText('Map each column');
   });
 
+  test('closing while importing starts the next import afresh', async ({ page, api }) => {
+    const checking = await api.createAccount('Checking', 0);
+    await open(page, `/accounts/${checking.id}`);
+    let release = () => {};
+    const held = new Promise<void>((r) => (release = r));
+    await page.route('**/import/confirm', async (route) => {
+      await held;
+      await route.continue();
+    });
+
+    let dialog = await importCsv(page, BANK_CSV);
+    await dialog.getByRole('button', { name: 'Preview' }).click();
+    await dialog.getByRole('button', { name: 'Import 4 Transactions' }).click();
+    await dialog.getByRole('button', { name: 'Close' }).click();
+    await expect(dialog).toBeHidden();
+    const confirmed = page.waitForResponse('**/import/confirm');
+    release();
+    await confirmed;
+
+    // The import happened, but its result isn't what the next import opens on
+    await expect
+      .poll(async () => (await api.transactions(`?account_id=${checking.id}`)).length)
+      .toBe(4);
+    await page.getByRole('button', { name: 'Import CSV' }).click();
+    dialog = page.getByRole('dialog', { name: 'Import Transactions' });
+    await expect(dialog).toContainText('Drag and drop a file from your bank');
+    await expect(dialog).not.toContainText('Import complete');
+  });
+
+  test('changing the rows above the header keeps the columns mapped by hand', async ({
+    page,
+    api,
+  }) => {
+    const checking = await api.createAccount('Checking', 0);
+    await open(page, `/accounts/${checking.id}`);
+    // A title line as wide as the table: taken for the header at first
+    const dialog = await importCsv(
+      page,
+      'Export,of,transactions\r\nWhen,Text,Value\r\n2025-01-15,Bakery,-4.50\r\n2025-01-16,Rent,-900.00\r\n',
+    );
+    await expect(dialog.getByRole('spinbutton', { name: 'Rows above the header' })).toHaveValue(
+      '0',
+    );
+    await dialog.getByRole('combobox', { name: 'Column Export' }).selectOption('date');
+    await dialog.getByRole('combobox', { name: 'Column of' }).selectOption('notes');
+    await dialog.getByRole('combobox', { name: 'Column transactions' }).selectOption('amount');
+
+    await dialog.getByRole('spinbutton', { name: 'Rows above the header' }).fill('1');
+    await expect(dialog.getByRole('combobox', { name: 'Column When' })).toHaveValue('date');
+    await expect(dialog.getByRole('combobox', { name: 'Column Text' })).toHaveValue('notes');
+    await expect(dialog.getByRole('combobox', { name: 'Column Value' })).toHaveValue('amount');
+    await dialog.getByRole('button', { name: 'Preview' }).click();
+    await dialog.getByRole('button', { name: 'Import 2 Transactions' }).click();
+    await expect(dialog).toContainText('2 imported, 0 skipped');
+  });
+
   test('unreadable files explain what went wrong', async ({ page, api }) => {
     const checking = await api.createAccount('Checking', 0);
     await open(page, `/accounts/${checking.id}`);

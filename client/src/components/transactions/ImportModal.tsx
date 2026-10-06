@@ -129,7 +129,8 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
 
   /**
    * Shows the rows under the header, with columns mapped as last time or guessed, or as
-   * `keepRoles` when the table has as many columns (the same file, read in another encoding)
+   * `keepRoles` when the table has as many columns (the same table, read in another encoding
+   * or under another header row)
    */
   const showTable = useCallback(
     (
@@ -469,15 +470,19 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
       return;
     }
 
+    const load = loadId.current;
     confirmMutation.mutate(
       { accountId, rows },
       {
         onSuccess: (data) => {
-          rememberSettings();
+          rememberSettings(); // the import happened, even if the dialog was closed meanwhile
+          if (load !== loadId.current) return; // closed: the next opening starts afresh
           setResult(data);
           setStep('done');
         },
-        onError: (e) => setError(e instanceof Error ? e.message : 'Import failed'),
+        onError: (e) => {
+          if (load === loadId.current) setError(e instanceof Error ? e.message : 'Import failed');
+        },
       },
     );
   }
@@ -635,7 +640,7 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
                 onChange={(e) => {
                   const n = Math.trunc(Number(e.target.value));
                   if (Number.isFinite(n) && n >= 0 && n < records.length) {
-                    showTable(records, n, saved);
+                    showTable(records, n, saved, roles);
                   }
                 }}
                 className={selectClass}
