@@ -334,6 +334,34 @@ test.describe('CSV import', () => {
     await expect(dialog).toContainText('2 transactions found. 2 duplicates detected. 0 will be');
   });
 
+  test('closing while a file loads starts the next import afresh', async ({ page, api }) => {
+    const checking = await api.createAccount('Checking', 0);
+    await open(page, `/accounts/${checking.id}`);
+    // Hold the saved-settings lookup until the dialog has been closed
+    let release = () => {};
+    const held = new Promise<void>((r) => (release = r));
+    let first = true;
+    await page.route('**/import-settings', async (route) => {
+      if (first) {
+        first = false;
+        await held;
+      }
+      await route.continue();
+    });
+
+    let dialog = await importCsv(page, BANK_CSV);
+    await dialog.getByRole('button', { name: 'Close' }).click();
+    await expect(dialog).toBeHidden();
+    release();
+
+    await page.getByRole('button', { name: 'Import CSV' }).click();
+    dialog = page.getByRole('dialog', { name: 'Import Transactions' });
+    await expect(dialog).toContainText('Drag and drop a file from your bank');
+    // The abandoned file doesn't turn up later either
+    await page.waitForTimeout(300);
+    await expect(dialog).not.toContainText('Map each column');
+  });
+
   test('unreadable files explain what went wrong', async ({ page, api }) => {
     const checking = await api.createAccount('Checking', 0);
     await open(page, `/accounts/${checking.id}`);

@@ -196,7 +196,10 @@ describe('parseCamt (property-based)', () => {
     const [statement] = parseCamt(
       `<Document><BkToCstmrStmt><Stmt>${card}${card}</Stmt></BkToCstmrStmt></Document>`,
     )!;
-    expect(statement.transactions.map((t) => t.importedId)).toEqual(['camt:CARD', 'camt:CARD#2']);
+    expect(statement.transactions.map((t) => t.importedId)).toEqual([
+      'camt:2025-01-02|CARD',
+      'camt:2025-01-02|CARD#2',
+    ]);
   });
 
   it('keeps ids within the server limit for very long texts', () => {
@@ -205,6 +208,15 @@ describe('parseCamt (property-based)', () => {
       `<Document><BkToCstmrStmt><Stmt><Ntry><AcctSvcrRef>NONREF</AcctSvcrRef><Amt>1.00</Amt><CdtDbtInd>DBIT</CdtDbtInd><BookgDt><Dt>2025-01-02</Dt></BookgDt><AddtlNtryInf>${long}</AddtlNtryInf></Ntry></Stmt></BkToCstmrStmt></Document>`,
     )!;
     expect(statement.transactions[0].importedId.length).toBeLessThanOrEqual(500);
+  });
+
+  it('tells apart transactions that share a reference on different days, across files', () => {
+    // References that restart every day: R1 today is another transaction than R1 tomorrow
+    const file = (day: string) =>
+      `<Document><BkToCstmrStmt><Stmt><Ntry><AcctSvcrRef>R1</AcctSvcrRef><Amt>5.00</Amt><CdtDbtInd>DBIT</CdtDbtInd><BookgDt><Dt>${day}</Dt></BookgDt></Ntry></Stmt></BkToCstmrStmt></Document>`;
+    const id = (day: string) => parseCamt(file(day))![0].transactions[0].importedId;
+    expect(id('2025-01-02')).not.toBe(id('2025-01-03'));
+    expect(id('2025-01-02')).toBe(id('2025-01-02'));
   });
 
   it('keeps statements of different accounts that share a number', () => {
@@ -233,8 +245,8 @@ describe('parseCamt (property-based)', () => {
       `<Document><BkToCstmrStmt><Stmt>${batch('B1', 'B1')}${batch('NONREF', 'NONREF')}</Stmt></BkToCstmrStmt></Document>`,
     )!;
     expect(statement.transactions.map((t) => [t.payeeName, t.amount, t.importedId])).toEqual([
-      ['Anna', -1000, 'camt:B1:1'],
-      ['Ben', -2000, 'camt:B1:2'],
+      ['Anna', -1000, 'camt:2025-01-02|B1:1'],
+      ['Ben', -2000, 'camt:2025-01-02|B1:2'],
       ['Anna', -1000, '2025-01-02|-1000|anna'],
       ['Ben', -2000, '2025-01-02|-2000|ben'],
     ]);
@@ -294,7 +306,7 @@ describe('parseCamt', () => {
           amount: -1250,
           payeeName: 'Bäckerei Müller',
           notes: 'Brötchen Filiale 12',
-          importedId: 'camt:2025011512345',
+          importedId: 'camt:2025-01-15|2025011512345',
         },
       ],
     });

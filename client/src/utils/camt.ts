@@ -277,10 +277,12 @@ export function parseCamt(xml: string): CamtStatement[] | null {
         const what = `${d.date}|${d.amount}`;
         let base: string;
         if (d.ref) {
-          base = `camt:${d.ref}`.slice(0, 450);
+          // With the booking date: banks that restart their references each day or statement
+          // reuse them in later files for other transactions
+          base = `camt:${d.date}|${d.ref}`.slice(0, 450);
           const first = firstUse.get(base);
           if (first === undefined) firstUse.set(base, what);
-          else if (first !== what) base = `${base}|${what}`; // reused for another transaction
+          else if (first !== what) base = `${base}|${d.amount}`; // reused the same day
         } else {
           base = generateImportId(d.date, d.amount, d.payeeName ?? '');
         }

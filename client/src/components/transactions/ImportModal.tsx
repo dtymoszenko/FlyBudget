@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Upload, AlertTriangle, CheckCircle, X } from 'lucide-react';
 import { Modal } from '../ui/Modal';
@@ -91,8 +91,12 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
   const [loading, setLoading] = useState(false);
 
   const confirmMutation = useImportConfirm();
+  // Counts file loads and closings: a load that finishes after the dialog was closed (or
+  // another file was chosen) is dropped, so the next opening starts at the upload step
+  const loadId = useRef(0);
 
   function reset() {
+    loadId.current++;
     setStep('upload');
     setSource('csv');
     setBytes(null);
@@ -170,6 +174,7 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
   );
 
   async function runPreview(rows: ImportRow[], unreadableCount: number) {
+    const load = loadId.current;
     // The server's limit: say so, rather than fail the whole file with a generic error
     if (rows.length > MAX_IMPORT_ROWS) {
       setError(
@@ -180,6 +185,7 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
     setLoading(true);
     try {
       const preview = await importPreview(accountId, rows);
+      if (load !== loadId.current) return; // closed while checking
       setUnreadable(unreadableCount);
       setPreviewRows(preview);
       setExcluded(new Set(preview.map((r, i) => (r.isDuplicate ? i : -1)).filter((i) => i >= 0)));
@@ -210,7 +216,9 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
   }
 
   async function readFile(file: File) {
+    const load = ++loadId.current;
     const buffer = await file.arrayBuffer();
+    if (load !== loadId.current) return;
 
     const start = new TextDecoder('utf-8').decode(buffer.slice(0, 4096));
     if (/\.xml$/i.test(file.name) || looksLikeCamt(start)) {
@@ -241,6 +249,7 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
     } catch {
       // Offline: work everything out from the file
     }
+    if (load !== loadId.current) return; // closed (or another file chosen) meanwhile
     setSaved(savedSettings);
     setBytes(buffer);
     setDateFormatChoice(null);
