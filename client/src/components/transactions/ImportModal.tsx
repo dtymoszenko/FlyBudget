@@ -54,6 +54,9 @@ const optionLabelClass = 'text-xs font-medium text-text-tertiary space-y-1';
 
 const settingsKey = (accountId: string) => ['import-settings', accountId];
 
+/** Settings still being saved, by account: the next import of a file waits for them */
+const pendingSaves = new Map<string, Promise<void>>();
+
 /** The most rows one import may send (the server's limit) */
 const MAX_IMPORT_ROWS = 100_000;
 
@@ -226,6 +229,7 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
 
     setSource('csv');
     let savedSettings: ImportSettings | null = null;
+    await pendingSaves.get(accountId);
     try {
       savedSettings = (
         await queryClient.fetchQuery({
@@ -407,7 +411,7 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
   }
 
   /** Remembers how this account's bank writes its files, for the next import */
-  async function rememberSettings() {
+  function rememberSettings() {
     if (source !== 'csv' || !dateFormat || !numberFormat) return;
     const columns: Record<string, ColumnRole> = {};
     columnKeys(headers)
@@ -424,14 +428,17 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
       numberFormat,
       outWord: outWord.trim().slice(0, 50) || null,
     };
-    try {
-      queryClient.setQueryData(
-        settingsKey(accountId),
-        await saveImportSettings(accountId, settings),
-      );
-    } catch {
-      // Not worth an error: the next import works the settings out again
-    }
+    const save: Promise<void> = saveImportSettings(accountId, settings)
+      .then((stored) => {
+        queryClient.setQueryData(settingsKey(accountId), stored);
+      })
+      .catch(() => {
+        // Not worth an error: the next import works the settings out again
+      })
+      .finally(() => {
+        if (pendingSaves.get(accountId) === save) pendingSaves.delete(accountId);
+      });
+    pendingSaves.set(accountId, save);
   }
 
   function handleConfirm() {
@@ -447,9 +454,8 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
     confirmMutation.mutate(
       { accountId, rows },
       {
-        onSuccess: async (data) => {
-          // Saved before "Done", so an import started right after already uses them
-          await rememberSettings();
+        onSuccess: (data) => {
+          rememberSettings();
           setResult(data);
           setStep('done');
         },

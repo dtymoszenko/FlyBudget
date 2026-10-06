@@ -79,36 +79,35 @@ export function parseCsv(
   return { headers: records[0], rows: records.slice(1) };
 }
 
+/** Rows above the header that are looked for (account details are a handful of lines) */
+const MAX_SKIP_ROWS = 50;
+/** Rows under a candidate header that its width is compared with */
+const SAMPLE_ROWS = 500;
+
 /**
- * How many rows sit above the header: those with clearly fewer columns than the table under
- * them (account details like `Kontonummer:;DE12…`). The table is the widest part of the
- * file: its width is the widest seen twice, or one less than the widest row (so one row
- * with a stray separator doesn't count). The header may be a column shorter than the rows
- * only when the rows end with a separator (an empty last field) and the header doesn't.
+ * How many rows sit above the header: those narrower than most rows under them (account
+ * details like `Kontonummer:;DE12…`). The header is the first row at least as wide as most
+ * rows below it, so a few rows with a stray separator can't move it. It may be a column
+ * shorter only when those rows end with a separator (an empty last field) and it doesn't.
+ * A file with more lines of details than table rows needs the number set by hand.
  */
 export function detectSkipRows(records: string[][]): number {
-  const widths = records.map((r) => r.length).filter((w) => w >= 2);
-  if (!widths.length) return 0;
-  const seen = new Set<number>();
-  let widest = 0;
-  let widestTwice = 0;
-  for (const w of widths) {
-    if (seen.has(w)) widestTwice = Math.max(widestTwice, w);
-    seen.add(w);
-    widest = Math.max(widest, w);
+  for (let i = 0; i < Math.min(records.length, MAX_SKIP_ROWS); i++) {
+    const header = records[i];
+    if (header.length < 2) continue;
+    const below = records.slice(i + 1, i + 1 + SAMPLE_ROWS);
+    if (!below.length) return i;
+    const widths = below.map((r) => r.length).sort((a, b) => a - b);
+    const typical = widths[Math.floor((widths.length - 1) / 2)];
+    if (header.length >= typical) return i;
+    const typicalRows = below.filter((r) => r.length === typical);
+    const trailingSeparator =
+      typicalRows.filter((r) => r[r.length - 1] === '').length * 2 > typicalRows.length;
+    if (trailingSeparator && header.length === typical - 1 && header[header.length - 1] !== '') {
+      return i;
+    }
   }
-  const width = Math.max(widestTwice, widest - 1);
-  const rows = records.filter((r) => r.length === width);
-  const trailingSeparator = rows.filter((r) => r[r.length - 1] === '').length * 2 > rows.length;
-  return Math.max(
-    records.findIndex(
-      (r) =>
-        r.length >= 2 &&
-        (r.length >= width ||
-          (trailingSeparator && r.length === width - 1 && r[r.length - 1] !== '')),
-    ),
-    0,
-  );
+  return 0;
 }
 
 export const CSV_ENCODINGS = [
@@ -327,7 +326,10 @@ export function generateImportId(
   occurrence = 1,
 ): string {
   const id = `${date}|${amount}|${(payeeName || '').toLowerCase()}`;
-  return occurrence > 1 ? `${id}|${occurrence}` : id;
+  const suffix = occurrence > 1 ? `|${occurrence}` : '';
+  // At most 500 characters, the server's limit, even for a very long payee. Ids that already
+  // fit are unchanged, so files imported before still match.
+  return id.slice(0, 500 - suffix.length) + suffix;
 }
 
 const COLUMN_HINTS: Record<string, ColumnRole> = {

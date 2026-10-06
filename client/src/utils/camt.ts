@@ -263,36 +263,41 @@ export function parseCamt(xml: string): CamtStatement[] | null {
   }
 
   return [...byAccount].map(([account, { statements, skipped }]) => {
-    // Ids already given, with the transaction they were given to (date and amount)
-    const given = new Map<string, string>();
+    // A reference's first transaction (date and amount), to spot a bank reusing it
+    const firstUse = new Map<string, string>();
+    // Ids from earlier statements: the same id again is the same transaction, repeated by an
+    // overlapping statement
+    const earlier = new Set<string>();
     const transactions: CamtTransaction[] = [];
     for (const drafts of statements) {
-      // Identical transactions without a reference are numbered within their statement, so
-      // the same one in an overlapping statement gets the same id and is left out
+      // Within one statement, identical transactions are each real (two coffees): numbered
       const occurrences = new Map<string, number>();
+      const ids: string[] = [];
       for (const d of drafts) {
         const what = `${d.date}|${d.amount}`;
-        let importedId: string;
+        let base: string;
         if (d.ref) {
-          importedId = `camt:${d.ref}`.slice(0, 500);
-          // A bank that reuses a reference for another transaction: tell them apart
-          const earlier = given.get(importedId);
-          if (earlier !== undefined && earlier !== what) {
-            importedId = `camt:${d.ref}|${what}`.slice(0, 500);
-          }
+          base = `camt:${d.ref}`.slice(0, 450);
+          const first = firstUse.get(base);
+          if (first === undefined) firstUse.set(base, what);
+          else if (first !== what) base = `${base}|${what}`; // reused for another transaction
         } else {
-          // No reference: the same id a CSV row would get
-          const key = generateImportId(d.date, d.amount, d.payeeName ?? '');
-          const occurrence = (occurrences.get(key) ?? 0) + 1;
-          occurrences.set(key, occurrence);
-          importedId = generateImportId(d.date, d.amount, d.payeeName ?? '', occurrence);
+          base = generateImportId(d.date, d.amount, d.payeeName ?? '');
         }
-        // The same transaction again, from an overlapping statement
-        if (given.has(importedId)) continue;
-        given.set(importedId, what);
+        const occurrence = (occurrences.get(base) ?? 0) + 1;
+        occurrences.set(base, occurrence);
+        const importedId = d.ref
+          ? occurrence > 1
+            ? `${base}#${occurrence}`
+            : base
+          : // No reference: the same id a CSV row would get
+            generateImportId(d.date, d.amount, d.payeeName ?? '', occurrence);
+        if (earlier.has(importedId)) continue;
+        ids.push(importedId);
         const { ref: _, ...transaction } = d;
         transactions.push({ ...transaction, importedId });
       }
+      ids.forEach((id) => earlier.add(id));
     }
     return { account, transactions, skipped };
   });

@@ -149,31 +149,8 @@ describe('parseCamt (property-based)', () => {
         expect(statement.account).toBe('DE89370400440532013000');
         expect(statement.skipped).toBe(entries.filter((e) => !e.booked).length);
 
-        // The same bank reference on the same day for the same amount is the same transaction
-        // (in an overlapping statement): only the first counts. Anything else is imported.
-        const seen = new Set<string>();
-        const wanted = entries
-          .filter((e) => e.booked)
-          .flatMap((e) => {
-            const entryRef = realRef(e.ref);
-            const partRefs = e.parts.map((p) => realRef(p.ref));
-            const ownRefs =
-              partRefs.every((r) => r && r !== entryRef) &&
-              new Set(partRefs).size === partRefs.length;
-            return expected(e).filter((row, i) => {
-              const r =
-                e.parts.length > 1 && e.partsAddUp
-                  ? ownRefs
-                    ? partRefs[i]
-                    : entryRef && `${entryRef}:${i + 1}`
-                  : (entryRef ?? partRefs[0] ?? null);
-              if (!r) return true;
-              const key = `${r}|${row.date}|${row.amount}`;
-              if (seen.has(key)) return false;
-              seen.add(key);
-              return true;
-            });
-          });
+        // Within one statement every booked transaction is real, whatever the references say
+        const wanted = entries.filter((e) => e.booked).flatMap(expected);
         expect(
           statement.transactions.map(({ date, amount, payeeName }) => ({
             date,
@@ -188,6 +165,23 @@ describe('parseCamt (property-based)', () => {
     );
   });
 
+  it('adds nothing for a statement repeated (or overlapping) in the same file', () => {
+    fc.assert(
+      fc.property(fc.array(entry, { maxLength: 10 }), (entries) => {
+        const once = parseCamt(camtFile(entries))![0];
+        // The same entries again under another statement number, as daily files overlap
+        const file = camtFile(entries);
+        const twice = file.replace(
+          /<Stmt>([\s\S]*)<\/Stmt>/,
+          (_, body: string) =>
+            `<Stmt>${body}</Stmt><Stmt>${body.replace('<Id>S1</Id>', '<Id>S2</Id>')}</Stmt>`,
+        );
+        const [statement] = parseCamt(twice)!;
+        expect(statement.transactions).toEqual(once.transactions);
+      }),
+    );
+  });
+
   it('gives the same ids to the same statement read twice, so a re-import finds duplicates', () => {
     fc.assert(
       fc.property(fc.array(entry, { maxLength: 10 }), (entries) => {
@@ -195,6 +189,22 @@ describe('parseCamt (property-based)', () => {
         expect(ids()).toEqual(ids());
       }),
     );
+  });
+
+  it('keeps two identical payments in one statement, even with a shared reference', () => {
+    const card = `<Ntry><AcctSvcrRef>CARD</AcctSvcrRef><Amt>3.50</Amt><CdtDbtInd>DBIT</CdtDbtInd><BookgDt><Dt>2025-01-02</Dt></BookgDt></Ntry>`;
+    const [statement] = parseCamt(
+      `<Document><BkToCstmrStmt><Stmt>${card}${card}</Stmt></BkToCstmrStmt></Document>`,
+    )!;
+    expect(statement.transactions.map((t) => t.importedId)).toEqual(['camt:CARD', 'camt:CARD#2']);
+  });
+
+  it('keeps ids within the server limit for very long texts', () => {
+    const long = 'x'.repeat(480);
+    const [statement] = parseCamt(
+      `<Document><BkToCstmrStmt><Stmt><Ntry><AcctSvcrRef>NONREF</AcctSvcrRef><Amt>1.00</Amt><CdtDbtInd>DBIT</CdtDbtInd><BookgDt><Dt>2025-01-02</Dt></BookgDt><AddtlNtryInf>${long}</AddtlNtryInf></Ntry></Stmt></BkToCstmrStmt></Document>`,
+    )!;
+    expect(statement.transactions[0].importedId.length).toBeLessThanOrEqual(500);
   });
 
   it('keeps statements of different accounts that share a number', () => {

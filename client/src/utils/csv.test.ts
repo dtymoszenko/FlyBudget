@@ -273,17 +273,19 @@ describe('detectSkipRows (property-based)', () => {
   const preambleRow = (width: number) =>
     fc.array(field, { minLength: 1, maxLength: Math.max(1, width - 2) });
 
-  it('finds the header under any rows of account details', () => {
+  it('finds the header under any rows of account details (fewer than the table rows)', () => {
     fc.assert(
       fc.property(
         fc.integer({ min: 4, max: 10 }).chain((width) =>
-          fc.tuple(
-            fc.array(preambleRow(width), { maxLength: 8 }),
-            fc.array(fc.array(field, { minLength: width, maxLength: width }), {
-              minLength: 2,
-              maxLength: 20,
-            }),
-            fc.boolean(),
+          fc.array(preambleRow(width), { maxLength: 8 }).chain((preamble) =>
+            fc.tuple(
+              fc.constant(preamble),
+              fc.array(fc.array(field, { minLength: width, maxLength: width }), {
+                minLength: preamble.length + 2,
+                maxLength: preamble.length + 20,
+              }),
+              fc.boolean(),
+            ),
           ),
         ),
         delimiter,
@@ -296,6 +298,20 @@ describe('detectSkipRows (property-based)', () => {
           expect(parseCsv(text, sep, preamble.length).headers).toEqual(table[0]);
         },
       ),
+    );
+  });
+
+  it('keeps the header when a few rows have a stray separator', () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 2, max: 8 }), fc.integer({ min: 3, max: 30 }), (width, n) => {
+        const row = (w: number) => Array.from({ length: w }, (_, i) => `c${i}`);
+        // Fewer than half the rows are wider
+        const records = [
+          row(width),
+          ...Array.from({ length: n }, (_, i) => row(i < n / 2 - 1 ? width + 1 : width)),
+        ];
+        expect(detectSkipRows(records)).toBe(0);
+      }),
     );
   });
 
@@ -407,6 +423,26 @@ describe('readDirection', () => {
     ['Betaalautomaat', null],
   ])('%s', (raw, expected) => {
     expect(readDirection(raw)).toBe(expected);
+  });
+});
+
+describe('generateImportId (ids)', () => {
+  it('stays within the 500 characters the server takes, even for a very long payee', () => {
+    fc.assert(
+      fc.property(fc.string({ maxLength: 2000 }), fc.integer({ min: 1, max: 1e6 }), (payee, n) => {
+        expect(generateImportId('2025-01-01', -1e13, payee, n).length).toBeLessThanOrEqual(500);
+      }),
+    );
+  });
+
+  it('keeps every id that already fit unchanged, so earlier imports still match', () => {
+    fc.assert(
+      fc.property(fc.string({ maxLength: 470 }), fc.integer({ min: 1, max: 99 }), (payee, n) => {
+        const id = `2025-01-01|-1234|${payee.toLowerCase()}${n > 1 ? `|${n}` : ''}`;
+        fc.pre(id.length <= 500);
+        expect(generateImportId('2025-01-01', -1234, payee, n)).toBe(id);
+      }),
+    );
   });
 });
 
