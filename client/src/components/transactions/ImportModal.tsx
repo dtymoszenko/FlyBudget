@@ -209,6 +209,7 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
   async function handleFile(file: File) {
     setError(null);
     const load = ++loadId.current;
+    setLoading(false); // a preview of the file before is abandoned
     try {
       await readFile(file, load);
     } catch {
@@ -332,9 +333,12 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
       unknownDirections: unknownDirectionWords(column('direction')),
     };
   }, [rawRows, roles]);
-  // What the user chose now, else what the file shows, else what they chose last time
-  const dateFormat = dateFormatChoice ?? detected.dateFormat ?? saved?.dateFormat ?? null;
-  const numberFormat = numberFormatChoice ?? detected.numberFormat ?? saved?.numberFormat ?? null;
+  // What the user chose now, else what the file shows, else what they chose last time for a
+  // file with these columns (another layout may be another bank, with other formats)
+  const lastTime = usingSaved ? saved : null;
+  const dateFormat = dateFormatChoice ?? detected.dateFormat ?? lastTime?.dateFormat ?? null;
+  const numberFormat =
+    numberFormatChoice ?? detected.numberFormat ?? lastTime?.numberFormat ?? null;
   const hasDirection = roles.includes('direction');
   const needsOutWord = hasDirection && !outWord.trim() && detected.unknownDirections.length > 0;
 

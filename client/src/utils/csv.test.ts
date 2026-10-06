@@ -80,7 +80,10 @@ function formatAmount(
   if (style.group) whole = whole.replace(/\B(?=(\d{3})+$)/g, thousands);
   const fraction = String(abs % 100).padStart(2, '0');
   let s = style.decimals || abs % 100 !== 0 ? `${whole}${decimal}${fraction}` : whole;
-  s = ['', '$', '€', 'EUR '][style.symbol] + s + ['', '', ' €', ' kr'][style.symbol];
+  s =
+    ['', '$', '€', 'EUR ', 'kr. ', ''][style.symbol] +
+    s +
+    ['', '', ' €', ' kr', '', ' Fr.'][style.symbol];
   if (cents < 0) {
     s = [`-${s}`, `(${s})`, `${s}-`, `−${s}`][style.sign];
   } else if (style.sign === 1) {
@@ -93,7 +96,7 @@ const amountStyle = fc.record({
   group: fc.boolean(),
   decimals: fc.boolean(),
   sign: fc.integer({ min: 0, max: 3 }),
-  symbol: fc.integer({ min: 0, max: 3 }),
+  symbol: fc.integer({ min: 0, max: 5 }),
 });
 const numberFormat = fc.constantFrom<NumberFormat>('dot', 'comma');
 const cents = fc.integer({ min: -1e12, max: 1e12 });
@@ -129,6 +132,9 @@ describe('readImportAmount (property-based)', () => {
     ['1.234,56 €', 'comma', 123456],
     ['1 234,56', 'comma', 123456],
     ['EUR -5,00', 'comma', -500],
+    ['kr. 1.234,56', 'comma', 123456],
+    ['Fr. 12.50', 'dot', 1250],
+    ['1.234,56 kr.', 'comma', 123456],
     ['12,50', 'dot', null],
     ['100000000000.00', 'dot', 10_000_000_000_000], // the largest the server takes
     ['100000000000.01', 'dot', null],

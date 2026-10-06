@@ -248,7 +248,13 @@ export type NumberFormat = 'dot' | 'comma';
 
 /** The digits, separators and signs of an amount, without currency symbols or spaces */
 function amountChars(raw: string): string {
-  return raw.replace(/[−–]/g, '-').replace(/[^0-9.,()+-]/g, '');
+  return (
+    raw
+      // Currency words, with the dot some write after them: kr., Fr., Rs., EUR
+      .replace(/\p{L}+\.?/gu, '')
+      .replace(/[−–]/g, '-')
+      .replace(/[^0-9.,()+-]/g, '')
+  );
 }
 
 /** What one amount says about the format, if anything */

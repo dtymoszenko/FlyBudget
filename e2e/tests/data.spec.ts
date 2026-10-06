@@ -334,6 +334,26 @@ test.describe('CSV import', () => {
     await expect(dialog).toContainText('2 transactions found. 2 duplicates detected. 0 will be');
   });
 
+  test("a file with other columns doesn't inherit the last import's formats", async ({
+    page,
+    api,
+  }) => {
+    const checking = await api.createAccount('Checking', 0);
+    await open(page, `/accounts/${checking.id}`);
+    let dialog = await importCsv(page, 'Datum;Empfänger;Betrag\r\n01.02.2025;Miete;-1.234\r\n');
+    await dialog.getByRole('combobox', { name: 'Dates' }).selectOption('dmy');
+    await dialog.getByRole('combobox', { name: 'Amounts' }).selectOption('comma');
+    await dialog.getByRole('button', { name: 'Preview' }).click();
+    await dialog.getByRole('button', { name: 'Import 1 Transactions' }).click();
+    await dialog.getByRole('button', { name: 'Done' }).click();
+
+    // A US export into the same account: just as ambiguous, but it may be another bank
+    dialog = await importCsv(page, 'Date,Description,Amount\r\n03/04/2025,Rent,-1.234\r\n');
+    await expect(dialog).toContainText('Choose the format your bank uses');
+    await expect(dialog.getByRole('combobox', { name: 'Dates' })).toHaveValue('');
+    await expect(dialog.getByRole('combobox', { name: 'Amounts' })).toHaveValue('');
+  });
+
   test('a money-out word typed for one file never flips another file', async ({ page, api }) => {
     const checking = await api.createAccount('Rekening', 0);
     await open(page, `/accounts/${checking.id}`);
