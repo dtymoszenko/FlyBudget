@@ -79,6 +79,18 @@ export function parseCsv(
   return { headers: records[0], rows: records.slice(1) };
 }
 
+/** Whether a row holds a transaction rather than column names: a date or an amount */
+function looksLikeData(row: string[]): boolean {
+  return row.some((cell) => {
+    const value = cell.trim();
+    return (
+      normalizeDate(value, 'mdy') !== '' ||
+      normalizeDate(value, 'dmy') !== '' ||
+      /^[-+(]?\D{0,4}\d[\d.,' ]*[.,]\d{2}\)?-?$/.test(value)
+    );
+  });
+}
+
 /** Rows above the header that are looked for (account details are a handful of lines) */
 const MAX_SKIP_ROWS = 50;
 /** Rows under a candidate header that its width is compared with */
@@ -100,11 +112,14 @@ export function detectSkipRows(records: string[][]): number {
     const widths = below.map((r) => r.length).sort((a, b) => a - b);
     const typical = widths[Math.floor((widths.length - 1) / 2)];
     if (header.length >= typical) return i;
-    const typicalRows = below.filter((r) => r.length === typical);
-    const trailingSeparator =
-      typicalRows.filter((r) => r[r.length - 1] === '').length * 2 > typicalRows.length;
-    if (trailingSeparator && header.length === typical - 1 && header[header.length - 1] !== '') {
-      return i;
+    if (header.length === typical - 1 && header[header.length - 1] !== '') {
+      // One column short is still the header when the rows end with a separator, or have an
+      // extra unnamed column: then the row under it is data. Under a line of account details
+      // (Konto;DE12…) comes the header instead.
+      const typicalRows = below.filter((r) => r.length === typical);
+      const trailingSeparator =
+        typicalRows.filter((r) => r[r.length - 1] === '').length * 2 > typicalRows.length;
+      if (trailingSeparator || looksLikeData(below[0])) return i;
     }
   }
   return 0;
@@ -407,8 +422,9 @@ const directionWord = (raw: string | undefined) =>
 /**
  * Which way the money went according to a direction column ("Af"/"Bij" at ING, "Debit"/
  * "Credit", "S"/"H"), or null if the cell says neither. With `outWord` (what the user said
- * this bank writes for money out, like Actual's "out value"), that word means out and any
- * other word in.
+ * this bank writes for money out, like Actual's "out value"), that word also means out, and
+ * any word FlyBudget doesn't know means in. The words it knows keep their meaning, so a
+ * word typed for another file can't turn this file's debits into income.
  */
 export function readDirection(
   raw: string | undefined,
@@ -416,10 +432,10 @@ export function readDirection(
 ): 'in' | 'out' | null {
   const value = directionWord(raw);
   if (value === '') return null;
-  if (outWord?.trim()) return value === directionWord(outWord) ? 'out' : 'in';
+  if (outWord?.trim() && value === directionWord(outWord)) return 'out';
   if (MONEY_OUT.has(value)) return 'out';
   if (MONEY_IN.has(value)) return 'in';
-  return null;
+  return outWord?.trim() ? 'in' : null;
 }
 
 /** The different words in a direction column that FlyBudget doesn't know, as written */

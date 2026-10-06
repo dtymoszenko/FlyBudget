@@ -193,7 +193,7 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
     } catch (e: unknown) {
       if (load === loadId.current) setError(e instanceof Error ? e.message : 'Preview failed');
     } finally {
-      setLoading(false);
+      if (load === loadId.current) setLoading(false);
     }
   }
 
@@ -254,7 +254,7 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
     setBytes(buffer);
     setDateFormatChoice(null);
     setNumberFormatChoice(null);
-    setOutWord(savedSettings?.outWord ?? '');
+    setOutWord('');
 
     // The last import's settings, as long as this file still fits them (the same columns)
     if (savedSettings) {
@@ -265,6 +265,8 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
       if (header && header.length >= 2 && sameColumns) {
         setEncoding(savedSettings.encoding);
         setUsingSaved(true);
+        // Only with the rest of the settings: it means something for this bank's files only
+        setOutWord(savedSettings.outWord ?? '');
         loadCsv(content, savedSettings.delimiter, savedSettings.skipRows, savedSettings);
         return;
       }
@@ -689,7 +691,7 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
                     .map((w) => `"${w}"`)
                     .join(
                       ', ',
-                    )} means in the direction column. Type the word your bank uses for money going out; everything else counts as money in.`}
+                    )} means in the direction column. Type the word your bank uses for money going out; other words it doesn't know count as money in.`}
               </span>
             </div>
           )}

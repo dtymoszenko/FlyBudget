@@ -315,6 +315,16 @@ describe('detectSkipRows (property-based)', () => {
     );
   });
 
+  it('keeps a header one column short of rows with an extra unnamed column', () => {
+    expect(
+      detectSkipRows([
+        ['Date', 'Description', 'Amount'],
+        ['2025-01-02', 'Bakery', '-4.50', 'POS'],
+        ['2025-01-03', 'Salary', '2500.00', 'SEPA'],
+      ]),
+    ).toBe(0);
+  });
+
   it('never takes account details for the header of a narrow table', () => {
     const records = [
       ['Konto', 'DE89370400440532013000'],
@@ -403,6 +413,14 @@ describe('readDirection', () => {
         },
       ),
     );
+  });
+
+  it('keeps the words it knows, whatever word was typed for another bank', () => {
+    expect(readDirection('Debit', 'Uit')).toBe('out');
+    expect(readDirection('Af', 'Uit')).toBe('out');
+    expect(readDirection('Bij', 'Uit')).toBe('in');
+    expect(readDirection('Uit', 'Uit')).toBe('out');
+    expect(readDirection('Binnen', 'Uit')).toBe('in');
   });
 
   it('lists the words it does not know, once each', () => {

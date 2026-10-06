@@ -334,6 +334,33 @@ test.describe('CSV import', () => {
     await expect(dialog).toContainText('2 transactions found. 2 duplicates detected. 0 will be');
   });
 
+  test('a money-out word typed for one file never flips another file', async ({ page, api }) => {
+    const checking = await api.createAccount('Rekening', 0);
+    await open(page, `/accounts/${checking.id}`);
+    let dialog = await importCsv(
+      page,
+      'Datum,Omschrijving,Richting,Bedrag\r\n2025-01-15,Albert Heijn,Uit,"12,50"\r\n',
+    );
+    await dialog.getByRole('combobox', { name: 'Column Richting' }).selectOption('direction');
+    await dialog.getByRole('textbox', { name: 'Word for money out' }).fill('Uit');
+    await dialog.getByRole('button', { name: 'Preview' }).click();
+    await dialog.getByRole('button', { name: 'Import 1 Transactions' }).click();
+    await dialog.getByRole('button', { name: 'Done' }).click();
+
+    // Another export with other columns and the words FlyBudget knows
+    dialog = await importCsv(
+      page,
+      'Datum,Naam / Omschrijving,Af Bij,Bedrag (EUR)\r\n' +
+        '2025-02-15,Jumbo,Af,"20,00"\r\n' +
+        '2025-02-25,Werkgever,Bij,"2500,00"\r\n',
+    );
+    await expect(dialog.getByRole('textbox', { name: 'Word for money out' })).toHaveValue('');
+    await dialog.getByRole('button', { name: 'Preview' }).click();
+    await dialog.getByRole('button', { name: 'Import 2 Transactions' }).click();
+    await expect(dialog).toContainText('2 imported, 0 skipped');
+    expect(await api.balance(checking.id)).toBe(-1_250 - 2_000 + 250_000);
+  });
+
   test('closing while a file loads starts the next import afresh', async ({ page, api }) => {
     const checking = await api.createAccount('Checking', 0);
     await open(page, `/accounts/${checking.id}`);
