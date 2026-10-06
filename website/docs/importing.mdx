@@ -62,8 +62,9 @@ hand _and_ import files for the same account, check the preview for rows you alr
   `05.01.2026`, `05-01-26`), a two-digit year first (`26-01-05`), with or without a time after
   them, and written-out dates like `Jan 5, 2026`.
 - **Amounts**: `1,234.56` or `1.234,56` (also `1 234,56`), with or without a currency symbol,
-  and `-12.00`, `(12.00)` or `12.00-` for money going out. With separate inflow and outflow
-  columns, FlyBudget works out the sign.
+  and `-12.00`, `(12.00)`, `12.00-` or `12.00 DR` for money going out (`CR` for money coming in,
+  and `S`/`H` in German exports). With separate inflow and outflow columns, FlyBudget works out
+  the sign.
 - **Direction columns**: some banks (ING in the Netherlands, for one) write every amount as a
   positive number and say which way the money went in a column of its own: `Af`/`Bij`,
   `Debit`/`Credit` or `S`/`H`. Map that column as **Direction (in/out)** and FlyBudget signs

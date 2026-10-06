@@ -304,7 +304,8 @@ const AMOUNT_PATTERN: Record<NumberFormat, RegExp> = {
 };
 
 /**
- * An amount as banks write it: "$1,234.56", "-12.00", "(12.00)" or "12.00-" for negatives,
+ * An amount as banks write it: "$1,234.56", "-12.00", "(12.00)", "12.00-" or "12.00 DR" for
+ * negatives,
  * or with `format: 'comma'` "1.234,56 €" and "-12,50". Returns integer cents (rounded to the
  * nearest cent), or null if it isn't a number in that format or is more than the server takes.
  */
@@ -312,6 +313,14 @@ export function readImportAmount(
   raw: string | undefined,
   format: NumberFormat = 'dot',
 ): number | null {
+  // A direction written after the amount (45.00 DR, 1.234,56 S) decides the sign: the letters
+  // are removed below with the currency words. Only after it: C$ or S/ before an amount are
+  // currencies.
+  const after = (raw ?? '').replace(/^[\s\S]*\d/, '');
+  const marker = after
+    .match(/\p{L}+\.?/gu)
+    ?.map((w) => readDirection(w))
+    .find((d) => d !== null);
   let s = amountChars(raw ?? '');
   let negative = false;
   if (/^\(.*\)$/.test(s)) {
@@ -338,6 +347,7 @@ export function readImportAmount(
     Number(fraction.padEnd(2, '0').slice(0, 2)) +
     (fraction[2] >= '5' ? 1 : 0);
   if (!Number.isSafeInteger(cents) || cents > MAX_IMPORT_CENTS) return null;
+  if (marker) return marker === 'out' ? -cents : cents;
   return negative ? -cents : cents;
 }
 

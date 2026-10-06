@@ -135,6 +135,14 @@ describe('readImportAmount (property-based)', () => {
     ['kr. 1.234,56', 'comma', 123456],
     ['Fr. 12.50', 'dot', 1250],
     ['1.234,56 kr.', 'comma', 123456],
+    ['45.00 DR', 'dot', -4500],
+    ['45.00 CR', 'dot', 4500],
+    ['-45.00 Cr.', 'dot', 4500],
+    ['1.234,56 S', 'comma', -123456],
+    ['1.234,56 H', 'comma', 123456],
+    ['C$ 12.50', 'dot', 1250], // a currency before the amount, not a direction
+    ['-C$12.50', 'dot', -1250],
+    ['S/ 12.50-', 'dot', -1250],
     ['12,50', 'dot', null],
     ['100000000000.00', 'dot', 10_000_000_000_000], // the largest the server takes
     ['100000000000.01', 'dot', null],
@@ -143,6 +151,23 @@ describe('readImportAmount (property-based)', () => {
     ['n/a', 'dot', null],
   ])('%s (%s)', (raw, format, expected) => {
     expect(readImportAmount(raw, format)).toBe(expected);
+  });
+});
+
+describe('readImportAmount with a direction after the amount (property-based)', () => {
+  it('takes the sign from DR/CR, Soll/Haben and the like', () => {
+    fc.assert(
+      fc.property(
+        cents.filter((c) => c !== 0),
+        numberFormat,
+        amountStyle,
+        fc.constantFrom(['DR', -1], ['CR', 1], ['S', -1], ['H', 1], ['Debit', -1], ['Credit', 1]),
+        (c, format, style, [word, sign]) => {
+          const written = `${formatAmount(Math.abs(c), format, { ...style, sign: 0 })} ${word}`;
+          expect(readImportAmount(written, format)).toBe(Number(sign) * Math.abs(c));
+        },
+      ),
+    );
   });
 });
 
