@@ -58,8 +58,9 @@ hand _and_ import files for the same account, check the preview for rows you alr
   file with a few lines about the account. FlyBudget finds the header under them by itself and
   shows how many rows it skipped under **Rows above the header**; change the number if it picked
   the wrong row.
-- **Dates**: `2026-01-05`, `20260105`, month first (`01/05/2026`), day first (`05/01/2026`, `05.01.2026`,
-  `05-01-26`), with or without a time after them, and written-out dates like `Jan 5, 2026`.
+- **Dates**: `2026-01-05`, `20260105`, month first (`01/05/2026`), day first (`05/01/2026`,
+  `05.01.2026`, `05-01-26`), a two-digit year first (`26-01-05`), with or without a time after
+  them, and written-out dates like `Jan 5, 2026`.
 - **Amounts**: `1,234.56` or `1.234,56` (also `1 234,56`), with or without a currency symbol,
   and `-12.00`, `(12.00)` or `12.00-` for money going out. With separate inflow and outflow
   columns, FlyBudget works out the sign.
@@ -76,11 +77,12 @@ hand _and_ import files for the same account, check the preview for rows you alr
   **Encoding**.
 - Files up to 100,000 rows. Rows with an amount of zero are left out.
 
-FlyBudget works out from the file whether dates have the day or the month first, and whether
-amounts use a decimal point or a decimal comma, and shows its choice under **Dates** and
-**Amounts**. When the file can't tell (every day in it is 12 or less, or every amount looks like
-`1.234`), it asks you instead of guessing: a wrong guess would swap days and months, or make
-amounts a hundred times too big. Rows it can't read are left out, and the preview says how many.
+FlyBudget works out from the file in which order dates are written, and whether amounts use a
+decimal point or a decimal comma, and shows its choice under **Dates** and **Amounts**. When the
+file can't tell (every day in it is 12 or less, a two-digit year could come first or last, or
+every amount looks like `1.234`), it asks you instead of guessing: a wrong guess would move
+every transaction to another date, or make amounts a hundred times too big. Once you've answered
+for an account, it remembers. Rows it can't read are left out, and the preview says how many.
 
 ## CAMT.053 bank statements
 

@@ -46,7 +46,7 @@ const settings = fc.record<ImportSettings>({
     fc.constantFrom('date', 'payee', 'amount', 'inflow', 'outflow', 'direction', 'notes', 'skip'),
     { maxKeys: 20 },
   ),
-  dateFormat: fc.constantFrom('mdy', 'dmy', null),
+  dateFormat: fc.constantFrom('mdy', 'dmy', 'ymd', null),
   numberFormat: fc.constantFrom('dot', 'comma', null),
   outWord: fc.option(
     fc.string({ minLength: 1, maxLength: 50 }).filter((s) => s.trim() === s && s !== ''),

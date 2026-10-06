@@ -176,7 +176,7 @@ const isoDay = fc
   .date({ min: new Date('2000-01-01T00:00:00Z'), max: new Date('2099-12-31T00:00:00Z') })
   .filter((d) => !isNaN(d.getTime()))
   .map((d) => d.toISOString().slice(0, 10));
-const dateFormat = fc.constantFrom<DateFormat>('mdy', 'dmy');
+const dateFormat = fc.constantFrom<DateFormat>('mdy', 'dmy', 'ymd');
 const dateStyle = fc.record({
   sep: fc.constantFrom('/', '.', '-'),
   pad: fc.boolean(),
@@ -192,7 +192,12 @@ function formatDate(
   const [y, m, d] = iso.split('-');
   const p = (s: string) => (style.pad ? s : String(+s));
   const year = style.shortYear ? y.slice(2) : y;
-  const parts = format === 'mdy' ? [p(m), p(d), year] : [p(d), p(m), year];
+  const parts =
+    format === 'mdy'
+      ? [p(m), p(d), year]
+      : format === 'dmy'
+        ? [p(d), p(m), year]
+        : [y.slice(2), p(m), d]; // 26-3-05: a two-digit year, and the day in two digits
   return parts.join(style.sep) + style.time;
 }
 
@@ -245,7 +250,15 @@ describe('detectDateFormat (property-based)', () => {
         (values, format) => {
           const column = values.map(([iso, style]) => formatDate(iso, format, style));
           const detected = detectDateFormat(column);
-          if (values.some(([iso]) => +iso.slice(8) > 12)) expect(detected).toBe(format);
+          // A day over 12 settles month or day first; with only two-digit years the year
+          // could still come first (13/04/19 is also 2013-04-19), so then it may ask
+          if (
+            format !== 'ymd' &&
+            values.some(([iso]) => +iso.slice(8) > 12) &&
+            values.some(([, style]) => !style.shortYear)
+          ) {
+            expect(detected).toBe(format);
+          }
           if (detected === null) return; // the user is asked
           values.forEach(([iso], i) => expect(normalizeDate(column[i], detected)).toBe(iso));
         },
@@ -260,6 +273,14 @@ describe('detectDateFormat (property-based)', () => {
     expect(detectDateFormat(['05/03/2024 10:00 PM'])).toBeNull();
     // Never left to the browser, which would read it month first
     expect(normalizeDate('05/03/2024 at 10:00', 'dmy')).toBe('');
+  });
+
+  it('asks whether a two-digit year comes first, unless only one order is a date', () => {
+    expect(detectDateFormat(['26-03-15'])).toBeNull(); // 26 March 2015, or 15 March 2026?
+    expect(detectDateFormat(['13/04/19', '14/04/2019'])).toBe('dmy'); // a full year settles it
+    expect(detectDateFormat(['99-01-15'])).toBe('ymd'); // 99 can't be a day or a month
+    expect(normalizeDate('26-03-15', 'ymd')).toBe('2026-03-15');
+    expect(normalizeDate('26-03-2015', 'ymd')).toBe(''); // a four-digit year isn't first
   });
 
   it('asks when no day is over 12', () => {

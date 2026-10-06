@@ -220,7 +220,8 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
     const buffer = await file.arrayBuffer();
     if (load !== loadId.current) return;
 
-    const start = new TextDecoder('utf-8').decode(buffer.slice(0, 4096));
+    // Decoded like the whole file would be, so a UTF-16 statement is recognized too
+    const start = decodeCsvBytes(buffer.slice(0, 4096), 'auto');
     if (/\.xml$/i.test(file.name) || looksLikeCamt(start)) {
       const found = parseCamt(decodeCamtBytes(buffer));
       if (!found?.length) {
@@ -322,8 +323,10 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
       numberFormat: detectNumberFormat(amounts),
       // Values that really could be read two ways, to quote in the warning
       dateSample: column('date').find((d) => {
-        const m = d.trim().match(/^(\d{1,2})[./-](\d{1,2})[./-]/);
-        return m && +m[1] <= 12 && +m[2] <= 12 && +m[1] !== +m[2];
+        const readings = (['mdy', 'dmy', 'ymd'] as const)
+          .map((f) => normalizeDate(d, f))
+          .filter((r) => r !== '');
+        return new Set(readings).size > 1;
       }),
       amountSample: amounts.find((a) => /^[^\d.,]*\d{1,3}[.,]\d{3}[^\d.,]*$/.test(a.trim())),
       unknownDirections: unknownDirectionWords(column('direction')),
@@ -425,11 +428,11 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
   function rememberSettings() {
     if (source !== 'csv' || !dateFormat || !numberFormat) return;
     const columns: Record<string, ColumnRole> = {};
-    columnKeys(headers)
-      .slice(0, 200)
-      .forEach((key, i) => {
-        if (key.length <= 200) columns[key] = roles[i];
-      });
+    // At most 200 columns (the server's limit); longer files are worked out each time
+    if (headers.length > 200) return;
+    columnKeys(headers).forEach((key, i) => {
+      columns[key] = roles[i];
+    });
     const settings: ImportSettings = {
       delimiter,
       encoding,
@@ -644,6 +647,7 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
                 {!dateFormat && <option value="">Choose…</option>}
                 <option value="mdy">MM/DD/YYYY</option>
                 <option value="dmy">DD/MM/YYYY</option>
+                <option value="ymd">YY/MM/DD</option>
               </select>
             </label>
             <label className={optionLabelClass}>
@@ -678,7 +682,7 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
               <span>
                 {!dateFormat &&
                   (detected.dateSample
-                    ? `This file doesn't show whether ${detected.dateSample} has the day or the month first. `
+                    ? `This file doesn't show in which order ${detected.dateSample} is written. `
                     : 'Rows in this file write dates in different orders. ')}
                 {!numberFormat &&
                   (detected.amountSample

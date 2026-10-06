@@ -155,8 +155,11 @@ export function decodeCsvBytes(bytes: ArrayBuffer, encoding: CsvEncoding = 'auto
   }
 }
 
-/** Order of day and month in dates like 03/04/2026. Year-first dates are always read as such. */
-export type DateFormat = 'mdy' | 'dmy';
+/**
+ * Order of the parts in dates like 03/04/2026 or 26-03-15: month first, day first, or a
+ * two-digit year first. Dates starting with a four-digit year are always read as such.
+ */
+export type DateFormat = 'mdy' | 'dmy' | 'ymd';
 
 // A time after the date: 14:05, 14:05:09, 2:05 PM, 2:05:09 p.m., and ISO timestamps with
 // fractions and a time zone (10:00:00.123Z, 10:00:00+01:00). The date is taken as written.
@@ -181,7 +184,8 @@ function isoDateOf(y: number, m: number, d: number): string {
 
 /**
  * A date as `YYYY-MM-DD`, or '' if it isn't a real date. `format` says whether 03/04/2026 is
- * March 4 (`mdy`) or 3 April (`dmy`); two-digit years are 20xx.
+ * March 4 (`mdy`) or 3 April (`dmy`), and whether 26-03-15 is 15 March 2026 (`ymd`);
+ * two-digit years are 20xx.
  */
 export function normalizeDate(raw: string, format: DateFormat = 'mdy'): string {
   const trimmed = raw.trim();
@@ -193,8 +197,13 @@ export function normalizeDate(raw: string, format: DateFormat = 'mdy'): string {
 
   const dayMonth = trimmed.match(DAY_MONTH);
   if (dayMonth) {
-    const [a, b] = [+dayMonth[1], +dayMonth[3]];
-    const year = dayMonth[4].length === 2 ? 2000 + +dayMonth[4] : +dayMonth[4];
+    const [a, b, last] = [+dayMonth[1], +dayMonth[3], dayMonth[4]];
+    if (format === 'ymd') {
+      // 26-03-15: only with two digits for the year and the day
+      if (last.length !== 2 || dayMonth[1].length !== 2) return '';
+      return isoDateOf(2000 + a, b, +last);
+    }
+    const year = last.length === 2 ? 2000 + +last : +last;
     return format === 'mdy' ? isoDateOf(year, a, b) : isoDateOf(year, b, a);
   }
 
@@ -213,28 +222,25 @@ export function normalizeDate(raw: string, format: DateFormat = 'mdy'): string {
   return '';
 }
 
+const DATE_FORMATS: DateFormat[] = ['mdy', 'dmy', 'ymd'];
+
 /**
- * Whether a column of dates puts the month or the day first, or null when the file can't
- * tell (no day above 12, or rows that disagree). Then the user has to say: a wrong guess
- * would silently swap days and months.
+ * How a column of dates is written, or null when the file can't tell. Each reading counts
+ * only if it gives a real date for every row that is a date at all; when the readings left
+ * give different dates (03/04/2026, or 26-03-15 as 26 March 2015 or 15 March 2026), the user
+ * has to say: a wrong guess would silently move every transaction.
  */
 export function detectDateFormat(values: string[]): DateFormat | null {
-  let monthFirst = false;
-  let dayFirst = false;
-  let ambiguous = false;
-  for (const value of values) {
-    const m = value.trim().match(DAY_MONTH);
-    if (!m) continue;
-    const [a, b] = [+m[1], +m[3]];
-    if (a > 12 && b <= 12) dayFirst = true;
-    else if (b > 12 && a <= 12) monthFirst = true;
-    else if (a !== b) ambiguous = true;
-  }
-  if (monthFirst && dayFirst) return null;
-  if (monthFirst) return 'mdy';
-  if (dayFirst) return 'dmy';
-  // Nothing to decide: year-first or written-out dates, or days that equal their month
-  return ambiguous ? null : 'mdy';
+  // Each numeric date read every way: { mdy, dmy, ymd }, '' where that order isn't a date
+  const read = values
+    .filter((v) => DAY_MONTH.test(v.trim()))
+    .map((v) => Object.fromEntries(DATE_FORMATS.map((f) => [f, normalizeDate(v, f)])))
+    .filter((r) => DATE_FORMATS.some((f) => r[f] !== '')); // not a date at all: unreadable
+  const fits = DATE_FORMATS.filter((f) => read.every((r) => r[f] !== ''));
+  if (fits.length === 0) return null; // rows disagree
+  // Several readings fit: fine only if they never give different dates
+  const same = read.every((r) => fits.every((f) => r[f] === r[fits[0]]));
+  return same ? fits[0] : null;
 }
 
 /** How amounts are written: `1,234.56` (`dot` decimal) or `1.234,56` (`comma` decimal) */
@@ -466,12 +472,14 @@ export interface ImportSettings {
 }
 
 /**
- * What saved settings call each column: its header, with `#2`, `#3`… for a header that
- * appears again (two "Datum" columns, or blank headers), so each keeps its own role
+ * What saved settings call each column: its header (shortened to fit the server's 200
+ * characters), with `#2`, `#3`… for a header that appears again (two "Datum" columns, or
+ * blank headers), so each keeps its own role
  */
 export function columnKeys(headers: string[]): string[] {
   const count = new Map<string, number>();
-  return headers.map((h) => {
+  return headers.map((header) => {
+    const h = header.slice(0, 190);
     const n = (count.get(h) ?? 0) + 1;
     count.set(h, n);
     return n === 1 ? h : `${h}#${n}`;
