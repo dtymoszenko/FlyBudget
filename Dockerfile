@@ -46,7 +46,10 @@ FROM node:24-bookworm-slim@sha256:0e0ff40c39bc087845bfb27465a0df4ea419520094bc35
 # tini runs as PID 1 so `docker stop` shuts the server down cleanly. The server
 # only needs `node`, so drop the package managers bundled with the base image
 # (npm, npx, corepack, yarn): they're unused and bring their own vulnerable deps.
+# Debian security fixes are applied at build time, since a new base image digest
+# can take a while to appear (and Dependabot then waits a week).
 RUN apt-get update \
+ && apt-get upgrade -y --no-install-recommends \
  && apt-get install -y --no-install-recommends tini \
  && rm -rf /var/lib/apt/lists/* \
  && rm -rf /usr/local/lib/node_modules /opt/yarn-* \

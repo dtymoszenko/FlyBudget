@@ -35,5 +35,10 @@
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "wait-on": "^9.1.0"
+  },
+  "overrides": {
+    "concurrently": {
+      "shell-quote": "^1.11.0"
+    }
   }
 }
