@@ -71,6 +71,23 @@ test.describe('account register', () => {
     expect(await api.balance(checking.id)).toBe(350_000);
   });
 
+  test('tabbing past the inflow keeps the outflow (#92)', async ({ page, api }) => {
+    const { checking } = await setup(api);
+    await open(page, `/accounts/${checking.id}`);
+    await fillNewTransaction(page, { payee: 'Corner Grocery', outflow: '12.34' });
+    const form = newForm(page);
+    await form.getByRole('spinbutton', { name: 'Outflow' }).press('Tab');
+    await expect(form.getByRole('spinbutton', { name: 'Inflow' })).toBeFocused();
+    await expect(form.getByRole('spinbutton', { name: 'Outflow' })).toHaveValue('12.34');
+    // Typing an inflow still replaces the outflow
+    await page.keyboard.type('5');
+    await expect(form.getByRole('spinbutton', { name: 'Outflow' })).toHaveValue('');
+    await form.getByRole('spinbutton', { name: 'Outflow' }).fill('12.34');
+    await expect(form.getByRole('spinbutton', { name: 'Inflow' })).toHaveValue('');
+    await form.getByRole('button', { name: 'Save' }).click();
+    await expect(header(page)).toContainText('$987.66');
+  });
+
   test('a split transaction counts once toward the balance', async ({ page, api }) => {
     const { checking } = await setup(api);
     await open(page, `/accounts/${checking.id}`);
