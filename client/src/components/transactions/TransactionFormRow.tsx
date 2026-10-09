@@ -254,8 +254,10 @@ export function TransactionFormRow({
             inputMode="decimal"
             value={outflow}
             aria-label="Outflow"
-            onChange={(e) => setOutflow(e.target.value)}
-            onFocus={() => setInflow('')}
+            onChange={(e) => {
+              setOutflow(e.target.value);
+              if (e.target.value) setInflow('');
+            }}
             placeholder="0.00"
             min="0"
             step="0.01"
@@ -269,8 +271,10 @@ export function TransactionFormRow({
             inputMode="decimal"
             value={inflow}
             aria-label="Inflow"
-            onChange={(e) => setInflow(e.target.value)}
-            onFocus={() => setOutflow('')}
+            onChange={(e) => {
+              setInflow(e.target.value);
+              if (e.target.value) setOutflow('');
+            }}
             placeholder="0.00"
             min="0"
             step="0.01"
