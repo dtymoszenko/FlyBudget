@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { logoSchema } from '../utils/logo.js';
 import { accountTypeSchema, defaultOffBudget } from '../utils/accountTypes.js';
 import { accountTransactionSum, inAccountBalance } from '../services/balances.js';
+import { importSettingsSchema, readImportSettings } from '../utils/importSettings.js';
 
 export const accountsRouter = Router();
 
@@ -127,6 +128,29 @@ accountsRouter.put('/:id/reconcile', (req, res) => {
     .run();
 
   res.json({ reconciled: result.changes });
+});
+
+accountsRouter.get('/:id/import-settings', (req, res) => {
+  const account = db
+    .select({ importSettings: accounts.importSettings })
+    .from(accounts)
+    .where(eq(accounts.id, req.params.id))
+    .get();
+  if (!account) return res.status(404).json({ error: 'Not found' });
+  res.json({ settings: readImportSettings(account.importSettings) });
+});
+
+accountsRouter.put('/:id/import-settings', (req, res) => {
+  const parsed = importSettingsSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+
+  const result = db
+    .update(accounts)
+    .set({ importSettings: JSON.stringify(parsed.data) })
+    .where(eq(accounts.id, req.params.id))
+    .run();
+  if (!result.changes) return res.status(404).json({ error: 'Not found' });
+  res.json({ settings: parsed.data });
 });
 
 accountsRouter.put('/:id', (req, res) => {

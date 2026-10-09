@@ -6,17 +6,19 @@ sidebar_label: Importing transactions
 # Importing transactions
 
 Almost every bank lets you download your transactions as a CSV file from its website (look for
-"Download", "Export" or "Statements"). FlyBudget can import those files into any account. It's
+"Download", "Export" or "Statements"), and most European banks also offer **CAMT.053** bank
+statements (XML files). FlyBudget can import both into any account. It's
 free, works with every bank, and nothing but the file is involved. If you'd rather have
 transactions arrive by themselves, [connect a bank](./bank-sync) instead.
 
 ## Importing a file
 
 1. Open the account the transactions belong to, and choose **Import CSV**.
-2. Drop the file on the window, or click to pick it.
+2. Drop the file on the window, or click to pick it. A CAMT.053 statement goes straight to the
+   preview (step 4): there are no columns to map.
 3. **Map the columns.** FlyBudget reads the file's headers and guesses what each column holds.
    Check the guesses, and change any that are wrong: **Date**, **Payee**, **Amount**,
-   **Inflow**, **Outflow**, **Notes** or **Skip**. The first rows are shown underneath so you
+   **Inflow**, **Outflow**, **Direction (in/out)**, **Notes** or **Skip**. The first rows are shown underneath so you
    can see that it looks right. You need a date and either an amount or inflow/outflow columns.
 
    <Screenshot name="import-csv" alt="Mapping the columns of a CSV file" dialog />
@@ -27,6 +29,12 @@ transactions arrive by themselves, [connect a bank](./bank-sync) instead.
    <Screenshot name="import-csv-preview" alt="The preview before importing" dialog />
 
 5. Choose **Import**. FlyBudget says how many transactions it imported and how many it skipped.
+
+FlyBudget remembers how each account's files look: the separator, encoding, rows above the
+header, column mapping, date and amount formats, and your word for money going out. The next
+time you import a file with the same columns into that account, it uses them again, so you only
+answer its questions once. (If a file clearly says otherwise, for example a date with a day above
+12, the file wins.)
 
 Your [rules](./rules) run on every imported transaction, so they can rename
 `SQ *DAILY GRIND 1142` to _Daily Grind Coffee_ and put it in _Coffee Shops_. FlyBudget keeps the
@@ -43,13 +51,65 @@ hand _and_ import files for the same account, check the preview for rows you alr
 
 ## What FlyBudget understands
 
-- **Dates**: `2026-01-05`, `01/05/2026` (month first) and written-out dates like `Jan 5, 2026`.
-- **Amounts**: `-12.00`, `$1,234.56`, `(12.00)` and `12.00-` for money going out. With separate
-  inflow and outflow columns, FlyBudget works out the sign.
+- **Separators**: commas, semicolons (common in Europe, where the comma is the decimal
+  separator) and tabs. FlyBudget picks the one in the file's header row; change it under
+  **Separator** if the columns look wrong.
+- **Account details above the table**: some banks (DKB and Comdirect, for example) start the
+  file with a few lines about the account. FlyBudget finds the header under them by itself and
+  shows how many rows it skipped under **Rows above the header**; change the number if it picked
+  the wrong row.
+- **Dates**: `2026-01-05`, `20260105`, month first (`01/05/2026`), day first (`05/01/2026`,
+  `05.01.2026`, `05-01-26`), a two-digit year first (`26-01-05`), with or without a time after
+  them, and written-out dates like `Jan 5, 2026`.
+- **Amounts**: `1,234.56` or `1.234,56` (also `1 234,56`), with or without a currency symbol,
+  and `-12.00`, `(12.00)`, `12.00-` or `12.00 DR` for money going out (`CR` for money coming in,
+  and `S`/`H` in German exports). With separate inflow and outflow columns, FlyBudget works out
+  the sign.
+- **Direction columns**: some banks (ING in the Netherlands, for one) write every amount as a
+  positive number and say which way the money went in a column of its own: `Af`/`Bij`,
+  `Debit`/`Credit` or `S`/`H`. Map that column as **Direction (in/out)** and FlyBudget signs
+  the amounts from it. If your bank uses other words, FlyBudget asks: type the word for money
+  going out under **Word for money out**, and any other word it doesn't know counts as money
+  coming in.
+- **Text**: UTF-8 (also UTF-16) and the older Windows encoding many banks still use, so names
+  like _Müller_ or _Café_ come through intact. Files from Poland, Czechia, Hungary and nearby
+  often use a Central European encoding instead: if letters like _ł_, _ś_ or _ő_ look wrong in
+  the preview rows, choose **Central European (Windows-1250)** or **(ISO-8859-2)** under
+  **Encoding**.
 - Files up to 100,000 rows. Rows with an amount of zero are left out.
 
-If your bank writes the day before the month (`05/01/2026` for 5 January), or uses a comma as the
-decimal separator, change the format in a spreadsheet before importing.
+FlyBudget works out from the file in which order dates are written, and whether amounts use a
+decimal point or a decimal comma, and shows its choice under **Dates** and **Amounts**. When the
+file can't tell (every day in it is 12 or less, a two-digit year could come first or last, or
+every amount looks like `1.234`), it asks you instead of guessing: a wrong guess would move
+every transaction to another date, or make amounts a hundred times too big. Once you've answered
+for an account, it remembers. Rows it can't read are left out, and the preview says how many.
+
+## CAMT.053 bank statements
+
+CAMT.053 is the standard bank statement format in Europe (ISO 20022). Look for "CAMT", "XML" or
+"ISO 20022" next to your bank's CSV download. It's the most reliable way to import: every amount
+says whether it's money in or out, so there are no formats to work out.
+
+- Only **booked** transactions are imported. Pending ones can still change or disappear, so
+  they're left out (the preview says how many), and they'll come in with a later statement once
+  they're booked.
+- Each transaction is dated when the bank **booked** it, so it lands in the same month as on your
+  statement.
+- When one entry bundles several payments (a batch of transfers, say), FlyBudget lists each
+  payment separately, as long as their amounts add up to the entry. If they don't, the entry is
+  imported as one transaction, so the account balance is always right. (If you import an
+  intraday CAMT.052 report and later the day's CAMT.053 statement, check the preview: a batch
+  the report showed as one total is listed payment by payment in the statement, and can't be
+  matched as a duplicate.)
+- Importing a statement that overlaps an earlier one is safe: FlyBudget recognizes the
+  transactions it already has by the bank's own reference for each one.
+- A file with statements for more than one account asks which one belongs to the account you're
+  importing into.
+
+If you switch an account from CSV files to CAMT.053 statements, check the first preview for
+transactions you already have: the two formats describe the same transaction differently, so
+FlyBudget can't always match them.
 
 ## Credit cards
 
