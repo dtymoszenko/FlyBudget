@@ -1,4 +1,5 @@
-import { test, expect, open, isoDay, type Api } from './fixtures';
+import type { Page } from '@playwright/test';
+import { test, expect, open, isoDay, thisMonth, type Api } from './fixtures';
 
 // Reports: the built-in dashboard, the custom report builder, and saving a report.
 
@@ -120,5 +121,116 @@ test.describe('reports', () => {
     await expect
       .poll(async () => (await api.call<any[]>('GET', '/dashboards')).map((d) => d.name))
       .toEqual(['Overview', 'Taxes']);
+  });
+});
+
+// Frozen months are picked from a month grid, not typed: typing a half month like "2026-1"
+// in Firefox/Safari crashed the page (#102)
+const MONTH_NAMES = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+const year = () => Number(thisMonth().slice(0, 4));
+const monthLabel = (ym: string) =>
+  `${MONTH_NAMES[Number(ym.slice(5, 7)) - 1].slice(0, 3)} ${ym.slice(0, 4)}`;
+
+/** In the open month picker, sets From to January last year (To stays this month), then Done */
+async function pickFromJanuaryLastYear(page: Page) {
+  const picker = page.getByRole('dialog', { name: 'Choose months' });
+  await expect(picker).toBeVisible();
+  const from = picker.getByRole('group', { name: 'From' });
+  // Keyboard focus starts on the selected From month
+  await expect(from.getByRole('button', { pressed: true })).toBeFocused();
+  await from.getByRole('button', { name: 'Previous year' }).click();
+  await from.getByRole('button', { name: `January ${year() - 1}` }).click();
+  await picker.getByRole('button', { name: 'Done' }).click();
+  await expect(picker).toBeHidden();
+}
+
+test.describe('frozen months', () => {
+  test('freezing the dashboard opens a month picker and saves the months', async ({
+    page,
+    api,
+  }) => {
+    await seed(api);
+    await open(page, '/reports');
+    const main = page.getByRole('main');
+    await main.getByRole('button', { name: 'Frozen' }).click();
+    await pickFromJanuaryLastYear(page);
+
+    const range = `Jan ${year() - 1} – ${monthLabel(thisMonth())}`;
+    await expect(main.getByRole('button', { name: range })).toBeVisible();
+    await expect
+      .poll(async () => (await api.call<any[]>('GET', '/dashboards'))[0].dateRange)
+      .toEqual({ preset: 'custom', from: `${year() - 1}-01`, to: thisMonth() });
+    await expect(main).toContainText(/\$52\.50\s*Total Expenses/);
+
+    // Cancel keeps the months
+    await main.getByRole('button', { name: range }).click();
+    const picker = page.getByRole('dialog', { name: 'Choose months' });
+    await picker
+      .getByRole('group', { name: 'To' })
+      .getByRole('button', { name: `January ${year()}` })
+      .click();
+    await picker.getByRole('button', { name: 'Cancel' }).click();
+    await expect(main.getByRole('button', { name: range })).toBeVisible();
+  });
+
+  test("a widget's own frozen months come from the picker, and Escape closes only the picker", async ({
+    page,
+    api,
+  }) => {
+    await seed(api);
+    await open(page, '/reports');
+    const card = page
+      .getByRole('main')
+      .locator('div')
+      .filter({ has: page.getByText('Spending by Category', { exact: true }) })
+      .filter({ has: page.getByRole('button', { name: 'Actions' }) })
+      .last();
+    await card.getByRole('button', { name: 'Actions' }).click();
+    await page.getByRole('menuitem', { name: 'Date range…' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Date range' });
+    await dialog.getByRole('button', { name: 'Own date range' }).click();
+    await dialog.getByRole('button', { name: 'Frozen' }).click();
+
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog', { name: 'Choose months' })).toBeHidden();
+    await expect(dialog).toBeVisible();
+
+    await dialog.getByRole('button', { name: monthLabel(thisMonth()) }).click();
+    await pickFromJanuaryLastYear(page);
+    await dialog.getByRole('button', { name: 'Save' }).click();
+    await expect(dialog).toBeHidden();
+
+    const [board] = await api.call<any[]>('GET', '/dashboards');
+    const widgets = await api.call<any[]>('GET', `/dashboards/${board.id}/widgets`);
+    expect(widgets.find((w) => w.type === 'spending').meta.dateRange).toEqual({
+      preset: 'custom',
+      from: `${year() - 1}-01`,
+      to: thisMonth(),
+    });
+  });
+
+  test('the report builder picks custom months', async ({ page, api }) => {
+    await seed(api);
+    await open(page, '/reports/custom');
+    await page.getByRole('button', { name: 'Table' }).click();
+    await page.getByRole('button', { name: 'Custom', exact: true }).click();
+    await pickFromJanuaryLastYear(page);
+    await expect(
+      page.getByRole('button', { name: `Jan ${year() - 1} – ${monthLabel(thisMonth())}` }),
+    ).toBeVisible();
+    await expect(page.getByRole('table').getByRole('row', { name: 'Total $52.50' })).toBeVisible();
   });
 });

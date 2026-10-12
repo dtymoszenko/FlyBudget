@@ -12,6 +12,9 @@ import {
   monthCount,
   monthsBetween,
   dayBounds,
+  formatDateRange,
+  formatMonth,
+  isMonth,
 } from './dateRange';
 import type { DatePresetCustom, ReportDateRange } from '../types';
 
@@ -121,6 +124,26 @@ describe('date range helpers (property-based)', () => {
     for (const bad of ['2025-13..2025-12', '2025-06..2025-01', 'custom', '6months', '']) {
       expect(decodeRangeParam(bad)).toBeUndefined();
     }
+  });
+
+  it('a frozen range with broken months still gives real months, and its label never throws', () => {
+    // Half-typed months like "2026-1" crashed the reports page (#102)
+    const arbText = fc.oneof(
+      arbMonth,
+      fc.string({ maxLength: 10 }),
+      arbMonth.map((m) => m.slice(0, -1)),
+    );
+    fc.assert(
+      fc.property(arbText, arbText, arbNow, (from, to, now) => {
+        const range = resolveDateRange({ preset: 'custom', from, to }, now);
+        expect(range.from).toMatch(MONTH);
+        expect(range.to).toMatch(MONTH);
+        expect(range.from <= range.to).toBe(true);
+        expect(() => formatDateRange({ preset: 'custom', from, to })).not.toThrow();
+        expect(() => formatMonth(from)).not.toThrow();
+        expect(isMonth(from)).toBe(MONTH.test(from));
+      }),
+    );
   });
 
   it('live ranges saved long ago are recomputed from today', () => {
