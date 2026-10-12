@@ -25,6 +25,9 @@ import type { FilterState } from './TransactionFilters';
 import type { CategoryGroup } from '../../types';
 import type { CreateTransactionData } from '../../api/transactions';
 
+/** Rows drawn at a time: every match is loaded, but drawing thousands at once is slow */
+const ROWS_PER_PAGE = 300;
+
 interface Props {
   accountId?: string;
   categoryId?: string;
@@ -170,6 +173,22 @@ export function TransactionTable({
     return result;
   }, [transactions]);
 
+  // How many rows to draw, back to one page whenever the filters change
+  const [shown, setShown] = useState({ params, rows: ROWS_PER_PAGE });
+  const shownRows = shown.params === params ? shown.rows : ROWS_PER_PAGE;
+  // Whole days only, so a day's total always matches the rows under it
+  const visibleGroups = useMemo(() => {
+    const result: typeof groupedByDate = [];
+    let rows = 0;
+    for (const group of groupedByDate) {
+      if (rows >= shownRows) break;
+      result.push(group);
+      rows += group.txs.length;
+    }
+    return result;
+  }, [groupedByDate, shownRows]);
+  const hiddenRows = transactions.length - visibleGroups.reduce((sum, g) => sum + g.txs.length, 0);
+
   function handleCreate(data: CreateTransactionData) {
     if (data.categoryId?.startsWith('transfer:') && accountId) {
       const toAccountId = data.categoryId.slice('transfer:'.length);
@@ -311,65 +330,81 @@ export function TransactionTable({
               />
             )
           ) : (
-            groupedByDate.map((group) => (
-              <div key={group.date}>
-                <div className="flex items-center justify-between px-4 py-2 bg-surface-alt border-b border-border-light">
-                  <span className="text-sm font-medium text-text-secondary">
-                    {format(parseISO(group.date), 'MMMM d, yyyy')}
-                  </span>
-                  <span className="text-sm font-medium text-text-secondary tabular-nums">
-                    {formatCurrency(group.total)}
-                  </span>
-                </div>
+            <>
+              {visibleGroups.map((group) => (
+                <div key={group.date}>
+                  <div className="flex items-center justify-between px-4 py-2 bg-surface-alt border-b border-border-light">
+                    <span className="text-sm font-medium text-text-secondary">
+                      {format(parseISO(group.date), 'MMMM d, yyyy')}
+                    </span>
+                    <span className="text-sm font-medium text-text-secondary tabular-nums">
+                      {formatCurrency(group.total)}
+                    </span>
+                  </div>
 
-                {group.txs.map((tx) =>
-                  isPhone ? (
-                    <TransactionCard
-                      key={tx.id}
-                      tx={tx}
-                      categoryEntry={
-                        tx.categoryId ? (categoryMap.get(tx.categoryId) ?? null) : null
-                      }
-                      payees={payees}
-                      accountName={
-                        showAccountCol ? accountInfoMap.get(tx.accountId)?.name : undefined
-                      }
-                      isSelected={detailId === tx.id}
-                      onOpenDetail={setDetailId}
-                    />
-                  ) : (
-                    <TransactionRow
-                      key={tx.id}
-                      tx={tx}
-                      categoryEntry={
-                        tx.categoryId ? (categoryMap.get(tx.categoryId) ?? null) : null
-                      }
-                      categoryMap={categoryMap}
-                      groups={groups as CategoryGroup[]}
-                      payees={payees}
-                      accountName={
-                        showAccountCol ? accountInfoMap.get(tx.accountId)?.name : undefined
-                      }
-                      accountType={
-                        showAccountCol ? accountInfoMap.get(tx.accountId)?.type : undefined
-                      }
-                      accountLogo={
-                        showAccountCol ? accountInfoMap.get(tx.accountId)?.logo : undefined
-                      }
-                      showAccountCol={showAccountCol}
-                      isSelected={detailId === tx.id}
-                      onOpenDetail={setDetailId}
-                      onFilterCategory={(catId) =>
-                        setFilters((f) => ({ ...f, categoryId: catId, datePreset: 'all' }))
-                      }
-                      onFilterSearch={(search) =>
-                        setFilters((f) => ({ ...f, search, datePreset: 'all' }))
-                      }
-                    />
-                  ),
-                )}
-              </div>
-            ))
+                  {group.txs.map((tx) =>
+                    isPhone ? (
+                      <TransactionCard
+                        key={tx.id}
+                        tx={tx}
+                        categoryEntry={
+                          tx.categoryId ? (categoryMap.get(tx.categoryId) ?? null) : null
+                        }
+                        payees={payees}
+                        accountName={
+                          showAccountCol ? accountInfoMap.get(tx.accountId)?.name : undefined
+                        }
+                        isSelected={detailId === tx.id}
+                        onOpenDetail={setDetailId}
+                      />
+                    ) : (
+                      <TransactionRow
+                        key={tx.id}
+                        tx={tx}
+                        categoryEntry={
+                          tx.categoryId ? (categoryMap.get(tx.categoryId) ?? null) : null
+                        }
+                        categoryMap={categoryMap}
+                        groups={groups as CategoryGroup[]}
+                        payees={payees}
+                        accountName={
+                          showAccountCol ? accountInfoMap.get(tx.accountId)?.name : undefined
+                        }
+                        accountType={
+                          showAccountCol ? accountInfoMap.get(tx.accountId)?.type : undefined
+                        }
+                        accountLogo={
+                          showAccountCol ? accountInfoMap.get(tx.accountId)?.logo : undefined
+                        }
+                        showAccountCol={showAccountCol}
+                        isSelected={detailId === tx.id}
+                        onOpenDetail={setDetailId}
+                        onFilterCategory={(catId) =>
+                          setFilters((f) => ({ ...f, categoryId: catId, datePreset: 'all' }))
+                        }
+                        onFilterSearch={(search) =>
+                          setFilters((f) => ({ ...f, search, datePreset: 'all' }))
+                        }
+                      />
+                    ),
+                  )}
+                </div>
+              ))}
+              {hiddenRows > 0 && (
+                <div className="flex flex-col items-center gap-2 px-4 py-6">
+                  <span className="text-xs text-text-tertiary">
+                    Showing {transactions.length - hiddenRows} of {transactions.length} transactions
+                  </span>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setShown({ params, rows: shownRows + ROWS_PER_PAGE })}
+                  >
+                    Show {Math.min(hiddenRows, ROWS_PER_PAGE)} more
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
 

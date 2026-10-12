@@ -315,3 +315,59 @@ test('sending a new transaction twice (offline retry) saves it once', async ({ a
   expect(accounts.find((a) => a.id === checking.id)!.balance).toBe(100_000 - 475 - 3_000 - 10_000);
   expect(accounts.find((a) => a.id === savings.id)!.balance).toBe(10_000);
 });
+
+/** Seeds `count` transactions of -$1.00, one a day going back from today ("Shop 0" is today) */
+async function seedDaily(api: Api, accountId: string, count: number) {
+  const rows = Array.from({ length: count }, (_, i) => ({
+    date: isoDay(-i),
+    amount: -100,
+    payeeName: `Shop ${i}`,
+    importedId: `seed-${i}`,
+  }));
+  await api.call('POST', '/transactions/import/confirm', { accountId, rows });
+}
+
+test.describe('long histories', () => {
+  test('the register lists every transaction, drawing them a page at a time', async ({
+    page,
+    api,
+  }) => {
+    const { checking } = await setup(api);
+    await seedDaily(api, checking.id, 650);
+    await open(page, `/accounts/${checking.id}`);
+    await page.getByRole('button', { name: 'All Time' }).click();
+
+    await expect(page.getByText('650 transactions', { exact: true })).toBeVisible();
+    await expect(page.getByText('Showing 300 of 650 transactions')).toBeVisible();
+    await expect(page.getByTestId('transaction-row')).toHaveCount(300);
+    await page.getByRole('button', { name: 'Show 300 more' }).click();
+    await page.getByRole('button', { name: 'Show 50 more' }).click();
+    await expect(row(page, 'Shop 649')).toBeVisible();
+    await expect(page.getByTestId('transaction-row')).toHaveCount(650);
+    await expect(page.getByRole('button', { name: /^Show \d+ more$/ })).toHaveCount(0);
+  });
+
+  test('search finds transactions that are not drawn yet', async ({ page, api }) => {
+    const { checking } = await setup(api);
+    await seedDaily(api, checking.id, 650);
+    await open(page, `/accounts/${checking.id}`);
+    await page.getByRole('button', { name: 'All Time' }).click();
+    await expect(row(page, 'Shop 649')).toHaveCount(0);
+
+    await page.getByPlaceholder('Search payee or notes…').fill('Shop 649');
+    await expect(row(page, 'Shop 649')).toBeVisible();
+    await expect(page.getByTestId('transaction-row')).toHaveCount(1);
+  });
+
+  test('reconcile counts every unreconciled transaction', async ({ page, api }) => {
+    const { checking } = await setup(api);
+    await seedDaily(api, checking.id, 250);
+    await open(page, `/accounts/${checking.id}/reconcile`);
+    // Nothing reconciled yet, so the reconciled part is just the starting balance
+    await expect(page.getByText('Current selected balance in app').locator('..')).toContainText(
+      '$1,000',
+    );
+    await page.getByRole('button', { name: 'Start Reconciliation' }).click();
+    await expect(page.getByText('Shop 249')).toBeVisible();
+  });
+});

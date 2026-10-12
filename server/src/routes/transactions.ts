@@ -122,9 +122,11 @@ transactionsRouter.get('/', (req, res) => {
 
   query = query.where(and(...conditions));
 
+  // No limit unless asked for: the register, reconcile and category views need every match
+  // (a hidden cap cut off older transactions and broke the reconciled balance)
   const page = z
     .object({
-      limit: z.coerce.number().int().min(1).max(1000).default(200),
+      limit: z.coerce.number().int().min(1).max(1000).optional(),
       offset: z.coerce.number().int().min(0).default(0),
     })
     .safeParse({ limit: req.query.limit, offset: req.query.offset });
@@ -133,7 +135,8 @@ transactionsRouter.get('/', (req, res) => {
 
   const rows = query
     .orderBy(sql`${transactions.date} desc`)
-    .limit(limit)
+    // SQLite reads a negative LIMIT as "no limit"
+    .limit(limit ?? -1)
     .offset(offset)
     .all();
 
