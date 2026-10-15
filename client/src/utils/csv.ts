@@ -1,4 +1,5 @@
 import { parseCents } from './currency';
+import type { ImportRow } from '../api/transactions';
 
 /**
  * Parses CSV text (RFC 4180): quoted fields may contain commas, doubled quotes and
@@ -130,4 +131,94 @@ export type ColumnRole = 'date' | 'payee' | 'amount' | 'inflow' | 'outflow' | 'n
 
 export function guessColumnRoles(headers: string[]): ColumnRole[] {
   return headers.map((h) => (COLUMN_HINTS[h.toLowerCase()] as ColumnRole) ?? 'skip');
+}
+
+/**
+ * A real calendar date as YYYY-MM-DD, like the server's `isRealDate`: "13/45/2024" normalizes
+ * to "2024-13-45", which the server would reject, failing the whole import over one row.
+ */
+function isRealDate(value: string): boolean {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!m) return false;
+  const [year, month, day] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const d = new Date(Date.UTC(year, month - 1, day));
+  return d.getUTCFullYear() === year && d.getUTCMonth() === month - 1 && d.getUTCDate() === day;
+}
+
+/** A file row left out of an import: `row` counts data rows from 1, `value` is the cell text */
+export interface SkippedRow {
+  row: number;
+  field: 'date' | 'amount';
+  value: string;
+}
+
+/**
+ * The rows to import, plus every row left out (a date or amount it can't read, or an amount
+ * of zero) so the preview can say so; or a message saying why there are none.
+ */
+export function buildImportRows(
+  rawRows: string[][],
+  roles: ColumnRole[],
+): { rows: ImportRow[]; skipped: SkippedRow[] } | string {
+  const dateIdx = roles.indexOf('date');
+  const payeeIdx = roles.indexOf('payee');
+  const amountIdx = roles.indexOf('amount');
+  const inflowIdx = roles.indexOf('inflow');
+  const outflowIdx = roles.indexOf('outflow');
+  const notesIdx = roles.indexOf('notes');
+
+  if (dateIdx === -1) return 'Date column is required';
+  if (amountIdx === -1 && inflowIdx === -1 && outflowIdx === -1) {
+    return 'At least one amount column is required';
+  }
+
+  const rows: ImportRow[] = [];
+  const skipped: SkippedRow[] = [];
+  const seen = new Map<string, number>();
+  rawRows.forEach((raw, i) => {
+    const date = normalizeDate(raw[dateIdx] ?? '');
+    if (!isRealDate(date)) {
+      skipped.push({ row: i + 1, field: 'date', value: raw[dateIdx] ?? '' });
+      return;
+    }
+
+    let amount: number;
+    if (amountIdx !== -1) {
+      amount = parseImportAmount(raw[amountIdx]);
+    } else {
+      // Some banks write debits in the outflow column as negative numbers
+      const inf = Math.abs(inflowIdx !== -1 ? parseImportAmount(raw[inflowIdx]) : 0);
+      const out = Math.abs(outflowIdx !== -1 ? parseImportAmount(raw[outflowIdx]) : 0);
+      amount = inf > 0 ? inf : -out;
+    }
+    if (amount === 0) {
+      const cells = amountIdx !== -1 ? [amountIdx] : [inflowIdx, outflowIdx];
+      const value = cells
+        .map((idx) => (idx !== -1 ? (raw[idx] ?? '') : ''))
+        .filter(Boolean)
+        .join(' / ');
+      skipped.push({ row: i + 1, field: 'amount', value });
+      return;
+    }
+
+    // Same limits as the server, so one long memo can't fail the whole import
+    const payeeName = payeeIdx !== -1 ? raw[payeeIdx]?.slice(0, 500) || null : null;
+    const notes = notesIdx !== -1 ? raw[notesIdx]?.slice(0, 5000) || null : null;
+    const key = generateImportId(date, amount, payeeName ?? '');
+    const occurrence = (seen.get(key) ?? 0) + 1;
+    seen.set(key, occurrence);
+    const importedId = generateImportId(date, amount, payeeName ?? '', occurrence);
+    rows.push({ date, amount, payeeName, notes, importedId });
+  });
+  return { rows, skipped };
+}
+
+/** "2 rows skipped: row 3, amount "N/A"; row 7, date "13/45/2024"." (the first `max` named) */
+export function describeSkippedRows(skipped: SkippedRow[], max = 5): string {
+  const listed = skipped
+    .slice(0, max)
+    .map((s) => `row ${s.row}, ${s.field} ${s.value ? `"${s.value}"` : '(empty)'}`);
+  if (skipped.length > max) listed.push(`and ${skipped.length - max} more`);
+  const count = `${skipped.length} ${skipped.length === 1 ? 'row' : 'rows'} skipped`;
+  return `${count}: ${listed.join('; ')}.`;
 }

@@ -75,6 +75,24 @@ test.describe('CSV import', () => {
     expect(await api.transactions(`?account_id=${checking.id}&from=2025-01-01`)).toHaveLength(5);
   });
 
+  test('rows with an unreadable amount are reported, not dropped silently', async ({
+    page,
+    api,
+  }) => {
+    const checking = await api.createAccount('Checking', 0);
+    await open(page, `/accounts/${checking.id}`);
+    const dialog = await importCsv(
+      page,
+      'Date,Description,Amount\r\n' +
+        '01/15/2025,Corner Coffee,-4.50\r\n' +
+        '01/16/2025,Bakery,-7.25\r\n' +
+        '01/17/2025,Hardware Store,N/A\r\n',
+    );
+    await dialog.getByRole('button', { name: 'Preview' }).click();
+    await expect(dialog).toContainText('2 transactions found.');
+    await expect(dialog.getByRole('status')).toContainText('1 row skipped: row 3, amount "N/A".');
+  });
+
   test('unreadable files explain what went wrong', async ({ page, api }) => {
     const checking = await api.createAccount('Checking', 0);
     await open(page, `/accounts/${checking.id}`);

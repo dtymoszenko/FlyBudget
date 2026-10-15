@@ -22,7 +22,9 @@ transactions arrive by themselves, [connect a bank](./bank-sync) instead.
    <Screenshot name="import-csv" alt="Mapping the columns of a CSV file" dialog />
 
 4. **Preview.** Every row is listed with its date, payee and amount. Rows you already have are
-   marked **duplicate** and unticked. Untick anything else you don't want.
+   marked **duplicate** and unticked. Untick anything else you don't want. Rows FlyBudget can't
+   import (a date or amount it can't read, or an amount of zero) are listed above the preview by
+   row number, so you can fix the file first.
 
    <Screenshot name="import-csv-preview" alt="The preview before importing" dialog />
 
@@ -46,7 +48,7 @@ hand _and_ import files for the same account, check the preview for rows you alr
 - **Dates**: `2026-01-05`, `01/05/2026` (month first) and written-out dates like `Jan 5, 2026`.
 - **Amounts**: `-12.00`, `$1,234.56`, `(12.00)` and `12.00-` for money going out. With separate
   inflow and outflow columns, FlyBudget works out the sign.
-- Files up to 100,000 rows. Rows with an amount of zero are left out.
+- Files up to 100,000 rows. Rows with an amount of zero are left out (the preview lists them).
 
 If your bank writes the day before the month (`05/01/2026` for 5 January), or uses a comma as the
 decimal separator, change the format in a spreadsheet before importing.
