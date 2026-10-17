@@ -31,6 +31,7 @@
 
 <p align="center">
   <a href="https://flybudget.org">Website</a> ·
+  <a href="https://discord.gg/xVHK4mUUNw">Discord</a> ·
   <a href="https://flybudget.org/tour/intro">Tour</a> ·
   <a href="https://flybudget.org/docs/getting-started">User guide</a> ·
   <a href="https://flybudget.org/community/security">Security</a> ·
