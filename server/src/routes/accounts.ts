@@ -25,7 +25,11 @@ const createSchema = z.object({
 
 // Built without defaults: Zod applies `.default()` even inside `.partial()`, so an update
 // that only renames an account would otherwise reset its starting balance to 0
-const updateSchema = z.object(fields).partial().extend({ logo: logoSchema.optional() });
+const updateSchema = z.object(fields).partial().extend({
+  logo: logoSchema.optional(),
+  // Reopens a closed account (undo of "Close account"); closing is DELETE
+  closedAt: z.null().optional(),
+});
 
 function withBalance(account: typeof accounts.$inferSelect) {
   return { ...account, balance: account.startingBalance + accountTransactionSum(account.id) };

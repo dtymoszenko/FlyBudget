@@ -82,17 +82,22 @@ export function useCloseAccount() {
       return accountsApi.closeAccount(id).then(() => snapshot);
     },
     onSuccess: (snapshot) => {
-      qc.invalidateQueries({ queryKey: ['accounts'] });
+      // Reports too: closed accounts leave net worth
+      const refresh = () => {
+        qc.invalidateQueries({ queryKey: ['accounts'] });
+        qc.invalidateQueries({ queryKey: ['reports'] });
+      };
+      refresh();
       if (!snapshot) return;
       useUndoStore.getState().push({
         description: `Close account "${snapshot.name}"`,
         undo: async () => {
-          await accountsApi.updateAccount(snapshot.id, { name: snapshot.name });
-          qc.invalidateQueries({ queryKey: ['accounts'] });
+          await accountsApi.updateAccount(snapshot.id, { closedAt: null });
+          refresh();
         },
         redo: async () => {
           await accountsApi.closeAccount(snapshot.id);
-          qc.invalidateQueries({ queryKey: ['accounts'] });
+          refresh();
         },
       });
     },

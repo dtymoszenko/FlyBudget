@@ -78,3 +78,26 @@ it('"All time" keeps only the 12 months up to the first transaction', async () =
   expect(points.at(-1).month).toBe('2097-06');
   expect(points).toHaveLength(15);
 });
+
+it('leaves closed accounts out of net worth, and counts them again when reopened', async () => {
+  const month = new Date().toISOString().slice(0, 7);
+  const netWorth = async () =>
+    (await send('GET', `/reports/net-worth?from=${month}&to=${month}`)).at(-1).netWorth;
+  const before = await netWorth();
+
+  const account = await send('POST', '/accounts', {
+    name: 'Entered by mistake',
+    type: 'other_asset',
+    startingBalance: 25_000,
+  });
+  expect(await netWorth()).toBe(before + 25_000);
+
+  await fetch(`${base}/accounts/${account.id}`, { method: 'DELETE' });
+  expect(await netWorth()).toBe(before);
+
+  // Undo of "Close account"
+  await send('PUT', `/accounts/${account.id}`, { closedAt: null });
+  const open = await send('GET', '/accounts');
+  expect(open.map((a: { id: string }) => a.id)).toContain(account.id);
+  expect(await netWorth()).toBe(before + 25_000);
+});

@@ -18,6 +18,7 @@ export const updateAccount = (
     startingBalance: number;
     isOffBudget: number;
     logo: string | null;
+    closedAt: null;
   }>,
 ) => apiFetch<Account>(`/accounts/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 
