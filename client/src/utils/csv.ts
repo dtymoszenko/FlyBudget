@@ -446,7 +446,7 @@ const directionWord = (raw: string | undefined) =>
 /**
  * Which way the money went according to a direction column ("Af"/"Bij" at ING, "Debit"/
  * "Credit", "S"/"H"), or null if the cell says neither. With `outWord` (what the user said
- * this bank writes for money out, like Actual's "out value"), that word also means out, and
+ * this bank writes for money out), that word also means out, and
  * any word FlyBudget doesn't know means in. The words it knows keep their meaning, so a
  * word typed for another file can't turn this file's debits into income.
  */

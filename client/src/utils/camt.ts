@@ -5,7 +5,7 @@ import { decodeCsvBytes, generateImportId, normalizeDate, readImportAmount } fro
  * which most European banks offer next to CSV. Unlike CSV there is nothing to guess: amounts
  * use a decimal point, every entry says whether it is a credit or a debit, and dates are ISO.
  *
- * Compared with Actual Budget's importer this deliberately:
+ * This deliberately:
  * - imports only booked entries (`BOOK`): pending ones change or disappear later
  * - dates entries by when the bank booked them, so they land in the month the bank shows
  * - splits a batch into its payments only when their amounts add up to the entry, and gives
