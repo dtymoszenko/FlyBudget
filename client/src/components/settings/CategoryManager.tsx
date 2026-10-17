@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Check, X } from 'lucide-react';
-import EmojiPicker, { type EmojiClickData } from 'emoji-picker-react';
 import { usePreferencesStore } from '../../store/preferencesStore';
+import { EmojiPickerPopover } from '../ui/EmojiPickerPopover';
 import {
   DndContext,
   closestCenter,
@@ -75,41 +75,6 @@ function InlineEdit({
       }}
       className="text-sm bg-surface border border-brand-500 rounded px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-brand-600 w-48"
     />
-  );
-}
-
-function EmojiPickerPopover({
-  currentEmoji,
-  onSelect,
-  onClose,
-}: {
-  currentEmoji: string | null;
-  onSelect: (emoji: string) => void;
-  onClose: () => void;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
-    }
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [onClose]);
-
-  return (
-    <div ref={ref} className="absolute z-50 mt-1" style={{ left: 0, top: '100%' }}>
-      <EmojiPicker
-        onEmojiClick={(data: EmojiClickData) => {
-          onSelect(data.emoji);
-          onClose();
-        }}
-        width={320}
-        height={400}
-        searchPlaceholder="Search emoji..."
-        previewConfig={{ showPreview: false }}
-      />
-    </div>
   );
 }
 
@@ -210,6 +175,7 @@ function GroupCard({
   const [localCats, setLocalCats] = useState(group.categories);
   const showCategoryIcons = usePreferencesStore((s) => s.showCategoryIcons);
   const [showNewCatEmojiPicker, setShowNewCatEmojiPicker] = useState(false);
+  const newCatEmojiButtonRef = useRef<HTMLButtonElement>(null);
   const isEditingGroup = editingId === group.id;
   const isAddingCategory = addingCategoryGroupId === group.id;
 
@@ -301,15 +267,18 @@ function GroupCard({
             {showCategoryIcons && (
               <div className="relative shrink-0">
                 <button
+                  ref={newCatEmojiButtonRef}
+                  type="button"
                   onClick={() => setShowNewCatEmojiPicker(!showNewCatEmojiPicker)}
                   className="text-base w-8 h-8 flex items-center justify-center rounded border border-border-light hover:bg-hover transition-colors"
+                  aria-label="Pick icon"
                   title="Pick icon"
                 >
                   {newCategoryIcon || '📦'}
                 </button>
                 {showNewCatEmojiPicker && (
                   <EmojiPickerPopover
-                    currentEmoji={newCategoryIcon}
+                    anchorRef={newCatEmojiButtonRef}
                     onSelect={(emoji) => onNewCategoryIconChange(emoji)}
                     onClose={() => setShowNewCatEmojiPicker(false)}
                   />

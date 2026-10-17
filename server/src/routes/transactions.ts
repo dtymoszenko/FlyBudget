@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Response } from 'express';
 import { db } from '../db/index.js';
 import { transactions, payees, accounts, categories } from '../db/schema.js';
 import { eq, and, or, like, gte, lte, sql, isNull, inArray } from 'drizzle-orm';
@@ -6,6 +6,15 @@ import { nanoid } from 'nanoid';
 import { z } from 'zod';
 import { deleteTransactionRow, resolvePayee } from '../services/transactionHelpers.js';
 import { buildRuleContext, insertNewTransaction, loadRules } from '../services/ruleService.js';
+import {
+  TransferError,
+  dismissPair,
+  linkTransfer,
+  listTransferSuggestions,
+  newTransferRow,
+  transferToAccount,
+  unlinkTransfer,
+} from '../services/transferService.js';
 import { isoDate } from '../utils/validation.js';
 
 export const transactionsRouter = Router();
@@ -122,9 +131,11 @@ transactionsRouter.get('/', (req, res) => {
 
   query = query.where(and(...conditions));
 
+  // No limit unless asked for: the register, reconcile and category views need every match
+  // (a hidden cap cut off older transactions and broke the reconciled balance)
   const page = z
     .object({
-      limit: z.coerce.number().int().min(1).max(1000).default(200),
+      limit: z.coerce.number().int().min(1).max(1000).optional(),
       offset: z.coerce.number().int().min(0).default(0),
     })
     .safeParse({ limit: req.query.limit, offset: req.query.offset });
@@ -133,7 +144,8 @@ transactionsRouter.get('/', (req, res) => {
 
   const rows = query
     .orderBy(sql`${transactions.date} desc`)
-    .limit(limit)
+    // SQLite reads a negative LIMIT as "no limit"
+    .limit(limit ?? -1)
     .offset(offset)
     .all();
 
@@ -272,45 +284,85 @@ transactionsRouter.post('/transfer', (req, res) => {
 
   const fromId = txId ?? nanoid();
   const toId = nanoid();
-  const now = new Date().toISOString();
-
-  const base = {
-    reconciled: 0,
-    isParent: 0,
-    parentTransactionId: null,
-    importedId: null,
-    createdAt: now,
-  };
-  const fromTx = {
+  const shared = { date, notes: notes ?? null };
+  const fromTx = newTransferRow({
+    ...shared,
     id: fromId,
     accountId: fromAccountId,
-    date,
     amount: -amount,
-    payeeId: null,
-    payeeName: `Transfer: ${toAcct.name}`,
-    categoryId: null,
-    notes: notes ?? null,
-    transferTransactionId: toId,
-    ...base,
-  };
-  const toTx = {
+    otherAccountName: toAcct.name,
+    otherId: toId,
+  });
+  const toTx = newTransferRow({
+    ...shared,
     id: toId,
     accountId: toAccountId,
-    date,
     amount,
-    payeeId: null,
-    payeeName: `Transfer: ${fromAcct.name}`,
-    categoryId: null,
-    notes: notes ?? null,
-    transferTransactionId: fromId,
-    ...base,
-  };
+    otherAccountName: fromAcct.name,
+    otherId: fromId,
+  });
 
   db.transaction((tx) => {
     tx.insert(transactions).values(fromTx).run();
     tx.insert(transactions).values(toTx).run();
   });
   res.status(201).json([fromTx, toTx]);
+});
+
+// Existing transactions as transfers: suggestions (an outflow and the same amount arriving
+// in another account within a few days), linking two, "Transfer: account" on one, and
+// "Not a transfer". The logic is in services/transferService.ts.
+const pairSchema = z.object({ transactionId: id, otherTransactionId: id });
+
+/** Runs a transfer change, answering its TransferError as a JSON error */
+function transferAction(res: Response, action: () => unknown) {
+  try {
+    res.json(action());
+  } catch (err) {
+    if (!(err instanceof TransferError)) throw err;
+    res.status(err.status).json({ error: err.message });
+  }
+}
+
+// GET /transactions/transfers/suggestions?account_id=
+transactionsRouter.get('/transfers/suggestions', (req, res) => {
+  const accountId = z.string().max(64).optional().safeParse(req.query.account_id);
+  if (!accountId.success) return res.status(400).json({ error: accountId.error.flatten() });
+  res.json(listTransferSuggestions(accountId.data || undefined));
+});
+
+// POST /transactions/transfers/link — two existing transactions become one transfer
+transactionsRouter.post('/transfers/link', (req, res) => {
+  const parsed = pairSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+  transferAction(res, () =>
+    linkTransfer(parsed.data.transactionId, parsed.data.otherTransactionId),
+  );
+});
+
+// POST /transactions/transfers/dismiss — never suggest this pair again
+transactionsRouter.post('/transfers/dismiss', (req, res) => {
+  const parsed = pairSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+  transferAction(res, () => {
+    dismissPair(parsed.data.transactionId, parsed.data.otherTransactionId);
+    return { ok: true };
+  });
+});
+
+// POST /transactions/:id/transfer — "Transfer: account" on an existing transaction
+transactionsRouter.post('/:id/transfer', (req, res) => {
+  const parsed = z.object({ accountId: id }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+  transferAction(res, () => transferToAccount(req.params.id, parsed.data.accountId));
+});
+
+// POST /transactions/:id/unlink-transfer — "Not a transfer"
+transactionsRouter.post('/:id/unlink-transfer', (req, res) => {
+  // Undo sends `dismiss: false`, so the pair is suggested again
+  const parsed = z.object({ dismiss: z.boolean().optional() }).safeParse(req.body ?? {});
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+  transferAction(res, () => unlinkTransfer(req.params.id, parsed.data));
 });
 
 // POST /transactions/import/preview — check for duplicates before importing

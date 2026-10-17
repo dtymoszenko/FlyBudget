@@ -102,6 +102,8 @@ reportsRouter.get('/net-worth', (req, res) => {
   const earliest = db
     .select({ d: sql<string>`min(${transactions.date})` })
     .from(transactions)
+    .innerJoin(accounts, eq(transactions.accountId, accounts.id))
+    .where(isNull(accounts.closedAt))
     .get();
   if (!isDaily && earliest?.d) {
     const [y, m] = earliest.d.slice(0, 7).split('-').map(Number);
@@ -111,7 +113,8 @@ reportsRouter.get('/net-worth', (req, res) => {
 
   const periods = isDaily ? dayRange(from, to) : monthRange(from, to);
 
-  const allAccounts = db.select().from(accounts).all();
+  // Closed (deleted) accounts are left out of the whole history, like the account list
+  const allAccounts = db.select().from(accounts).where(isNull(accounts.closedAt)).all();
 
   const upperBound = isDaily ? to : monthBounds(to).to;
   const groupExpr = isDaily

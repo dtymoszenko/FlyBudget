@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { test, expect, open, isoDay, otherDayThisMonth, type Api } from './fixtures';
+import { test, expect, open, isoDay, otherDayThisMonth, typeAmount, type Api } from './fixtures';
 
 // Entering and editing transactions in an account register, checking both what the
 // page shows and what the server stored.
@@ -69,6 +69,23 @@ test.describe('account register', () => {
     await newForm(page).getByRole('button', { name: 'Save' }).click();
     await expect(header(page)).toContainText('$3,500');
     expect(await api.balance(checking.id)).toBe(350_000);
+  });
+
+  test('tabbing past the inflow keeps the outflow (#92)', async ({ page, api }) => {
+    const { checking } = await setup(api);
+    await open(page, `/accounts/${checking.id}`);
+    await fillNewTransaction(page, { payee: 'Corner Grocery', outflow: '12.34' });
+    const form = newForm(page);
+    await form.getByRole('spinbutton', { name: 'Outflow' }).press('Tab');
+    await expect(form.getByRole('spinbutton', { name: 'Inflow' })).toBeFocused();
+    await expect(form.getByRole('spinbutton', { name: 'Outflow' })).toHaveValue('12.34');
+    // Typing an inflow still replaces the outflow
+    await page.keyboard.type('5');
+    await expect(form.getByRole('spinbutton', { name: 'Outflow' })).toHaveValue('');
+    await form.getByRole('spinbutton', { name: 'Outflow' }).fill('12.34');
+    await expect(form.getByRole('spinbutton', { name: 'Inflow' })).toHaveValue('');
+    await form.getByRole('button', { name: 'Save' }).click();
+    await expect(header(page)).toContainText('$987.66');
   });
 
   test('a split transaction counts once toward the balance', async ({ page, api }) => {
@@ -216,6 +233,148 @@ test.describe('account register', () => {
   });
 });
 
+test('the Add transaction dialog makes transfers too', async ({ page, api }) => {
+  const { checking, savings } = await setup(api);
+  await open(page, '/transactions?add=1');
+  const dialog = page.getByRole('dialog', { name: 'Add transaction' });
+
+  await dialog.getByRole('button', { name: 'Credit' }).click();
+  await typeAmount(dialog.getByLabel('Amount', { exact: true }), '300');
+  await dialog.getByRole('button', { name: /Select account/ }).click();
+  await dialog.getByRole('button', { name: /Everyday Checking/ }).click();
+  await dialog.getByRole('button', { name: /^Category:/ }).click();
+  await dialog.getByRole('button', { name: 'Transfer: Rainy Day Savings' }).click();
+
+  // A transfer is named after the other account, so it needs no merchant
+  await expect(dialog.getByText('Merchant')).toBeHidden();
+  await dialog.getByRole('button', { name: 'Add transaction' }).click();
+  await expect(dialog).toBeHidden();
+
+  // A credit brings the money into the chosen account
+  expect(await api.balance(checking.id)).toBe(130_000);
+  expect(await api.balance(savings.id)).toBe(470_000);
+  const [into] = await api.transactions(`?account_id=${checking.id}`);
+  expect(into.transferTransactionId).not.toBeNull();
+});
+
+test('the Add transaction dialog lists transfers before an account is chosen (#89)', async ({
+  page,
+  api,
+}) => {
+  const { checking, savings } = await setup(api);
+  await open(page, '/transactions?add=1');
+  const dialog = page.getByRole('dialog', { name: 'Add transaction' });
+
+  await typeAmount(dialog.getByLabel('Amount', { exact: true }), '200');
+  // The category list ends with every account as "Transfer: name", as the guide says
+  await dialog.getByRole('button', { name: /^Category:/ }).click();
+  await dialog.getByRole('button', { name: 'Transfer: Rainy Day Savings' }).click();
+
+  // A debit transfer asks where the money comes from, and can't come from the same account
+  await expect(dialog.getByText('From account *')).toBeVisible();
+  await dialog.getByRole('button', { name: /Select account/ }).click();
+  await expect(dialog.getByRole('button', { name: /Rainy Day Savings/ })).toHaveCount(1);
+  await dialog.getByRole('button', { name: /Everyday Checking/ }).click();
+  await dialog.getByRole('button', { name: 'Add transaction' }).click();
+  await expect(dialog).toBeHidden();
+
+  expect(await api.balance(checking.id)).toBe(80_000);
+  expect(await api.balance(savings.id)).toBe(520_000);
+});
+
+test('an inflow marked as a transfer brings the money in from the other account', async ({
+  page,
+  api,
+}) => {
+  const { checking, savings } = await setup(api);
+  await open(page, `/accounts/${checking.id}`);
+  await fillNewTransaction(page, { category: 'Transfer: Rainy Day Savings', inflow: '100' });
+  await newForm(page).getByRole('button', { name: 'Save' }).click();
+
+  await expect(row(page, 'Transfer: Rainy Day Savings')).toBeVisible();
+  expect(await api.balance(checking.id)).toBe(110_000);
+  expect(await api.balance(savings.id)).toBe(490_000);
+});
+
+/** Bank rows, as a CSV import or bank sync brings them in */
+async function importRows(
+  api: Api,
+  accountId: string,
+  rows: { date: string; amount: number; payeeName: string }[],
+) {
+  await api.call('POST', '/transactions/import/confirm', {
+    accountId,
+    rows: rows.map((r, i) => ({ ...r, importedId: `${accountId}-${i}` })),
+  });
+}
+
+test.describe('transfers between existing transactions (#89)', () => {
+  test('an existing transaction becomes a transfer from its category, and back', async ({
+    page,
+    api,
+  }) => {
+    const { checking, savings } = await setup(api);
+    await importRows(api, checking.id, [
+      { date: isoDay(), amount: -25_000, payeeName: 'ONLINE TRANSFER 0042' },
+    ]);
+    await open(page, `/accounts/${checking.id}`);
+    await row(page, 'ONLINE TRANSFER 0042').click();
+    const panel = page.getByRole('complementary', { name: 'Transaction details' });
+
+    await panel.getByRole('button', { name: 'Uncategorized' }).click();
+    await page.getByPlaceholder('Search categories...').fill('transfer');
+    await page.getByRole('button', { name: 'Transfer: Rainy Day Savings' }).click();
+
+    // Nothing matched in savings, so the other side was created there
+    await expect(panel.getByRole('button', { name: 'Not a transfer' })).toBeVisible();
+    await expect(row(page, 'Transfer: Rainy Day Savings')).toBeVisible();
+    expect(await api.balance(checking.id)).toBe(75_000);
+    expect(await api.balance(savings.id)).toBe(525_000);
+
+    await panel.getByRole('button', { name: 'Not a transfer' }).click();
+    await expect(panel.getByRole('button', { name: 'Uncategorized' })).toBeVisible();
+    const [tx] = await api.transactions(`?account_id=${checking.id}`);
+    expect(tx).toMatchObject({ transferTransactionId: null, payeeName: 'ONLINE TRANSFER 0042' });
+  });
+
+  test('both sides imported from the banks are suggested and linked', async ({ page, api }) => {
+    const { checking, savings } = await setup(api);
+    const card = await api.createAccount('Travel Card', -30_000, 'credit');
+    await importRows(api, checking.id, [
+      { date: isoDay(), amount: -30_000, payeeName: 'CARD PAYMENT' },
+      { date: isoDay(), amount: -4_000, payeeName: 'CORNER GROCERY' },
+    ]);
+    await importRows(api, card.id, [
+      { date: isoDay(), amount: 30_000, payeeName: 'PAYMENT RECEIVED' },
+    ]);
+    // Looks like a transfer (same amount, same day, another account) but isn't one
+    await importRows(api, savings.id, [{ date: isoDay(), amount: 4_000, payeeName: 'INTEREST' }]);
+    const before = [await api.balance(checking.id), await api.balance(card.id)];
+
+    await open(page, `/accounts/${checking.id}`);
+    const banner = page.getByRole('region', { name: 'Possible transfers' });
+    await expect(banner).toContainText('2 possible transfers');
+    await banner.getByRole('button', { name: 'Review' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Possible transfers' });
+    // The grocery run and the interest only look alike: say so, and it's not suggested again
+    await dialog
+      .getByRole('button', { name: /Not a transfer: \$40 from Everyday Checking/ })
+      .click();
+    await expect(dialog.getByRole('listitem')).toHaveCount(1);
+    await dialog.getByRole('button', { name: 'Link 1 transfer' }).click();
+    await expect(dialog).toBeHidden();
+    await expect(banner).toContainText('Linked 1 transfer.');
+
+    await expect(row(page, 'Transfer: Travel Card')).toBeVisible();
+    await expect(row(page, 'CORNER GROCERY')).toBeVisible();
+    // Linking moves no money: both sides were already there
+    expect([await api.balance(checking.id), await api.balance(card.id)]).toEqual(before);
+    const [payment] = await api.transactions(`?account_id=${card.id}`);
+    expect(payment).toMatchObject({ payeeName: 'Transfer: Everyday Checking' });
+    expect(payment.transferTransactionId).not.toBeNull();
+  });
+});
+
 test('sending a new transaction twice (offline retry) saves it once', async ({ api }) => {
   const checking = await api.createAccount('Everyday Checking', 100_000);
   const savings = await api.createAccount('Savings', 0, 'savings');
@@ -273,4 +432,60 @@ test('sending a new transaction twice (offline retry) saves it once', async ({ a
   const accounts = await api.accounts();
   expect(accounts.find((a) => a.id === checking.id)!.balance).toBe(100_000 - 475 - 3_000 - 10_000);
   expect(accounts.find((a) => a.id === savings.id)!.balance).toBe(10_000);
+});
+
+/** Seeds `count` transactions of -$1.00, one a day going back from today ("Shop 0" is today) */
+async function seedDaily(api: Api, accountId: string, count: number) {
+  const rows = Array.from({ length: count }, (_, i) => ({
+    date: isoDay(-i),
+    amount: -100,
+    payeeName: `Shop ${i}`,
+    importedId: `seed-${i}`,
+  }));
+  await api.call('POST', '/transactions/import/confirm', { accountId, rows });
+}
+
+test.describe('long histories', () => {
+  test('the register lists every transaction, drawing them a page at a time', async ({
+    page,
+    api,
+  }) => {
+    const { checking } = await setup(api);
+    await seedDaily(api, checking.id, 650);
+    await open(page, `/accounts/${checking.id}`);
+    await page.getByRole('button', { name: 'All Time' }).click();
+
+    await expect(page.getByText('650 transactions', { exact: true })).toBeVisible();
+    await expect(page.getByText('Showing 300 of 650 transactions')).toBeVisible();
+    await expect(page.getByTestId('transaction-row')).toHaveCount(300);
+    await page.getByRole('button', { name: 'Show 300 more' }).click();
+    await page.getByRole('button', { name: 'Show 50 more' }).click();
+    await expect(row(page, 'Shop 649')).toBeVisible();
+    await expect(page.getByTestId('transaction-row')).toHaveCount(650);
+    await expect(page.getByRole('button', { name: /^Show \d+ more$/ })).toHaveCount(0);
+  });
+
+  test('search finds transactions that are not drawn yet', async ({ page, api }) => {
+    const { checking } = await setup(api);
+    await seedDaily(api, checking.id, 650);
+    await open(page, `/accounts/${checking.id}`);
+    await page.getByRole('button', { name: 'All Time' }).click();
+    await expect(row(page, 'Shop 649')).toHaveCount(0);
+
+    await page.getByPlaceholder('Search payee or notes…').fill('Shop 649');
+    await expect(row(page, 'Shop 649')).toBeVisible();
+    await expect(page.getByTestId('transaction-row')).toHaveCount(1);
+  });
+
+  test('reconcile counts every unreconciled transaction', async ({ page, api }) => {
+    const { checking } = await setup(api);
+    await seedDaily(api, checking.id, 250);
+    await open(page, `/accounts/${checking.id}/reconcile`);
+    // Nothing reconciled yet, so the reconciled part is just the starting balance
+    await expect(page.getByText('Current selected balance in app').locator('..')).toContainText(
+      '$1,000',
+    );
+    await page.getByRole('button', { name: 'Start Reconciliation' }).click();
+    await expect(page.getByText('Shop 249')).toBeVisible();
+  });
 });

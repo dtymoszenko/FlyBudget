@@ -14,13 +14,13 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@fontsource/inter": "^5.3.0",
-    "@tanstack/react-query": "^5.103.2",
+    "@tanstack/react-query": "^5.104.1",
     "date-fns": "^4.4.0",
-    "emoji-picker-react": "^4.22.2",
-    "lucide-react": "^1.48.0",
+    "emoji-picker-react": "^4.22.3",
+    "lucide-react": "^1.52.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "react-grid-layout": "^2.2.4",
+    "react-grid-layout": "^2.3.0",
     "react-router-dom": "^7.18.4",
     "recharts": "^3.10.1",
     "zustand": "^5.0.15"
@@ -29,12 +29,12 @@
     "@tailwindcss/vite": "^4.3.3",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
-    "@vitejs/plugin-react": "^6.1.1",
+    "@vitejs/plugin-react": "^6.1.2",
     "@xmldom/xmldom": "^0.9.12",
     "fast-check": "^4.10.2",
     "tailwindcss": "^4.0.0",
     "typescript": "^7.0.2",
-    "vite": "^8.3.1",
-    "vitest": "^5.0.2"
+    "vite": "^8.3.3",
+    "vitest": "^5.0.3"
   }
 }

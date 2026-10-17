@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { X, Lock, Trash2, Repeat, Unlink, Wand2 } from 'lucide-react';
 import { useUpdateTransaction, useDeleteTransaction } from '../../hooks/useTransactions';
+import { useTransferToAccount, useUnlinkTransfer } from '../../hooks/useTransfers';
+import { useCanSave } from '../../hooks/useConnection';
 import { useSchedules, useUnmatchByTransaction } from '../../hooks/useSchedules';
 import { CategoryPicker } from './CategoryPicker';
 import { PayeeCombobox } from './PayeeCombobox';
@@ -49,6 +51,8 @@ export function TransactionDetailPanel({
   const updateTx = useUpdateTransaction();
   const updatePayee = useUpdatePayee();
   const deleteTx = useDeleteTransaction();
+  const transferTo = useTransferToAccount();
+  const unlinkTransfer = useUnlinkTransfer();
   const showCategoryIcons = usePreferencesStore((s) => s.showCategoryIcons);
   const { data: schedules = [] } = useSchedules();
   const unmatchByTx = useUnmatchByTransaction();
@@ -86,6 +90,11 @@ export function TransactionDetailPanel({
   const payeeName = tx.payeeName || (isTransfer ? 'Transfer' : '—');
   const payee = tx.payeeId ? payees.find((p) => p.id === tx.payeeId) : undefined;
   const categoryEntry = tx.categoryId ? (categoryMap.get(tx.categoryId) ?? null) : null;
+  // Making or undoing a transfer needs the server: not offered while saving is paused, and a
+  // balance correction can't be a transfer
+  const canSave = useCanSave();
+  const transferAccounts =
+    canSave && !tx.isAdjustment ? accounts.filter((a) => a.id !== tx.accountId && !a.closedAt) : [];
 
   function saveDate() {
     if (localDate !== tx.date) {
@@ -117,7 +126,12 @@ export function TransactionDetailPanel({
   }
 
   function handleCategoryChange(catId: string | null) {
-    updateTx.mutate({ id: tx.id, data: { categoryId: catId } });
+    if (catId?.startsWith('transfer:')) {
+      // Links the matching transaction in that account, or creates it
+      transferTo.mutate({ id: tx.id, accountId: catId.slice('transfer:'.length) });
+    } else {
+      updateTx.mutate({ id: tx.id, data: { categoryId: catId } });
+    }
     setShowCategoryPicker(false);
   }
 
@@ -234,8 +248,22 @@ export function TransactionDetailPanel({
               })}
             </div>
           ) : isTransfer ? (
-            <div className="text-sm text-brand-500 px-3 py-2 border border-border rounded-lg bg-surface-alt">
-              Transfer
+            <div className="flex items-center gap-2">
+              <div className="flex-1 min-w-0 truncate text-sm text-brand-500 px-3 py-2 border border-border rounded-lg bg-surface-alt">
+                {tx.payeeName || 'Transfer'}
+              </div>
+              {!isReconciled && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => unlinkTransfer.mutate(tx)}
+                  disabled={!canSave || unlinkTransfer.isPending}
+                  title="Make both sides ordinary transactions again"
+                >
+                  <Unlink size={13} />
+                  Not a transfer
+                </Button>
+              )}
             </div>
           ) : (
             <div className="relative">
@@ -257,6 +285,7 @@ export function TransactionDetailPanel({
                   onChange={handleCategoryChange}
                   groups={groups}
                   onClose={() => setShowCategoryPicker(false)}
+                  transferAccounts={transferAccounts}
                 />
               )}
             </div>

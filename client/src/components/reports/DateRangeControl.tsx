@@ -1,9 +1,8 @@
+import { useState } from 'react';
 import { Snowflake } from 'lucide-react';
+import { MonthRangePicker } from '../ui/MonthRangePicker';
 import { DATE_PRESETS, computeDateRange, resolveDateRange } from '../../utils/dateRange';
 import type { ReportDateRange } from '../../types';
-
-const MONTH_INPUT =
-  'rounded-md border border-border text-xs py-1 px-2 bg-surface text-text focus:border-brand-600 focus:outline-none';
 
 /**
  * Live presets plus a "Frozen" option with fixed months. Switching to Frozen keeps the months
@@ -17,16 +16,8 @@ export function DateRangeControl({
   onChange: (range: ReportDateRange) => void;
 }) {
   const frozen = value.preset === 'custom';
-
-  function setMonth(end: 'from' | 'to', month: string) {
-    if (!month) return;
-    const next = { ...value, [end]: month };
-    if (next.from > next.to) {
-      if (end === 'from') next.to = month;
-      else next.from = month;
-    }
-    onChange(next);
-  }
+  // Open the month picker right after freezing, not when a range loads already frozen
+  const [justFroze, setJustFroze] = useState(false);
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
@@ -37,7 +28,10 @@ export function DateRangeControl({
             key={p.id}
             title={p.long}
             aria-pressed={value.preset === p.id}
-            onClick={() => onChange({ preset: p.id, ...computeDateRange(p.id) })}
+            onClick={() => {
+              setJustFroze(false);
+              onChange({ preset: p.id, ...computeDateRange(p.id) });
+            }}
             className={`px-2.5 py-1 text-xs font-medium transition-colors border-b-2 cursor-pointer ${
               value.preset === p.id
                 ? 'border-brand-600 text-brand-600'
@@ -51,7 +45,11 @@ export function DateRangeControl({
           type="button"
           aria-pressed={frozen}
           title="Keep these dates fixed instead of moving with the current month"
-          onClick={() => !frozen && onChange({ ...resolveDateRange(value), preset: 'custom' })}
+          onClick={() => {
+            if (frozen) return;
+            setJustFroze(true);
+            onChange({ ...resolveDateRange(value), preset: 'custom' });
+          }}
           className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium transition-colors border-b-2 cursor-pointer ${
             frozen
               ? 'border-brand-600 text-brand-600'
@@ -62,23 +60,12 @@ export function DateRangeControl({
         </button>
       </div>
       {frozen && (
-        <div className="flex items-center gap-1.5">
-          <input
-            type="month"
-            aria-label="From month"
-            value={value.from}
-            onChange={(e) => setMonth('from', e.target.value)}
-            className={MONTH_INPUT}
-          />
-          <span className="text-xs text-text-tertiary">to</span>
-          <input
-            type="month"
-            aria-label="To month"
-            value={value.to}
-            onChange={(e) => setMonth('to', e.target.value)}
-            className={MONTH_INPUT}
-          />
-        </div>
+        <MonthRangePicker
+          from={value.from}
+          to={value.to}
+          onChange={(from, to) => onChange({ preset: 'custom', from, to })}
+          defaultOpen={justFroze}
+        />
       )}
     </div>
   );

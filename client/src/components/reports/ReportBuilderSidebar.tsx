@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { computeDateRange, DATE_PRESETS } from '../../utils/dateRange';
+import { MonthRangePicker } from '../ui/MonthRangePicker';
 import ChartTypeSelector from './ChartTypeSelector';
 import AccountMultiSelect from './AccountMultiSelect';
 import CategoryTreePicker from './CategoryTreePicker';
@@ -43,6 +45,9 @@ function set<K extends keyof CustomReportConfig>(
 }
 
 export default function ReportBuilderSidebar({ config, onChange }: Props) {
+  // Open the month picker right after choosing Custom, not when a saved report loads with it
+  const [justChoseCustom, setJustChoseCustom] = useState(false);
+
   function handleModeChange(mode: ReportMode) {
     let next = set(config, 'mode', mode);
     const validGroups = GROUP_BY_OPTIONS.filter((g) => g.modes.includes(mode));
@@ -59,23 +64,13 @@ export default function ReportBuilderSidebar({ config, onChange }: Props) {
   }
 
   function handlePresetChange(preset: DatePresetCustom) {
+    setJustChoseCustom(preset === 'custom');
     if (preset === 'custom') {
       onChange(set(config, 'dateRange', { ...config.dateRange, preset: 'custom' }));
     } else {
       const range = computeDateRange(preset);
       onChange(set(config, 'dateRange', { preset, ...range }));
     }
-  }
-
-  // Keeps the range valid: a cleared input is ignored and the other end follows if they cross
-  function handleMonthChange(end: 'from' | 'to', value: string) {
-    if (!value) return;
-    const next = { ...config.dateRange, [end]: value };
-    if (next.from > next.to) {
-      if (end === 'from') next.to = value;
-      else next.from = value;
-    }
-    onChange(set(config, 'dateRange', next));
   }
 
   return (
@@ -156,20 +151,14 @@ export default function ReportBuilderSidebar({ config, onChange }: Props) {
           ))}
         </div>
         {config.dateRange.preset === 'custom' && (
-          <div className="flex gap-2">
-            <input
-              type="month"
-              value={config.dateRange.from}
-              onChange={(e) => handleMonthChange('from', e.target.value)}
-              className="flex-1 rounded-md border border-border text-xs py-1 px-2 bg-surface text-text focus:border-brand-600 focus:outline-none"
-            />
-            <input
-              type="month"
-              value={config.dateRange.to}
-              onChange={(e) => handleMonthChange('to', e.target.value)}
-              className="flex-1 rounded-md border border-border text-xs py-1 px-2 bg-surface text-text focus:border-brand-600 focus:outline-none"
-            />
-          </div>
+          <MonthRangePicker
+            from={config.dateRange.from}
+            to={config.dateRange.to}
+            onChange={(from, to) =>
+              onChange(set(config, 'dateRange', { preset: 'custom', from, to }))
+            }
+            defaultOpen={justChoseCustom}
+          />
         )}
         <p className="text-[11px] text-text-tertiary mt-1.5">
           {config.dateRange.preset === 'custom'

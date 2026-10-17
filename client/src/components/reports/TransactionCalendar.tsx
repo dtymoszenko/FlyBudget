@@ -57,7 +57,9 @@ interface Props {
 interface Hover {
   day: string;
   x: number;
+  /** The hovered cell's top and bottom, relative to the grid container */
   y: number;
+  bottom: number;
 }
 
 export function TransactionCalendar({ from, to, fit, selected, onSelect }: Props) {
@@ -78,7 +80,13 @@ export function TransactionCalendar({ from, to, fit, selected, onSelect }: Props
   function showTooltip(day: string, el: HTMLElement) {
     const box = ref.current?.getBoundingClientRect();
     const cell = el.getBoundingClientRect();
-    if (box) setHover({ day, x: cell.left + cell.width / 2 - box.left, y: cell.top - box.top });
+    if (box)
+      setHover({
+        day,
+        x: cell.left + cell.width / 2 - box.left,
+        y: cell.top - box.top,
+        bottom: cell.bottom - box.top,
+      });
   }
 
   const dayProps = (day: string) => {
@@ -143,7 +151,9 @@ export function TransactionCalendar({ from, to, fit, selected, onSelect }: Props
             dayProps={dayProps}
           />
         )}
-        {hover && <DayTooltip hover={hover} flow={byDay.get(hover.day)} width={width} />}
+        {hover && (
+          <DayTooltip hover={hover} flow={byDay.get(hover.day)} width={width} height={height} />
+        )}
       </div>
     </div>
   );
@@ -490,22 +500,39 @@ function HeatmapLegend() {
   );
 }
 
+// Keeps the tooltip inside the grid container: the dashboard widget clips what sticks out,
+// so days in the first row get it below them instead of above.
 function DayTooltip({
   hover,
   flow,
   width,
+  height,
 }: {
   hover: Hover;
   flow?: DailyFlowPoint;
   width: number;
+  height: number;
 }) {
   const w = 190;
+  const gap = 6;
+  const box = useRef<HTMLDivElement>(null);
+  const [h, setH] = useState(0);
+  useLayoutEffect(() => {
+    const measured = box.current?.offsetHeight ?? 0;
+    setH((cur) => (cur === measured ? cur : measured));
+  });
   const left = Math.max(0, Math.min(width - w, hover.x - w / 2));
+  const above = hover.y >= h + gap || hover.y >= height - hover.bottom;
+  const top = Math.max(
+    0,
+    Math.min(above ? hover.y - h - gap : hover.bottom + gap, Math.max(0, height - h)),
+  );
   const net = (flow?.income ?? 0) - (flow?.expenses ?? 0);
   return (
     <div
+      ref={box}
       className={`${TOOLTIP_CLASS} absolute z-20 pointer-events-none`}
-      style={{ left, top: hover.y, width: w, transform: 'translateY(calc(-100% - 6px))' }}
+      style={{ left, top, width: w }}
     >
       <p className="text-xs text-text-tertiary mb-1">
         {format(parseISO(hover.day), 'EEE, MMM d, yyyy')}

@@ -50,9 +50,19 @@ export function computeDateRange(
 
 export const isFrozen = (range: ReportDateRange) => range.preset === 'custom';
 
-/** The months a saved range covers today: live presets are recomputed, frozen ones kept. */
+/** A real yyyy-MM month (the server's `isoMonth` rule), not a half-typed one like "2026-1" */
+export const isMonth = (value: unknown): value is string =>
+  typeof value === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
+
+/**
+ * The months a saved range covers today: live presets are recomputed, frozen ones kept. A
+ * frozen range with a broken month shows the last 6 months instead of crashing the report.
+ */
 export function resolveDateRange(range: ReportDateRange, now: Date = new Date()): ReportDateRange {
-  if (isFrozen(range)) return range;
+  if (isFrozen(range)) {
+    if (isMonth(range.from) && isMonth(range.to) && range.from <= range.to) return range;
+    return { preset: '6m', ...computeDateRange('6m', now) };
+  }
   return { preset: range.preset, ...computeDateRange(range.preset, now) };
 }
 
@@ -102,13 +112,15 @@ export function decodeRangeParam(param: string | null): ReportDateRange | undefi
   return preset && { preset: preset.id, ...computeDateRange(preset.id) };
 }
 
-const fmtMonth = (m: string) => format(parseISO(`${m}-01`), 'MMM yyyy');
+/** "Oct 2026", or the text as it is if it isn't a month (never throws) */
+export const formatMonth = (m: string) =>
+  isMonth(m) ? format(parseISO(`${m}-01`), 'MMM yyyy') : m;
 
 export function formatDateRange(range: ReportDateRange): string {
   if (!isFrozen(range)) return DATE_PRESETS.find((p) => p.id === range.preset)?.long ?? '';
   return range.from === range.to
-    ? fmtMonth(range.from)
-    : `${fmtMonth(range.from)} – ${fmtMonth(range.to)}`;
+    ? formatMonth(range.from)
+    : `${formatMonth(range.from)} – ${formatMonth(range.to)}`;
 }
 
 /** Month ranges up to this long plot a point per day instead of per month. */

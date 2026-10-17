@@ -311,8 +311,12 @@ your first pull request is merged, you'll be asked to accept the
 ## 📄 License
 
 FlyBudget is free software under the [GNU Affero General Public License v3.0](LICENSE)
-(AGPL-3.0-only). You can use, study, share and modify it. If you run a modified version for
-other people over a network, you must share your source code with them too.
+(AGPL-3.0-only). You can use, study, share and modify it. Using it yourself, changed or not,
+asks nothing of you. If you give copies to others, their source code must be available to them
+under the same license. If you let other people use a modified version over a network, it must
+offer those users your version's source code, free of charge (the "Source code" link in
+Settings does this once it points at your code). You don't have to publish it to everyone, only
+offer it to the people who use it.
 
 <p align="center">
   <br />

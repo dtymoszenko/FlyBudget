@@ -1,3 +1,5 @@
+import type { ImportRow } from '../api/transactions';
+
 export type Delimiter = ',' | ';' | '\t';
 
 /**
@@ -519,4 +521,122 @@ export function guessColumnRoles(headers: string[]): ColumnRole[] {
     // hasOwn: a column named "constructor" isn't Object.prototype's
     return Object.hasOwn(COLUMN_HINTS, key) ? COLUMN_HINTS[key] : 'skip';
   });
+}
+
+/**
+ * A real calendar date as YYYY-MM-DD, like the server's `isRealDate`: "13/45/2024" normalizes
+ * to "2024-13-45", which the server would reject, failing the whole import over one row.
+ */
+function isRealDate(value: string): boolean {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!m) return false;
+  const [year, month, day] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const d = new Date(Date.UTC(year, month - 1, day));
+  return d.getUTCFullYear() === year && d.getUTCMonth() === month - 1 && d.getUTCDate() === day;
+}
+
+/** A file row left out of an import: `row` counts data rows from 1, `value` is the cell text */
+export interface SkippedRow {
+  row: number;
+  field: 'date' | 'amount' | 'direction';
+  value: string;
+}
+
+/** How the file writes its values (detected, chosen by the user, or saved for the account) */
+export interface ImportFormats {
+  dateFormat?: DateFormat;
+  numberFormat?: NumberFormat;
+  /** What the direction column says for money out, if not a word FlyBudget knows */
+  outWord?: string | null;
+}
+
+/**
+ * The rows to import, plus every row left out (a date, amount or direction it can't read,
+ * or an amount of zero) so the preview can say so; or a message saying why there are none.
+ */
+export function buildImportRows(
+  rawRows: string[][],
+  roles: ColumnRole[],
+  { dateFormat = 'mdy', numberFormat = 'dot', outWord = null }: ImportFormats = {},
+): { rows: ImportRow[]; skipped: SkippedRow[] } | string {
+  const dateIdx = roles.indexOf('date');
+  const payeeIdx = roles.indexOf('payee');
+  const amountIdx = roles.indexOf('amount');
+  const inflowIdx = roles.indexOf('inflow');
+  const outflowIdx = roles.indexOf('outflow');
+  const notesIdx = roles.indexOf('notes');
+  const directionIdx = roles.indexOf('direction');
+
+  if (dateIdx === -1) return 'Date column is required';
+  if (amountIdx === -1 && inflowIdx === -1 && outflowIdx === -1) {
+    return 'At least one amount column is required';
+  }
+
+  /** Cents, 0 for an empty cell, or null if the cell holds something that isn't a number */
+  const cellAmount = (idx: number, raw: string[]) => {
+    const cell = raw[idx]?.trim() ?? '';
+    return cell === '' ? 0 : readImportAmount(cell, numberFormat);
+  };
+  /** Inflow/outflow cells: the unused one may say "-" or "n/a" instead of being empty */
+  const sideAmount = (idx: number, raw: string[]) =>
+    idx !== -1 && /\d/.test(raw[idx] ?? '') ? cellAmount(idx, raw) : 0;
+
+  const rows: ImportRow[] = [];
+  const skipped: SkippedRow[] = [];
+  const seen = new Map<string, number>();
+  rawRows.forEach((raw, i) => {
+    const date = normalizeDate(raw[dateIdx] ?? '', dateFormat);
+    if (!isRealDate(date)) {
+      skipped.push({ row: i + 1, field: 'date', value: raw[dateIdx] ?? '' });
+      return;
+    }
+
+    let amount: number | null;
+    if (amountIdx !== -1) {
+      amount = cellAmount(amountIdx, raw);
+    } else {
+      // Some banks write debits in the outflow column as negative numbers
+      const inf = sideAmount(inflowIdx, raw);
+      const out = sideAmount(outflowIdx, raw);
+      amount = inf === null || out === null ? null : inf !== 0 ? Math.abs(inf) : -Math.abs(out);
+    }
+    if (amount !== null && directionIdx !== -1) {
+      // Banks like ING write every amount as positive and the direction beside it
+      const direction = readDirection(raw[directionIdx], outWord);
+      if (!direction) {
+        skipped.push({ row: i + 1, field: 'direction', value: raw[directionIdx] ?? '' });
+        return;
+      }
+      amount = direction === 'out' ? -Math.abs(amount) : Math.abs(amount);
+    }
+    if (!amount) {
+      const cells = amountIdx !== -1 ? [amountIdx] : [inflowIdx, outflowIdx];
+      const value = cells
+        .map((idx) => (idx !== -1 ? (raw[idx] ?? '') : ''))
+        .filter(Boolean)
+        .join(' / ');
+      skipped.push({ row: i + 1, field: 'amount', value });
+      return;
+    }
+
+    // Same limits as the server, so one long memo can't fail the whole import
+    const payeeName = payeeIdx !== -1 ? raw[payeeIdx]?.slice(0, 500) || null : null;
+    const notes = notesIdx !== -1 ? raw[notesIdx]?.slice(0, 5000) || null : null;
+    const key = generateImportId(date, amount, payeeName ?? '');
+    const occurrence = (seen.get(key) ?? 0) + 1;
+    seen.set(key, occurrence);
+    const importedId = generateImportId(date, amount, payeeName ?? '', occurrence);
+    rows.push({ date, amount, payeeName, notes, importedId });
+  });
+  return { rows, skipped };
+}
+
+/** "2 rows skipped: row 3, amount "N/A"; row 7, date "13/45/2024"." (the first `max` named) */
+export function describeSkippedRows(skipped: SkippedRow[], max = 5): string {
+  const listed = skipped
+    .slice(0, max)
+    .map((s) => `row ${s.row}, ${s.field} ${s.value ? `"${s.value}"` : '(empty)'}`);
+  if (skipped.length > max) listed.push(`and ${skipped.length - max} more`);
+  const count = `${skipped.length} ${skipped.length === 1 ? 'row' : 'rows'} skipped`;
+  return `${count}: ${listed.join('; ')}.`;
 }

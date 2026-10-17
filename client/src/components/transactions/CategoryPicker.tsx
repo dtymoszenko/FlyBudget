@@ -10,9 +10,18 @@ interface Props {
   groups: CategoryGroup[];
   onClose: () => void;
   position?: 'below' | 'above';
+  /** Accounts offered as "Transfer: name" at the bottom (picked as `transfer:<accountId>`) */
+  transferAccounts?: { id: string; name: string }[];
 }
 
-export function CategoryPicker({ value, onChange, groups, onClose, position = 'below' }: Props) {
+export function CategoryPicker({
+  value,
+  onChange,
+  groups,
+  onClose,
+  position = 'below',
+  transferAccounts = [],
+}: Props) {
   const [query, setQuery] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
@@ -50,6 +59,9 @@ export function CategoryPicker({ value, onChange, groups, onClose, position = 'b
       categories: g.categories.filter((c) => c.name.toLowerCase().includes(query.toLowerCase())),
     }))
     .filter((g) => g.categories.length > 0);
+  const filteredTransfers = transferAccounts.filter((a) =>
+    `Transfer: ${a.name}`.toLowerCase().includes(query.toLowerCase()),
+  );
 
   const selectedGroup = groups.find((g) => g.id === newGroupId);
   const isIncomeGroup = selectedGroup?.isIncome === 1;
@@ -126,7 +138,29 @@ export function CategoryPicker({ value, onChange, groups, onClose, position = 'b
           </div>
         ))}
 
-        {filtered.length === 0 && (
+        {filteredTransfers.length > 0 && (
+          <div>
+            <div className="px-3 py-1.5 text-xs font-medium text-text-tertiary bg-surface-alt">
+              Transfer
+            </div>
+            {filteredTransfers.map((a) => {
+              const id = `transfer:${a.id}`;
+              return (
+                <button
+                  type="button"
+                  key={a.id}
+                  onClick={() => onChange(id)}
+                  className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-hover ${value === id ? 'bg-brand-50 text-brand-700' : 'text-text'}`}
+                >
+                  <span className="truncate flex-1">Transfer: {a.name}</span>
+                  {value === id && <Check size={14} className="text-brand-600 shrink-0" />}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {filtered.length === 0 && filteredTransfers.length === 0 && (
           <div className="px-3 py-4 text-sm text-text-tertiary text-center">
             No categories found
           </div>

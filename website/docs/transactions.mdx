@@ -88,12 +88,38 @@ transaction once. A [rule](./rules) can also split transactions for you.
 ## Transfers
 
 Moving money between your own accounts (paying a credit card from checking, or saving into a
-savings account) is a transfer, not spending. In a register, pick
-**Transfer: _account name_** at the bottom of the category list. FlyBudget creates two linked
-transactions: money out of this account and into the other.
+savings account) is a transfer, not spending. Every category list ends with **Transfer:
+_account name_** for each of your other open accounts (type "transfer" in the search box to jump
+to them).
+
+- **Adding a transaction**: pick **Transfer: _account name_** as its category. FlyBudget creates
+  two linked transactions: money out of one account and into the other. An outflow (or **Debit**)
+  sends the money to the other account; an inflow (or **Credit**) brings it in from there. In
+  the Transactions page's **Add** dialog, the account field then reads **From account** (Debit)
+  or **To account** (Credit).
+- **A transaction that's already there** (imported from a CSV file or your bank): pick
+  **Transfer: _account name_** as its category, in the list or the detail panel. If the other
+  account already has the same amount going the other way within 5 days (your bank imported
+  both sides), FlyBudget links the two. Otherwise it adds the other side for you.
+
+### Transfers FlyBudget finds for you
+
+When an imported transaction leaves one account and the same amount arrives in another within 5
+days, FlyBudget suggests it as a transfer above the transaction list: "2 possible transfers
+between your accounts". Choose **Review** to see each pair, untick any that aren't transfers, and
+**Link** the rest. Choose **Not a transfer** on a pair that only looks alike (a $40 grocery run
+on the same day as $40 of interest) and it won't be suggested again.
+
+FlyBudget suggests these rather than linking them on its own, because two unrelated transactions
+sometimes have the same amount, and a wrong link would quietly drop real spending from your
+budget.
+
+### Working with transfers
 
 Transfers are linked: change the date or amount on one side and the other follows. They have no
-category, and they're left out of income and spending.
+category, and they're left out of income and spending. To undo a link, open either side and
+choose **Not a transfer**: both become ordinary transactions again (with your bank's original
+text as the payee), and nothing is deleted.
 
 ## Importing and syncing
 

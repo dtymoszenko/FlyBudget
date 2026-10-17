@@ -1,5 +1,11 @@
 import { apiFetch } from './client';
-import type { Transaction, TransactionQueryParams, ImportPreviewRow } from '../types';
+import type {
+  Transaction,
+  TransactionQueryParams,
+  ImportPreviewRow,
+  TransferLinkResult,
+  TransferSuggestion,
+} from '../types';
 
 export interface SplitItem {
   categoryId: string | null;
@@ -73,6 +79,42 @@ export const reconcileAccount = (accountId: string, transactionIds: string[]) =>
 
 export const createTransfer = (data: CreateTransferData) =>
   apiFetch<Transaction[]>('/transactions/transfer', { method: 'POST', body: JSON.stringify(data) });
+
+export const getTransferSuggestions = (accountId?: string) =>
+  apiFetch<TransferSuggestion[]>(
+    `/transactions/transfers/suggestions${accountId ? `?account_id=${encodeURIComponent(accountId)}` : ''}`,
+  );
+
+/** Two existing transactions become the two sides of one transfer */
+export const linkTransfer = (transactionId: string, otherTransactionId: string) =>
+  apiFetch<TransferLinkResult>('/transactions/transfers/link', {
+    method: 'POST',
+    body: JSON.stringify({ transactionId, otherTransactionId }),
+  });
+
+/** Never suggest these two as a transfer again */
+export const dismissTransferSuggestion = (transactionId: string, otherTransactionId: string) =>
+  apiFetch<{ ok: true }>('/transactions/transfers/dismiss', {
+    method: 'POST',
+    body: JSON.stringify({ transactionId, otherTransactionId }),
+  });
+
+/** "Transfer: account" on an existing transaction: links its match there, or creates it */
+export const transferToAccount = (id: string, accountId: string) =>
+  apiFetch<TransferLinkResult>(`/transactions/${id}/transfer`, {
+    method: 'POST',
+    body: JSON.stringify({ accountId }),
+  });
+
+/**
+ * "Not a transfer": both sides become ordinary transactions again. Undo passes
+ * `dismiss: false` so the pair is suggested again.
+ */
+export const unlinkTransfer = (id: string, opts: { dismiss?: boolean } = {}) =>
+  apiFetch<[Transaction, Transaction | null]>(`/transactions/${id}/unlink-transfer`, {
+    method: 'POST',
+    body: JSON.stringify(opts),
+  });
 
 export const importPreview = (accountId: string, rows: ImportRow[]) =>
   apiFetch<ImportPreviewRow[]>('/transactions/import/preview', {

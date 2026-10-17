@@ -155,7 +155,7 @@ function draft(
 
 /**
  * The transactions in one entry (`Ntry`), or null if it can't be imported. Zero amounts are
- * left out, as in a CSV import.
+ * left out (a CSV import lists them as skipped).
  */
 function readEntry(entry: Element): Draft[] | null {
   // Version 2 to 7: <Sts>BOOK</Sts>; version 8 and later: <Sts><Cd>BOOK</Cd></Sts>

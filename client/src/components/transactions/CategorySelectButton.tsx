@@ -11,6 +11,8 @@ interface Props {
   onChange: (id: string | null) => void;
   position?: 'below' | 'above';
   placeholder?: string;
+  /** Also offer "Transfer: name" for these accounts (picked as `transfer:<accountId>`) */
+  transferAccounts?: { id: string; name: string }[];
 }
 
 /** Category field from the Add transaction workflow: a button that opens the searchable CategoryPicker. */
@@ -19,6 +21,7 @@ export function CategorySelectButton({
   onChange,
   position = 'below',
   placeholder = 'Search categories...',
+  transferAccounts,
 }: Props) {
   const showCategoryIcons = usePreferencesStore((s) => s.showCategoryIcons);
   const { data: groups = [] } = useCategories();
@@ -26,12 +29,16 @@ export function CategorySelectButton({
 
   const entry = useMemo(() => {
     if (!value) return null;
+    if (value.startsWith('transfer:')) {
+      const account = transferAccounts?.find((a) => `transfer:${a.id}` === value);
+      return account ? { name: `Transfer: ${account.name}`, icon: null } : null;
+    }
     for (const g of groups as CategoryGroup[]) {
       const cat = g.categories.find((c) => c.id === value);
       if (cat) return { name: cat.name, icon: cat.icon };
     }
     return null;
-  }, [value, groups]);
+  }, [value, groups, transferAccounts]);
 
   return (
     <div className="relative">
@@ -64,6 +71,7 @@ export function CategorySelectButton({
           groups={groups as CategoryGroup[]}
           onClose={() => setOpen(false)}
           position={position}
+          transferAccounts={transferAccounts}
         />
       )}
     </div>

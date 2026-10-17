@@ -318,6 +318,24 @@ test.describe('dialogs and touch targets', () => {
   });
 });
 
+test('the month picker fits the screen and is easy to tap', async ({ page, api }) => {
+  await seedAccount(api);
+  await open(page, '/reports');
+  await page.getByRole('main').getByRole('button', { name: 'Frozen' }).click();
+  const picker = page.getByRole('dialog', { name: 'Choose months' });
+  await expect(picker).toBeVisible();
+  const box = (await picker.boundingBox())!;
+  const viewport = page.viewportSize()!;
+  expect(box.x).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
+  expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
+  const from = picker.getByRole('group', { name: 'From' });
+  await expectTouchSize(from.getByRole('button', { name: 'Previous year' }));
+  await expectTouchSize(from.getByRole('button', { name: /^January / }));
+  await expectTouchSize(picker.getByRole('button', { name: 'Done' }));
+  await expectTouchSize(picker.getByRole('button', { name: 'Cancel' }));
+});
+
 test('report summary figures fit their card', async ({ page, api }) => {
   await seedAccount(api);
   await open(page, '/reports');

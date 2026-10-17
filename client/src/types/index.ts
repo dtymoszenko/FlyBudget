@@ -203,6 +203,24 @@ export interface Transaction {
   children?: Transaction[];
 }
 
+/** Two existing transactions that look like one transfer (GET /transactions/transfers/suggestions) */
+export interface TransferSuggestion {
+  outflow: Transaction;
+  inflow: Transaction;
+  /** Days between the two dates */
+  days: number;
+}
+
+/** Answer to linking or making a transfer: both sides, and how they were before */
+export interface TransferLinkResult {
+  /** The transaction acted on first, then the other side */
+  transactions: [Transaction, Transaction];
+  /** The other side is null when it was just created */
+  previous: [Transaction, Transaction | null];
+  /** Whether the other side was created (no matching transaction was found) */
+  created: boolean;
+}
+
 export interface ImportPreviewRow {
   date: string;
   amount: number;

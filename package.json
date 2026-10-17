@@ -1,6 +1,6 @@
 {
   "name": "flybudget",
-  "version": "1.0.0",
+  "version": "0.1.1",
   "license": "AGPL-3.0-only",
   "description": "A fast, open-source budgeting app that gives you complete control over your financial data.",
   "main": "electron/dist/main.js",
@@ -28,12 +28,17 @@
   "devDependencies": {
     "concurrently": "^10.0.5",
     "cross-env": "^10.1.0",
-    "electron": "^44.4.5",
+    "electron": "^44.5.1",
     "electron-builder": "^26.15.3",
     "esbuild": "^0.28.2",
     "prettier": "^3.9.9",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
-    "wait-on": "^9.1.0"
+    "wait-on": "^9.5.1"
+  },
+  "overrides": {
+    "concurrently": {
+      "shell-quote": "^1.11.0"
+    }
   }
 }

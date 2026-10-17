@@ -7,9 +7,8 @@ import { SavingPausedHint } from '../connection/SavingPausedHint';
 import {
   parseCsvRecords,
   normalizeDate,
-  generateImportId,
-  readImportAmount,
-  readDirection,
+  buildImportRows,
+  describeSkippedRows,
   unknownDirectionWords,
   columnRolesFor,
   columnKeys,
@@ -25,6 +24,7 @@ import {
   type Delimiter,
   type ImportSettings,
   type NumberFormat,
+  type SkippedRow,
 } from '../../utils/csv';
 import { decodeCamtBytes, looksLikeCamt, parseCamt, type CamtStatement } from '../../utils/camt';
 import { importPreview } from '../../api/transactions';
@@ -80,12 +80,14 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
   // CAMT: the statements in the file (one per account)
   const [statements, setStatements] = useState<CamtStatement[]>([]);
   const [statementIdx, setStatementIdx] = useState(0);
-  const [unreadable, setUnreadable] = useState(0);
+  // Pending or unreadable CAMT entries (CSV rows left out are listed in skippedRows)
+  const [skippedEntries, setSkippedEntries] = useState(0);
   const [headers, setHeaders] = useState<string[]>([]);
   const [rawRows, setRawRows] = useState<string[][]>([]);
   const [roles, setRoles] = useState<ColumnRole[]>([]);
   const [previewRows, setPreviewRows] = useState<ImportPreviewRow[]>([]);
   const [excluded, setExcluded] = useState<Set<number>>(new Set());
+  const [skippedRows, setSkippedRows] = useState<SkippedRow[]>([]);
   const [result, setResult] = useState<{ imported: number; skipped: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -111,12 +113,13 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
     setOutWord('');
     setStatements([]);
     setStatementIdx(0);
-    setUnreadable(0);
+    setSkippedEntries(0);
     setHeaders([]);
     setRawRows([]);
     setRoles([]);
     setPreviewRows([]);
     setExcluded(new Set());
+    setSkippedRows([]);
     setResult(null);
     setError(null);
     setLoading(false);
@@ -174,7 +177,7 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
     [showTable],
   );
 
-  async function runPreview(rows: ImportRow[], unreadableCount: number) {
+  async function runPreview(rows: ImportRow[], skipped: SkippedRow[], camtSkipped = 0) {
     const load = loadId.current;
     // The server's limit: say so, rather than fail the whole file with a generic error
     if (rows.length > MAX_IMPORT_ROWS) {
@@ -187,7 +190,8 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
     try {
       const preview = await importPreview(accountId, rows);
       if (load !== loadId.current) return; // closed while checking
-      setUnreadable(unreadableCount);
+      setSkippedRows(skipped);
+      setSkippedEntries(camtSkipped);
       setPreviewRows(preview);
       setExcluded(new Set(preview.map((r, i) => (r.isDuplicate ? i : -1)).filter((i) => i >= 0)));
       setStep('preview');
@@ -204,7 +208,7 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
       return;
     }
     setError(null);
-    return runPreview(statement.transactions, statement.skipped);
+    return runPreview(statement.transactions, [], statement.skipped);
   }
 
   async function handleFile(file: File) {
@@ -343,93 +347,27 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
   const hasDirection = roles.includes('direction');
   const needsOutWord = hasDirection && !outWord.trim() && detected.unknownDirections.length > 0;
 
-  /** The rows to import and how many couldn't be read, or a message saying why there are none */
-  function buildImportRows(): { rows: ImportRow[]; unreadable: number } | string {
-    const dateIdx = roles.indexOf('date');
-    const payeeIdx = roles.indexOf('payee');
-    const amountIdx = roles.indexOf('amount');
-    const inflowIdx = roles.indexOf('inflow');
-    const outflowIdx = roles.indexOf('outflow');
-    const notesIdx = roles.indexOf('notes');
-    const directionIdx = roles.indexOf('direction');
-
-    if (dateIdx === -1) return 'Date column is required';
-    if (amountIdx === -1 && inflowIdx === -1 && outflowIdx === -1) {
-      return 'At least one amount column is required';
-    }
-    // Never guess: swapped days and months, or amounts off by 100x, would look plausible
-    if (!dateFormat) return 'Choose how this file writes dates';
-    if (!numberFormat) return 'Choose how this file writes amounts';
-    if (needsOutWord) return 'Type the word your bank uses for money going out';
-
-    /** Cents, 0 for an empty cell, or null if the cell holds something that isn't a number */
-    const cellAmount = (idx: number, raw: string[]) => {
-      const cell = raw[idx]?.trim() ?? '';
-      return cell === '' ? 0 : readImportAmount(cell, numberFormat);
-    };
-    /** Inflow/outflow cells: the unused one may say "-" or "n/a" instead of being empty */
-    const sideAmount = (idx: number, raw: string[]) =>
-      /\d/.test(raw[idx] ?? '') ? cellAmount(idx, raw) : 0;
-
-    const rows: ImportRow[] = [];
-    let unreadableRows = 0;
-    const seen = new Map<string, number>();
-    for (const raw of rawRows) {
-      const date = normalizeDate(raw[dateIdx] ?? '', dateFormat);
-      if (!date) {
-        unreadableRows++;
-        continue;
-      }
-
-      let amount: number;
-      if (amountIdx !== -1) {
-        const value = cellAmount(amountIdx, raw);
-        if (value === null) {
-          unreadableRows++;
-          continue;
-        }
-        amount = value;
-      } else {
-        // Some banks write debits in the outflow column as negative numbers
-        const inf = inflowIdx !== -1 ? sideAmount(inflowIdx, raw) : 0;
-        const out = outflowIdx !== -1 ? sideAmount(outflowIdx, raw) : 0;
-        if (inf === null || out === null) {
-          unreadableRows++;
-          continue;
-        }
-        amount = inf !== 0 ? Math.abs(inf) : -Math.abs(out);
-      }
-      if (directionIdx !== -1) {
-        // Banks like ING write every amount as positive and the direction beside it
-        const direction = readDirection(raw[directionIdx], outWord);
-        if (!direction) {
-          unreadableRows++;
-          continue;
-        }
-        amount = direction === 'out' ? -Math.abs(amount) : Math.abs(amount);
-      }
-      if (amount === 0) continue;
-
-      // Same limits as the server, so one long memo can't fail the whole import
-      const payeeName = payeeIdx !== -1 ? raw[payeeIdx]?.slice(0, 500) || null : null;
-      const notes = notesIdx !== -1 ? raw[notesIdx]?.slice(0, 5000) || null : null;
-      const key = generateImportId(date, amount, payeeName ?? '');
-      const occurrence = (seen.get(key) ?? 0) + 1;
-      seen.set(key, occurrence);
-      const importedId = generateImportId(date, amount, payeeName ?? '', occurrence);
-      rows.push({ date, amount, payeeName, notes, importedId });
-    }
-    return { rows, unreadable: unreadableRows };
-  }
-
   function handlePreview() {
     setError(null);
-    const built = buildImportRows();
-    if (typeof built === 'string' || !built.rows.length) {
-      setError(typeof built === 'string' ? built : 'No valid rows found');
+    // Never guess: swapped days and months, or amounts off by 100x, would look plausible
+    if (!dateFormat) return setError('Choose how this file writes dates');
+    if (!numberFormat) return setError('Choose how this file writes amounts');
+    if (needsOutWord) return setError('Type the word your bank uses for money going out');
+    const built = buildImportRows(rawRows, roles, { dateFormat, numberFormat, outWord });
+    if (typeof built === 'string') {
+      setError(built);
       return;
     }
-    void runPreview(built.rows, built.unreadable);
+    const { rows, skipped } = built;
+    if (!rows.length) {
+      setError(
+        skipped.length
+          ? `No rows could be imported. ${describeSkippedRows(skipped)}`
+          : 'No valid rows found',
+      );
+      return;
+    }
+    void runPreview(rows, skipped);
   }
 
   /** Remembers how this account's bank writes its files, for the next import */
@@ -515,10 +453,7 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
     { value: 'skip', label: 'Skip' },
   ];
 
-  const leftOut =
-    source === 'csv'
-      ? `${unreadable} ${unreadable === 1 ? "row couldn't be read and is" : "rows couldn't be read and are"} left out.`
-      : `${unreadable} ${unreadable === 1 ? 'entry is' : 'entries are'} pending or couldn't be read, and left out.`;
+  const entriesLeftOut = `${skippedEntries} ${skippedEntries === 1 ? 'entry is' : 'entries are'} pending or couldn't be read, and left out.`;
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Import Transactions" size="lg">
@@ -774,8 +709,19 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
             {previewRows.length} transactions found.{' '}
             {previewRows.filter((r) => r.isDuplicate).length} duplicates detected.{' '}
             {previewRows.length - excluded.size} will be imported.
-            {unreadable > 0 && ` ${leftOut}`}
+            {skippedEntries > 0 && ` ${entriesLeftOut}`}
           </p>
+          {skippedRows.length > 0 && (
+            <p
+              role="status"
+              className="flex items-start gap-2 px-3 py-2 text-sm bg-caution-subtle text-caution rounded-lg"
+            >
+              <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+              <span>
+                {describeSkippedRows(skippedRows)} Fix the file and import it again to include them.
+              </span>
+            </p>
+          )}
           <div className="max-h-64 overflow-y-auto border border-border rounded-lg">
             <table className="w-full text-sm border-collapse">
               <thead className="sticky top-0 bg-surface-alt">

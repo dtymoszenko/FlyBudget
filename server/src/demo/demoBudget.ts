@@ -1038,10 +1038,31 @@ export function buildDemoBudget(today: Date): DemoBudget {
           t.date.startsWith(month),
       )
       .reduce((s, t) => s + t.amount, 0);
-  monthStarts.slice(1).forEach((m) => {
+  /** A row as the bank sent it: its own text as the payee, no category */
+  const bankRow = (account: AccountKey, date: string, amount: number, text: string) =>
+    result.transactions.push({
+      id: nextTxId(),
+      accountId: acct[account],
+      date,
+      amount,
+      payeeName: text,
+      importedPayee: text,
+      categoryId: null,
+      notes: null,
+      reconciled: 0,
+    });
+  monthStarts.slice(1).forEach((m, i, months) => {
     const date = dayIn(m, 25);
     const owed = -cardCharges(monthKey(subMonths(m, 1)));
-    if (date && owed > 0) transfer('checking', 'card', date, owed, 'Statement balance');
+    if (!date || owed <= 0) return;
+    if (i < months.length - 1 && dayIn(months[i + 1], 25)) {
+      transfer('checking', 'card', date, owed, 'Statement balance');
+      return;
+    }
+    // The latest payment came in from both banks, not yet linked: the register suggests it
+    const posted = ymd(addDays(parseISO(date), 2));
+    bankRow('checking', date, -owed, 'ONLINE PAYMENT - CREDIT CARD');
+    bankRow('card', posted <= todayStr ? posted : todayStr, owed, 'PAYMENT RECEIVED - THANK YOU');
   });
 
   // ─── Accounts that change value: 401(k), brokerage, car loan, the car ───────

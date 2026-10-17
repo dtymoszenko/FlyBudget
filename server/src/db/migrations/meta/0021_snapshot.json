@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "b5d1f1c6-9df8-4e12-b46e-c2c4bbf78439",
+  "id": "dc7b8caa-906f-4587-9a80-5a377c53c551",
   "prevId": "d33a9c2f-a55c-4e67-ae54-977c210246e0",
   "tables": {
     "accounts": {
@@ -61,13 +61,6 @@
         },
         "logo": {
           "name": "logo",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "import_settings": {
-          "name": "import_settings",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -587,7 +580,7 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "'ðŸŽ¯'"
+          "default": "'\u00f0\u0178\u017d\u00af'"
         },
         "color": {
           "name": "color",
@@ -2103,6 +2096,72 @@
             "id"
           ],
           "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "transfer_match_dismissals": {
+      "name": "transfer_match_dismissals",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "transaction_id": {
+          "name": "transaction_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "other_transaction_id": {
+          "name": "other_transaction_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "dismissed_at": {
+          "name": "dismissed_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(datetime('now'))"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "transfer_match_dismissals_transaction_id_transactions_id_fk": {
+          "name": "transfer_match_dismissals_transaction_id_transactions_id_fk",
+          "tableFrom": "transfer_match_dismissals",
+          "tableTo": "transactions",
+          "columnsFrom": [
+            "transaction_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "transfer_match_dismissals_other_transaction_id_transactions_id_fk": {
+          "name": "transfer_match_dismissals_other_transaction_id_transactions_id_fk",
+          "tableFrom": "transfer_match_dismissals",
+          "tableTo": "transactions",
+          "columnsFrom": [
+            "other_transaction_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },

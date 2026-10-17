@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useFormReset } from '../../hooks/useFormReset';
-import EmojiPicker, { type EmojiClickData } from 'emoji-picker-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
+import { EmojiPickerPopover } from '../ui/EmojiPickerPopover';
 import { useUpdateCategory } from '../../hooks/useCategories';
 import { usePreferencesStore } from '../../store/preferencesStore';
 import type { BudgetType, Category, CategoryGroup } from '../../types';
@@ -22,39 +22,6 @@ const BUDGET_TYPE_OPTIONS: { value: BudgetType; label: string; description: stri
   },
 ];
 
-function EmojiPickerPopover({
-  onSelect,
-  onClose,
-}: {
-  onSelect: (emoji: string) => void;
-  onClose: () => void;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
-    }
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [onClose]);
-
-  return (
-    <div ref={ref} className="absolute z-[60] mt-1" style={{ left: 0, top: '100%' }}>
-      <EmojiPicker
-        onEmojiClick={(data: EmojiClickData) => {
-          onSelect(data.emoji);
-          onClose();
-        }}
-        width={320}
-        height={400}
-        searchPlaceholder="Search emoji..."
-        previewConfig={{ showPreview: false }}
-      />
-    </div>
-  );
-}
-
 interface Props {
   category: Category | null;
   groups: CategoryGroup[];
@@ -71,6 +38,7 @@ export function EditCategoryModal({ category, groups, isIncome, onClose, onDelet
   const [groupId, setGroupId] = useState('');
   const [budgetType, setBudgetType] = useState<BudgetType>('flexible');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const emojiButtonRef = useRef<HTMLButtonElement>(null);
 
   // Filled once per opening, not on every refetch of the categories (that would undo edits)
   useFormReset(category?.id ?? null, () => {
@@ -113,6 +81,7 @@ export function EditCategoryModal({ category, groups, isIncome, onClose, onDelet
             {showCategoryIcons && (
               <div className="relative shrink-0">
                 <button
+                  ref={emojiButtonRef}
                   type="button"
                   onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                   aria-label="Change icon"
@@ -122,6 +91,7 @@ export function EditCategoryModal({ category, groups, isIncome, onClose, onDelet
                 </button>
                 {showEmojiPicker && (
                   <EmojiPickerPopover
+                    anchorRef={emojiButtonRef}
                     onSelect={setIcon}
                     onClose={() => setShowEmojiPicker(false)}
                   />
