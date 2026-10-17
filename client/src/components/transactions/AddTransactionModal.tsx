@@ -169,12 +169,7 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
           {/* Amount */}
           <div>
             <label className="block text-sm font-medium text-text mb-1">Amount *</label>
-            <CurrencyInput
-              value={amount}
-              onChange={setAmount}
-              placeholder="$0.00"
-              aria-label="Amount"
-            />
+            <CurrencyInput value={amount} onChange={setAmount} aria-label="Amount" />
           </div>
 
           {/* Merchant (a transfer has none: it's named after the other account) */}

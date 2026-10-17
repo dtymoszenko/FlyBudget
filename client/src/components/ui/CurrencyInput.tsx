@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import {
   UNREADABLE_AMOUNT,
   amountPlaceholder,
@@ -36,6 +36,21 @@ export function CurrencyInput({
   useReportAmountValidity(readable);
   const style = useAmountStyle();
   const hintId = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // The dialog set an amount itself (reopened, reset, a suggestion picked): it replaces text
+  // that couldn't be read, unless that text is being typed right now
+  const [lastValue, setLastValue] = useState(value);
+  if (value !== lastValue) {
+    setLastValue(value);
+    if (!focused) {
+      setInvalid(false);
+      setReadable(true);
+    }
+  }
+  useEffect(() => {
+    if (readable) inputRef.current?.setCustomValidity('');
+  }, [readable]);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const text = e.target.value;
@@ -72,6 +87,7 @@ export function CurrencyInput({
   return (
     <>
       <input
+        ref={inputRef}
         // Text, not number: a number field won't take a decimal comma (12,50)
         type="text"
         inputMode="decimal"
