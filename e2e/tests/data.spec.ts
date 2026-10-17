@@ -187,6 +187,10 @@ test.describe('CSV import', () => {
     dialog = await importCsv(page, csv('03.04.2025;Miete;-1.234\r\n'));
     await expect(dialog).toContainText('Using the settings from your last import');
     await expect(dialog).not.toContainText('Choose the format your bank uses');
+    await expect(dialog).toContainText(
+      "This file doesn't show how it writes dates or amounts: using DD/MM/YYYY and 1.234,56, " +
+        'as in your last import into this account.',
+    );
     await expect(dialog.getByRole('combobox', { name: 'Dates' })).toHaveValue('dmy');
     await expect(dialog.getByRole('combobox', { name: 'Amounts' })).toHaveValue('comma');
     await expect(dialog.getByRole('combobox', { name: 'Column Empfänger' })).toHaveValue('notes');
@@ -332,6 +336,48 @@ test.describe('CSV import', () => {
 
     dialog = await importStatement();
     await expect(dialog).toContainText('2 transactions found. 2 duplicates detected. 0 will be');
+    await expect(dialog.getByRole('alert')).toHaveCount(0);
+  });
+
+  test('warns when a statement is for another account than last time', async ({ page, api }) => {
+    const checking = await api.createAccount('Girokonto', 0);
+    await open(page, `/accounts/${checking.id}`);
+    const statementFor = (iban: string, ref: string) => `<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.02"><BkToCstmrStmt><Stmt>
+  <Acct><Id><IBAN>${iban}</IBAN></Id></Acct>
+  <Ntry><AcctSvcrRef>${ref}</AcctSvcrRef><Amt Ccy="EUR">10.00</Amt><CdtDbtInd>DBIT</CdtDbtInd>
+    <Sts>BOOK</Sts><BookgDt><Dt>2025-02-03</Dt></BookgDt></Ntry>
+</Stmt></BkToCstmrStmt></Document>`;
+    const importStatement = async (iban: string, ref: string) => {
+      await page.getByRole('button', { name: 'Import CSV' }).click();
+      const dialog = page.getByRole('dialog', { name: 'Import Transactions' });
+      await dialog.getByLabel('Bank file').setInputFiles({
+        name: 'statement.xml',
+        mimeType: 'application/xml',
+        buffer: Buffer.from(statementFor(iban, ref), 'utf8'),
+      });
+      await expect(dialog).toContainText('1 transactions found.');
+      return dialog;
+    };
+
+    let dialog = await importStatement('DE89370400440532013000', 'B1');
+    await expect(dialog.getByRole('alert')).toHaveCount(0);
+    await dialog.getByRole('button', { name: 'Import 1 Transactions' }).click();
+    await dialog.getByRole('button', { name: 'Done' }).click();
+
+    // The same account written in groups of four is the same account
+    dialog = await importStatement('DE89 3704 0044 0532 0130 00', 'B2');
+    await expect(dialog.getByRole('alert')).toHaveCount(0);
+    await dialog.getByRole('button', { name: 'Close' }).click();
+
+    dialog = await importStatement('NL91ABNA0417164300', 'B3');
+    await expect(dialog.getByRole('alert')).toContainText(
+      'This statement is for account NL91ABNA0417164300, but the last statement imported into ' +
+        'this account was for DE89370400440532013000.',
+    );
+    // It's a warning: the import still goes ahead if it's meant
+    await dialog.getByRole('button', { name: 'Import 1 Transactions' }).click();
+    await expect(dialog).toContainText('1 imported, 0 skipped');
   });
 
   test("a file with other columns doesn't inherit the last import's formats", async ({

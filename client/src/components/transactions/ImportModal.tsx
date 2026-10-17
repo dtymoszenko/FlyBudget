@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Upload, AlertTriangle, CheckCircle, X } from 'lucide-react';
 import { Modal } from '../ui/Modal';
+import { Button } from '../ui/Button';
 import { useCanSave } from '../../hooks/useConnection';
 import { SavingPausedHint } from '../connection/SavingPausedHint';
 import {
@@ -26,9 +27,15 @@ import {
   type NumberFormat,
   type SkippedRow,
 } from '../../utils/csv';
-import { decodeCamtBytes, looksLikeCamt, parseCamt, type CamtStatement } from '../../utils/camt';
+import {
+  decodeCamtBytes,
+  looksLikeCamt,
+  parseCamt,
+  statementAccountKey,
+  type CamtStatement,
+} from '../../utils/camt';
 import { importPreview } from '../../api/transactions';
-import { getImportSettings, saveImportSettings } from '../../api/accounts';
+import { getImportSettings, saveImportSettings, saveStatementAccount } from '../../api/accounts';
 import { useImportConfirm } from '../../hooks/useTransactions';
 import { formatCurrency } from '../../utils/currency';
 import type { ImportPreviewRow } from '../../types';
@@ -48,6 +55,17 @@ const DELIMITERS: { value: Delimiter; label: string }[] = [
   { value: ';', label: 'Semicolon' },
   { value: '\t', label: 'Tab' },
 ];
+
+const DATE_FORMAT_LABELS: Record<DateFormat, string> = {
+  mdy: 'MM/DD/YYYY',
+  dmy: 'DD/MM/YYYY',
+  ymd: 'YY/MM/DD',
+};
+
+const NUMBER_FORMAT_LABELS: Record<NumberFormat, string> = {
+  dot: '1,234.56',
+  comma: '1.234,56',
+};
 
 const selectClass = 'w-full text-xs border border-border rounded px-1.5 py-1 bg-surface text-text';
 const optionLabelClass = 'text-xs font-medium text-text-tertiary space-y-1';
@@ -71,6 +89,8 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
   const [delimiter, setDelimiter] = useState<Delimiter>(',');
   const [records, setRecords] = useState<string[][]>([]);
   const [skipRows, setSkipRows] = useState(0);
+  // What's typed in "Rows above the header" while it isn't a number yet (an emptied field)
+  const [skipRowsDraft, setSkipRowsDraft] = useState<string | null>(null);
   const [saved, setSaved] = useState<ImportSettings | null>(null);
   const [usingSaved, setUsingSaved] = useState(false);
   // null = what the file looks like (detectDateFormat / detectNumberFormat)
@@ -80,6 +100,8 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
   // CAMT: the statements in the file (one per account)
   const [statements, setStatements] = useState<CamtStatement[]>([]);
   const [statementIdx, setStatementIdx] = useState(0);
+  // The account number of the last statement imported into this account, if any
+  const [knownStatementAccount, setKnownStatementAccount] = useState<string | null>(null);
   // Pending or unreadable CAMT entries (CSV rows left out are listed in skippedRows)
   const [skippedEntries, setSkippedEntries] = useState(0);
   const [headers, setHeaders] = useState<string[]>([]);
@@ -106,6 +128,7 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
     setDelimiter(',');
     setRecords([]);
     setSkipRows(0);
+    setSkipRowsDraft(null);
     setSaved(null);
     setUsingSaved(false);
     setDateFormatChoice(null);
@@ -113,6 +136,7 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
     setOutWord('');
     setStatements([]);
     setStatementIdx(0);
+    setKnownStatementAccount(null);
     setSkippedEntries(0);
     setHeaders([]);
     setRawRows([]);
@@ -222,6 +246,20 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
     }
   }
 
+  /** What this account's last imports remembered, or null offline */
+  async function savedImport() {
+    await pendingSaves.get(accountId);
+    try {
+      return await queryClient.fetchQuery({
+        queryKey: settingsKey(accountId),
+        queryFn: () => getImportSettings(accountId),
+        retry: false, // offline, don't keep the file waiting
+      });
+    } catch {
+      return null; // Offline: work everything out from the file
+    }
+  }
+
   async function readFile(file: File, load: number) {
     const buffer = await file.arrayBuffer();
     if (load !== loadId.current) return;
@@ -234,28 +272,24 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
         setError("This file isn't a bank statement FlyBudget can read (CAMT.053)");
         return;
       }
+      const known = (await savedImport())?.statementAccount ?? null;
+      if (load !== loadId.current) return;
       setSource('camt');
       setStatements(found);
-      setStatementIdx(0);
+      setKnownStatementAccount(known);
+      // A file with several accounts: the one this account imported last time, if it's there
+      const idx = Math.max(
+        0,
+        found.findIndex((s) => known !== null && statementAccountKey(s.account) === known),
+      );
+      setStatementIdx(idx);
       if (found.length === 1) await previewStatement(found[0]);
       else setStep('statement');
       return;
     }
 
     setSource('csv');
-    let savedSettings: ImportSettings | null = null;
-    await pendingSaves.get(accountId);
-    try {
-      savedSettings = (
-        await queryClient.fetchQuery({
-          queryKey: settingsKey(accountId),
-          queryFn: () => getImportSettings(accountId),
-          retry: false, // offline, don't keep the file waiting
-        })
-      ).settings;
-    } catch {
-      // Offline: work everything out from the file
-    }
+    const savedSettings = (await savedImport())?.settings ?? null;
     if (load !== loadId.current) return; // closed (or another file chosen) meanwhile
     setSaved(savedSettings);
     setBytes(buffer);
@@ -344,6 +378,18 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
   const dateFormat = dateFormatChoice ?? detected.dateFormat ?? lastTime?.dateFormat ?? null;
   const numberFormat =
     numberFormatChoice ?? detected.numberFormat ?? lastTime?.numberFormat ?? null;
+  // Formats the file couldn't show, taken from the last import (named in the dialog)
+  const fromLastTime = [
+    !dateFormatChoice &&
+      !detected.dateFormat &&
+      lastTime?.dateFormat && { what: 'dates', format: DATE_FORMAT_LABELS[lastTime.dateFormat] },
+    !numberFormatChoice &&
+      !detected.numberFormat &&
+      lastTime?.numberFormat && {
+        what: 'amounts',
+        format: NUMBER_FORMAT_LABELS[lastTime.numberFormat],
+      },
+  ].filter((f): f is { what: string; format: string } => !!f);
   const hasDirection = roles.includes('direction');
   const needsOutWord = hasDirection && !outWord.trim() && detected.unknownDirections.length > 0;
 
@@ -372,25 +418,41 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
 
   /** Remembers how this account's bank writes its files, for the next import */
   function rememberSettings() {
-    if (source !== 'csv' || !dateFormat || !numberFormat) return;
-    const columns: Record<string, ColumnRole> = {};
-    // At most 200 columns (the server's limit); longer files are worked out each time
-    if (headers.length > 200) return;
-    columnKeys(headers).forEach((key, i) => {
-      columns[key] = roles[i];
-    });
-    const settings: ImportSettings = {
-      delimiter,
-      encoding,
-      skipRows,
-      columns,
-      dateFormat,
-      numberFormat,
-      outWord: outWord.trim().slice(0, 50) || null,
-    };
-    const save: Promise<void> = saveImportSettings(accountId, settings)
+    type Saved = Awaited<ReturnType<typeof getImportSettings>>;
+    let request: Promise<Partial<Saved>>;
+    if (source === 'camt') {
+      // Which account the statement was for, to notice a statement for another account
+      const account = statementAccountKey(statements[statementIdx]?.account ?? null);
+      if (!account) return;
+      request = saveStatementAccount(accountId, account);
+    } else {
+      if (!dateFormat || !numberFormat) return;
+      const columns: Record<string, ColumnRole> = {};
+      // At most 200 columns (the server's limit); longer files are worked out each time
+      if (headers.length > 200) return;
+      columnKeys(headers).forEach((key, i) => {
+        columns[key] = roles[i];
+      });
+      const settings: ImportSettings = {
+        delimiter,
+        encoding,
+        skipRows,
+        columns,
+        dateFormat,
+        numberFormat,
+        outWord: outWord.trim().slice(0, 50) || null,
+      };
+      request = saveImportSettings(accountId, settings);
+    }
+    const save: Promise<void> = request
       .then((stored) => {
-        queryClient.setQueryData(settingsKey(accountId), stored);
+        // The server keeps the part that wasn't saved; so does the cache
+        queryClient.setQueryData<Saved>(settingsKey(accountId), (old) => ({
+          settings: null,
+          statementAccount: null,
+          ...old,
+          ...stored,
+        }));
       })
       .catch(() => {
         // Not worth an error: the next import works the settings out again
@@ -453,6 +515,13 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
     { value: 'skip', label: 'Skip' },
   ];
 
+  // A statement for another account than the one imported here last time
+  const statementAccount =
+    source === 'camt' ? statementAccountKey(statements[statementIdx]?.account ?? null) : null;
+  const otherStatementAccount =
+    statementAccount && knownStatementAccount && statementAccount !== knownStatementAccount
+      ? statementAccount
+      : null;
   const entriesLeftOut = `${skippedEntries} ${skippedEntries === 1 ? 'entry is' : 'entries are'} pending or couldn't be read, and left out.`;
 
   return (
@@ -460,7 +529,12 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
       {error && (
         <div className="mb-4 flex items-center gap-2 px-3 py-2 text-sm bg-negative-subtle text-negative rounded-lg">
           <AlertTriangle size={14} /> {error}
-          <button onClick={() => setError(null)} className="ml-auto" aria-label="Dismiss">
+          <button
+            type="button"
+            onClick={() => setError(null)}
+            className="ml-auto flex items-center justify-center max-md:min-h-11 max-md:min-w-11"
+            aria-label="Dismiss"
+          >
             <X size={14} />
           </button>
         </div>
@@ -511,24 +585,23 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
               {statements.map((s, i) => (
                 <option key={i} value={i}>
                   {s.account ?? 'Account without a number'} ({s.transactions.length} transactions)
+                  {knownStatementAccount !== null &&
+                    statementAccountKey(s.account) === knownStatementAccount &&
+                    ', imported here before'}
                 </option>
               ))}
             </select>
           </label>
           <div className="flex justify-end gap-2">
-            <button
-              onClick={() => setStep('upload')}
-              className="px-3 py-1.5 text-sm text-text-secondary border border-border rounded-lg hover:bg-hover"
-            >
+            <Button variant="secondary" onClick={() => setStep('upload')}>
               Back
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => void previewStatement(statements[statementIdx])}
               disabled={loading}
-              className="px-4 py-1.5 text-sm font-medium bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50"
             >
               {loading ? 'Checking...' : 'Preview'}
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -574,13 +647,17 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
                 type="number"
                 min={0}
                 max={Math.max(records.length - 1, 0)}
-                value={skipRows}
+                value={skipRowsDraft ?? skipRows}
                 onChange={(e) => {
+                  // An emptied field is being retyped: keep the table until there's a number
+                  setSkipRowsDraft(e.target.value);
+                  if (e.target.value.trim() === '') return;
                   const n = Math.trunc(Number(e.target.value));
                   if (Number.isFinite(n) && n >= 0 && n < records.length) {
                     showTable(records, n, saved, roles);
                   }
                 }}
+                onBlur={() => setSkipRowsDraft(null)}
                 className={selectClass}
               />
             </label>
@@ -592,9 +669,11 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
                 className={selectClass}
               >
                 {!dateFormat && <option value="">Choose…</option>}
-                <option value="mdy">MM/DD/YYYY</option>
-                <option value="dmy">DD/MM/YYYY</option>
-                <option value="ymd">YY/MM/DD</option>
+                {Object.entries(DATE_FORMAT_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
               </select>
             </label>
             <label className={optionLabelClass}>
@@ -605,8 +684,11 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
                 className={selectClass}
               >
                 {!numberFormat && <option value="">Choose…</option>}
-                <option value="dot">1,234.56</option>
-                <option value="comma">1.234,56</option>
+                {Object.entries(NUMBER_FORMAT_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
               </select>
             </label>
             {hasDirection && (
@@ -645,6 +727,13 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
                     )} means in the direction column. Type the word your bank uses for money going out; other words it doesn't know count as money in.`}
               </span>
             </div>
+          )}
+          {fromLastTime.length > 0 && (
+            <p className="text-xs text-text-tertiary">
+              This file doesn't show how it writes {fromLastTime.map((f) => f.what).join(' or ')}:
+              using {fromLastTime.map((f) => f.format).join(' and ')}, as in your last import into
+              this account.
+            </p>
           )}
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
@@ -686,19 +775,12 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
             </table>
           </div>
           <div className="flex justify-end gap-2">
-            <button
-              onClick={() => setStep('upload')}
-              className="px-3 py-1.5 text-sm text-text-secondary border border-border rounded-lg hover:bg-hover"
-            >
+            <Button variant="secondary" onClick={() => setStep('upload')}>
               Back
-            </button>
-            <button
-              onClick={handlePreview}
-              disabled={loading}
-              className="px-4 py-1.5 text-sm font-medium bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50"
-            >
+            </Button>
+            <Button onClick={handlePreview} disabled={loading}>
               {loading ? 'Checking...' : 'Preview'}
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -711,6 +793,19 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
             {previewRows.length - excluded.size} will be imported.
             {skippedEntries > 0 && ` ${entriesLeftOut}`}
           </p>
+          {otherStatementAccount && (
+            <p
+              role="alert"
+              className="flex items-start gap-2 px-3 py-2 text-sm bg-caution-subtle text-caution rounded-lg"
+            >
+              <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+              <span>
+                This statement is for account {otherStatementAccount}, but the last statement
+                imported into this account was for {knownStatementAccount}. Check that you're
+                importing it into the right account.
+              </span>
+            </p>
+          )}
           {skippedRows.length > 0 && (
             <p
               role="status"
@@ -774,23 +869,19 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
           </div>
           <SavingPausedHint className="text-right" />
           <div className="flex justify-end gap-2">
-            <button
-              onClick={previewBack}
-              className="px-3 py-1.5 text-sm text-text-secondary border border-border rounded-lg hover:bg-hover"
-            >
+            <Button variant="secondary" onClick={previewBack}>
               Back
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleConfirm}
               disabled={
                 confirmMutation.isPending || previewRows.length === excluded.size || !canSave
               }
-              className="px-4 py-1.5 text-sm font-medium bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50"
             >
               {confirmMutation.isPending
                 ? 'Importing...'
                 : `Import ${previewRows.length - excluded.size} Transactions`}
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -804,12 +895,7 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
               {result.imported} imported, {result.skipped} skipped
             </p>
           </div>
-          <button
-            onClick={handleClose}
-            className="px-4 py-1.5 text-sm font-medium bg-brand-600 text-white rounded-lg hover:bg-brand-700"
-          >
-            Done
-          </button>
+          <Button onClick={handleClose}>Done</Button>
         </div>
       )}
     </Modal>

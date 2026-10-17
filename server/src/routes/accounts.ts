@@ -7,7 +7,13 @@ import { z } from 'zod';
 import { logoSchema } from '../utils/logo.js';
 import { accountTypeSchema, defaultOffBudget } from '../utils/accountTypes.js';
 import { accountTransactionSum, inAccountBalance } from '../services/balances.js';
-import { importSettingsSchema, readImportSettings } from '../utils/importSettings.js';
+import {
+  importSettingsSchema,
+  readImportSettings,
+  readStatementAccount,
+  statementAccountSchema,
+  storeImportSettings,
+} from '../utils/importSettings.js';
 
 export const accountsRouter = Router();
 
@@ -134,27 +140,58 @@ accountsRouter.put('/:id/reconcile', (req, res) => {
   res.json({ reconciled: result.changes });
 });
 
-accountsRouter.get('/:id/import-settings', (req, res) => {
-  const account = db
+const storedImportSettings = (id: string) =>
+  db
     .select({ importSettings: accounts.importSettings })
     .from(accounts)
-    .where(eq(accounts.id, req.params.id))
+    .where(eq(accounts.id, id))
     .get();
+
+accountsRouter.get('/:id/import-settings', (req, res) => {
+  const account = storedImportSettings(req.params.id);
   if (!account) return res.status(404).json({ error: 'Not found' });
-  res.json({ settings: readImportSettings(account.importSettings) });
+  res.json({
+    settings: readImportSettings(account.importSettings),
+    statementAccount: readStatementAccount(account.importSettings),
+  });
 });
+
+/** Saves one part of the import settings (CSV settings or statement account), keeping the other */
+function saveImportSettingsPart(
+  id: string,
+  change: Parameters<typeof storeImportSettings>[1],
+): boolean {
+  return db.transaction((tx) => {
+    const account = tx
+      .select({ importSettings: accounts.importSettings })
+      .from(accounts)
+      .where(eq(accounts.id, id))
+      .get();
+    if (!account) return false;
+    tx.update(accounts)
+      .set({ importSettings: storeImportSettings(account.importSettings, change) })
+      .where(eq(accounts.id, id))
+      .run();
+    return true;
+  });
+}
 
 accountsRouter.put('/:id/import-settings', (req, res) => {
   const parsed = importSettingsSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
-
-  const result = db
-    .update(accounts)
-    .set({ importSettings: JSON.stringify(parsed.data) })
-    .where(eq(accounts.id, req.params.id))
-    .run();
-  if (!result.changes) return res.status(404).json({ error: 'Not found' });
+  if (!saveImportSettingsPart(req.params.id, { settings: parsed.data })) {
+    return res.status(404).json({ error: 'Not found' });
+  }
   res.json({ settings: parsed.data });
+});
+
+accountsRouter.put('/:id/statement-account', (req, res) => {
+  const parsed = z.object({ account: statementAccountSchema }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+  if (!saveImportSettingsPart(req.params.id, { statementAccount: parsed.data.account })) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  res.json({ statementAccount: parsed.data.account });
 });
 
 accountsRouter.put('/:id', (req, res) => {

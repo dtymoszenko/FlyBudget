@@ -214,6 +214,14 @@ function readEntry(entry: Element): Draft[] | null {
   return [draft(date, amount, payee, notes, ref)];
 }
 
+/**
+ * A statement's account number as it's remembered and compared: IBANs are often written in
+ * groups of four (`DE89 3704 …`), in either case
+ */
+export function statementAccountKey(account: string | null): string | null {
+  return account?.replace(/\s+/g, '').toUpperCase() || null;
+}
+
 function accountId(statement: Element): string | null {
   const id = find(statement, 'Acct', 'Id');
   return text(find(id, 'IBAN')) ?? text(find(id, 'Othr', 'Id'));

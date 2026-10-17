@@ -58,7 +58,7 @@ describe('account import settings', () => {
     const id = await newAccount();
     expect(await send('GET', `/accounts/${id}/import-settings`)).toEqual({
       status: 200,
-      body: { settings: null },
+      body: { settings: null, statementAccount: null },
     });
   });
 
@@ -118,5 +118,67 @@ describe('account import settings', () => {
       outWord: null,
     });
     expect(put.status).toBe(404);
+    expect(
+      (await send('PUT', '/accounts/nope/statement-account', { account: 'DE89' })).status,
+    ).toBe(404);
+  });
+});
+
+describe('account statement account', () => {
+  const iban = fc
+    .array(fc.constantFrom(...'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), {
+      minLength: 1,
+      maxLength: 34,
+    })
+    .map((chars) => chars.join(''));
+
+  it('remembers the account a statement was for, without spaces and in capitals', async () => {
+    const id = await newAccount();
+    await send('PUT', `/accounts/${id}/statement-account`, {
+      account: 'de89 3704 0044 0532 0130 00',
+    });
+    expect((await send('GET', `/accounts/${id}/import-settings`)).body.statementAccount).toBe(
+      'DE89370400440532013000',
+    );
+    for (const bad of ['', '   ', 'x'.repeat(101), 42]) {
+      const put = await send('PUT', `/accounts/${id}/statement-account`, { account: bad });
+      expect(put.status).toBe(400);
+    }
+  });
+
+  it('saving CSV settings and the statement account keeps the other one', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.array(
+          fc.oneof(
+            settings.map((s) => ({ s })),
+            iban.map((a) => ({ a })),
+          ),
+          {
+            minLength: 1,
+            maxLength: 6,
+          },
+        ),
+        async (saves) => {
+          const id = await newAccount();
+          let lastSettings: ImportSettings | null = null;
+          let lastAccount: string | null = null;
+          for (const save of saves) {
+            if ('s' in save) {
+              await send('PUT', `/accounts/${id}/import-settings`, save.s);
+              lastSettings = save.s;
+            } else {
+              await send('PUT', `/accounts/${id}/statement-account`, { account: save.a });
+              lastAccount = save.a;
+            }
+          }
+          expect((await send('GET', `/accounts/${id}/import-settings`)).body).toEqual({
+            settings: lastSettings,
+            statementAccount: lastAccount,
+          });
+        },
+      ),
+      { numRuns: 20 },
+    );
   });
 });

@@ -158,7 +158,9 @@ describe('readImportAmount (property-based)', () => {
 });
 
 describe('readImportAmount with a direction after the amount (property-based)', () => {
-  it('takes the sign from DR/CR, Soll/Haben and the like', () => {
+  // The word is the bank's statement of direction, so it wins over a sign written with the
+  // amount (-12.00 CR is money in)
+  it('takes the sign from DR/CR, Soll/Haben and the like, even with a sign written too', () => {
     fc.assert(
       fc.property(
         cents.filter((c) => c !== 0),
@@ -166,7 +168,7 @@ describe('readImportAmount with a direction after the amount (property-based)', 
         amountStyle,
         fc.constantFrom(['DR', -1], ['CR', 1], ['S', -1], ['H', 1], ['Debit', -1], ['Credit', 1]),
         (c, format, style, [word, sign]) => {
-          const written = `${formatAmount(Math.abs(c), format, { ...style, sign: 0 })} ${word}`;
+          const written = `${formatAmount(c, format, style)} ${word}`;
           expect(readImportAmount(written, format)).toBe(Number(sign) * Math.abs(c));
         },
       ),

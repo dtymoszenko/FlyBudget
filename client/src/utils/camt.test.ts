@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import fc from 'fast-check';
 import { DOMParser as XmlDomParser } from '@xmldom/xmldom';
-import { decodeCamtBytes, looksLikeCamt, parseCamt } from './camt';
+import { decodeCamtBytes, looksLikeCamt, parseCamt, statementAccountKey } from './camt';
 
 // The app uses the browser's DOMParser; tests run in Node, which has none
 beforeAll(() => {
@@ -381,5 +381,27 @@ describe('parseCamt', () => {
     const xml = '<?xml version="1.0" encoding="ISO-8859-1"?><Nm>Müller</Nm>';
     const latin1 = Uint8Array.from(xml, (ch) => ch.charCodeAt(0)).buffer; // ü is one byte
     expect(decodeCamtBytes(latin1)).toContain('Müller');
+  });
+});
+
+describe('statementAccountKey (property-based)', () => {
+  it('matches an account however its number is spaced or cased', () => {
+    const iban = fc
+      .array(fc.constantFrom(...'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), {
+        minLength: 1,
+        maxLength: 34,
+      })
+      .map((chars) => chars.join(''));
+    fc.assert(
+      fc.property(iban, fc.boolean(), fc.integer({ min: 1, max: 6 }), (n, lower, group) => {
+        const written = (lower ? n.toLowerCase() : n).replace(
+          new RegExp(`(.{${group}})(?=.)`, 'g'),
+          '$1 ',
+        );
+        expect(statementAccountKey(` ${written} `)).toBe(n);
+      }),
+    );
+    expect(statementAccountKey(null)).toBeNull();
+    expect(statementAccountKey('   ')).toBeNull();
   });
 });

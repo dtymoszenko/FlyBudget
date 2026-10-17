@@ -30,12 +30,23 @@ export const reorderAccounts = (ids: string[]) =>
 
 export const getBalancesAgo = () => apiFetch<Record<string, number>>('/accounts/balances-ago');
 
-/** How this account's bank writes CSV files, from the last import (null before the first) */
+/**
+ * How this account's bank writes CSV files, from the last import, and the account number of the
+ * last bank statement imported into it (null before the first)
+ */
 export const getImportSettings = (id: string) =>
-  apiFetch<{ settings: ImportSettings | null }>(`/accounts/${id}/import-settings`);
+  apiFetch<{ settings: ImportSettings | null; statementAccount: string | null }>(
+    `/accounts/${id}/import-settings`,
+  );
 
 export const saveImportSettings = (id: string, settings: ImportSettings) =>
   apiFetch<{ settings: ImportSettings }>(`/accounts/${id}/import-settings`, {
     method: 'PUT',
     body: JSON.stringify(settings),
+  });
+
+export const saveStatementAccount = (id: string, account: string) =>
+  apiFetch<{ statementAccount: string }>(`/accounts/${id}/statement-account`, {
+    method: 'PUT',
+    body: JSON.stringify({ account }),
   });

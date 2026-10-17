@@ -41,13 +41,46 @@ export const importSettingsSchema = z.object({
 
 export type ImportSettings = z.infer<typeof importSettingsSchema>;
 
-/** Stored settings, or null if there are none or they don't fit the current shape */
-export function readImportSettings(stored: string | null): ImportSettings | null {
+/**
+ * The account number (IBAN, or the bank's own id) the last bank statement imported into this
+ * account was for, so a statement for another account can be noticed. Stored with the CSV
+ * settings, in the same column, but saved on its own.
+ */
+export const statementAccountSchema = z
+  .string()
+  .transform((s) => s.replace(/\s+/g, '').toUpperCase())
+  .pipe(z.string().min(1).max(100));
+
+function parseStored(stored: string | null): Record<string, unknown> | null {
   if (!stored) return null;
   try {
-    const parsed = importSettingsSchema.safeParse(JSON.parse(stored));
-    return parsed.success ? parsed.data : null;
+    const value: unknown = JSON.parse(stored);
+    return value && typeof value === 'object' && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : null;
   } catch {
     return null;
   }
+}
+
+/** Stored settings, or null if there are none or they don't fit the current shape */
+export function readImportSettings(stored: string | null): ImportSettings | null {
+  const parsed = importSettingsSchema.safeParse(parseStored(stored));
+  return parsed.success ? parsed.data : null;
+}
+
+/** The stored statement account, or null if there is none or it doesn't fit */
+export function readStatementAccount(stored: string | null): string | null {
+  const parsed = statementAccountSchema.safeParse(parseStored(stored)?.statementAccount);
+  return parsed.success ? parsed.data : null;
+}
+
+/** What to store: new CSV settings and/or statement account, keeping the other one */
+export function storeImportSettings(
+  stored: string | null,
+  change: { settings?: ImportSettings; statementAccount?: string },
+): string {
+  const settings = change.settings ?? readImportSettings(stored);
+  const statementAccount = change.statementAccount ?? readStatementAccount(stored);
+  return JSON.stringify({ ...settings, ...(statementAccount ? { statementAccount } : {}) });
 }

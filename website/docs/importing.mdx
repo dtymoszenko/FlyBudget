@@ -51,6 +51,11 @@ coffees at the same price on the same day) are treated as two purchases.
 Transactions you entered by hand aren't matched against an import. If you enter transactions by
 hand _and_ import files for the same account, check the preview for rows you already have.
 
+If you imported files from a European bank before FlyBudget understood day-first dates and decimal
+commas, those transactions may have the wrong date or amount. Importing the same file again won't
+recognize them as duplicates, because their dates and amounts no longer match the file. Delete the
+wrong transactions first, then import the file again.
+
 ## What FlyBudget understands
 
 - **Separators**: commas, semicolons (common in Europe, where the comma is the decimal
@@ -65,8 +70,9 @@ hand _and_ import files for the same account, check the preview for rows you alr
   them, and written-out dates like `Jan 5, 2026`.
 - **Amounts**: `1,234.56` or `1.234,56` (also `1 234,56`), with or without a currency symbol,
   and `-12.00`, `(12.00)`, `12.00-` or `12.00 DR` for money going out (`CR` for money coming in,
-  and `S`/`H` in German exports). With separate inflow and outflow columns, FlyBudget works out
-  the sign.
+  and `S`/`H` in German exports). A `DR`/`CR` after the amount decides the direction even when
+  the amount also has a sign (`-12.00 CR` is money coming in). With separate inflow and outflow
+  columns, FlyBudget works out the sign.
 - **Direction columns**: some banks (ING in the Netherlands, for one) write every amount as a
   positive number and say which way the money went in a column of its own: `Af`/`Bij`,
   `Debit`/`Credit` or `S`/`H`. Map that column as **Direction (in/out)** and FlyBudget signs
@@ -107,7 +113,10 @@ says whether it's money in or out, so there are no formats to work out.
 - Importing a statement that overlaps an earlier one is safe: FlyBudget recognizes the
   transactions it already has by the bank's own reference for each one.
 - A file with statements for more than one account asks which one belongs to the account you're
-  importing into.
+  importing into, and picks the one you imported into it before.
+- FlyBudget remembers the account number (IBAN) of the last statement you imported into each
+  account. If a statement is for a different account, the preview warns you, so a statement
+  doesn't end up in the wrong account by mistake (you can still import it).
 
 If you switch an account from CSV files to CAMT.053 statements, check the first preview for
 transactions you already have: the two formats describe the same transaction differently, so
