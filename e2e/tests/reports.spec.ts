@@ -198,6 +198,9 @@ test.describe('frozen months', () => {
       .filter({ has: page.getByText('Spending by Category', { exact: true }) })
       .filter({ has: page.getByRole('button', { name: 'Actions' }) })
       .last();
+    // Scroll first: the menu closes on scroll, and the scroll from clicking a widget below the
+    // fold can land just after the menu opens
+    await card.scrollIntoViewIfNeeded();
     await card.getByRole('button', { name: 'Actions' }).click();
     await page.getByRole('menuitem', { name: 'Date range…' }).click();
     const dialog = page.getByRole('dialog', { name: 'Date range' });
