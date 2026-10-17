@@ -68,6 +68,27 @@ test.describe('accounts', () => {
       .toMatchObject({ isOffBudget: 1, balance: 35_000_000 });
   });
 
+  test("a starting balance that isn't an amount can't be created as 0", async ({ page, api }) => {
+    await api.createAccount('Checking', 0);
+    await open(page, '/accounts');
+    await page.getByRole('main').getByRole('button', { name: 'Add Account' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Add Account' });
+    await dialog.getByRole('textbox', { name: 'Account name' }).fill('Girokonto');
+    const balance = dialog.getByRole('textbox', { name: 'Current Balance' });
+    await balance.fill('1.234.5');
+    // Refused as soon as it's typed, before the field is left
+    await expect(dialog.getByRole('button', { name: 'Add Account' })).toBeDisabled();
+    await balance.press('Enter');
+    await expect(dialog).toBeVisible();
+
+    await balance.fill('1.234,50');
+    await dialog.getByRole('button', { name: 'Add Account' }).click();
+    await expect(dialog).toBeHidden();
+    await expect
+      .poll(async () => (await api.accounts()).find((a) => a.name === 'Girokonto')?.balance)
+      .toBe(123_450);
+  });
+
   test('renaming an account keeps its balance', async ({ page, api }) => {
     const account = await api.createAccount('Checking', 250_000);
     await api.createTransaction({

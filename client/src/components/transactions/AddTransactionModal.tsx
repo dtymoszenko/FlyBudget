@@ -5,6 +5,7 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { SavedOnDeviceHint } from '../connection/SavingPausedHint';
 import { CurrencyInput } from '../ui/CurrencyInput';
+import { AmountFields, useAmountValidity } from '../ui/amountValidity';
 import { formatCurrency } from '../../utils/currency';
 import { useAccounts } from '../../hooks/useAccounts';
 import { useAddTransaction } from '../../hooks/useOffline';
@@ -56,8 +57,14 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
 
   const hasConfirmedMerchant = payeeId !== null;
   const dateValid = date !== '' && /^\d{4}-\d{2}-\d{2}$/.test(date) && isValidDate(parseISO(date));
+  // Text in the amount that isn't an amount: the amount from before would be saved
+  const { allValid: amountValid, report } = useAmountValidity();
   const isValid =
-    amount > 0 && (hasConfirmedMerchant || transferToId !== null) && dateValid && accountId !== '';
+    amount > 0 &&
+    amountValid &&
+    (hasConfirmedMerchant || transferToId !== null) &&
+    dateValid &&
+    accountId !== '';
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -129,200 +136,202 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Add transaction" size="md">
-      <div className="space-y-5">
-        {/* Debit / Credit toggle */}
-        <div className="flex gap-1 bg-surface-alt rounded-lg p-1">
-          <button
-            type="button"
-            onClick={() => setType('debit')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium rounded-md transition-all cursor-pointer ${
-              type === 'debit'
-                ? 'bg-negative-subtle text-negative ring-1 ring-negative/20'
-                : 'text-text-tertiary hover:text-text-secondary hover:bg-hover'
-            }`}
-          >
-            <MinusCircle size={15} />
-            Debit
-          </button>
-          <button
-            type="button"
-            onClick={() => setType('credit')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium rounded-md transition-all cursor-pointer ${
-              type === 'credit'
-                ? 'bg-positive-subtle text-positive ring-1 ring-positive/20'
-                : 'text-text-tertiary hover:text-text-secondary hover:bg-hover'
-            }`}
-          >
-            <PlusCircle size={15} />
-            Credit
-          </button>
-        </div>
-
-        {/* Amount */}
-        <div>
-          <label className="block text-sm font-medium text-text mb-1">Amount *</label>
-          <CurrencyInput
-            value={amount}
-            onChange={setAmount}
-            placeholder="$0.00"
-            aria-label="Amount"
-          />
-        </div>
-
-        {/* Merchant (a transfer has none: it's named after the other account) */}
-        {!transferToId && (
-          <div>
-            <label className="block text-sm font-medium text-text mb-1">Merchant *</label>
-            <MerchantSelect
-              value={{ id: payeeId, name: payeeName }}
-              onChange={(v) => {
-                setPayeeId(v.id);
-                setPayeeName(v.name);
-              }}
-            />
-          </div>
-        )}
-
-        {/* Date */}
-        <div>
-          <label className="block text-sm font-medium text-text mb-1">Date *</label>
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className={inputClass}
-          />
-        </div>
-
-        {/* Account */}
-        <div>
-          <label className="block text-sm font-medium text-text mb-1">{accountLabel} *</label>
-          <div ref={accountRef} className="relative">
+      <AmountFields report={report}>
+        <div className="space-y-5">
+          {/* Debit / Credit toggle */}
+          <div className="flex gap-1 bg-surface-alt rounded-lg p-1">
             <button
               type="button"
-              onClick={() => setShowAccountPicker(!showAccountPicker)}
-              className={`${inputClass} text-left flex items-center justify-between cursor-pointer`}
+              onClick={() => setType('debit')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium rounded-md transition-all cursor-pointer ${
+                type === 'debit'
+                  ? 'bg-negative-subtle text-negative ring-1 ring-negative/20'
+                  : 'text-text-tertiary hover:text-text-secondary hover:bg-hover'
+              }`}
             >
-              <span className="flex items-center gap-2 truncate">
-                {selectedAccount ? (
-                  <>
-                    <AccountIcon
-                      name={selectedAccount.name}
-                      type={selectedAccount.type}
-                      logo={selectedAccount.logo}
-                    />
-                    <span className="text-text">{selectedAccount.name}</span>
-                  </>
-                ) : (
-                  <span className="text-text-disabled">Select account...</span>
-                )}
-              </span>
-              <ChevronDown size={14} className="text-text-tertiary shrink-0" />
+              <MinusCircle size={15} />
+              Debit
             </button>
-            {showAccountPicker && (
-              <div
-                className="absolute z-50 top-full left-0 right-0 mt-1 bg-surface border border-border rounded-lg shadow-lg overflow-hidden max-h-56 overflow-y-auto origin-top animate-menu-in"
-                onClick={(e) => e.stopPropagation()}
+            <button
+              type="button"
+              onClick={() => setType('credit')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium rounded-md transition-all cursor-pointer ${
+                type === 'credit'
+                  ? 'bg-positive-subtle text-positive ring-1 ring-positive/20'
+                  : 'text-text-tertiary hover:text-text-secondary hover:bg-hover'
+              }`}
+            >
+              <PlusCircle size={15} />
+              Credit
+            </button>
+          </div>
+
+          {/* Amount */}
+          <div>
+            <label className="block text-sm font-medium text-text mb-1">Amount *</label>
+            <CurrencyInput
+              value={amount}
+              onChange={setAmount}
+              placeholder="$0.00"
+              aria-label="Amount"
+            />
+          </div>
+
+          {/* Merchant (a transfer has none: it's named after the other account) */}
+          {!transferToId && (
+            <div>
+              <label className="block text-sm font-medium text-text mb-1">Merchant *</label>
+              <MerchantSelect
+                value={{ id: payeeId, name: payeeName }}
+                onChange={(v) => {
+                  setPayeeId(v.id);
+                  setPayeeName(v.name);
+                }}
+              />
+            </div>
+          )}
+
+          {/* Date */}
+          <div>
+            <label className="block text-sm font-medium text-text mb-1">Date *</label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className={inputClass}
+            />
+          </div>
+
+          {/* Account */}
+          <div>
+            <label className="block text-sm font-medium text-text mb-1">{accountLabel} *</label>
+            <div ref={accountRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setShowAccountPicker(!showAccountPicker)}
+                className={`${inputClass} text-left flex items-center justify-between cursor-pointer`}
               >
-                {onBudgetAccounts.length > 0 && (
-                  <>
-                    <div className="px-3 py-1.5 text-xs font-medium text-text-tertiary bg-surface-alt">
-                      On Budget
-                    </div>
-                    {onBudgetAccounts.map((a) => (
-                      <button
-                        key={a.id}
-                        type="button"
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          chooseAccount(a.id);
-                        }}
-                        className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2.5 hover:bg-hover cursor-pointer ${
-                          accountId === a.id ? 'bg-brand-50 text-brand-700' : 'text-text'
-                        }`}
-                      >
-                        <AccountIcon name={a.name} type={a.type} logo={a.logo} />
-                        <span className="truncate flex-1">{a.name}</span>
-                        <span
-                          className={`text-xs tabular-nums shrink-0 ${a.balance >= 0 ? 'text-text-tertiary' : 'text-negative'}`}
+                <span className="flex items-center gap-2 truncate">
+                  {selectedAccount ? (
+                    <>
+                      <AccountIcon
+                        name={selectedAccount.name}
+                        type={selectedAccount.type}
+                        logo={selectedAccount.logo}
+                      />
+                      <span className="text-text">{selectedAccount.name}</span>
+                    </>
+                  ) : (
+                    <span className="text-text-disabled">Select account...</span>
+                  )}
+                </span>
+                <ChevronDown size={14} className="text-text-tertiary shrink-0" />
+              </button>
+              {showAccountPicker && (
+                <div
+                  className="absolute z-50 top-full left-0 right-0 mt-1 bg-surface border border-border rounded-lg shadow-lg overflow-hidden max-h-56 overflow-y-auto origin-top animate-menu-in"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {onBudgetAccounts.length > 0 && (
+                    <>
+                      <div className="px-3 py-1.5 text-xs font-medium text-text-tertiary bg-surface-alt">
+                        On Budget
+                      </div>
+                      {onBudgetAccounts.map((a) => (
+                        <button
+                          key={a.id}
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            chooseAccount(a.id);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2.5 hover:bg-hover cursor-pointer ${
+                            accountId === a.id ? 'bg-brand-50 text-brand-700' : 'text-text'
+                          }`}
                         >
-                          {formatCurrency(a.balance)}
-                        </span>
-                      </button>
-                    ))}
-                  </>
-                )}
-                {offBudgetAccounts.length > 0 && (
-                  <>
-                    <div className="px-3 py-1.5 text-xs font-medium text-text-tertiary bg-surface-alt">
-                      Off Budget
-                    </div>
-                    {offBudgetAccounts.map((a) => (
-                      <button
-                        key={a.id}
-                        type="button"
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          chooseAccount(a.id);
-                        }}
-                        className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2.5 hover:bg-hover cursor-pointer ${
-                          accountId === a.id ? 'bg-brand-50 text-brand-700' : 'text-text'
-                        }`}
-                      >
-                        <AccountIcon name={a.name} type={a.type} logo={a.logo} />
-                        <span className="truncate flex-1">{a.name}</span>
-                        <span
-                          className={`text-xs tabular-nums shrink-0 ${a.balance >= 0 ? 'text-text-tertiary' : 'text-negative'}`}
+                          <AccountIcon name={a.name} type={a.type} logo={a.logo} />
+                          <span className="truncate flex-1">{a.name}</span>
+                          <span
+                            className={`text-xs tabular-nums shrink-0 ${a.balance >= 0 ? 'text-text-tertiary' : 'text-negative'}`}
+                          >
+                            {formatCurrency(a.balance)}
+                          </span>
+                        </button>
+                      ))}
+                    </>
+                  )}
+                  {offBudgetAccounts.length > 0 && (
+                    <>
+                      <div className="px-3 py-1.5 text-xs font-medium text-text-tertiary bg-surface-alt">
+                        Off Budget
+                      </div>
+                      {offBudgetAccounts.map((a) => (
+                        <button
+                          key={a.id}
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            chooseAccount(a.id);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2.5 hover:bg-hover cursor-pointer ${
+                            accountId === a.id ? 'bg-brand-50 text-brand-700' : 'text-text'
+                          }`}
                         >
-                          {formatCurrency(a.balance)}
-                        </span>
-                      </button>
-                    ))}
-                  </>
-                )}
-              </div>
-            )}
+                          <AccountIcon name={a.name} type={a.type} logo={a.logo} />
+                          <span className="truncate flex-1">{a.name}</span>
+                          <span
+                            className={`text-xs tabular-nums shrink-0 ${a.balance >= 0 ? 'text-text-tertiary' : 'text-negative'}`}
+                          >
+                            {formatCurrency(a.balance)}
+                          </span>
+                        </button>
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Category */}
+          <div>
+            <label className="block text-sm font-medium text-text mb-1">Category</label>
+            <CategorySelectButton
+              value={categoryId}
+              onChange={setCategoryId}
+              position="above"
+              transferAccounts={transferAccounts}
+            />
+          </div>
+
+          {/* Notes */}
+          <div>
+            <label className="block text-sm font-medium text-text mb-1">Notes</label>
+            <input
+              type="text"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Add a note..."
+              className={inputClass}
+            />
+          </div>
+
+          {/* Footer */}
+          <SavedOnDeviceHint className="text-right" />
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="secondary" size="md" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button
+              size="md"
+              onClick={handleSubmit}
+              disabled={!isValid || newTx.pending || !newTx.allowed}
+            >
+              {newTx.pending ? 'Adding...' : newTx.onDevice ? 'Save on device' : 'Add transaction'}
+            </Button>
           </div>
         </div>
-
-        {/* Category */}
-        <div>
-          <label className="block text-sm font-medium text-text mb-1">Category</label>
-          <CategorySelectButton
-            value={categoryId}
-            onChange={setCategoryId}
-            position="above"
-            transferAccounts={transferAccounts}
-          />
-        </div>
-
-        {/* Notes */}
-        <div>
-          <label className="block text-sm font-medium text-text mb-1">Notes</label>
-          <input
-            type="text"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Add a note..."
-            className={inputClass}
-          />
-        </div>
-
-        {/* Footer */}
-        <SavedOnDeviceHint className="text-right" />
-        <div className="flex justify-end gap-3 pt-2">
-          <Button variant="secondary" size="md" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            size="md"
-            onClick={handleSubmit}
-            disabled={!isValid || newTx.pending || !newTx.allowed}
-          >
-            {newTx.pending ? 'Adding...' : newTx.onDevice ? 'Save on device' : 'Add transaction'}
-          </Button>
-        </div>
-      </div>
+      </AmountFields>
     </Modal>
   );
 }

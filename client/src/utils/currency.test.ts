@@ -119,6 +119,12 @@ describe('currency helpers (property-based)', () => {
     const comma: AmountStyle = { format: 'comma', position: 'after', symbol: 'kr.' };
     expect(parseAmount('12.50 kr.', comma)).toBe(1250);
     expect(parseAmount('12,50 kr.', comma)).toBe(1250);
+    // The symbol without its dot: the dot typed after it isn't a separator either
+    expect(parseAmount('12,50 kr.', { ...comma, symbol: 'kr' })).toBe(1250);
+    expect(parseAmount('Fr. 12.50', { ...US, symbol: 'Fr' })).toBe(1250);
+    expect(
+      parseAmount('CHF 1’234.50', { format: 'apostrophe', position: 'before', symbol: 'CHF' }),
+    ).toBe(123_450);
     for (const symbol of ['S/', 'D', 'C', 'H', 'S', 's']) {
       const style: AmountStyle = { format: 'comma', position: 'after', symbol };
       expect(parseAmount(`12,50 ${symbol}`, style)).toBe(1250);

@@ -15,7 +15,7 @@ import {
 import type { HeatmapRow } from '../../utils/calendarLayout';
 import { ChartSkeleton, TOOLTIP_CLASS } from './ChartHelpers';
 import type { DailyFlowPoint } from '../../types';
-import { formatShortDay, formatWeekday } from '../../utils/dates';
+import { formatWeekday } from '../../utils/dates';
 
 // Money in and out on each day. Up to CALENDAR_MONTHS_MAX months show as month grids, each
 // day with a green bar (money in, from the left) and a red one (money out, from the right).
@@ -92,7 +92,8 @@ export function TransactionCalendar({ from, to, fit, selected, onSelect }: Props
 
   const dayProps = (day: string) => {
     const flow = byDay.get(day) ?? EMPTY;
-    const label = `${format(parseISO(day), 'EEEE')}, ${formatShortDay(day, { long: true })}: ${formatCurrency(flow.income)} in, ${formatCurrency(flow.expenses)} out`;
+    // With the year: an All time heatmap has the same day in several years
+    const label = `${formatWeekday(day, { long: true })}: ${formatCurrency(flow.income)} in, ${formatCurrency(flow.expenses)} out`;
     return {
       onMouseEnter: (e: React.MouseEvent<HTMLElement>) => showTooltip(day, e.currentTarget),
       onMouseLeave: () => setHover(null),

@@ -7,6 +7,7 @@ import {
   readTypedAmount,
   useAmountStyle,
 } from '../../utils/currency';
+import { useReportAmountValidity } from './amountValidity';
 
 interface Props {
   value: number;
@@ -29,8 +30,21 @@ export function CurrencyInput({
   const [raw, setRaw] = useState('');
   // Text that isn't an amount stays in the field, marked, instead of quietly becoming 0
   const [invalid, setInvalid] = useState(false);
+  // Whether what's in the field now is an amount: checked as it's typed, so a form can't be
+  // submitted (and a dialog keeps Save disabled) while it isn't, even before the field is left
+  const [readable, setReadable] = useState(true);
+  useReportAmountValidity(readable);
   const style = useAmountStyle();
   const hintId = useId();
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const text = e.target.value;
+    setRaw(text);
+    const ok = readTypedAmount(text, style) !== null;
+    setReadable(ok);
+    // The browser then refuses to submit a form holding this field, and says why
+    e.target.setCustomValidity(ok ? '' : UNREADABLE_AMOUNT);
+  }
 
   function handleFocus(e: React.FocusEvent<HTMLInputElement>) {
     const initial = invalid ? raw : (value < 0 ? '-' : '') + amountToInput(value, style);
@@ -64,7 +78,7 @@ export function CurrencyInput({
         value={shown}
         onFocus={handleFocus}
         onBlur={handleBlur}
-        onChange={(e) => setRaw(e.target.value)}
+        onChange={handleChange}
         placeholder={placeholder ?? amountPlaceholder(style)}
         aria-label={ariaLabel}
         aria-invalid={invalid || undefined}

@@ -112,7 +112,11 @@ export function amountToInput(cents: number, style: AmountStyle): string {
  */
 export function readTypedAmount(s: string, style: AmountStyle): number | null {
   let text = s;
-  if (style.symbol && !/\d/.test(style.symbol)) text = text.split(style.symbol).join(' ');
+  // Symbols with letters (kr, Fr, CHF, S/) are left to amountChars, which removes them with
+  // a dot written after them (kr.): removing "kr" here would leave that dot behind
+  if (style.symbol && !/[\d\p{L}]/u.test(style.symbol)) {
+    text = text.split(style.symbol).join(' ');
+  }
   // Separators the same way the reader sees them: currency words like kr. or Fr. removed
   const bare = amountChars(text).replace(/[()+-]/g, '');
   if (bare === '') return text.trim() === '' ? 0 : null;
