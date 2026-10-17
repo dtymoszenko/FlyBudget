@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { format } from 'date-fns';
 import { Check, X, Split, Plus, Trash2 } from 'lucide-react';
 import { PayeeCombobox } from './PayeeCombobox';
@@ -6,7 +6,14 @@ import { useCanAddTransaction } from '../../hooks/useOffline';
 import { CategorySelect } from './CategorySelect';
 import type { Account, CategoryGroup, Payee, Transaction } from '../../types';
 import type { CreateTransactionData, SplitItem } from '../../api/transactions';
-import { parseCents, centsToInput, formatCurrency, amountPlaceholder } from '../../utils/currency';
+import {
+  parseCents,
+  centsToInput,
+  formatCurrency,
+  amountPlaceholder,
+  isUnreadableAmount,
+  UNREADABLE_AMOUNT,
+} from '../../utils/currency';
 
 interface Props {
   initial?: Transaction;
@@ -69,7 +76,35 @@ export function TransactionFormRow({
     return inflowCents > 0 ? inflowCents : -parseCents(outflow);
   }
 
+  // The amount field being typed in: it isn't marked unreadable until it's left ("-" on the
+  // way to "-12" is fine)
+  const [editing, setEditing] = useState<string | null>(null);
+  const amountHintId = useId();
+  const amountFields = [
+    { name: 'outflow', value: outflow },
+    { name: 'inflow', value: inflow },
+    ...(splitMode ? splits.map((s, i) => ({ name: `split-${i}`, value: s.amount })) : []),
+  ];
+  const unreadable = (name: string) =>
+    amountFields.some((a) => a.name === name && isUnreadableAmount(a.value));
+  const shownUnreadable = amountFields.some((a) => a.name !== editing && unreadable(a.name));
+  const amountProps = (name: string) => ({
+    onFocus: () => setEditing(name),
+    onBlur: () => setEditing((e) => (e === name ? null : e)),
+    'aria-invalid': (name !== editing && unreadable(name)) || undefined,
+    'aria-describedby': name !== editing && unreadable(name) ? amountHintId : undefined,
+  });
+  const invalidCls = (name: string) =>
+    name !== editing && unreadable(name)
+      ? ' border-negative focus:border-negative focus:ring-negative'
+      : '';
+
   function handleSave() {
+    // Never save text that isn't an amount as 0
+    if (amountFields.some((a) => isUnreadableAmount(a.value))) {
+      setEditing(null);
+      return;
+    }
     const amount = getTotalCents();
 
     if (splitMode) {
@@ -254,12 +289,13 @@ export function TransactionFormRow({
             inputMode="decimal"
             value={outflow}
             aria-label="Outflow"
+            {...amountProps('outflow')}
             onChange={(e) => {
               setOutflow(e.target.value);
               if (e.target.value) setInflow('');
             }}
             placeholder={amountPlaceholder()}
-            className={`${inputCls} text-right tabular-nums`}
+            className={`${inputCls} text-right tabular-nums${invalidCls('outflow')}`}
           />
         </div>
         <div className={sheet ? '' : 'w-28'}>
@@ -269,12 +305,13 @@ export function TransactionFormRow({
             inputMode="decimal"
             value={inflow}
             aria-label="Inflow"
+            {...amountProps('inflow')}
             onChange={(e) => {
               setInflow(e.target.value);
               if (e.target.value) setOutflow('');
             }}
             placeholder={amountPlaceholder()}
-            className={`${inputCls} text-right tabular-nums`}
+            className={`${inputCls} text-right tabular-nums${invalidCls('inflow')}`}
           />
         </div>
         {!sheet && (
@@ -297,6 +334,11 @@ export function TransactionFormRow({
           </>
         )}
       </div>
+      {shownUnreadable && (
+        <p id={amountHintId} role="alert" className="mt-1 text-xs text-negative">
+          {UNREADABLE_AMOUNT}
+        </p>
+      )}
 
       {splitMode && (
         <div
@@ -339,8 +381,9 @@ export function TransactionFormRow({
                 value={s.amount}
                 onChange={(e) => updateSplit(i, 'amount', e.target.value)}
                 aria-label={`Split ${i + 1} amount`}
+                {...amountProps(`split-${i}`)}
                 placeholder={amountPlaceholder()}
-                className={`${inputCls} text-right tabular-nums ${sheet ? '' : 'text-xs'}`}
+                className={`${inputCls} text-right tabular-nums ${sheet ? '' : 'text-xs'}${invalidCls(`split-${i}`)}`}
               />
               <div className={sheet ? 'w-11' : 'w-6'}>
                 {splits.length > 2 && (

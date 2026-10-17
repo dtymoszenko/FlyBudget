@@ -58,6 +58,28 @@ test.describe('account register', () => {
     expect(payees.map((p) => p.name)).toContain('Corner Grocery');
   });
 
+  test("never saves text that isn't an amount as 0", async ({ page, api }) => {
+    const { checking } = await setup(api);
+    await open(page, `/accounts/${checking.id}`);
+    await fillNewTransaction(page, { payee: 'Corner Grocery', outflow: 'abc' });
+    const form = newForm(page);
+    await form.getByRole('button', { name: 'Save' }).click();
+    await expect(form.getByRole('textbox', { name: 'Outflow' })).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+    await expect(form.getByRole('alert')).toHaveText(
+      "That isn't an amount. Type it like 12.50 or 12,50.",
+    );
+    expect(await api.transactions(`?account_id=${checking.id}`)).toHaveLength(0);
+
+    // Fixed, it saves
+    await form.getByRole('textbox', { name: 'Outflow' }).fill('4,50');
+    await expect(form.getByRole('alert')).toBeHidden();
+    await form.getByRole('button', { name: 'Save' }).click();
+    await expect.poll(() => api.balance(checking.id)).toBe(100_000 - 450);
+  });
+
   test('adds income as an inflow', async ({ page, api }) => {
     const { checking } = await setup(api);
     await open(page, `/accounts/${checking.id}`);

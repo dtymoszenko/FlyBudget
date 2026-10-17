@@ -6,6 +6,7 @@ import {
   formatAmount,
   formatAxisAmount,
   localeAmountStyle,
+  isUnreadableAmount,
   parseAmount,
   type AmountStyle,
 } from './currency';
@@ -20,7 +21,23 @@ const US: AmountStyle = { format: 'dot', position: 'before', symbol: '$' };
 const arbStyle = fc.record<AmountStyle>({
   format: fc.constantFrom(...FORMATS),
   position: fc.constantFrom('before', 'after'),
-  symbol: fc.constantFrom('$', '€', '£', 'kr', 'CHF', 'zł', 'Kč', 'Fr.'),
+  // S/, D, C and H are also debit/credit words in bank files: typed amounts must not read them so
+  symbol: fc.constantFrom(
+    '$',
+    '€',
+    '£',
+    'kr',
+    'kr.',
+    'CHF',
+    'zł',
+    'Kč',
+    'Fr.',
+    'S/',
+    'D',
+    'C',
+    'H',
+    'R$',
+  ),
 });
 
 // Undo formatCurrency's formatting by hand (not with parseCents) to get cents back
@@ -77,6 +94,47 @@ describe('currency helpers (property-based)', () => {
     expect(parseAmount('1 234,56', { ...US, format: 'space' })).toBe(123_456);
     expect(parseAmount("1'234.56", { ...US, format: 'apostrophe' })).toBe(123_456);
     expect(parseAmount('-12,50', comma)).toBe(-1250);
+  });
+
+  it('reads an amount with both separators by the last one, in any format', () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 1, max: 999 }),
+        fc.integer({ min: 0, max: 999 }),
+        fc.nat({ max: 99 }),
+        arbStyle,
+        (thousands, units, cc, style) => {
+          const groups = `${thousands}${String(units).padStart(3, '0')}`;
+          const cents = Number(groups) * 100 + cc;
+          const fraction = String(cc).padStart(2, '0');
+          const [t, u] = [String(thousands), String(units).padStart(3, '0')];
+          expect(parseAmount(`${t}.${u},${fraction}`, style)).toBe(cents);
+          expect(parseAmount(`${t},${u}.${fraction}`, style)).toBe(cents);
+        },
+      ),
+    );
+  });
+
+  it('never reads a symbol after the amount as a debit or credit, and ignores a dotted symbol', () => {
+    const comma: AmountStyle = { format: 'comma', position: 'after', symbol: 'kr.' };
+    expect(parseAmount('12.50 kr.', comma)).toBe(1250);
+    expect(parseAmount('12,50 kr.', comma)).toBe(1250);
+    for (const symbol of ['S/', 'D', 'C', 'H', 'S', 's']) {
+      const style: AmountStyle = { format: 'comma', position: 'after', symbol };
+      expect(parseAmount(`12,50 ${symbol}`, style)).toBe(1250);
+      expect(parseAmount(`-12,50 ${symbol}`, style)).toBe(-1250);
+    }
+    // Typed amounts ignore DR/CR too: the sign is what was typed
+    expect(parseAmount('45.00 DR', US)).toBe(4500);
+  });
+
+  it('tells text that is no amount apart from an empty field', () => {
+    for (const ok of ['', '  ', '0', '12', '12,50', '-3', '$1,234.56', '1.234,56 €']) {
+      expect(isUnreadableAmount(ok, US)).toBe(false);
+    }
+    for (const bad of ['abc', '-', '.', '12.5.0', '1,2,3.4.5', '1.2.3,4,5']) {
+      expect(isUnreadableAmount(bad, US)).toBe(true);
+    }
   });
 
   it('takes amounts up to the server limit of 100 billion', () => {

@@ -97,6 +97,25 @@ test.describe('accounts', () => {
     await expect.poll(() => api.balance(account.id)).toBe(50_000);
   });
 
+  test("text that isn't an amount is marked and keeps the balance it had", async ({
+    page,
+    api,
+  }) => {
+    const account = await api.createAccount('Checking', 10_000);
+    await open(page, `/accounts/${account.id}`);
+    await page.getByRole('button', { name: 'Edit' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Edit Account' });
+    const field = dialog.getByRole('textbox', { name: 'Starting balance' });
+    await typeAmount(field, '12.5.0');
+    await expect(field).toHaveAttribute('aria-invalid', 'true');
+    await expect(field).toHaveValue('12.5.0');
+    await expect(dialog.getByRole('alert')).toHaveText(
+      "That isn't an amount. Type it like 12.50 or 12,50.",
+    );
+    await dialog.getByRole('button', { name: 'Save' }).click();
+    await expect.poll(() => api.balance(account.id)).toBe(10_000);
+  });
+
   test('closing an account hides it', async ({ page, api }) => {
     await api.createAccount('Keep Me', 100);
     const account = await api.createAccount('Old Card', -500, 'credit');

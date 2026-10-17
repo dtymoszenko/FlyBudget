@@ -115,8 +115,9 @@ interface SankeyDiagramProps {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-/** A whole amount, without cents: node labels are short */
-const formatDollars = (cents: number) => formatCurrency(Math.round(cents / 100) * 100);
+/** A whole amount, without cents: node labels are short. Halves round away from zero either way. */
+const formatDollars = (cents: number) =>
+  formatCurrency(Math.sign(cents) * Math.round(Math.abs(cents) / 100) * 100);
 
 function lighten(hex: string, amt: number): string {
   const r = parseInt(hex.slice(1, 3), 16);

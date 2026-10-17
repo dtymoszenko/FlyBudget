@@ -195,6 +195,10 @@ test.describe('preferences', () => {
       .getByRole('button', { name: '1.234,56' })
       .click();
     await page.getByRole('button', { name: 'Data' }).click();
+    // The Data tab says how the file will be written
+    await expect(page.getByRole('main')).toContainText(
+      'Amounts are written like -12,50, with semicolons between columns',
+    );
     const download = page.waitForEvent('download');
     await page.getByRole('button', { name: 'Download CSV' }).click();
     const csv = fs.readFileSync(await (await download).path(), 'utf8');
@@ -252,4 +256,29 @@ test('settings link to the license and the source code', async ({ page, api }) =
   // Opens outside the app (the desktop app hands https links to the system browser)
   await expect(source).toHaveAttribute('target', '_blank');
   await expect(source).toHaveAttribute('rel', /noopener/);
+});
+
+test.describe('amounts on a German device', () => {
+  test.use({ locale: 'de-DE' });
+
+  test('a new install follows the device language', async ({ page, api }) => {
+    const girokonto = await api.createAccount('Girokonto', 123_456);
+    await open(page, `/accounts/${girokonto.id}`);
+    await expect(page.getByRole('main')).toContainText('1.234,56 $');
+  });
+
+  test('an install from before the setting keeps the amounts it had', async ({ page, api }) => {
+    const girokonto = await api.createAccount('Girokonto', 123_456);
+    // Preferences saved by a version without the amount format (no version number)
+    await page.addInitScript(() => {
+      if (!localStorage.getItem('budget-preferences')) {
+        localStorage.setItem(
+          'budget-preferences',
+          JSON.stringify({ state: { currencySymbol: '$', setupSkipped: true }, version: 0 }),
+        );
+      }
+    });
+    await open(page, `/accounts/${girokonto.id}`);
+    await expect(page.getByRole('main')).toContainText('$1,234.56');
+  });
 });

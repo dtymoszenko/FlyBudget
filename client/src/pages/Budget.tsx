@@ -5,7 +5,13 @@ import { ChevronLeft, ChevronRight, ChevronDown, Eye, Lightbulb } from 'lucide-r
 import { useAppStore } from '../store/appStore';
 import { usePreferencesStore } from '../store/preferencesStore';
 import { useBudget, useBudgetSummary, useSetBudget, useSetBudgetBulk } from '../hooks/useBudget';
-import { formatCurrency, parseCents, centsToInput } from '../utils/currency';
+import {
+  formatCurrency,
+  parseCents,
+  centsToInput,
+  isUnreadableAmount,
+  UNREADABLE_AMOUNT,
+} from '../utils/currency';
 import { BudgetSummaryWidget } from '../components/budget/BudgetSummaryWidget';
 import { BudgetEditPopover } from '../components/budget/BudgetEditPopover';
 import { Button } from '../components/ui/Button';
@@ -30,6 +36,7 @@ function AmountInput({
   onCancel: () => void;
 }) {
   const [raw, setRaw] = useState(centsToInput(cents));
+  const [invalid, setInvalid] = useState(false);
   const cancelled = useRef(false);
 
   return (
@@ -39,12 +46,19 @@ function AmountInput({
       type="text"
       inputMode="decimal"
       value={raw}
-      onChange={(e) => setRaw(e.target.value)}
+      onChange={(e) => {
+        setRaw(e.target.value);
+        setInvalid(false);
+      }}
+      aria-invalid={invalid || undefined}
+      title={invalid ? UNREADABLE_AMOUNT : undefined}
       // Select the amount so typing replaces it
       onFocus={(e) => e.target.select()}
       onKeyDown={(e) => {
         if (e.key === 'Enter') {
-          (e.target as HTMLInputElement).blur();
+          // Text that isn't an amount stays open to fix, rather than saving 0
+          if (isUnreadableAmount(raw)) setInvalid(true);
+          else (e.target as HTMLInputElement).blur();
         }
         if (e.key === 'Escape') {
           cancelled.current = true;
@@ -52,9 +66,12 @@ function AmountInput({
         }
       }}
       onBlur={() => {
-        if (!cancelled.current) onSave(parseCents(raw));
+        if (cancelled.current) return;
+        // Left with text that isn't an amount: keep the planned amount it had
+        if (isUnreadableAmount(raw)) onCancel();
+        else onSave(parseCents(raw));
       }}
-      className="w-28 text-right tabular-nums text-sm bg-surface border border-brand-500 rounded-md px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-brand-600"
+      className={`w-28 text-right tabular-nums text-sm bg-surface border rounded-md px-2 py-0.5 focus:outline-none focus:ring-1 ${invalid ? 'border-negative focus:ring-negative' : 'border-brand-500 focus:ring-brand-600'}`}
     />
   );
 }

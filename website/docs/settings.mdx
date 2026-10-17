@@ -52,8 +52,13 @@ See [Backups and exports](./backups).
 
 The number format and currency symbol only change how amounts look, never their value. Whatever
 the format, you can type an amount with a decimal point or a decimal comma: `12.50`, `12,50` and
-`12,5` all mean twelve fifty. Only a number like `1.234` depends on the format: with `1.234,56` it's
-one thousand two hundred thirty-four, with `1,234.56` it's one twenty-three.
+`12,5` all mean twelve fifty, and `1.234,56` and `1,234.56` are both one thousand two hundred
+thirty-four fifty-six. Only a number like `1.234` depends on the format: with `1.234,56` it's one
+thousand two hundred thirty-four, with `1,234.56` it's one twenty-three. If you type something
+that isn't an amount, the field says so and nothing is saved until it's fixed.
+
+If you used FlyBudget before the number format existed, it keeps showing `$1,234.56` until you
+choose otherwise. New installs start on **Automatic**.
 
 <Screenshot name="dark-budget" alt="The budget in dark mode" />
 

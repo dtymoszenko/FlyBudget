@@ -5,7 +5,14 @@ import { Button } from '../ui/Button';
 import { useCategoryHistory } from '../../hooks/useBudget';
 import { useCanSave } from '../../hooks/useConnection';
 import { SavingPausedHint } from '../connection/SavingPausedHint';
-import { centsToInput, formatCurrency, parseCents, amountPlaceholder } from '../../utils/currency';
+import {
+  centsToInput,
+  formatCurrency,
+  parseCents,
+  amountPlaceholder,
+  isUnreadableAmount,
+  UNREADABLE_AMOUNT,
+} from '../../utils/currency';
 import type { BudgetCategory } from '../../types';
 
 interface Props {
@@ -63,12 +70,18 @@ function SheetBody({
 }: Omit<Props, 'category'> & { category: BudgetCategory }) {
   const [raw, setRaw] = useState(category.budgeted ? centsToInput(category.budgeted) : '');
   const [allYear, setAllYear] = useState(false);
+  // Shown after Save with text that isn't an amount, until the text changes
+  const [invalid, setInvalid] = useState(false);
   const { data: history } = useCategoryHistory(category.id, month);
   const canSave = useCanSave();
 
   function save(e: React.FormEvent) {
     e.preventDefault();
     if (!canSave) return;
+    if (isUnreadableAmount(raw)) {
+      setInvalid(true);
+      return;
+    }
     const cents = Math.abs(parseCents(raw));
     if (allYear) onApplyBulk(category.id, cents);
     else onSave(category.id, cents);
@@ -91,10 +104,24 @@ function SheetBody({
           inputMode="decimal"
           aria-label={`Planned for ${category.name}`}
           value={raw}
-          onChange={(e) => setRaw(e.target.value)}
+          onChange={(e) => {
+            setRaw(e.target.value);
+            setInvalid(false);
+          }}
           placeholder={amountPlaceholder()}
-          className="w-full rounded-md border border-border bg-surface px-3 py-2.5 text-right tabular-nums text-text focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600"
+          aria-invalid={invalid || undefined}
+          aria-describedby={invalid ? 'planned-amount-hint' : undefined}
+          className={`w-full rounded-md border bg-surface px-3 py-2.5 text-right tabular-nums text-text focus:outline-none focus:ring-1 ${
+            invalid
+              ? 'border-negative focus:border-negative focus:ring-negative'
+              : 'border-border focus:border-brand-600 focus:ring-brand-600'
+          }`}
         />
+        {invalid && (
+          <span id="planned-amount-hint" role="alert" className="text-xs text-negative">
+            {UNREADABLE_AMOUNT}
+          </span>
+        )}
       </label>
 
       {suggestions.length > 0 && (

@@ -50,6 +50,23 @@ interface PreferencesState {
 
 const PREFERENCES_KEY = 'budget-preferences';
 
+/** 1: amount format and symbol position (Automatic for new installs) */
+export const PREFERENCES_VERSION = 1;
+
+/**
+ * Preferences saved by an older version, brought up to date. Installs from before the amount
+ * format existed keep 1,234.56 with the symbol first, as they had: switching them to their
+ * device's language (Automatic, the default for new installs) would change every amount on
+ * screen and the CSV files their spreadsheets expect, without them asking.
+ */
+export function migratePreferences(persisted: unknown, version: number): unknown {
+  const state = persisted && typeof persisted === 'object' ? { ...persisted } : {};
+  if (version < 1) {
+    Object.assign(state, { amountFormat: 'dot', symbolPosition: 'before' });
+  }
+  return state;
+}
+
 export const usePreferencesStore = create<PreferencesState>()(
   persist(
     (set) => ({
@@ -87,6 +104,8 @@ export const usePreferencesStore = create<PreferencesState>()(
       // The demo (website "Try the demo") shares the website's storage: keep its preferences
       // in this tab only, so they're gone with the demo budget when the tab closes
       storage: createJSONStorage(() => (IS_DEMO ? sessionStorage : localStorage)),
+      version: PREFERENCES_VERSION,
+      migrate: (persisted, version) => migratePreferences(persisted, version) as PreferencesState,
     },
   ),
 );

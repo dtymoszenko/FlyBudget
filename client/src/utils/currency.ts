@@ -5,7 +5,7 @@ import {
   type AmountFormat,
   type SymbolPosition,
 } from '../store/preferencesStore';
-import { readImportAmount } from './csv';
+import { amountChars, readImportAmount } from './csv';
 
 /** How amounts are shown and typed on this device */
 export interface AmountStyle {
@@ -100,20 +100,47 @@ export function amountToInput(cents: number, style: AmountStyle): string {
 }
 
 /**
- * Cents from what someone typed (0 if it isn't an amount). Exact, never through floats.
- * One `.` or `,` with one or two digits after it is the decimal separator in any format, so
- * 12.5, 12,5 and 12,50 all mean 12.50 for everyone; only 1.234 depends on the format (1234
- * with a decimal comma, 1.23 with a decimal point). Reads formatCurrency's output too.
+ * Cents from what someone typed, or null if it isn't an amount ('' is 0). Exact, never
+ * through floats. Which separator is the decimal one:
+ * - with both `.` and `,`, the last one (1.234,56 and 1,234.56 both work in any format)
+ * - one `.` or `,` with one or two digits after it (12.5, 12,5, 12,50 mean 12.50 for everyone)
+ * - otherwise the format's (1.234 is 1234 with a decimal comma, 1.23 with a decimal point)
+ *
+ * The user's currency symbol is ignored wherever it is, and letters after the amount are
+ * never read as debit/credit (12,50 S/ is a currency, not "S" for Soll). Reads
+ * formatCurrency's output too.
  */
-export function parseAmount(s: string, style: AmountStyle): number {
-  const bare = s.replace(/[^\d.,]/g, '');
-  const decimal = /^\d*[.,]\d{1,2}$/.test(bare)
-    ? bare.includes(',')
-      ? ','
-      : '.'
-    : decimalSeparator(style.format);
-  return readImportAmount(s, decimal === ',' ? 'comma' : 'dot') ?? 0;
+export function readTypedAmount(s: string, style: AmountStyle): number | null {
+  let text = s;
+  if (style.symbol && !/\d/.test(style.symbol)) text = text.split(style.symbol).join(' ');
+  // Separators the same way the reader sees them: currency words like kr. or Fr. removed
+  const bare = amountChars(text).replace(/[()+-]/g, '');
+  if (bare === '') return text.trim() === '' ? 0 : null;
+  const lastDot = bare.lastIndexOf('.');
+  const lastComma = bare.lastIndexOf(',');
+  const decimal =
+    lastDot !== -1 && lastComma !== -1
+      ? lastDot > lastComma
+        ? '.'
+        : ','
+      : /^\d*[.,]\d{1,2}$/.test(bare)
+        ? bare.includes(',')
+          ? ','
+          : '.'
+        : decimalSeparator(style.format);
+  return readImportAmount(text, decimal === ',' ? 'comma' : 'dot', { directionWords: false });
 }
+
+/** Cents from what someone typed, 0 if it isn't an amount */
+export const parseAmount = (s: string, style: AmountStyle): number =>
+  readTypedAmount(s, style) ?? 0;
+
+/** What an amount field says when it holds text that isn't an amount */
+export const UNREADABLE_AMOUNT = "That isn't an amount. Type it like 12.50 or 12,50.";
+
+/** Whether a field holds text that isn't an amount (an empty field is fine) */
+export const isUnreadableAmount = (s: string, style: AmountStyle = amountStyle()): boolean =>
+  readTypedAmount(s, style) === null;
 
 const groupDigits = (whole: string, group: string) => whole.replace(/\B(?=(\d{3})+$)/g, group);
 

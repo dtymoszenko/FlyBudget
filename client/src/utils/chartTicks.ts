@@ -1,5 +1,5 @@
 import { parseISO, format } from 'date-fns';
-import { formatDay } from './dates';
+import { formatDay, shortDayPattern } from './dates';
 
 // Date strings on chart axes are either days (yyyy-MM-dd) or months (yyyy-MM)
 function parseDate(s: string): Date {
@@ -8,16 +8,17 @@ function parseDate(s: string): Date {
 }
 
 /**
- * Short x-axis labels for a run of dates: "Mar 5" for days, "Mar" for months, adding the
- * year ("Mar '25") when the range spans more than one year. Which labels are actually drawn
- * is decided by useXAxisLayout.
+ * Short x-axis labels for a run of dates: "Mar 5" (or "5 Mar") for days, "Mar" for months,
+ * adding the year ("Mar '25") when the range spans more than one year. Which labels are
+ * actually drawn is decided by useXAxisLayout.
  */
 export function formatDateAxisLabels(values: string[]): string[] {
   if (!values.length) return [];
   const dates = values.map(parseDate);
   const daily = values.some((v) => v.length === 10);
   const crossesYear = dates[0].getFullYear() !== dates[dates.length - 1].getFullYear();
-  const pattern = daily ? (crossesYear ? "MMM d ''yy" : 'MMM d') : crossesYear ? "MMM ''yy" : 'MMM';
+  // Days in the Date Format preference's order: "Mar 5", or "5 Mar" / "5. Mar" day first
+  const pattern = daily ? shortDayPattern({ year: crossesYear }) : crossesYear ? "MMM ''yy" : 'MMM';
   return dates.map((d) => format(d, pattern));
 }
 

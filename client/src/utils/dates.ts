@@ -34,12 +34,26 @@ export function formatWeekday(
   return `${format(toDate(date), long ? 'EEEE' : 'EEE')}, ${day}`;
 }
 
-/** A day and month without the year: "Jan 5", or "5 Jan" where the day comes first */
+/**
+ * The date-fns pattern for a day and month: "Jan 5", "5 Jan" where the day comes first, and
+ * "5. Jan" with dd.MM.yyyy (as German and other Central European dates write it). `year` adds
+ * a short year for chart axes: "Jan 5 '26", "5. Jan '26".
+ */
+export function shortDayPattern(
+  { long = false, year = false }: { long?: boolean; year?: boolean } = {},
+  pattern: DateFormatOption = preference(),
+): string {
+  const month = long ? 'MMMM' : 'MMM';
+  const day =
+    pattern === 'dd.MM.yyyy' ? `d. ${month}` : dayFirst(pattern) ? `d ${month}` : `${month} d`;
+  return year ? `${day} ''yy` : day;
+}
+
+/** A day and month without the year: "Jan 5", "5 Jan", or "5. Jan" (see shortDayPattern) */
 export function formatShortDay(
   date: DateInput,
   { long = false }: { long?: boolean } = {},
   pattern: DateFormatOption = preference(),
 ): string {
-  const month = long ? 'MMMM' : 'MMM';
-  return format(toDate(date), dayFirst(pattern) ? `d ${month}` : `${month} d`);
+  return format(toDate(date), shortDayPattern({ long }, pattern));
 }
