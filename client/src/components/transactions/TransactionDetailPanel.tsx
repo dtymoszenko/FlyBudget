@@ -90,11 +90,11 @@ export function TransactionDetailPanel({
   const payeeName = tx.payeeName || (isTransfer ? 'Transfer' : '—');
   const payee = tx.payeeId ? payees.find((p) => p.id === tx.payeeId) : undefined;
   const categoryEntry = tx.categoryId ? (categoryMap.get(tx.categoryId) ?? null) : null;
-  // Making or undoing a transfer needs the server: not offered while saving is paused
+  // Making or undoing a transfer needs the server: not offered while saving is paused, and a
+  // balance correction can't be a transfer
   const canSave = useCanSave();
-  const transferAccounts = canSave
-    ? accounts.filter((a) => a.id !== tx.accountId && !a.closedAt)
-    : [];
+  const transferAccounts =
+    canSave && !tx.isAdjustment ? accounts.filter((a) => a.id !== tx.accountId && !a.closedAt) : [];
 
   function saveDate() {
     if (localDate !== tx.date) {

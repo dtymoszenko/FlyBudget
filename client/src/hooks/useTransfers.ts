@@ -31,23 +31,29 @@ async function restore(row: Transaction) {
 }
 
 /** Undo for "Transfer: account": unlink and restore both rows, or delete a created side */
-function pushUndo(qc: QueryClient, result: TransferLinkResult, redo: () => Promise<unknown>) {
-  const [tx, other] = result.transactions;
-  const [txBefore, otherBefore] = result.previous;
+function pushUndo(
+  qc: QueryClient,
+  initial: TransferLinkResult,
+  redo: () => Promise<TransferLinkResult>,
+) {
+  // Redo can create a new other side, so undo always works on the latest result
+  let result = initial;
   useUndoStore.getState().push({
     description: 'Make transfer',
     undo: async () => {
+      const [tx, other] = result.transactions;
+      const [txBefore, otherBefore] = result.previous;
       if (result.created) {
         await txApi.deleteTransaction(other.id);
       } else {
-        await txApi.unlinkTransfer(tx.id);
+        await txApi.unlinkTransfer(tx.id, { dismiss: false });
         if (otherBefore) await restore(otherBefore);
       }
       await restore(txBefore);
       refresh(qc);
     },
     redo: async () => {
-      await redo();
+      result = await redo();
       refresh(qc);
     },
   });
@@ -85,7 +91,7 @@ export function useLinkTransfers() {
         description: `Link ${linked.length} transfer${linked.length === 1 ? '' : 's'}`,
         undo: async () => {
           for (const result of linked) {
-            await txApi.unlinkTransfer(result.transactions[0].id);
+            await txApi.unlinkTransfer(result.transactions[0].id, { dismiss: false });
             for (const row of result.previous) if (row) await restore(row);
           }
           refresh(qc);

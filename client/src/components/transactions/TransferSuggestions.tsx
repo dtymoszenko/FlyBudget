@@ -86,6 +86,11 @@ export function TransferSuggestions({ accountId, accountName }: Props) {
               <span className="text-text-secondary">
                 The same amount left one account and arrived in another within a few days.
               </span>
+              {notice && (
+                <span role="status" className="block text-text-secondary">
+                  {notice}
+                </span>
+              )}
             </>
           ) : (
             <span role="status">{notice}</span>
@@ -137,6 +142,11 @@ export function TransferSuggestions({ accountId, accountName }: Props) {
           {linkMany.isError && (
             <p role="alert" className="text-sm text-negative">
               Couldn&apos;t link the transfers. Please try again.
+            </p>
+          )}
+          {dismiss.isError && (
+            <p role="alert" className="text-sm text-negative">
+              Couldn&apos;t save &ldquo;Not a transfer&rdquo;. Please try again.
             </p>
           )}
           <SavingPausedHint />

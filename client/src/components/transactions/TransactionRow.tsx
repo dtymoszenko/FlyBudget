@@ -223,7 +223,10 @@ export function TransactionRow({
               groups={groups}
               onClose={() => setShowCategoryPicker(false)}
               transferAccounts={
-                canSave ? transferAccounts.filter((a) => a.id !== tx.accountId) : []
+                // A balance correction can't be a transfer
+                canSave && !tx.isAdjustment
+                  ? transferAccounts.filter((a) => a.id !== tx.accountId)
+                  : []
               }
             />
           )}

@@ -359,7 +359,10 @@ transactionsRouter.post('/:id/transfer', (req, res) => {
 
 // POST /transactions/:id/unlink-transfer — "Not a transfer"
 transactionsRouter.post('/:id/unlink-transfer', (req, res) => {
-  transferAction(res, () => unlinkTransfer(req.params.id));
+  // Undo sends `dismiss: false`, so the pair is suggested again
+  const parsed = z.object({ dismiss: z.boolean().optional() }).safeParse(req.body ?? {});
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+  transferAction(res, () => unlinkTransfer(req.params.id, parsed.data));
 });
 
 // POST /transactions/import/preview — check for duplicates before importing

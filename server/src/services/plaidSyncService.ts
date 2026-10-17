@@ -104,27 +104,32 @@ export async function syncPlaidItem(plaidItemId: string): Promise<SyncResult> {
       const amount = plaidAmountToCents(tx.amount);
       const payeeName = tx.merchantName || tx.name;
 
-      // A transfer's other side follows, or the two are unlinked (see syncedTransferChange)
-      const transfer = syncedTransferChange(existing, {
-        date: tx.date,
-        amount,
-        importedPayee: payeeName,
+      // Plaid's `name` is the original bank description, as on the added path
+      const importedPayee = tx.name || payeeName;
+      // One transaction: the other side of a transfer and this row change together
+      db.transaction(() => {
+        // A transfer's other side follows, or the two are unlinked (see syncedTransferChange)
+        const transfer = syncedTransferChange(existing, {
+          date: tx.date,
+          amount,
+          importedPayee,
+        });
+        db.update(transactions)
+          .set(
+            transfer === 'unlinked'
+              ? existing.transferTransactionId
+                ? // Just unlinked: its payee was set from the bank's text
+                  { date: tx.date, amount, importedPayee }
+                : { date: tx.date, amount, payeeName }
+              : // A linked transfer keeps its "Transfer: account" name; the bank's text is kept
+                // for rules. A reconciled other side keeps the pair's amount
+                transfer === 'locked'
+                ? { date: tx.date, importedPayee }
+                : { date: tx.date, amount, importedPayee },
+          )
+          .where(eq(transactions.id, existing.id))
+          .run();
       });
-      db.update(transactions)
-        .set(
-          transfer === 'unlinked'
-            ? existing.transferTransactionId
-              ? // Just unlinked: its payee was set from this text
-                { date: tx.date, amount, importedPayee: payeeName }
-              : { date: tx.date, amount, payeeName }
-            : // A linked transfer keeps its "Transfer: account" name; the bank's text is kept
-              // for rules. A reconciled other side keeps the pair's amount
-              transfer === 'locked'
-              ? { date: tx.date, importedPayee: payeeName }
-              : { date: tx.date, amount, importedPayee: payeeName },
-        )
-        .where(eq(transactions.id, existing.id))
-        .run();
 
       result.modified++;
     }

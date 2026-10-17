@@ -206,6 +206,57 @@ describe('transfers between existing transactions', () => {
   });
 });
 
+describe('review fixes', () => {
+  it('a balance correction is never made a transfer', async () => {
+    const checking = await account('Checking N');
+    const savings = await account('Savings N', 'savings');
+    const fix = await imported(checking, '2096-10-01', -500, 'BALANCE FIX');
+    const into = await imported(savings, '2096-10-01', 500, 'DEPOSIT');
+    db.update(transactions).set({ isAdjustment: 1 }).where(eq(transactions.id, fix.id)).run();
+
+    expect(
+      (await call('POST', `/transactions/${fix.id}/transfer`, { accountId: savings })).status,
+    ).toBe(400);
+    expect(
+      (
+        await call('POST', '/transactions/transfers/link', {
+          transactionId: fix.id,
+          otherTransactionId: into.id,
+        })
+      ).status,
+    ).toBe(400);
+    expect(row(fix.id).transferTransactionId).toBeNull();
+  });
+
+  it('undoing a link (dismiss: false) suggests the pair again', async () => {
+    const checking = await account('Checking O');
+    const savings = await account('Savings O', 'savings');
+    const out = await imported(checking, '2096-10-05', -6_000, 'TO SAVINGS');
+    const into = await imported(savings, '2096-10-06', 6_000, 'FROM CHECKING');
+    const link = () =>
+      call('POST', '/transactions/transfers/link', {
+        transactionId: out.id,
+        otherTransactionId: into.id,
+      });
+    const suggested = async () =>
+      (await suggestions(checking)).some((s) => s.outflow.id === out.id);
+
+    await link();
+    expect(
+      (await call('POST', `/transactions/${out.id}/unlink-transfer`, { dismiss: false })).status,
+    ).toBe(200);
+    expect(await suggested()).toBe(true);
+
+    // "Not a transfer" (the default) still dismisses it
+    await link();
+    await call('POST', `/transactions/${out.id}/unlink-transfer`);
+    expect(await suggested()).toBe(false);
+    expect(
+      (await call('POST', `/transactions/${out.id}/unlink-transfer`, { dismiss: 'no' })).status,
+    ).toBe(400);
+  });
+});
+
 describe('when one side of a transfer changes on its own', () => {
   async function linkedPair(name: string, date: string, amount: number) {
     const checking = await account(`Checking ${name}`);

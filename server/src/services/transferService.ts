@@ -100,6 +100,7 @@ function ineligibleReason(row: TransactionRow): string | null {
   if (row.transferTransactionId) return 'This is already a transfer';
   if (row.isParent === 1 || row.parentTransactionId)
     return "A split transaction can't be a transfer";
+  if (row.isAdjustment === 1) return "A balance correction can't be a transfer";
   if (row.amount === 0) return 'A transfer needs an amount';
   return null;
 }
@@ -240,8 +241,12 @@ export function transferToAccount(id: string, accountId: string): LinkResult {
 /**
  * "Not a transfer": both sides become ordinary transactions again (named after the bank's
  * text when there is one) and the pair is never suggested again. Nothing is deleted.
+ * Undo passes `dismiss: false`: the pair goes back to being a suggestion.
  */
-export function unlinkTransfer(id: string): [TransactionRow, TransactionRow | null] {
+export function unlinkTransfer(
+  id: string,
+  { dismiss = true }: { dismiss?: boolean } = {},
+): [TransactionRow, TransactionRow | null] {
   return db.transaction(() => {
     const tx = getRow(id);
     if (!tx.transferTransactionId) throw new TransferError('This is not a transfer');
@@ -256,7 +261,7 @@ export function unlinkTransfer(id: string): [TransactionRow, TransactionRow | nu
     for (const row of other ? [tx, other] : [tx]) {
       db.update(transactions).set(restoreBankPayee(row)).where(eq(transactions.id, row.id)).run();
     }
-    if (other) dismissPair(tx.id, other.id);
+    if (other && dismiss) dismissPair(tx.id, other.id);
     return [getRow(tx.id), other ? getRow(other.id) : null];
   });
 }

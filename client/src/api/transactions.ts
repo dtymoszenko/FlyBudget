@@ -106,10 +106,14 @@ export const transferToAccount = (id: string, accountId: string) =>
     body: JSON.stringify({ accountId }),
   });
 
-/** "Not a transfer": both sides become ordinary transactions again */
-export const unlinkTransfer = (id: string) =>
+/**
+ * "Not a transfer": both sides become ordinary transactions again. Undo passes
+ * `dismiss: false` so the pair is suggested again.
+ */
+export const unlinkTransfer = (id: string, opts: { dismiss?: boolean } = {}) =>
   apiFetch<[Transaction, Transaction | null]>(`/transactions/${id}/unlink-transfer`, {
     method: 'POST',
+    body: JSON.stringify(opts),
   });
 
 export const importPreview = (accountId: string, rows: ImportRow[]) =>
