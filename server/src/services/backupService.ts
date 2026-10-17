@@ -19,6 +19,7 @@ import {
   schedules,
   simplefinAccountMappings,
   transactions,
+  transferMatchDismissals,
 } from '../db/schema.js';
 
 // Full JSON backup of the user's data, and restoring one.
@@ -42,6 +43,7 @@ const TABLES = {
   transactions,
   scheduleOccurrences,
   scheduleMatchDismissals,
+  transferMatchDismissals,
   budgetMonths,
   rules,
   customReports,

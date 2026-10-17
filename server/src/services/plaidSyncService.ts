@@ -6,6 +6,7 @@ import { syncTransactions, plaidAmountToCents, plaidBalanceToCents } from './pla
 import { buildRuleContext, insertNewTransaction, loadRules } from './ruleService.js';
 import { accountTransactionSum } from './balances.js';
 import { deleteTransactionRow } from './transactionHelpers.js';
+import { syncedTransferChange } from './transferService.js';
 
 export interface SyncResult {
   itemId: string;
@@ -103,12 +104,25 @@ export async function syncPlaidItem(plaidItemId: string): Promise<SyncResult> {
       const amount = plaidAmountToCents(tx.amount);
       const payeeName = tx.merchantName || tx.name;
 
+      // A transfer's other side follows, or the two are unlinked (see syncedTransferChange)
+      const transfer = syncedTransferChange(existing, {
+        date: tx.date,
+        amount,
+        importedPayee: payeeName,
+      });
       db.update(transactions)
-        .set({
-          date: tx.date,
-          amount,
-          payeeName,
-        })
+        .set(
+          transfer === 'unlinked'
+            ? existing.transferTransactionId
+              ? // Just unlinked: its payee was set from this text
+                { date: tx.date, amount, importedPayee: payeeName }
+              : { date: tx.date, amount, payeeName }
+            : // A linked transfer keeps its "Transfer: account" name; the bank's text is kept
+              // for rules. A reconciled other side keeps the pair's amount
+              transfer === 'locked'
+              ? { date: tx.date, importedPayee: payeeName }
+              : { date: tx.date, amount, importedPayee: payeeName },
+        )
         .where(eq(transactions.id, existing.id))
         .run();
 

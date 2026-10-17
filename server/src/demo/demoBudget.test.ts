@@ -11,6 +11,7 @@ import { budgetRouter } from '../routes/budget.js';
 import { schedulesRouter } from '../routes/schedules.js';
 import { buildDemoBudget } from './demoBudget.js';
 import { loadDemoBudget } from './loadDemoBudget.js';
+import { listTransferSuggestions } from '../services/transferService.js';
 
 // The website demo's budget (see ../browser/README.md) has to look finished whatever day
 // someone opens it: these check it for any "today".
@@ -123,6 +124,12 @@ describe('the demo budget, loaded', () => {
     expect(suggestions.map((s: { scheduleId: string }) => s.scheduleId)).toEqual([
       'demo-schedule-donation',
     ]);
+  });
+
+  it('leaves the latest card payment for the transfer suggestions', () => {
+    expect(listTransferSuggestions().map((s) => [s.outflow.payeeName, s.inflow.payeeName])).toEqual(
+      [['ONLINE PAYMENT - CREDIT CARD', 'PAYMENT RECEIVED - THANK YOU']],
+    );
   });
 
   it('leaves one subscription for "Find recurring" to spot', async () => {

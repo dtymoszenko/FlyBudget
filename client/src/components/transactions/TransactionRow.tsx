@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react';
 import { ChevronRight, ChevronDown, ArrowRight, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useUpdateTransaction } from '../../hooks/useTransactions';
+import { useTransferToAccount } from '../../hooks/useTransfers';
+import { useCanSave } from '../../hooks/useConnection';
 import { useUpdatePayee } from '../../hooks/usePayees';
 import { CategoryPicker } from './CategoryPicker';
 import { PayeePicker } from './PayeePicker';
@@ -25,6 +27,8 @@ interface Props {
   onOpenDetail: (id: string) => void;
   onFilterCategory?: (catId: string) => void;
   onFilterSearch?: (search: string) => void;
+  /** Open accounts, offered as "Transfer: name" in the category picker (except this one's) */
+  transferAccounts?: { id: string; name: string }[];
 }
 
 export function TransactionRow({
@@ -41,11 +45,15 @@ export function TransactionRow({
   onOpenDetail,
   onFilterCategory,
   onFilterSearch,
+  transferAccounts = [],
 }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showPayeePicker, setShowPayeePicker] = useState(false);
   const updateTx = useUpdateTransaction();
+  const transferTo = useTransferToAccount();
+  // Making a transfer needs the server: not offered while saving is paused
+  const canSave = useCanSave();
   const updatePayee = useUpdatePayee();
   const navigate = useNavigate();
   const showCategoryIcons = usePreferencesStore((s) => s.showCategoryIcons);
@@ -62,7 +70,11 @@ export function TransactionRow({
   );
 
   function handleCategoryChange(catId: string | null) {
-    updateTx.mutate({ id: tx.id, data: { categoryId: catId } });
+    if (catId?.startsWith('transfer:')) {
+      transferTo.mutate({ id: tx.id, accountId: catId.slice('transfer:'.length) });
+    } else {
+      updateTx.mutate({ id: tx.id, data: { categoryId: catId } });
+    }
     setShowCategoryPicker(false);
   }
 
@@ -210,6 +222,9 @@ export function TransactionRow({
               onChange={handleCategoryChange}
               groups={groups}
               onClose={() => setShowCategoryPicker(false)}
+              transferAccounts={
+                canSave ? transferAccounts.filter((a) => a.id !== tx.accountId) : []
+              }
             />
           )}
         </div>

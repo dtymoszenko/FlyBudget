@@ -220,6 +220,23 @@ export const scheduleMatchDismissals = sqliteTable(
   (table) => [uniqueIndex('idx_dismissal_unique').on(table.occurrenceId, table.transactionId)],
 );
 
+/**
+ * Pairs of transactions the user said aren't a transfer, so they're never suggested again.
+ * The id is the pair itself (`pairKey` in services/transferMatching.ts: smaller id first).
+ */
+export const transferMatchDismissals = sqliteTable('transfer_match_dismissals', {
+  id: text('id').primaryKey(),
+  transactionId: text('transaction_id')
+    .notNull()
+    .references(() => transactions.id, { onDelete: 'cascade' }),
+  otherTransactionId: text('other_transaction_id')
+    .notNull()
+    .references(() => transactions.id, { onDelete: 'cascade' }),
+  dismissedAt: text('dismissed_at')
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
 export const customReports = sqliteTable('custom_reports', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),

@@ -11,6 +11,7 @@ import { TransactionFormRow } from './TransactionFormRow';
 import { TransactionRow } from './TransactionRow';
 import { TransactionCard } from './TransactionCard';
 import { WaitingTransactions } from './WaitingTransactions';
+import { TransferSuggestions } from './TransferSuggestions';
 import { Modal } from '../ui/Modal';
 import { useIsPhone } from '../../hooks/useIsPhone';
 import { TransactionDetailPanel } from './TransactionDetailPanel';
@@ -105,6 +106,9 @@ export function TransactionTable({
     return map;
   }, [groups]);
 
+  // Offered as "Transfer: name" when categorizing a transaction
+  const transferAccounts = useMemo(() => accounts.filter((a) => !a.closedAt), [accounts]);
+
   const accountInfoMap = useMemo(
     () => new Map(accounts.map((a) => [a.id, { name: a.name, type: a.type, logo: a.logo }])),
     [accounts],
@@ -191,13 +195,15 @@ export function TransactionTable({
 
   function handleCreate(data: CreateTransactionData) {
     if (data.categoryId?.startsWith('transfer:') && accountId) {
-      const toAccountId = data.categoryId.slice('transfer:'.length);
+      const otherId = data.categoryId.slice('transfer:'.length);
+      // An outflow sends money to the other account, an inflow brings it in from there
+      const outflow = data.amount < 0;
       newTx.add(
         {
           kind: 'transfer',
           data: {
-            fromAccountId: accountId,
-            toAccountId,
+            fromAccountId: outflow ? accountId : otherId,
+            toAccountId: outflow ? otherId : accountId,
             date: data.date,
             amount: Math.abs(data.amount),
             notes: data.notes,
@@ -250,11 +256,17 @@ export function TransactionTable({
         <div className="flex-1 overflow-y-auto">
           {/* Not in a category or month view: they may not belong there */}
           {!categoryId && !categoryIds?.length && !categoryGroupId && !month && (
-            <WaitingTransactions
-              accountId={accountId}
-              categoryName={(id) => categoryMap.get(id)?.name}
-              accountName={(id) => accountInfoMap.get(id)?.name}
-            />
+            <>
+              <WaitingTransactions
+                accountId={accountId}
+                categoryName={(id) => categoryMap.get(id)?.name}
+                accountName={(id) => accountInfoMap.get(id)?.name}
+              />
+              <TransferSuggestions
+                accountId={accountId}
+                accountName={(id) => accountInfoMap.get(id)?.name}
+              />
+            </>
           )}
           {showAdd && accountId && !isPhone && (
             <TransactionFormRow
@@ -385,6 +397,7 @@ export function TransactionTable({
                         onFilterSearch={(search) =>
                           setFilters((f) => ({ ...f, search, datePreset: 'all' }))
                         }
+                        transferAccounts={transferAccounts}
                       />
                     ),
                   )}

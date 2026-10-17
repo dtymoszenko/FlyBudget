@@ -37,14 +37,22 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
   const newTx = useAddTransaction();
 
   const openAccounts = accounts.filter((a) => !a.closedAt);
-  const onBudgetAccounts = openAccounts.filter((a) => !a.isOffBudget);
-  const offBudgetAccounts = openAccounts.filter((a) => a.isOffBudget);
-  const selectedAccount = openAccounts.find((a) => a.id === accountId);
-  // Once an account is chosen, the category list also offers a transfer to any other account
-  const transferAccounts = accountId ? openAccounts.filter((a) => a.id !== accountId) : [];
+  // The category list always ends with a transfer to each other account (issue #89), even
+  // before the account is chosen
+  const transferAccounts = openAccounts.filter((a) => a.id !== accountId);
   const transferToId = categoryId?.startsWith('transfer:')
     ? categoryId.slice('transfer:'.length)
     : null;
+  // A transfer's own side can't be the account it goes to
+  const accountChoices = openAccounts.filter((a) => a.id !== transferToId);
+  const onBudgetAccounts = accountChoices.filter((a) => !a.isOffBudget);
+  const offBudgetAccounts = accountChoices.filter((a) => a.isOffBudget);
+  const selectedAccount = openAccounts.find((a) => a.id === accountId);
+  const accountLabel = transferToId
+    ? type === 'debit'
+      ? 'From account'
+      : 'To account'
+    : 'Account';
 
   const hasConfirmedMerchant = payeeId !== null;
   const dateValid = date !== '' && /^\d{4}-\d{2}-\d{2}$/.test(date) && isValidDate(parseISO(date));
@@ -188,7 +196,7 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
 
         {/* Account */}
         <div>
-          <label className="block text-sm font-medium text-text mb-1">Account *</label>
+          <label className="block text-sm font-medium text-text mb-1">{accountLabel} *</label>
           <div ref={accountRef} className="relative">
             <button
               type="button"
