@@ -21,6 +21,7 @@ import { chartColors } from '../utils/chartColors';
 import { TransactionTable } from '../components/transactions/TransactionTable';
 import type { Transaction } from '../types';
 import { useXAxisLayout } from '../hooks/useXAxisLayout';
+import { formatDay } from '../utils/dates';
 
 function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
@@ -219,12 +220,12 @@ function SummaryWidget({
         },
         {
           label: 'First transaction',
-          value: format(parseISO(stats.firstDate), 'MMM d, yyyy'),
+          value: formatDay(stats.firstDate),
           isAmount: false,
         },
         {
           label: 'Last transaction',
-          value: format(parseISO(stats.lastDate), 'MMM d, yyyy'),
+          value: formatDay(stats.lastDate),
           isAmount: false,
         },
       ]

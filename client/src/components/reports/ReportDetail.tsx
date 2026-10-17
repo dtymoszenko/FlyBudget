@@ -42,6 +42,7 @@ import { useSummaryCards } from './BuiltinReport';
 import { EXPENSE_COLORS } from './ChartHelpers';
 import type { StatCard } from './ChartHelpers';
 import type { BuiltinWidgetType } from '../../types';
+import { formatWeekday } from '../../utils/dates';
 
 // The full view of every built-in report has the same parts, top to bottom: four headline
 // figures, the chart, and a table of the numbers behind it (which is what Export CSV saves).
@@ -830,9 +831,7 @@ function DayTransactions({ day, onClose }: { day: string; onClose: () => void })
     <Card padding="none" className="overflow-hidden">
       <div className="flex items-center justify-between gap-3 px-5 py-3">
         <div>
-          <h3 className="text-sm font-semibold text-text">
-            {format(parseISO(day), 'EEEE, MMMM d, yyyy')}
-          </h3>
+          <h3 className="text-sm font-semibold text-text">{formatWeekday(day, { long: true })}</h3>
           <p className="text-xs text-text-tertiary mt-0.5 tabular-nums">
             {rows.length} {rows.length === 1 ? 'transaction' : 'transactions'}
             {moneyIn > 0 && <span className="text-positive"> · {formatCurrency(moneyIn)} in</span>}
@@ -985,7 +984,7 @@ function CalendarDetail({ from, to }: DetailProps) {
           selectedKey={selected}
           onRowClick={(r) => select(r.date)}
           columns={[
-            { label: 'Date', cell: (r) => format(parseISO(r.date), 'EEE, MMM d, yyyy') },
+            { label: 'Date', cell: (r) => formatWeekday(r.date) },
             { label: 'Transactions', align: 'right', cell: (r) => r.count },
             { label: 'Money in', align: 'right', cell: (r) => formatCurrency(r.income) },
             { label: 'Money out', align: 'right', cell: (r) => formatCurrency(r.expenses) },

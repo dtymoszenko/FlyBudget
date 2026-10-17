@@ -86,7 +86,6 @@ export function AddAccountModal({ isOpen, onClose }: Props) {
           <CurrencyInput
             value={amount}
             onChange={setAmount}
-            placeholder="0.00"
             aria-label={amountLabel}
             allowNegative={!info.liability}
           />

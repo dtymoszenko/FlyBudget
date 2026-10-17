@@ -107,13 +107,16 @@ test.describe('register', () => {
     expect(fontSize).toBeGreaterThanOrEqual(16);
 
     await form.getByRole('textbox', { name: 'Payee' }).fill('Big Box Store');
-    await form.getByRole('spinbutton', { name: 'Outflow' }).fill('100');
+    // A decimal keypad, and a decimal comma works as well as a point
+    const outflow = form.getByRole('textbox', { name: 'Outflow' });
+    await expect(outflow).toHaveAttribute('inputmode', 'decimal');
+    await outflow.fill('100');
     await form.getByRole('button', { name: 'Split transaction' }).click();
     await form
       .getByRole('combobox', { name: 'Split 1 category' })
       .selectOption({ label: '🛒 Groceries' });
-    await form.getByRole('spinbutton', { name: 'Split 1 amount' }).fill('60');
-    await form.getByRole('spinbutton', { name: 'Split 2 amount' }).fill('40');
+    await form.getByRole('textbox', { name: 'Split 1 amount' }).fill('60,50');
+    await form.getByRole('textbox', { name: 'Split 2 amount' }).fill('39.50');
     await expect(form.getByText('Balanced')).toBeVisible();
     for (const name of ['Save', 'Split transaction', 'Cancel']) {
       await expectTouchSize(form.getByRole('button', { name, exact: true }));
@@ -147,7 +150,7 @@ test.describe('budget', () => {
     await planned.click();
     const sheet = page.getByRole('dialog', { name: 'Plan Groceries' });
     await expectBottomSheet(page, sheet);
-    await sheet.getByRole('spinbutton', { name: 'Planned for Groceries' }).fill('425');
+    await sheet.getByRole('textbox', { name: 'Planned for Groceries' }).fill('425');
     await sheet.getByRole('button', { name: 'Save' }).click();
     await expect(sheet).toBeHidden();
     await expect(card).toContainText('$382.50 remaining');
@@ -155,7 +158,7 @@ test.describe('budget', () => {
     // Enter saves too, and the amount can be used for the next 12 months
     await card.getByRole('button', { name: /^Planned for Groceries/ }).click();
     await sheet.getByRole('checkbox', { name: 'Use this amount for the next 12 months' }).check();
-    const input = sheet.getByRole('spinbutton', { name: 'Planned for Groceries' });
+    const input = sheet.getByRole('textbox', { name: 'Planned for Groceries' });
     await input.fill('300');
     await input.press('Enter');
     await expect(sheet).toBeHidden();

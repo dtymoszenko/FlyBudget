@@ -9,6 +9,7 @@ import {
   saveSafetyCopy,
 } from '../services/backupService.js';
 import { eq, and, gte, lte } from 'drizzle-orm';
+import { z } from 'zod';
 import { isRealDate } from '../utils/validation.js';
 
 export const exportRouter = Router();
@@ -20,18 +21,36 @@ const RESTORE_BODY_LIMIT = '250mb';
  * Quotes a text cell for CSV. Payee names and notes can come from banks and
  * merchants, so cells that a spreadsheet would treat as a formula (=, +, -, @,
  * tab, CR) are prefixed with an apostrophe to block CSV formula injection
- * (https://owasp.org/www-community/attacks/CSV_Injection).
+ * (https://owasp.org/www-community/attacks/CSV_Injection). Cells holding the column
+ * separator (`,`, or `;` in files with a decimal comma) are quoted.
  */
-export function escapeCsv(val: string | null | undefined): string {
+export function escapeCsv(val: string | null | undefined, separator: ',' | ';' = ','): string {
   if (val == null) return '';
   let s = String(val);
   if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
-  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  if (/["\n\r]/.test(s) || s.includes(separator)) return `"${s.replace(/"/g, '""')}"`;
   return s;
 }
 
+/** Cents as a CSV amount, exactly: -1234.56, or -1234,56 with a decimal comma */
+export function csvAmount(cents: number, decimal: '.' | ','): string {
+  const abs = Math.abs(cents);
+  const text = `${Math.floor(abs / 100)}${decimal}${String(abs % 100).padStart(2, '0')}`;
+  return cents < 0 ? `-${text}` : text;
+}
+
+// How the file writes amounts: `comma` for spreadsheets in languages with a decimal comma,
+// which then expect `;` between columns. Without it, the old `12.50` with commas.
+const csvFormatSchema = z.enum(['dot', 'comma']).default('dot');
+
 exportRouter.get('/transactions/csv', (req, res) => {
   const { from, to } = req.query;
+  const decimalFormat = csvFormatSchema.safeParse(req.query.decimal);
+  if (!decimalFormat.success) {
+    return res.status(400).json({ error: 'Expected `decimal` to be dot or comma' });
+  }
+  const [sep, decimal] =
+    decimalFormat.data === 'comma' ? ([';', ','] as const) : ([',', '.'] as const);
   if (
     (from !== undefined && !isRealDate(String(from))) ||
     (to !== undefined && !isRealDate(String(to)))
@@ -73,18 +92,18 @@ exportRouter.get('/transactions/csv', (req, res) => {
       .map((c) => [c.id, c.name]),
   );
 
-  const header = 'Date,Account,Payee,Category,Notes,Amount,Reconciled\n';
+  const header = `${['Date', 'Account', 'Payee', 'Category', 'Notes', 'Amount', 'Reconciled'].join(sep)}\n`;
   const body = rows
     .map((r) =>
       [
         r.date,
-        escapeCsv(accts[r.accountId] ?? ''),
-        escapeCsv(r.payeeName),
-        escapeCsv(r.categoryId ? (cats[r.categoryId] ?? '') : ''),
-        escapeCsv(r.notes),
-        (r.amount / 100).toFixed(2),
+        escapeCsv(accts[r.accountId] ?? '', sep),
+        escapeCsv(r.payeeName, sep),
+        escapeCsv(r.categoryId ? (cats[r.categoryId] ?? '') : '', sep),
+        escapeCsv(r.notes, sep),
+        csvAmount(r.amount, decimal),
         r.reconciled ? 'Yes' : 'No',
-      ].join(','),
+      ].join(sep),
     )
     .join('\n');
 

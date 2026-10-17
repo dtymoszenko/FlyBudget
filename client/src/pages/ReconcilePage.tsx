@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ChevronRight, Check } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { useAccounts } from '../hooks/useAccounts';
 import {
   useTransactions,
@@ -13,6 +13,7 @@ import { Button } from '../components/ui/Button';
 import { CurrencyInput } from '../components/ui/CurrencyInput';
 import { formatCurrency } from '../utils/currency';
 import type { Transaction } from '../types';
+import { formatDay } from '../utils/dates';
 
 export default function ReconcilePage() {
   const { id } = useParams<{ id: string }>();
@@ -203,7 +204,7 @@ export default function ReconcilePage() {
                       className={`border-b border-border-light cursor-pointer transition-colors ${checked ? 'bg-positive-subtle hover:bg-positive-subtle' : 'hover:bg-hover'}`}
                     >
                       <td className="px-4 py-2 text-xs text-text-tertiary whitespace-nowrap">
-                        {format(parseISO(tx.date), 'MMM d, yyyy')}
+                        {formatDay(tx.date)}
                       </td>
                       <td className="px-4 py-2 text-sm text-text">
                         {tx.payeeName ?? <span className="text-text-disabled italic">—</span>}

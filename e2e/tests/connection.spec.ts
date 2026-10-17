@@ -83,7 +83,7 @@ test('mid-session the app keeps what it loaded, keeps new transactions, and reco
     await page.getByRole('button', { name: 'Add Transaction' }).click();
     const form = page.getByRole('form', { name: 'New transaction' });
     await form.getByRole('textbox', { name: 'Payee' }).fill('Coffee Cart');
-    await form.getByRole('spinbutton', { name: 'Outflow' }).fill('4.75');
+    await form.getByRole('textbox', { name: 'Outflow' }).fill('4.75');
     await form.getByRole('button', { name: 'Save' }).click();
     await expect(form).toBeHidden();
     await expect(

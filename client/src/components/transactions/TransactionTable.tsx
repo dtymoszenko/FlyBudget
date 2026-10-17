@@ -1,6 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { format, parseISO } from 'date-fns';
 import { Plus, Receipt, SearchX, Upload, Link2 } from 'lucide-react';
 import { useTransactions } from '../../hooks/useTransactions';
 import { useCategories } from '../../hooks/useCategories';
@@ -25,6 +24,7 @@ import { formatCurrency } from '../../utils/currency';
 import type { FilterState } from './TransactionFilters';
 import type { CategoryGroup } from '../../types';
 import type { CreateTransactionData } from '../../api/transactions';
+import { formatDayLong } from '../../utils/dates';
 
 /** Rows drawn at a time: every match is loaded, but drawing thousands at once is slow */
 const ROWS_PER_PAGE = 300;
@@ -347,7 +347,7 @@ export function TransactionTable({
                 <div key={group.date}>
                   <div className="flex items-center justify-between px-4 py-2 bg-surface-alt border-b border-border-light">
                     <span className="text-sm font-medium text-text-secondary">
-                      {format(parseISO(group.date), 'MMMM d, yyyy')}
+                      {formatDayLong(group.date)}
                     </span>
                     <span className="text-sm font-medium text-text-secondary tabular-nums">
                       {formatCurrency(group.total)}

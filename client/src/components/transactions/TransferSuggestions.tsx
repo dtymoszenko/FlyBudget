@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { format, parseISO } from 'date-fns';
 import { ArrowLeftRight, ArrowRight } from 'lucide-react';
 import {
   useDismissTransferSuggestion,
@@ -12,6 +11,7 @@ import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { SavingPausedHint } from '../connection/SavingPausedHint';
 import type { Transaction, TransferSuggestion } from '../../types';
+import { formatDay } from '../../utils/dates';
 
 interface Props {
   /** The account whose register this is (all accounts when absent) */
@@ -20,7 +20,7 @@ interface Props {
 }
 
 const keyOf = (s: TransferSuggestion) => `${s.outflow.id}|${s.inflow.id}`;
-const shortDate = (date: string) => format(parseISO(date), 'MMM d, yyyy');
+const shortDate = (date: string) => formatDay(date);
 
 /**
  * Transfers hiding among ordinary transactions: the same amount leaving one account and

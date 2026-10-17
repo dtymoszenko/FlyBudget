@@ -243,6 +243,22 @@ const SHOTS: Shot[] = [
   },
   { name: 'settings-data', route: '/settings?tab=data', waitFor: 'Download Backup' },
   { name: 'settings-preferences', route: '/settings?tab=preferences', waitFor: 'Theme' },
+  {
+    name: 'settings-amounts',
+    route: '/settings?tab=preferences',
+    waitFor: 'Number format',
+    // Shown the European way, the reason the setting exists
+    prepare: async (page) => {
+      const amounts = page.getByRole('region', { name: 'Amounts' });
+      await amounts
+        .getByRole('group', { name: 'Number format' })
+        .getByRole('button', { name: '1.234,56' })
+        .click();
+      await amounts.getByRole('textbox', { name: 'Currency symbol' }).fill('€');
+      await amounts.getByRole('button', { name: 'After' }).click();
+    },
+    element: (page) => page.getByRole('region', { name: 'Amounts' }),
+  },
 
   // --- Phones ---
   { name: 'phone-dashboard', route: '/dashboard', phone: true, waitFor: 'Left to Spend' },

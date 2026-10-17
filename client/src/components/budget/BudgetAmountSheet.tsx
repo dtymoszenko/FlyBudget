@@ -5,7 +5,7 @@ import { Button } from '../ui/Button';
 import { useCategoryHistory } from '../../hooks/useBudget';
 import { useCanSave } from '../../hooks/useConnection';
 import { SavingPausedHint } from '../connection/SavingPausedHint';
-import { centsToInput, formatCurrency, parseCents } from '../../utils/currency';
+import { centsToInput, formatCurrency, parseCents, amountPlaceholder } from '../../utils/currency';
 import type { BudgetCategory } from '../../types';
 
 interface Props {
@@ -87,14 +87,12 @@ function SheetBody({
         <span className="text-sm font-medium text-text-secondary">Planned</span>
         <input
           autoFocus
-          type="number"
+          type="text"
           inputMode="decimal"
-          min="0"
-          step="0.01"
           aria-label={`Planned for ${category.name}`}
           value={raw}
           onChange={(e) => setRaw(e.target.value)}
-          placeholder="0.00"
+          placeholder={amountPlaceholder()}
           className="w-full rounded-md border border-border bg-surface px-3 py-2.5 text-right tabular-nums text-text focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600"
         />
       </label>

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { format, parseISO, subDays, addDays } from 'date-fns';
+import { format, subDays, addDays } from 'date-fns';
 import { Search, Sparkles, Clock, Plus, Repeat } from 'lucide-react';
 import { useAccounts } from '../../hooks/useAccounts';
 import { usePayees } from '../../hooks/usePayees';
@@ -26,6 +26,7 @@ import { Button } from '../ui/Button';
 import { EmptyState } from '../ui/EmptyState';
 import { docsUrl } from '../../utils/project';
 import type { Schedule, ScheduleOccurrence } from '../../types';
+import { formatDay } from '../../utils/dates';
 
 const GRID =
   'grid grid-cols-[minmax(0,1.6fr)_minmax(0,1.2fr)_minmax(0,1.2fr)_110px_130px_120px_120px_32px] items-center gap-4';
@@ -131,7 +132,7 @@ export default function AllTab({
         r.accountName,
         formatScheduleAmount(r.schedule.amount, r.schedule.amountType),
         statusLabel(r.status),
-        r.nextDate ? format(parseISO(r.nextDate), 'MMM d, yyyy') : '',
+        r.nextDate ? formatDay(r.nextDate) : '',
         FREQ_LABEL.get(r.schedule.recurrenceType) ?? '',
       ].some((f) => f.toLowerCase().includes(q)),
     );
@@ -196,7 +197,7 @@ export default function AllTab({
         {formatScheduleAmount(s.amount, s.amountType)}
       </span>
     );
-    const nextDate = r.nextDate ? format(parseISO(r.nextDate), 'MMM d, yyyy') : '—';
+    const nextDate = r.nextDate ? formatDay(r.nextDate) : '—';
     const frequency = FREQ_LABEL.get(s.recurrenceType) ?? s.recurrenceType;
 
     // Phones: a card. Name and amount on top; payee, account and frequency, then the status

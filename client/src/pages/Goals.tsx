@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Plus, ChevronDown, ChevronRight, Target } from 'lucide-react';
-import { differenceInCalendarDays, differenceInCalendarMonths, format, parseISO } from 'date-fns';
+import { differenceInCalendarDays, differenceInCalendarMonths, parseISO } from 'date-fns';
 import { useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal } from '../hooks/useGoals';
 import { useAccounts } from '../hooks/useAccounts';
 import { GoalFormModal } from '../components/goals/GoalFormModal';
@@ -15,6 +15,7 @@ import RowMenu from '../components/ui/RowMenu';
 import { formatCurrency } from '../utils/currency';
 import { usePreferencesStore } from '../store/preferencesStore';
 import type { Goal } from '../types';
+import { formatDay } from '../utils/dates';
 
 function progressOf(goal: Goal) {
   const pct =
@@ -28,7 +29,7 @@ function scheduleOf(goal: Goal, remaining: number) {
   const target = parseISO(goal.targetDate);
   const today = new Date();
   const days = differenceInCalendarDays(target, today);
-  const date = format(target, 'MMM d, yyyy');
+  const date = formatDay(target);
   if (remaining === 0) return { date, overdue: false, perMonth: null };
   if (days < 0) return { date, overdue: true, perMonth: null };
   const months = Math.max(1, differenceInCalendarMonths(target, today));

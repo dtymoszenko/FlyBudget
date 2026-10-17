@@ -1,10 +1,11 @@
-import { format, parseISO, differenceInCalendarDays } from 'date-fns';
+import { parseISO, differenceInCalendarDays } from 'date-fns';
 import { formatCurrency } from '../../utils/currency';
 import type { ScheduleOccurrence } from '../../types';
 import StatusBadge from './StatusBadge';
 import RowMenu, { type RowMenuItem } from '../ui/RowMenu';
 import { useIsPhone } from '../../hooks/useIsPhone';
 import { FREQ_LABEL, formatScheduleAmount, occurrenceBadgeStatus } from './scheduleFormat';
+import { formatShortDay } from '../../utils/dates';
 
 /** Shared with the section header in MonthlyTab so columns line up. */
 export const OCCURRENCE_GRID =
@@ -105,7 +106,7 @@ export default function RecurringItemRow({
             {amount}
           </div>
           <p className="text-xs text-text-tertiary truncate mt-0.5">
-            {format(parseISO(occ.expectedDate), 'MMM d')}
+            {formatShortDay(occ.expectedDate)}
             {relative && <span className={relative.tone}> · {relative.text}</span>} · {frequency}
             {accountName ? ` · ${accountName}` : ''}
           </p>
@@ -144,7 +145,7 @@ export default function RecurringItemRow({
 
       <div className="min-w-0">
         <p className={`text-sm tabular-nums ${isMuted ? 'text-text-tertiary' : 'text-text'}`}>
-          {format(parseISO(occ.expectedDate), 'MMM d')}
+          {formatShortDay(occ.expectedDate)}
         </p>
         {relative && <p className={`text-xs ${relative.tone}`}>{relative.text}</p>}
       </div>

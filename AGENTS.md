@@ -111,7 +111,10 @@ budgeting-project/
 
 ### Data flow
 
-- All amounts are stored and passed as **integer cents** (e.g. $12.34 → `1234`). Convert at UI boundaries only using `formatCurrency()` and `parseCents()` in `client/src/utils/currency.ts`.
+- All amounts are stored and passed as **integer cents** (e.g. $12.34 → `1234`). Convert at UI boundaries only using `formatCurrency()`, `formatCentsAxis()`, `centsToInput()` and `parseCents()` in `client/src/utils/currency.ts`. They follow the per-device `amountFormat` (`dot` 1,234.56 / `comma` 1.234,56 / `space` 1 234,56 / `apostrophe` 1'234.56) and `symbolPosition` preferences, where `auto` (the default) is what the device language uses (`localeAmountStyle`). The one-argument helpers are safe as callbacks (Recharts `tickFormatter`, `map`); `formatAmount`/`parseAmount`/… take an explicit `AmountStyle` (tests, the Settings preview). `parseCents` is exact (no `parseFloat`, via `readImportAmount`): one `.` or `,` with one or two digits after it is always the decimal separator, so `12,50` and `12.50` work in every format. Use `useAmountStyle()` where a component must re-render when the format changes.
+- **Money inputs** are `type="text" inputMode="decimal"`, never `type="number"` (a number field rejects `12,50`), with `amountPlaceholder()` as the placeholder. In e2e tests they are `textbox`es.
+- **Displayed dates** go through `client/src/utils/dates.ts` (`formatDay`, `formatDayLong`, `formatWeekday`, `formatShortDay`), which follow the Date Format preference. Use `format(…)` from date-fns directly only for `yyyy-MM-dd` keys and month labels.
+- **CSV exports** follow the number format: with a decimal comma, `;` between columns and `12,50` amounts (`GET /api/export/transactions/csv?decimal=comma`, `csvAmount`/`escapeCsv(value, separator)` in `routes/export.ts`; report CSVs through `downloadCsv` in `client/src/utils/exportCsv.ts`).
 - The DB is a single SQLite file (`server/budget.db`) managed by Drizzle ORM. Schema is in `server/src/db/schema.ts`. All tables use `nanoid` string PKs.
 - The client never talks to SQLite directly — everything goes through the Express API at `localhost:3001/api/*`. Vite proxies `/api` to the server in dev.
 

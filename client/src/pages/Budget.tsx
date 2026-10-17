@@ -36,13 +36,11 @@ function AmountInput({
     <input
       autoFocus
       aria-label={label}
-      type="number"
-      min="0"
-      step="0.01"
+      type="text"
+      inputMode="decimal"
       value={raw}
       onChange={(e) => setRaw(e.target.value)}
-      // Select the amount so typing replaces it (number inputs don't allow moving the caret:
-      // setSelectionRange throws on them)
+      // Select the amount so typing replaces it
       onFocus={(e) => e.target.select()}
       onKeyDown={(e) => {
         if (e.key === 'Enter') {

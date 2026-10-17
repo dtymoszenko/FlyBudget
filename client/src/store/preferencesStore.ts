@@ -3,12 +3,21 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { IS_DEMO } from '../demo/isDemo';
 
 export type Theme = 'light' | 'dark' | 'system';
-export type DateFormatOption = 'MMM d, yyyy' | 'MM/dd/yyyy' | 'dd/MM/yyyy' | 'yyyy-MM-dd';
+export type DateFormatOption =
+  'MMM d, yyyy' | 'MM/dd/yyyy' | 'dd/MM/yyyy' | 'dd.MM.yyyy' | 'yyyy-MM-dd';
+/** How amounts are written: 1,234.56 / 1.234,56 / 1 234,56 / 1'234.56 */
+export type AmountFormat = 'dot' | 'comma' | 'space' | 'apostrophe';
+/** Whether the currency symbol goes before (€12.50) or after (12,50 €) the amount */
+export type SymbolPosition = 'before' | 'after';
 export type SidebarMode = 'persistent' | 'auto-hide';
 
 interface PreferencesState {
   theme: Theme;
   currencySymbol: string;
+  /** 'auto' = as the device's language writes amounts */
+  amountFormat: AmountFormat | 'auto';
+  /** 'auto' = as the device's language writes amounts */
+  symbolPosition: SymbolPosition | 'auto';
   dateFormat: DateFormatOption;
   savingsGoal: number;
   sidebarMode: SidebarMode;
@@ -25,6 +34,8 @@ interface PreferencesState {
   gettingStartedHidden: boolean;
   setTheme: (theme: Theme) => void;
   setCurrencySymbol: (symbol: string) => void;
+  setAmountFormat: (format: AmountFormat | 'auto') => void;
+  setSymbolPosition: (position: SymbolPosition | 'auto') => void;
   setDateFormat: (format: DateFormatOption) => void;
   setSavingsGoal: (goal: number) => void;
   setSidebarMode: (mode: SidebarMode) => void;
@@ -44,6 +55,8 @@ export const usePreferencesStore = create<PreferencesState>()(
     (set) => ({
       theme: 'light',
       currencySymbol: '$',
+      amountFormat: 'auto',
+      symbolPosition: 'auto',
       dateFormat: 'MMM d, yyyy',
       savingsGoal: 20,
       sidebarMode: 'persistent',
@@ -56,6 +69,8 @@ export const usePreferencesStore = create<PreferencesState>()(
       gettingStartedHidden: false,
       setTheme: (theme) => set({ theme }),
       setCurrencySymbol: (currencySymbol) => set({ currencySymbol }),
+      setAmountFormat: (amountFormat) => set({ amountFormat }),
+      setSymbolPosition: (symbolPosition) => set({ symbolPosition }),
       setDateFormat: (dateFormat) => set({ dateFormat }),
       setSavingsGoal: (savingsGoal) => set({ savingsGoal }),
       setSidebarMode: (sidebarMode) => set({ sidebarMode }),

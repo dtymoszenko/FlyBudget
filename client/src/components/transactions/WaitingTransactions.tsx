@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { format, parseISO } from 'date-fns';
 import { AlertCircle, CloudUpload, Loader2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { discardWaiting, retryWaiting, sendWaiting, useOutbox } from '../../offline/outbox';
@@ -7,6 +6,7 @@ import { useConnectionStore } from '../../store/connectionStore';
 import { formatCurrency } from '../../utils/currency';
 import { outboxEntryFor, type OutboxItem } from '../../utils/offline';
 import { ConfirmModal } from '../ui/ConfirmModal';
+import { formatDay } from '../../utils/dates';
 
 interface Props {
   /** The account whose register this is (all accounts when absent) */
@@ -75,7 +75,7 @@ export function WaitingTransactions({ accountId, categoryName, accountName }: Pr
             className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5 border-b border-border-light last:border-b-0"
           >
             <span className="text-xs text-text-tertiary w-24 shrink-0 tabular-nums">
-              {format(parseISO(item.data.date), 'MMM d, yyyy')}
+              {formatDay(item.data.date)}
             </span>
             <span className="flex-1 min-w-0 grid">
               <span className="truncate text-sm font-medium text-text">{payeeOf(item)}</span>

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronRight, Check, X } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
 import { useMatchSuggestions, useMatchOccurrence, useDismissMatch } from '../../hooks/useSchedules';
 import { formatCurrency } from '../../utils/currency';
+import { formatShortDay } from '../../utils/dates';
 
 export default function MatchSuggestionsPanel() {
   const { data: suggestions = [] } = useMatchSuggestions();
@@ -37,7 +37,7 @@ export default function MatchSuggestionsPanel() {
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-sm font-medium text-text">{sg.scheduleName}</span>
                 <span className="text-xs text-text-tertiary">
-                  {format(parseISO(sg.expectedDate), 'MMM d')} · {formatCurrency(sg.expectedAmount)}
+                  {formatShortDay(sg.expectedDate)} · {formatCurrency(sg.expectedAmount)}
                 </span>
               </div>
 
@@ -47,7 +47,7 @@ export default function MatchSuggestionsPanel() {
                     <div className="flex-1 min-w-0">
                       <span className="text-text-secondary">{c.payeeName || '—'}</span>
                       <span className="text-text-tertiary ml-2 text-xs">
-                        {format(parseISO(c.date), 'MMM d')} · {formatCurrency(c.amount)}
+                        {formatShortDay(c.date)} · {formatCurrency(c.amount)}
                       </span>
                       <span className="text-text-tertiary ml-2 text-xs">({c.score}% match)</span>
                     </div>

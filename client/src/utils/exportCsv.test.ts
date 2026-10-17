@@ -46,3 +46,29 @@ describe('csvCell (property-based)', () => {
     );
   });
 });
+
+describe('csvCell with semicolons (property-based)', () => {
+  const semicolonText = fc.string({
+    unit: fc.constantFrom('=', '+', '-', '@', '\t', '\r', '\n', '"', ',', ';', 'a', ' '),
+  });
+
+  it('quotes any cell with a semicolon, quote or line break, and still blocks formulas', () => {
+    fc.assert(
+      fc.property(semicolonText, (s) => {
+        const cell = csvCell(s, ';');
+        if (/[";\n\r]/.test(s)) expect(cell).toMatch(/^".*"$/s);
+        else expect(cell).not.toMatch(/[";\n\r]/);
+        expect(unquote(cell)).not.toMatch(/^[=+\-@\t\r]/);
+      }),
+    );
+  });
+
+  it('writes numbers with a decimal comma', () => {
+    fc.assert(
+      fc.property(fc.integer(), fc.integer({ min: 1, max: 9 }), (whole, tenth) => {
+        expect(csvCell(whole, ';')).toBe(String(whole));
+        expect(csvCell(Number(`${whole}.${tenth}`), ';')).toBe(`${whole},${tenth}`);
+      }),
+    );
+  });
+});

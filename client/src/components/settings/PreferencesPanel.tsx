@@ -4,7 +4,10 @@ import {
   type Theme,
   type DateFormatOption,
   type SidebarMode,
+  type AmountFormat,
+  type SymbolPosition,
 } from '../../store/preferencesStore';
+import { amountStyle, formatAmount, useAmountStyle } from '../../utils/currency';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { IS_DEMO } from '../../demo/isDemo';
 
@@ -23,13 +26,35 @@ const dateFormats: { value: DateFormatOption; label: string; example: string }[]
   { value: 'MMM d, yyyy', label: 'MMM d, yyyy', example: 'Jan 5, 2026' },
   { value: 'MM/dd/yyyy', label: 'MM/dd/yyyy', example: '01/05/2026' },
   { value: 'dd/MM/yyyy', label: 'dd/MM/yyyy', example: '05/01/2026' },
+  { value: 'dd.MM.yyyy', label: 'dd.MM.yyyy', example: '05.01.2026' },
   { value: 'yyyy-MM-dd', label: 'yyyy-MM-dd', example: '2026-01-05' },
 ];
+
+const amountFormats: (AmountFormat | 'auto')[] = ['auto', 'dot', 'comma', 'space', 'apostrophe'];
+
+const symbolPositions: { value: SymbolPosition | 'auto'; label: string }[] = [
+  { value: 'auto', label: 'Automatic' },
+  { value: 'before', label: 'Before' },
+  { value: 'after', label: 'After' },
+];
+
+/** 1,234.56 in a format, without a symbol */
+const numberExample = (format: AmountFormat) =>
+  formatAmount(123_456, { format, position: 'before', symbol: '' });
+
+const choiceClass = (selected: boolean) =>
+  `flex items-center justify-between gap-2 px-3 py-1.5 text-sm rounded-md border transition-colors max-md:min-h-11 tabular-nums ${
+    selected
+      ? 'border-brand-500 bg-brand-50 text-brand-700 font-medium'
+      : 'border-border bg-surface text-text-secondary hover:border-border'
+  }`;
 
 export function PreferencesPanel() {
   const {
     theme,
     currencySymbol,
+    amountFormat,
+    symbolPosition,
     dateFormat,
     sidebarMode,
     showMerchantIcons,
@@ -37,6 +62,8 @@ export function PreferencesPanel() {
     showAccountIcons,
     setTheme,
     setCurrencySymbol,
+    setAmountFormat,
+    setSymbolPosition,
     setDateFormat,
     setSidebarMode,
     setShowMerchantIcons,
@@ -44,11 +71,17 @@ export function PreferencesPanel() {
     setShowAccountIcons,
   } = usePreferencesStore();
   const [resetOpen, setResetOpen] = useState(false);
+  const style = useAmountStyle();
+  const example = formatAmount(-123_456, style);
+  // What Automatic means on this device
+  const auto = amountStyle({ amountFormat: 'auto', symbolPosition: 'auto', currencySymbol });
 
   function handleReset() {
     setTheme('light');
     setSidebarMode('persistent');
     setCurrencySymbol('$');
+    setAmountFormat('auto');
+    setSymbolPosition('auto');
     setDateFormat('MMM d, yyyy');
     setShowMerchantIcons(true);
     setShowCategoryIcons(true);
@@ -177,19 +210,71 @@ export function PreferencesPanel() {
         ))}
       </div>
 
-      <div className="bg-surface-alt rounded-lg p-5 space-y-4">
-        <h3 className="text-sm font-medium text-text">Currency Symbol</h3>
-        <div className="flex items-center gap-3">
-          <input
-            type="text"
-            value={currencySymbol}
-            onChange={(e) => setCurrencySymbol(e.target.value.slice(0, 3))}
-            maxLength={3}
-            className="w-20 text-center text-sm border border-border rounded-md px-3 py-1.5 bg-surface text-text focus:outline-none focus:ring-1 focus:ring-brand-600 focus:border-brand-600"
-          />
-          <span className="text-xs text-text-tertiary">Max 3 characters (e.g. $, EUR, &#163;)</span>
+      <section
+        aria-labelledby="amounts-heading"
+        className="bg-surface-alt rounded-lg p-5 space-y-4"
+      >
+        <div>
+          <h3 id="amounts-heading" className="text-sm font-medium text-text">
+            Amounts
+          </h3>
+          <p className="text-xs text-text-tertiary mt-0.5">
+            How amounts are shown and typed on this device. Automatic follows your device's
+            language. You can always type 12.50 or 12,50.
+          </p>
         </div>
-      </div>
+
+        <div className="space-y-2" role="group" aria-label="Number format">
+          <div className="text-xs font-medium text-text-secondary">Number format</div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {amountFormats.map((opt) => (
+              <button
+                key={opt}
+                type="button"
+                aria-pressed={amountFormat === opt}
+                aria-label={opt === 'auto' ? 'Automatic' : numberExample(opt)}
+                onClick={() => setAmountFormat(opt)}
+                className={choiceClass(amountFormat === opt)}
+              >
+                <span>{opt === 'auto' ? 'Automatic' : numberExample(opt)}</span>
+                {opt === 'auto' && (
+                  <span className="text-xs text-text-tertiary">{numberExample(auto.format)}</span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-2" role="group" aria-label="Currency symbol position">
+          <div className="text-xs font-medium text-text-secondary">Currency symbol</div>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="text"
+              aria-label="Currency symbol"
+              value={currencySymbol}
+              onChange={(e) => setCurrencySymbol(e.target.value.slice(0, 3))}
+              maxLength={3}
+              className="w-20 text-center text-sm border border-border rounded-md px-3 py-1.5 max-md:min-h-11 bg-surface text-text focus:outline-none focus:ring-1 focus:ring-brand-600 focus:border-brand-600"
+            />
+            {symbolPositions.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                aria-pressed={symbolPosition === opt.value}
+                onClick={() => setSymbolPosition(opt.value)}
+                className={choiceClass(symbolPosition === opt.value)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-text-tertiary">Up to 3 characters (e.g. $, €, EUR, kr)</p>
+        </div>
+
+        <p className="text-sm text-text-secondary">
+          Example: <span className="font-medium text-text tabular-nums">{example}</span>
+        </p>
+      </section>
 
       <div className="bg-surface-alt rounded-lg p-5 space-y-4">
         <h3 className="text-sm font-medium text-text">Date Format</h3>

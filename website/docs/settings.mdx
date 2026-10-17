@@ -44,8 +44,16 @@ See [Backups and exports](./backups).
 | **Theme**           | Light, Dark, or System (follows your computer or phone).                                                                            |
 | **Sidebar**         | **Pinned** (always open) or **Auto-hide** (collapsed, opens when you point at it). The pin at the top of the sidebar does the same. |
 | **Icons**           | Show or hide merchant, category and account icons.                                                                                  |
-| **Currency Symbol** | Up to 3 characters, like `$`, `€`, `£` or `EUR`. It only changes how amounts are shown, not their value.                            |
-| **Date Format**     | `Jan 5, 2026`, `01/05/2026`, `05/01/2026` or `2026-01-05`.                                                                          |
+| **Number format**   | **Automatic** (as your device's language writes amounts), `1,234.56`, `1.234,56`, `1 234,56` or `1'234.56`.                         |
+| **Currency symbol** | Up to 3 characters, like `$`, `€`, `£` or `EUR`, shown **Before** (`€12.50`) or **After** (`12,50 €`) the amount, or **Automatic**. |
+| **Date Format**     | `Jan 5, 2026`, `01/05/2026`, `05/01/2026`, `05.01.2026` or `2026-01-05`.                                                            |
+
+<Screenshot name="settings-amounts" alt="Settings: amounts written 1.234,56 €" />
+
+The number format and currency symbol only change how amounts look, never their value. Whatever
+the format, you can type an amount with a decimal point or a decimal comma: `12.50`, `12,50` and
+`12,5` all mean twelve fifty. Only a number like `1.234` depends on the format: with `1.234,56` it's
+one thousand two hundred thirty-four, with `1,234.56` it's one twenty-three.
 
 <Screenshot name="dark-budget" alt="The budget in dark mode" />
 

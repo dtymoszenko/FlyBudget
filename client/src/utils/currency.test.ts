@@ -1,37 +1,90 @@
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
-import { centsToInput, formatCentsAxis, formatCurrency, parseCents } from './currency';
+import {
+  amountStyle,
+  amountToInput,
+  formatAmount,
+  formatAxisAmount,
+  localeAmountStyle,
+  parseAmount,
+  type AmountStyle,
+} from './currency';
+import type { AmountFormat } from '../store/preferencesStore';
 
-// Up to ±$100 billion, far beyond any real balance but still exact in a double
+// Up to ±$10 billion, far beyond any real balance but still exact in a double
 const arbCents = fc.integer({ min: -10_000_000_000_00, max: 10_000_000_000_00 });
 
-// Undo formatCurrency's "-$1,234.56" formatting to get cents back
-const unformat = (s: string) => {
+const FORMATS: AmountFormat[] = ['dot', 'comma', 'space', 'apostrophe'];
+const US: AmountStyle = { format: 'dot', position: 'before', symbol: '$' };
+
+const arbStyle = fc.record<AmountStyle>({
+  format: fc.constantFrom(...FORMATS),
+  position: fc.constantFrom('before', 'after'),
+  symbol: fc.constantFrom('$', '€', '£', 'kr', 'CHF', 'zł', 'Kč', 'Fr.'),
+});
+
+// Undo formatCurrency's formatting by hand (not with parseCents) to get cents back
+const unformat = (s: string, style: AmountStyle) => {
   const negative = s.startsWith('-');
-  const digits = s.replace(/[-$,]/g, '');
-  const cents = Math.round(parseFloat(digits) * 100);
+  const decimal = style.format === 'dot' || style.format === 'apostrophe' ? '.' : ',';
+  const number = s.replace(style.symbol, '').replace(/[^\d.,]/g, '');
+  const [whole, fraction = '00'] = number.split(decimal);
+  const cents = Number(whole.replace(/[.,]/g, '')) * 100 + Number(fraction);
   return negative ? -cents : cents;
 };
 
 describe('currency helpers (property-based)', () => {
-  it('parseCents(centsToInput(c)) gives back the absolute amount', () => {
+  it('parseAmount(amountToInput(c)) gives back the absolute amount, in every format', () => {
     fc.assert(
-      fc.property(arbCents, (cents) => {
-        expect(parseCents(centsToInput(cents))).toBe(Math.abs(cents));
+      fc.property(arbCents, arbStyle, (cents, style) => {
+        expect(parseAmount(amountToInput(cents, style), style)).toBe(Math.abs(cents));
       }),
     );
   });
 
-  it('parses any "dollars.cc" string to exact integer cents', () => {
+  it('parseCents reads what formatCurrency writes, in every format', () => {
     fc.assert(
-      fc.property(fc.nat({ max: 100_000_000_000 }), fc.nat({ max: 99 }), (dollars, cc) => {
-        const s = `${dollars}.${String(cc).padStart(2, '0')}`;
-        expect(parseCents(s)).toBe(dollars * 100 + cc);
+      fc.property(arbCents, arbStyle, (cents, style) => {
+        expect(parseAmount(formatAmount(cents, style), style)).toBe(cents);
       }),
     );
   });
 
-  it('always returns a finite integer, never NaN or a fraction of a cent', () => {
+  it('reads a decimal point or comma with one or two digits after it the same in any format', () => {
+    fc.assert(
+      fc.property(
+        fc.nat({ max: 99_999_999_999 }), // the server takes up to 100 billion
+        fc.nat({ max: 99 }),
+        fc.constantFrom('.', ','),
+        fc.boolean(),
+        arbStyle,
+        (dollars, cc, sep, short, style) => {
+          // 12.50 or 12,50, and 12.5 when the cents are a round ten
+          const cents = String(cc).padStart(2, '0');
+          const s = `${dollars}${sep}${short && cents.endsWith('0') ? cents[0] : cents}`;
+          expect(parseAmount(s, style)).toBe(dollars * 100 + cc);
+        },
+      ),
+    );
+  });
+
+  it('reads three digits after one separator as the format says', () => {
+    const comma: AmountStyle = { ...US, format: 'comma' };
+    expect(parseAmount('1.234', comma)).toBe(123_400);
+    expect(parseAmount('1.234', US)).toBe(123);
+    expect(parseAmount('1,234', US)).toBe(123_400);
+    expect(parseAmount('1.234,56', comma)).toBe(123_456);
+    expect(parseAmount('1 234,56', { ...US, format: 'space' })).toBe(123_456);
+    expect(parseAmount("1'234.56", { ...US, format: 'apostrophe' })).toBe(123_456);
+    expect(parseAmount('-12,50', comma)).toBe(-1250);
+  });
+
+  it('takes amounts up to the server limit of 100 billion', () => {
+    expect(parseAmount('100000000000.00', US)).toBe(10_000_000_000_000);
+    expect(parseAmount('100000000000.01', US)).toBe(0);
+  });
+
+  it('always returns a finite integer, and 0 for text that is no amount', () => {
     fc.assert(
       fc.property(
         // Arbitrary text plus number-like strings, including exponents such as "1e400"
@@ -40,22 +93,55 @@ describe('currency helpers (property-based)', () => {
           fc.double().map(String),
           fc.double().map((d) => d.toExponential()),
         ),
-        (s) => {
-          expect(Number.isSafeInteger(parseCents(s))).toBe(true);
+        arbStyle,
+        (s, style) => {
+          expect(Number.isSafeInteger(parseAmount(s, style))).toBe(true);
         },
       ),
     );
+    for (const junk of ['', 'abc', '.', ',', '-', '1.2.3,4,5'])
+      expect(parseAmount(junk, US)).toBe(0);
   });
 
-  it('formatCurrency round-trips to the same cents, with 0 or 2 decimals', () => {
+  it('formatCurrency writes each format, with 0 or 2 decimals', () => {
     fc.assert(
-      fc.property(arbCents, (cents) => {
-        const s = formatCurrency(cents);
-        expect(unformat(s)).toBe(cents);
-        expect(s).toMatch(/^-?\$\d{1,3}(,\d{3})*(\.\d{2})?$/);
+      fc.property(arbCents, arbStyle, (cents, style) => {
+        const s = formatAmount(cents, style);
+        expect(unformat(s, style)).toBe(cents);
         expect(s.startsWith('-')).toBe(cents < 0);
+        if (style.position === 'after') expect(s.endsWith(` ${style.symbol}`)).toBe(true);
+        else expect(s.replace('-', '').startsWith(style.symbol)).toBe(true);
       }),
     );
+    expect(formatAmount(-123_456, US)).toBe('-$1,234.56');
+    expect(formatAmount(-123_456, { format: 'comma', position: 'after', symbol: '€' })).toBe(
+      '-1.234,56 €',
+    );
+    expect(formatAmount(123_400, { format: 'space', position: 'after', symbol: '€' })).toBe(
+      '1 234 €',
+    );
+    expect(formatAmount(123_456, { format: 'apostrophe', position: 'before', symbol: 'CHF' })).toBe(
+      "CHF1'234.56",
+    );
+  });
+
+  it('uses the preferences when no style is given', () => {
+    expect(
+      amountStyle({ amountFormat: 'comma', symbolPosition: 'after', currencySymbol: '' }),
+    ).toEqual({ format: 'comma', position: 'after', symbol: '$' });
+  });
+});
+
+describe('localeAmountStyle', () => {
+  it.each([
+    ['en-US', 'dot', 'before'],
+    ['de-DE', 'comma', 'after'],
+    ['fr-FR', 'space', 'after'],
+    ['de-CH', 'apostrophe', 'before'],
+    ['nl-NL', 'comma', 'before'],
+    ['not a language!', 'dot', 'before'],
+  ])('%s', (locale, format, position) => {
+    expect(localeAmountStyle(locale)).toEqual({ format, position });
   });
 });
 
@@ -71,7 +157,7 @@ describe('formatCentsAxis (property-based)', () => {
   it('reads back within rounding of the real amount, with the right sign', () => {
     fc.assert(
       fc.property(arbCents, (cents) => {
-        const s = formatCentsAxis(cents);
+        const s = formatAxisAmount(cents, US);
         const dollars = cents / 100;
         const back = unformatAxis(s);
         // One decimal of k/M is at most 5% off; whole dollars at most $0.50
@@ -86,17 +172,23 @@ describe('formatCentsAxis (property-based)', () => {
   it('labels whole thousands and millions exactly', () => {
     fc.assert(
       fc.property(fc.integer({ min: 1, max: 999 }), fc.integer({ min: 1, max: 5000 }), (k, m) => {
-        expect(formatCentsAxis(k * 1_000_00)).toBe(`$${k}k`);
-        expect(formatCentsAxis(m * 1_000_000_00)).toBe(`$${m}M`);
-        expect(formatCentsAxis(-k * 1_000_00)).toBe(`-$${k}k`);
+        expect(formatAxisAmount(k * 1_000_00, US)).toBe(`$${k}k`);
+        expect(formatAxisAmount(m * 1_000_000_00, US)).toBe(`$${m}M`);
+        expect(formatAxisAmount(-k * 1_000_00, US)).toBe(`-$${k}k`);
       }),
     );
+  });
+
+  it('writes the decimal comma and the symbol after where the format says', () => {
+    const style: AmountStyle = { format: 'comma', position: 'after', symbol: '€' };
+    expect(formatAxisAmount(1_250_000, style)).toBe('12,5k €');
+    expect(formatAxisAmount(-150_000_000, style)).toBe('-1,5M €');
   });
 
   it('gives each distinct nice tick a distinct label', () => {
     // Axis ticks are multiples of a step like 25k or 50k; labels must never repeat
     const ticks = [0, 35_000, 70_000, 100_000, 135_000, 250_000, 1_000_000, 1_500_000];
-    const labels = ticks.map((d) => formatCentsAxis(d * 100));
+    const labels = ticks.map((d) => formatAxisAmount(d * 100, US));
     expect(new Set(labels).size).toBe(ticks.length);
   });
 });

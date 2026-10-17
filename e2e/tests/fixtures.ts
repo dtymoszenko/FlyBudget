@@ -173,8 +173,8 @@ export const otherDayThisMonth = () =>
 export async function typeAmount(field: Locator, amount: string) {
   const page = field.page();
   await field.click();
-  // Once focused it becomes a number field (a spinbutton), so type through the keyboard
-  await expect(page.locator('input:focus')).toHaveAttribute('type', 'number');
+  // Once focused it shows the plain amount for editing, so type through the keyboard
+  await expect(field).toBeFocused();
   await page.keyboard.press('ControlOrMeta+A');
   await page.keyboard.type(amount);
   await page.keyboard.press('Tab');

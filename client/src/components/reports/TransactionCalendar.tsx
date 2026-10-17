@@ -15,6 +15,7 @@ import {
 import type { HeatmapRow } from '../../utils/calendarLayout';
 import { ChartSkeleton, TOOLTIP_CLASS } from './ChartHelpers';
 import type { DailyFlowPoint } from '../../types';
+import { formatShortDay, formatWeekday } from '../../utils/dates';
 
 // Money in and out on each day. Up to CALENDAR_MONTHS_MAX months show as month grids, each
 // day with a green bar (money in, from the left) and a red one (money out, from the right).
@@ -91,7 +92,7 @@ export function TransactionCalendar({ from, to, fit, selected, onSelect }: Props
 
   const dayProps = (day: string) => {
     const flow = byDay.get(day) ?? EMPTY;
-    const label = `${format(parseISO(day), 'EEEE, MMMM d')}: ${formatCurrency(flow.income)} in, ${formatCurrency(flow.expenses)} out`;
+    const label = `${format(parseISO(day), 'EEEE')}, ${formatShortDay(day, { long: true })}: ${formatCurrency(flow.income)} in, ${formatCurrency(flow.expenses)} out`;
     return {
       onMouseEnter: (e: React.MouseEvent<HTMLElement>) => showTooltip(day, e.currentTarget),
       onMouseLeave: () => setHover(null),
@@ -534,9 +535,7 @@ function DayTooltip({
       className={`${TOOLTIP_CLASS} absolute z-20 pointer-events-none`}
       style={{ left, top, width: w }}
     >
-      <p className="text-xs text-text-tertiary mb-1">
-        {format(parseISO(hover.day), 'EEE, MMM d, yyyy')}
-      </p>
+      <p className="text-xs text-text-tertiary mb-1">{formatWeekday(hover.day)}</p>
       {flow && flow.count > 0 ? (
         <>
           <p className="text-xs font-medium text-positive">In: {formatCurrency(flow.income)}</p>

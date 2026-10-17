@@ -14,7 +14,7 @@ async function plan(page: Page, category: string, amount: string) {
     await showInactive.first().click();
   }
   await button.click();
-  const input = page.getByRole('spinbutton', { name: `Planned for ${category}` });
+  const input = page.getByRole('textbox', { name: `Planned for ${category}` });
   await input.fill(amount);
   await input.press('Enter');
   await expect(

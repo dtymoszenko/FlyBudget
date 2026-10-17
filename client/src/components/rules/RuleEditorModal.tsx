@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { format, parseISO } from 'date-fns';
 import { Plus, Trash2, X } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
@@ -35,6 +34,7 @@ import type {
   RuleInput,
   RuleSplitPart,
 } from '../../types';
+import { formatDay } from '../../utils/dates';
 
 const fieldClass =
   'text-sm border border-border rounded-lg px-2 py-1.5 bg-surface text-text focus:outline-none focus:ring-1 focus:ring-brand-400';
@@ -597,9 +597,7 @@ function MatchPreview({
             key={tx.id}
             className="flex items-center gap-3 px-3 py-1.5 text-xs border-b last:border-b-0 border-border-light"
           >
-            <span className="w-20 shrink-0 text-text-tertiary">
-              {format(parseISO(tx.date), 'MMM d, yyyy')}
-            </span>
+            <span className="w-20 shrink-0 text-text-tertiary">{formatDay(tx.date)}</span>
             <span className="flex-1 truncate text-text">{tx.payeeName ?? '—'}</span>
             <span className="hidden sm:block w-40 truncate text-text-tertiary">
               {(tx.categoryId && options.lookups.category(tx.categoryId)) || 'Uncategorized'}

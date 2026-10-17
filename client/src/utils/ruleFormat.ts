@@ -1,4 +1,3 @@
-import { format, parseISO } from 'date-fns';
 import { formatCurrency } from './currency';
 import type {
   Rule,
@@ -9,6 +8,7 @@ import type {
   RuleInput,
   RuleSplitPart,
 } from '../types';
+import { formatDay } from './dates';
 
 const TEXT_OPS: RuleConditionOp[] = [
   'is',
@@ -186,8 +186,7 @@ export type RuleLookups = {
 };
 
 const quote = (s: string) => `"${s}"`;
-const shortDate = (d: string) =>
-  /^\d{4}-\d{2}-\d{2}$/.test(d) ? format(parseISO(d), 'MMM d, yyyy') : d;
+const shortDate = (d: string) => (/^\d{4}-\d{2}-\d{2}$/.test(d) ? formatDay(d) : d);
 
 function nameOf(field: RuleConditionField, id: string, l: RuleLookups): string {
   const name =

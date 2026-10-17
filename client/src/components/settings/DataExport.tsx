@@ -5,6 +5,7 @@ import { Button } from '../ui/Button';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { restoreBackup } from '../../api/backup';
 import { IS_DEMO, downloadFromApi } from '../../demo/demoApi';
+import { amountStyle, decimalSeparator } from '../../utils/currency';
 
 const API_BASE = '/api/export';
 
@@ -61,6 +62,8 @@ export function DataExport() {
     const params = new URLSearchParams();
     if (from) params.set('from', from);
     if (to) params.set('to', to);
+    // Spreadsheets in languages with a decimal comma expect 12,50 and ; between columns
+    if (decimalSeparator(amountStyle().format) === ',') params.set('decimal', 'comma');
     const qs = params.toString();
     download(`${API_BASE}/transactions/csv${qs ? `?${qs}` : ''}`);
   }

@@ -50,6 +50,11 @@ with a `'`, so a payee name from a bank can't do anything when you open the file
 Reports can be exported too: the full view of every report, the report builder and Cash Flow each
 have an **Export CSV** button.
 
+Exports follow your [number format](./settings#preferences). With a decimal comma (`1.234,56` or
+`1 234,56`), amounts are written as `-12,50` and columns are separated by `;`, which is what
+spreadsheets in those languages expect; otherwise it's `-12.50` with `,`. FlyBudget reads both
+kinds back when you [import](./importing) them.
+
 ## Self-hosted servers
 
 On a server, also back up the data directory (`/data` in Docker) and keep a copy of your

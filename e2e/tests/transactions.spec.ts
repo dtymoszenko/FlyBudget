@@ -29,8 +29,8 @@ async function fillNewTransaction(
     await form.getByRole('combobox', { name: 'Category' }).selectOption({ label: fields.category });
   }
   if (fields.notes) await form.getByRole('textbox', { name: 'Notes' }).fill(fields.notes);
-  if (fields.outflow) await form.getByRole('spinbutton', { name: 'Outflow' }).fill(fields.outflow);
-  if (fields.inflow) await form.getByRole('spinbutton', { name: 'Inflow' }).fill(fields.inflow);
+  if (fields.outflow) await form.getByRole('textbox', { name: 'Outflow' }).fill(fields.outflow);
+  if (fields.inflow) await form.getByRole('textbox', { name: 'Inflow' }).fill(fields.inflow);
 }
 
 test.describe('account register', () => {
@@ -76,14 +76,14 @@ test.describe('account register', () => {
     await open(page, `/accounts/${checking.id}`);
     await fillNewTransaction(page, { payee: 'Corner Grocery', outflow: '12.34' });
     const form = newForm(page);
-    await form.getByRole('spinbutton', { name: 'Outflow' }).press('Tab');
-    await expect(form.getByRole('spinbutton', { name: 'Inflow' })).toBeFocused();
-    await expect(form.getByRole('spinbutton', { name: 'Outflow' })).toHaveValue('12.34');
+    await form.getByRole('textbox', { name: 'Outflow' }).press('Tab');
+    await expect(form.getByRole('textbox', { name: 'Inflow' })).toBeFocused();
+    await expect(form.getByRole('textbox', { name: 'Outflow' })).toHaveValue('12.34');
     // Typing an inflow still replaces the outflow
     await page.keyboard.type('5');
-    await expect(form.getByRole('spinbutton', { name: 'Outflow' })).toHaveValue('');
-    await form.getByRole('spinbutton', { name: 'Outflow' }).fill('12.34');
-    await expect(form.getByRole('spinbutton', { name: 'Inflow' })).toHaveValue('');
+    await expect(form.getByRole('textbox', { name: 'Outflow' })).toHaveValue('');
+    await form.getByRole('textbox', { name: 'Outflow' }).fill('12.34');
+    await expect(form.getByRole('textbox', { name: 'Inflow' })).toHaveValue('');
     await form.getByRole('button', { name: 'Save' }).click();
     await expect(header(page)).toContainText('$987.66');
   });
@@ -97,12 +97,12 @@ test.describe('account register', () => {
     await form
       .getByRole('combobox', { name: 'Split 1 category' })
       .selectOption({ label: '🛒 Groceries' });
-    await form.getByRole('spinbutton', { name: 'Split 1 amount' }).fill('60');
+    await form.getByRole('textbox', { name: 'Split 1 amount' }).fill('60');
     await expect(form.getByText('$40 remaining')).toBeVisible();
     await form
       .getByRole('combobox', { name: 'Split 2 category' })
       .selectOption({ label: '🏠 Rent / Mortgage' });
-    await form.getByRole('spinbutton', { name: 'Split 2 amount' }).fill('40');
+    await form.getByRole('textbox', { name: 'Split 2 amount' }).fill('40');
     await expect(form.getByText('Balanced')).toBeVisible();
     await newForm(page).getByRole('button', { name: 'Save' }).click();
 

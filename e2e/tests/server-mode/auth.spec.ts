@@ -231,7 +231,7 @@ test('with the server unreachable, the app opens with the offline copy and keeps
   await owner.getByRole('button', { name: 'Add Transaction' }).click();
   const form = owner.getByRole('form', { name: 'New transaction' });
   await form.getByRole('textbox', { name: 'Payee' }).fill('Coffee Cart');
-  await form.getByRole('spinbutton', { name: 'Outflow' }).fill('4.75');
+  await form.getByRole('textbox', { name: 'Outflow' }).fill('4.75');
   await form.getByRole('button', { name: 'Save' }).click();
   const waiting = owner.getByRole('region', { name: 'Saved on this device' });
   await expect(waiting.getByTestId('waiting-transaction')).toContainText('Coffee Cart');

@@ -8,6 +8,7 @@ import { Card } from '../ui/Card';
 import { EmptyState } from '../ui/EmptyState';
 import { ButtonLink } from '../ui/Button';
 import { useSchedules } from '../../hooks/useSchedules';
+import { formatShortDay } from '../../utils/dates';
 
 export default function UpcomingBills() {
   const today = format(new Date(), 'yyyy-MM-dd');
@@ -90,7 +91,7 @@ export default function UpcomingBills() {
                     {occ.scheduleName}
                   </p>
                   <p className="text-xs text-text-tertiary">
-                    {format(parseISO(occ.expectedDate), 'MMM d')}
+                    {formatShortDay(occ.expectedDate)}
                     {isWaiting
                       ? ` · ${Math.abs(daysUntil)}d overdue`
                       : daysUntil === 0

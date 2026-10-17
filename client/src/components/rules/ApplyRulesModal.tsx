@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { format, parseISO } from 'date-fns';
 import { ArrowRight } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
@@ -9,6 +8,7 @@ import { useApplyRules } from '../../hooks/useRules';
 import { useRuleLookups } from './useRuleLookups';
 import { formatCurrency } from '../../utils/currency';
 import type { RuleApplyScope, RulePreviewItem } from '../../types';
+import { formatDay } from '../../utils/dates';
 
 interface Props {
   isOpen: boolean;
@@ -165,7 +165,7 @@ export function ApplyRulesModal({
                           />
                         </td>
                         <td className="px-2 py-2 text-text-tertiary whitespace-nowrap">
-                          {format(parseISO(item.date), 'MMM d, yyyy')}
+                          {formatDay(item.date)}
                         </td>
                         <td className="px-2 py-2 text-text max-w-40 truncate">
                           {item.payeeName ?? '—'}

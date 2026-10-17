@@ -1,5 +1,11 @@
 import { useState } from 'react';
-import { formatCurrency, parseCents } from '../../utils/currency';
+import {
+  amountPlaceholder,
+  amountToInput,
+  formatAmount,
+  parseAmount,
+  useAmountStyle,
+} from '../../utils/currency';
 
 interface Props {
   value: number;
@@ -13,16 +19,17 @@ interface Props {
 export function CurrencyInput({
   value,
   onChange,
-  placeholder = '0.00',
+  placeholder,
   className = '',
   allowNegative = false,
   'aria-label': ariaLabel,
 }: Props) {
   const [focused, setFocused] = useState(false);
   const [raw, setRaw] = useState('');
+  const style = useAmountStyle();
 
   function handleFocus(e: React.FocusEvent<HTMLInputElement>) {
-    const initial = value === 0 ? '' : String(value / 100);
+    const initial = (value < 0 ? '-' : '') + amountToInput(value, style);
     setFocused(true);
     setRaw(initial);
     // Select the amount once it's shown for editing, so typing replaces it. Only if nothing
@@ -37,20 +44,21 @@ export function CurrencyInput({
 
   function handleBlur() {
     setFocused(false);
-    const cents = parseCents(raw);
+    const cents = parseAmount(raw, style);
     onChange(allowNegative ? cents : Math.abs(cents));
   }
 
   return (
     <input
-      type={focused ? 'number' : 'text'}
-      value={focused ? raw : value === 0 ? '' : formatCurrency(value)}
+      // Text, not number: a number field won't take a decimal comma (12,50)
+      type="text"
+      inputMode="decimal"
+      value={focused ? raw : value === 0 ? '' : formatAmount(value, style)}
       onFocus={handleFocus}
       onBlur={handleBlur}
       onChange={(e) => setRaw(e.target.value)}
-      placeholder={placeholder}
+      placeholder={placeholder ?? amountPlaceholder(style)}
       aria-label={ariaLabel}
-      step="0.01"
       className={`block w-full rounded-md border border-border px-3 py-2 text-sm text-text placeholder-text-disabled focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600 ${className}`}
     />
   );

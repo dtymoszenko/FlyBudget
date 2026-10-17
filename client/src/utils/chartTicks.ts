@@ -1,4 +1,5 @@
 import { parseISO, format } from 'date-fns';
+import { formatDay } from './dates';
 
 // Date strings on chart axes are either days (yyyy-MM-dd) or months (yyyy-MM)
 function parseDate(s: string): Date {
@@ -23,7 +24,7 @@ export function formatDateAxisLabels(values: string[]): string[] {
 /** Tooltip label for a date string: "Mar 5, 2026" or "March 2026". */
 export function formatDateLabel(dateStr: unknown): string {
   const s = String(dateStr ?? '');
-  if (s.length === 10) return format(parseISO(s), 'MMM d, yyyy');
+  if (s.length === 10) return formatDay(s);
   if (s.length === 7) return format(parseISO(`${s}-01`), 'MMMM yyyy');
   return s;
 }

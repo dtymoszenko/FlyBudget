@@ -6,6 +6,7 @@ import { useTransactions } from '../../hooks/useTransactions';
 import { useMatchOccurrence } from '../../hooks/useSchedules';
 import { formatCurrency } from '../../utils/currency';
 import type { ScheduleOccurrence } from '../../types';
+import { formatDay } from '../../utils/dates';
 
 interface Props {
   isOpen: boolean;
@@ -67,7 +68,7 @@ export default function OccurrenceMatchModal({ isOpen, onClose, occurrence }: Pr
         <div className="bg-surface-alt rounded-lg px-4 py-3 border border-border-light">
           <p className="text-sm font-medium text-text">{occurrence.scheduleName}</p>
           <p className="text-xs text-text-tertiary mt-0.5">
-            Expected: {format(parseISO(occurrence.expectedDate), 'MMM d, yyyy')} ·{' '}
+            Expected: {formatDay(occurrence.expectedDate)} ·{' '}
             {formatCurrency(occurrence.expectedAmount)}
           </p>
         </div>
@@ -93,9 +94,7 @@ export default function OccurrenceMatchModal({ isOpen, onClose, occurrence }: Pr
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-text truncate">{tx.payeeName || '—'}</p>
-                    <p className="text-xs text-text-tertiary">
-                      {format(parseISO(tx.date), 'MMM d, yyyy')}
-                    </p>
+                    <p className="text-xs text-text-tertiary">{formatDay(tx.date)}</p>
                   </div>
                   <span
                     className={`text-sm font-medium tabular-nums ${tx.amount > 0 ? 'text-positive' : 'text-text'}`}

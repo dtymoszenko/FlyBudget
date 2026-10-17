@@ -6,7 +6,7 @@ import { useCanAddTransaction } from '../../hooks/useOffline';
 import { CategorySelect } from './CategorySelect';
 import type { Account, CategoryGroup, Payee, Transaction } from '../../types';
 import type { CreateTransactionData, SplitItem } from '../../api/transactions';
-import { parseCents, centsToInput, formatCurrency } from '../../utils/currency';
+import { parseCents, centsToInput, formatCurrency, amountPlaceholder } from '../../utils/currency';
 
 interface Props {
   initial?: Transaction;
@@ -250,7 +250,7 @@ export function TransactionFormRow({
         <div className={sheet ? '' : 'w-28'}>
           <label className={labelCls}>Outflow</label>
           <input
-            type="number"
+            type="text"
             inputMode="decimal"
             value={outflow}
             aria-label="Outflow"
@@ -258,16 +258,14 @@ export function TransactionFormRow({
               setOutflow(e.target.value);
               if (e.target.value) setInflow('');
             }}
-            placeholder="0.00"
-            min="0"
-            step="0.01"
+            placeholder={amountPlaceholder()}
             className={`${inputCls} text-right tabular-nums`}
           />
         </div>
         <div className={sheet ? '' : 'w-28'}>
           <label className={labelCls}>Inflow</label>
           <input
-            type="number"
+            type="text"
             inputMode="decimal"
             value={inflow}
             aria-label="Inflow"
@@ -275,9 +273,7 @@ export function TransactionFormRow({
               setInflow(e.target.value);
               if (e.target.value) setOutflow('');
             }}
-            placeholder="0.00"
-            min="0"
-            step="0.01"
+            placeholder={amountPlaceholder()}
             className={`${inputCls} text-right tabular-nums`}
           />
         </div>
@@ -338,14 +334,12 @@ export function TransactionFormRow({
                 className={`${inputCls} ${sheet ? '' : 'text-xs'}`}
               />
               <input
-                type="number"
+                type="text"
                 inputMode="decimal"
                 value={s.amount}
                 onChange={(e) => updateSplit(i, 'amount', e.target.value)}
                 aria-label={`Split ${i + 1} amount`}
-                placeholder="0.00"
-                min="0"
-                step="0.01"
+                placeholder={amountPlaceholder()}
                 className={`${inputCls} text-right tabular-nums ${sheet ? '' : 'text-xs'}`}
               />
               <div className={sheet ? 'w-11' : 'w-6'}>
