@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { PencilLine, Loader2, ShieldCheck, ChevronRight, Clock } from 'lucide-react';
+import { PencilLine, Loader2, ShieldCheck, ChevronRight, Clock, Euro } from 'lucide-react';
 import logoUrl from '/logo.png';
 import { useAccounts } from '../hooks/useAccounts';
 import { usePlaidStatus } from '../hooks/usePlaid';
@@ -10,6 +10,7 @@ import { AddAccountModal } from '../components/accounts/AddAccountModal';
 import { ConnectBankModal } from '../components/plaid/ConnectBankModal';
 import { PlaidSetupModal } from '../components/plaid/PlaidSetupModal';
 import { SimplefinConnectModal } from '../components/simplefin/SimplefinConnectModal';
+import { ConnectEnableBankingModal } from '../components/enablebanking/ConnectEnableBankingModal';
 import { HelpFooter } from '../components/layout/HelpFooter';
 import { ExternalLink } from '../components/ui/ExternalLink';
 import { PlaidLogo, SimplefinLogo } from '../components/ui/BankLogos';
@@ -28,7 +29,7 @@ interface OptionProps {
   onClick: () => void;
 }
 
-/** One way to add accounts. All three look alike: none is pushed over the others. */
+/** One way to add accounts. All of them look alike: none is pushed over the others. */
 function SetupOption({ icon, title, tag, time, description, action, onClick }: OptionProps) {
   return (
     <button
@@ -70,6 +71,7 @@ export default function WelcomePage() {
   const [showPlaid, setShowPlaid] = useState(false);
   const [showPlaidSetup, setShowPlaidSetup] = useState(false);
   const [showSimplefin, setShowSimplefin] = useState(false);
+  const [showEnableBanking, setShowEnableBanking] = useState(false);
   const [showManual, setShowManual] = useState(false);
 
   if (isLoading) {
@@ -98,7 +100,7 @@ export default function WelcomePage() {
             the accounts you want to track.
           </p>
 
-          <div className="grid gap-4 mt-8 grid-cols-1 sm:grid-cols-3">
+          <div className="grid gap-4 mt-8 grid-cols-1 sm:grid-cols-2">
             <SetupOption
               icon={<PlaidLogo size={24} className="text-text" />}
               title="Connect with Plaid"
@@ -116,6 +118,15 @@ export default function WelcomePage() {
               description="Set it up once and new transactions arrive on their own, through SimpleFIN Bridge (thousands of banks). Paid directly to SimpleFIN."
               action="Connect SimpleFIN"
               onClick={() => setShowSimplefin(true)}
+            />
+            <SetupOption
+              icon={<Euro size={20} className="text-brand-600" />}
+              title="Connect a European bank"
+              tag="Free"
+              time="~15 min"
+              description="Set it up once and new transactions arrive on their own, from banks across Europe (PSD2), through your own free Enable Banking application. Log in to your bank again every few months."
+              action="Connect with Enable Banking"
+              onClick={() => setShowEnableBanking(true)}
             />
             <SetupOption
               icon={<PencilLine size={20} className="text-text-secondary" />}
@@ -162,6 +173,10 @@ export default function WelcomePage() {
         onConfigured={() => setShowPlaid(true)}
       />
       <SimplefinConnectModal isOpen={showSimplefin} onClose={() => setShowSimplefin(false)} />
+      <ConnectEnableBankingModal
+        isOpen={showEnableBanking}
+        onClose={() => setShowEnableBanking(false)}
+      />
       <AddAccountModal isOpen={showManual} onClose={() => setShowManual(false)} />
     </div>
   );

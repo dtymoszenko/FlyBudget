@@ -24,9 +24,13 @@ Nothing is sent to the FlyBudget project, ever.
 
 Only bank sync talks to the internet, and only if you set it up:
 
-- **SimpleFIN** or **Plaid** send your transactions to FlyBudget over HTTPS. You sign in to your
-  bank on their website or your bank's, never inside FlyBudget, and FlyBudget never sees your
-  bank password.
+- **SimpleFIN**, **Plaid** or **Enable Banking** send your transactions to FlyBudget over HTTPS.
+  You sign in to your bank on their website or your bank's, never inside FlyBudget, and FlyBudget
+  never sees your bank password.
+- With Enable Banking in the desktop app, your bank sends your browser back through a page on
+  flybudget.org with a one-time code, which the page passes straight to FlyBudget on your
+  computer. The page stores nothing, and the code can't be used without your application's
+  private key, which stays in FlyBudget ([details](./bank-sync#the-redirect-url)).
 - Their access tokens are encrypted on your computer or server and never shown to the app's
   page. They're left out of backups.
 

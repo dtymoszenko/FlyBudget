@@ -18,6 +18,7 @@ import {
   scheduleOccurrences,
   schedules,
   simplefinAccountMappings,
+  enableBankingAccountMappings,
   transactions,
   transferMatchDismissals,
 } from '../db/schema.js';
@@ -147,6 +148,14 @@ export function restoreBackup(data: Record<BackupTable, Row[]>) {
     .from(simplefinAccountMappings)
     .where(isNotNull(simplefinAccountMappings.accountId))
     .all();
+  const enableBankingLinks = db
+    .select({
+      id: enableBankingAccountMappings.id,
+      accountId: enableBankingAccountMappings.accountId,
+    })
+    .from(enableBankingAccountMappings)
+    .where(isNotNull(enableBankingAccountMappings.accountId))
+    .all();
   const restoredAccounts = new Set(data.accounts.map((a) => a.id as string));
 
   db.transaction((tx) => {
@@ -165,12 +174,24 @@ export function restoreBackup(data: Record<BackupTable, Row[]>) {
     for (const [table, links] of [
       [plaidAccountMappings, plaidLinks],
       [simplefinAccountMappings, simplefinLinks],
+      [enableBankingAccountMappings, enableBankingLinks],
     ] as const) {
       for (const link of links) {
         if (!link.accountId || !restoredAccounts.has(link.accountId)) continue;
         tx.update(table)
           .set({ accountId: link.accountId })
           .where(sql`${table.id} = ${link.id}`)
+          .run();
+      }
+    }
+    // The restored budget may be older than what Enable Banking last synced: forget where
+    // each sync got to, so the next one starts again from the restored account's latest
+    // transaction (and recognises the ones it has by their bank ids)
+    for (const link of enableBankingLinks) {
+      if (link.accountId && restoredAccounts.has(link.accountId)) {
+        tx.update(enableBankingAccountMappings)
+          .set({ lastBookedDate: null })
+          .where(sql`${enableBankingAccountMappings.id} = ${link.id}`)
           .run();
       }
     }

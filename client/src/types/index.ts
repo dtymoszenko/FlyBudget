@@ -785,3 +785,91 @@ export interface SimplefinSyncResult {
   added: number;
   errors: string[];
 }
+
+// Enable Banking (European banks over PSD2)
+
+export type EnableBankingSyncStatus = 'good' | 'syncing' | 'error' | 'login_required';
+
+export interface EnableBankingStatus {
+  configured: boolean;
+  applicationId: string | null;
+  applicationName: string | null;
+  environment: string | null;
+  /** The redirect URL to register in the Enable Banking application (null in the demo) */
+  redirectUrl: string | null;
+  /** Self-hosted over plain HTTP: the bank's redirect would not be encrypted */
+  insecureRedirect: boolean;
+  connectionCount: number;
+}
+
+export interface EnableBankingConfigureResult {
+  applicationName: string | null;
+  environment: string | null;
+  /** Whether the application lists FlyBudget's redirect URL; null when it couldn't be checked */
+  redirectUrlRegistered: boolean | null;
+}
+
+export interface EnableBankingBank {
+  name: string;
+  country: string;
+  maximumConsentDays: number | null;
+  beta: boolean;
+}
+
+export interface EnableBankingDiscoveredAccount {
+  mappingId: string;
+  name: string;
+  iban: string | null;
+  currency: string | null;
+  suggestedType: AccountType;
+  /** An open account whose last CAMT statement was for this IBAN */
+  suggestedAccountId: string | null;
+  /** The account it already syncs into (after a reconnect) */
+  accountId: string | null;
+  isEnabled: number;
+}
+
+export interface EnableBankingConnectionResult {
+  connectionId: string;
+  bankName: string;
+  accounts: EnableBankingDiscoveredAccount[];
+}
+
+export type EnableBankingAuthPoll =
+  | { status: 'pending' }
+  | { status: 'expired' }
+  | { status: 'error'; message: string }
+  | { status: 'success'; result: EnableBankingConnectionResult };
+
+export interface EnableBankingAccountMapping {
+  mappingId: string;
+  name: string;
+  iban: string | null;
+  currency: string | null;
+  accountId: string | null;
+  accountName: string | null;
+  isEnabled: number;
+  lastBookedDate: string | null;
+}
+
+export interface EnableBankingConnection {
+  id: string;
+  aspspName: string;
+  aspspCountry: string;
+  /** When the bank's access ends (ISO timestamp) */
+  validUntil: string | null;
+  syncStatus: EnableBankingSyncStatus;
+  syncError: string | null;
+  lastSyncedAt: string | null;
+  accounts: EnableBankingAccountMapping[];
+}
+
+export interface EnableBankingSyncResult {
+  connectionId: string;
+  bankName: string;
+  added: number;
+  /** Already in FlyBudget (from a file or typed in), now recognised as the bank's */
+  adopted: number;
+  skipped: { noDate: number; badAmount: number; otherCurrency: number };
+  errors: string[];
+}

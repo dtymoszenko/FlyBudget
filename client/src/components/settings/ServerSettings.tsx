@@ -74,7 +74,7 @@ function LocalSettings({ onOpenTab }: { onOpenTab: (tab: 'data') => void }) {
                 <p className="text-text-secondary mt-1 leading-relaxed">
                   Your budget is a file on this computer, and FlyBudget only talks to it through its
                   own local server. Nothing is sent to FlyBudget or anyone else; bank sync contacts
-                  Plaid or SimpleFIN only when you connect a bank.
+                  Plaid, SimpleFIN or Enable Banking only when you connect a bank.
                 </p>
               </>
             )}

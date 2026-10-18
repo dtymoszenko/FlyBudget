@@ -17,6 +17,18 @@ const LOCAL_HOSTNAMES = ['localhost', '127.0.0.1'];
 
 export const API_TOKEN_COOKIE = 'flybudget_token';
 
+/**
+ * Where the bank sends the user back after an Enable Banking login (routes/enableBanking.ts).
+ * It is a top-level navigation from the bank's site: cross-site, with no session cookie
+ * (SameSite=Strict) and no API token. So this one GET skips `originGuard`, `apiTokenGuard`
+ * and the login check; its authority is the single-use, random `state` it must carry, and it
+ * does nothing else (services/enableBankingAuth.ts). `hostGuard` and the headers still apply.
+ */
+export const BANK_CALLBACK_PATH = '/api/enable-banking/callback';
+
+export const isBankCallback = (req: { method: string; path: string }) =>
+  req.method === 'GET' && req.path === BANK_CALLBACK_PATH;
+
 const selfOrigins = (port: number) => LOCAL_HOSTNAMES.map((h) => `http://${h}:${port}`);
 
 /**
@@ -57,6 +69,7 @@ export const hostGuard: RequestHandler = (req, res, next) => {
  * which could trigger actions like running rules or auto-creating transactions.
  */
 export const originGuard: RequestHandler = (req, res, next) => {
+  if (isBankCallback(req)) return next();
   const origin = req.headers.origin;
   const site = req.headers['sec-fetch-site'];
   const allowedOrigins = [...DEV_CLIENT_ORIGINS, ...selfOrigins(req.socket.localPort ?? 0)];
@@ -103,6 +116,7 @@ export function apiTokenGuard(token: string | undefined): RequestHandler {
   const expected = Buffer.from(token);
   return (req, res, next) => {
     if (req.path === '/api/health') return next(); // used by the main process to wait for startup
+    if (isBankCallback(req)) return next(); // opened by the bank in the system browser
     const given = Buffer.from(readCookie(req.headers.cookie, API_TOKEN_COOKIE) ?? '');
     if (given.length !== expected.length || !timingSafeEqual(given, expected)) {
       res.status(401).json({ error: 'Unauthorized' });
@@ -159,7 +173,7 @@ export const hstsWhenSecure: RequestHandler = (req, res, next) => {
 
 /**
  * Caps bank-sync actions (connect, sync, disconnect) at a pace no person clicking
- * would hit, so a bug or runaway loop can't hammer Plaid/SimpleFIN (Plaid bills
+ * would hit, so a bug or runaway loop can't hammer Plaid/SimpleFIN/Enable Banking (Plaid bills
  * per call and may lock the account). Read-only GETs are not limited.
  */
 export const bankRateLimit = rateLimit({
@@ -169,6 +183,15 @@ export const bankRateLimit = rateLimit({
   standardHeaders: 'draft-8',
   legacyHeaders: false,
   message: { error: 'Too many bank requests. Wait a minute and try again.' },
+});
+
+/** The bank's redirect needs no login, so it gets its own limit (each one is checked against a random state) */
+export const bankCallbackRateLimit = rateLimit({
+  windowMs: 60_000,
+  limit: 30,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: 'Too many requests. Wait a minute and try again.',
 });
 
 /**

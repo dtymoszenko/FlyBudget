@@ -9,3 +9,14 @@
   Referrer-Policy: no-referrer
   Cross-Origin-Opener-Policy: same-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
+
+# The page the bank sends desktop users back to: it only reads the address and passes it on
+# to 127.0.0.1 (bank-callback/relay.js). Nothing else may load, and the bank's code never
+# goes out as a Referer.
+/bank-callback/*
+  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Cache-Control: no-store
+  X-Robots-Tag: noindex

@@ -5,3 +5,5 @@ export const SERVER_PORT = 3172;
 export const CONTROL_PORT = 3173;
 /** Static server for the in-browser demo build (served under /demo/, like the website) */
 export const DEMO_PORT = 3174;
+/** Stand-in for Enable Banking's API (mockEnableBanking.ts), used by the desktop server */
+export const ENABLE_BANKING_MOCK_PORT = 3175;

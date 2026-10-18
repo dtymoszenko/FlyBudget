@@ -32,10 +32,22 @@ app.get('/auth/status', (_req, res) =>
 );
 app.get('/server/info', (_req, res) => res.json({ mode: 'demo', version: DEMO_VERSION }));
 
-// Bank sync talks to Plaid and SimpleFIN from a server, so the demo shows it as not set up
+// Bank sync talks to Plaid, SimpleFIN and Enable Banking from a server, so the demo shows it as not set up
 app.get('/plaid/status', (_req, res) => res.json({ configured: false, environment: null }));
 app.get('/plaid/items', (_req, res) => res.json([]));
 app.get('/simplefin/connections', (_req, res) => res.json([]));
+app.get('/enable-banking/status', (_req, res) =>
+  res.json({
+    configured: false,
+    applicationId: null,
+    applicationName: null,
+    environment: null,
+    redirectUrl: null,
+    insecureRedirect: false,
+    connectionCount: 0,
+  }),
+);
+app.get('/enable-banking/connections', (_req, res) => res.json([]));
 
 app.use('/accounts', accountsRouter as unknown as ShimRouter);
 app.use('/categories', categoriesRouter as unknown as ShimRouter);
@@ -52,6 +64,7 @@ app.use('/goals', goalsRouter as unknown as ShimRouter);
 
 app.use('/plaid', (_req, res) => res.status(403).json({ error: NOT_IN_DEMO }));
 app.use('/simplefin', (_req, res) => res.status(403).json({ error: NOT_IN_DEMO }));
+app.use('/enable-banking', (_req, res) => res.status(403).json({ error: NOT_IN_DEMO }));
 app.use('/auth', (_req, res) => res.status(403).json({ error: NOT_IN_DEMO }));
 
 declare const __FLYBUDGET_VERSION__: string;

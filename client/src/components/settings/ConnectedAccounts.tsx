@@ -8,12 +8,20 @@ import { ConnectedInstitutionCard } from '../plaid/ConnectedInstitutionCard';
 import { SimplefinConnectModal } from '../simplefin/SimplefinConnectModal';
 import { SimplefinConnectionCard } from '../simplefin/SimplefinConnectionCard';
 import { SimplefinConfigForm } from '../simplefin/SimplefinConfigForm';
+import {
+  useEnableBankingConnections,
+  useEnableBankingStatus,
+  useSyncAllEnableBanking,
+} from '../../hooks/useEnableBanking';
+import { ConnectEnableBankingModal } from '../enablebanking/ConnectEnableBankingModal';
+import { EnableBankingConnectionCard } from '../enablebanking/EnableBankingConnectionCard';
+import { EnableBankingSetupForm } from '../enablebanking/EnableBankingSetupForm';
 import { Button } from '../ui/Button';
 import type { SimplefinSetupResult } from '../../types';
 import { IS_DEMO } from '../../demo/demoApi';
 import { NotInDemo } from '../demo/NotInDemo';
 
-type Provider = 'plaid' | 'simplefin';
+type Provider = 'plaid' | 'simplefin' | 'enablebanking';
 
 export function ConnectedAccounts() {
   return IS_DEMO ? <ConnectedAccountsDemo /> : <ConnectedAccountsSettings />;
@@ -38,15 +46,20 @@ function ConnectedAccountsSettings() {
   const { data: status, isLoading: statusLoading } = usePlaidStatus();
   const { data: items = [], isLoading: itemsLoading } = usePlaidItems();
   const { data: sfConnections = [], isLoading: sfLoading } = useSimplefinConnections();
+  const { data: ebStatus, isLoading: ebStatusLoading } = useEnableBankingStatus();
+  const { data: ebConnections = [], isLoading: ebLoading } = useEnableBankingConnections();
   const syncAll = useSyncAll();
   const syncAllSf = useSyncAllSimplefin();
+  const syncAllEb = useSyncAllEnableBanking();
+  const [showEnableBanking, setShowEnableBanking] = useState(false);
   const [provider, setProvider] = useState<Provider>('plaid');
   const [showConnect, setShowConnect] = useState(false);
   const [showSimplefin, setShowSimplefin] = useState(false);
   const [sfSetupResult, setSfSetupResult] = useState<SimplefinSetupResult | undefined>();
 
   const plaidConfigured = status?.configured ?? false;
-  const isLoading = statusLoading || itemsLoading || sfLoading;
+  const isLoading = statusLoading || itemsLoading || sfLoading || ebStatusLoading || ebLoading;
+  const ebConfigured = ebStatus?.configured ?? false;
 
   if (isLoading) {
     return (
@@ -66,7 +79,7 @@ function ConnectedAccountsSettings() {
       </div>
 
       {/* Provider toggle */}
-      <div className="flex rounded-lg bg-surface-alt p-1 w-fit">
+      <div className="flex rounded-lg bg-surface-alt p-1 w-fit max-w-full overflow-x-auto">
         <button
           onClick={() => setProvider('plaid')}
           className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ease-in-out ${
@@ -94,6 +107,22 @@ function ConnectedAccountsSettings() {
           {sfConnections.length > 0 && (
             <span className="ml-1.5 text-[10px] bg-brand-50 text-brand-600 px-1.5 py-0.5 rounded-full">
               {sfConnections.length}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setProvider('enablebanking')}
+          title="European banks"
+          className={`px-4 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-all duration-200 ease-in-out ${
+            provider === 'enablebanking'
+              ? 'bg-surface text-text shadow-sm ring-2 ring-brand-600'
+              : 'text-text-tertiary hover:text-text-secondary ring-0 ring-transparent'
+          }`}
+        >
+          Enable Banking
+          {ebConnections.length > 0 && (
+            <span className="ml-1.5 text-[10px] bg-brand-50 text-brand-600 px-1.5 py-0.5 rounded-full">
+              {ebConnections.length}
             </span>
           )}
         </button>
@@ -219,7 +248,77 @@ function ConnectedAccountsSettings() {
         </div>
       )}
 
+      {/* Enable Banking content */}
+      {provider === 'enablebanking' && (
+        <div className="space-y-4">
+          <p className="text-xs text-text-secondary">
+            European banks (EEA), over PSD2. Free with your own Enable Banking application, for your
+            own accounts.
+          </p>
+          {syncAllEb.isSuccess && syncAllEb.data && (
+            <div className="bg-positive-subtle border border-positive/10 rounded-md px-4 py-2">
+              <p className="text-xs text-positive">
+                Enable Banking sync complete:{' '}
+                {syncAllEb.data.results.reduce((s, r) => s + r.added, 0)} new transactions imported.
+              </p>
+            </div>
+          )}
+
+          {ebConnections.length > 0 ? (
+            <div className="space-y-3">
+              {ebConnections.map((conn) => (
+                <EnableBankingConnectionCard key={conn.id} connection={conn} />
+              ))}
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="secondary" size="sm" onClick={() => setShowEnableBanking(true)}>
+                  <Plus size={14} /> Add Another Bank
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => syncAllEb.mutate()}
+                  disabled={syncAllEb.isPending}
+                >
+                  {syncAllEb.isPending ? (
+                    <>
+                      <Loader2 size={12} className="animate-spin" /> Syncing...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw size={12} /> Sync All
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          ) : ebConfigured ? (
+            <div className="bg-surface-alt rounded-lg px-5 py-8 text-center">
+              <p className="text-xs text-text-tertiary mb-3">
+                No banks connected via Enable Banking yet.
+              </p>
+              <Button onClick={() => setShowEnableBanking(true)}>
+                <Plus size={14} /> Connect Bank
+              </Button>
+            </div>
+          ) : null}
+
+          <div className="bg-surface-alt rounded-lg p-5 space-y-3">
+            <h3 className="text-sm font-medium text-text">Enable Banking Application</h3>
+            <EnableBankingSetupForm
+              onConfigured={() => {
+                // First setup: go straight on to connecting a bank
+                if (ebConnections.length === 0) setShowEnableBanking(true);
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       <ConnectBankModal isOpen={showConnect} onClose={() => setShowConnect(false)} />
+      <ConnectEnableBankingModal
+        isOpen={showEnableBanking}
+        onClose={() => setShowEnableBanking(false)}
+      />
       <SimplefinConnectModal
         isOpen={showSimplefin}
         onClose={() => {

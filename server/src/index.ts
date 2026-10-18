@@ -8,9 +8,11 @@ import { deleteExpiredSessions, isPasswordSet } from './auth/sessions.js';
 import { setupCode } from './auth/setupCode.js';
 import { authRouter, requireSession } from './routes/auth.js';
 import {
+  BANK_CALLBACK_PATH,
   DEV_CLIENT_ORIGINS,
   apiNotFound,
   apiTokenGuard,
+  bankCallbackRateLimit,
   bankRateLimit,
   errorHandler,
   hostGuard,
@@ -33,12 +35,14 @@ import { schedulesRouter } from './routes/schedules.js';
 import { goalsRouter } from './routes/goals.js';
 import { plaidRouter } from './routes/plaid.js';
 import { simplefinRouter } from './routes/simplefin.js';
+import { enableBankingCallback, enableBankingRouter } from './routes/enableBanking.js';
 import { serverRouter } from './routes/server.js';
 import { syncAllItems } from './services/plaidSyncService.js';
 import { encryptStoredCredentials } from './services/credentialEncryption.js';
 import { seedDefaultCategories } from './db/defaultCategories.js';
 import { isPlaidConfigured } from './services/plaidService.js';
 import { syncAllSimplefinConnections } from './services/simplefinSyncService.js';
+import { syncAllEnableBankingConnections } from './services/enableBankingSyncService.js';
 import {
   migrateRecurrenceRules,
   migrateOccurrencesFromLegacy,
@@ -74,6 +78,9 @@ app.use(cors({ origin: DEV_CLIENT_ORIGINS }));
 const jsonBody = express.json({ limit: '10mb' });
 app.use((req, res, next) => (req.path === RESTORE_PATH ? next() : jsonBody(req, res, next)));
 
+// The bank's redirect after an Enable Banking login: no session or token, only its state
+app.get(BANK_CALLBACK_PATH, bankCallbackRateLimit, enableBankingCallback);
+
 // Server mode: login routes, then a valid session is required for the rest of the API
 app.use('/api/auth', authRouter);
 app.use('/api', requireSession);
@@ -95,6 +102,7 @@ app.use('/api/schedules', schedulesRouter);
 app.use('/api/goals', goalsRouter);
 app.use('/api/plaid', bankRateLimit, plaidRouter);
 app.use('/api/simplefin', bankRateLimit, simplefinRouter);
+app.use('/api/enable-banking', bankRateLimit, enableBankingRouter);
 app.use('/api', apiNotFound);
 
 export async function startServer(port: number | string): Promise<void> {
@@ -203,6 +211,13 @@ function runStartupTasks() {
         if (total > 0) console.log(`SimpleFIN sync: imported ${total} new transaction(s)`);
       })
       .catch((err) => console.error('SimpleFIN sync error:', err.message)),
+    // Unattended: banks allow only a few of these a day, so recently synced banks wait
+    syncAllEnableBankingConnections({ unattended: true })
+      .then((results) => {
+        const total = results.reduce((s, r) => s + r.added, 0);
+        if (total > 0) console.log(`Enable Banking sync: imported ${total} new transaction(s)`);
+      })
+      .catch((err) => console.error('Enable Banking sync error:', err.message)),
   ]);
 
   bankSyncDone.then(() =>

@@ -5,7 +5,8 @@ import { DOWNLOAD_URL } from './DemoBanner';
 
 const TEXT =
   "Bank connections need the FlyBudget app, so the demo can't connect a bank or take bank " +
-  'credentials. In the app, Plaid or SimpleFIN brings in your transactions automatically, and ' +
+  'credentials. In the app, Plaid, SimpleFIN or Enable Banking (European banks) brings in your ' +
+  'transactions automatically, and ' +
   'you can also import CSV files from your bank.';
 
 /** Shown in the demo instead of bank connection setup (see ConnectedAccounts). */

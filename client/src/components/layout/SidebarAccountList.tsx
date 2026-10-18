@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { NavLink } from 'react-router-dom';
-import { Plus, Building2, Link2, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Building2, Link2, ChevronDown, ChevronRight, Euro } from 'lucide-react';
 import { useAccounts } from '../../hooks/useAccounts';
 import { usePlaidStatus } from '../../hooks/usePlaid';
 import { formatCurrency } from '../../utils/currency';
@@ -9,10 +9,11 @@ import { AddAccountModal } from '../accounts/AddAccountModal';
 import { ConnectBankModal } from '../plaid/ConnectBankModal';
 import { PlaidSetupModal } from '../plaid/PlaidSetupModal';
 import { SimplefinConnectModal } from '../simplefin/SimplefinConnectModal';
+import { ConnectEnableBankingModal } from '../enablebanking/ConnectEnableBankingModal';
 import type { Account } from '../../types';
 
-/** Three 36px rows plus padding */
-const MENU_HEIGHT = 116;
+/** Four 36px rows plus padding */
+const MENU_HEIGHT = 152;
 
 function AccountRow({ account }: { account: Account }) {
   const isNegative = account.balance < 0;
@@ -63,6 +64,7 @@ export function SidebarAccountList() {
   const [connectOpen, setConnectOpen] = useState(false);
   const [plaidSetupOpen, setPlaidSetupOpen] = useState(false);
   const [simplefinOpen, setSimplefinOpen] = useState(false);
+  const [enableBankingOpen, setEnableBankingOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -206,6 +208,16 @@ export function SidebarAccountList() {
                   <Link2 size={14} className="shrink-0" />
                   Connect via SimpleFIN
                 </button>
+                <button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setEnableBankingOpen(true);
+                  }}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-left text-sm whitespace-nowrap text-text-secondary hover:bg-hover hover:text-text transition-colors"
+                >
+                  <Euro size={14} className="shrink-0" />
+                  Connect via Enable Banking
+                </button>
               </div>,
               document.body,
             )}
@@ -220,6 +232,10 @@ export function SidebarAccountList() {
         onConfigured={() => setConnectOpen(true)}
       />
       <SimplefinConnectModal isOpen={simplefinOpen} onClose={() => setSimplefinOpen(false)} />
+      <ConnectEnableBankingModal
+        isOpen={enableBankingOpen}
+        onClose={() => setEnableBankingOpen(false)}
+      />
     </>
   );
 }

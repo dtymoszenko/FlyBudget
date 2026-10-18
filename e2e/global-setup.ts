@@ -6,7 +6,14 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { CONTROL_PORT, DEMO_PORT, DESKTOP_PORT, SERVER_PORT } from './ports';
+import {
+  CONTROL_PORT,
+  DEMO_PORT,
+  DESKTOP_PORT,
+  ENABLE_BANKING_MOCK_PORT,
+  SERVER_PORT,
+} from './ports';
+import { startEnableBankingMock } from './mockEnableBanking';
 
 // Starts FlyBudget twice, each on a throwaway database:
 //
@@ -228,6 +235,7 @@ export default async function globalSetup() {
   }
 
   const demo = await startDemoServer(path.join(dir, 'client-demo'));
+  const enableBanking = await startEnableBankingMock();
 
   const apiToken = randomBytes(32).toString('hex');
   const dataKey = randomBytes(32).toString('base64');
@@ -239,6 +247,7 @@ export default async function globalSetup() {
     CLIENT_DIST: path.join(dir, 'client-desktop'),
     FLYBUDGET_API_TOKEN: apiToken,
     FLYBUDGET_DATA_KEY: dataKey,
+    FLYBUDGET_ENABLE_BANKING_API: `http://127.0.0.1:${ENABLE_BANKING_MOCK_PORT}`,
   };
   // Replaced when a test restarts it
   let desktop = startServer('desktop', desktopEnv, desktopLog);
@@ -301,6 +310,7 @@ export default async function globalSetup() {
   return async () => {
     control.close();
     demo.close();
+    enableBanking.close();
     stop(desktop);
     stop(server);
     // SQLite may hold the files for a moment after the process ends on Windows

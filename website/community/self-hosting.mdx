@@ -100,6 +100,8 @@ environment:
 
 `FLYBUDGET_TRUST_PROXY=1` lets FlyBudget see that the connection is HTTPS, so your login cookie is only ever sent over HTTPS.
 
+HTTPS is also what [Enable Banking](/docs/bank-sync#enable-banking) (European bank sync) needs: your bank sends you back to `https://<your address>/api/enable-banking/callback`, which you add to your Enable Banking application. Without HTTPS you can still connect, by pasting the address your browser lands on into FlyBudget.
+
 ## Settings
 
 | Variable                  | What it does                                                                                                                               |
@@ -160,7 +162,7 @@ Database updates are applied automatically when the new version starts. Back up 
 - Setting the first password needs a one-time setup code from the server log, so nobody else can claim a freshly started server.
 - Passwords are stored as scrypt hashes, never in plain text. Login sessions are random 256-bit tokens, stored only as hashes, in a cookie scripts can't read, and they expire after 30 days.
 - Behind HTTPS, FlyBudget tells browsers to always use HTTPS for your address (HSTS).
-- Bank credentials (Plaid and SimpleFIN) are encrypted with your key, which is kept outside the database.
+- Bank credentials (Plaid, SimpleFIN and Enable Banking) are encrypted with your key, which is kept outside the database.
 - Every image is built by GitHub Actions from the public source code, for both `amd64` and `arm64`, with a software bill of materials (SBOM) and a signed build attestation, and is scanned for known vulnerabilities every week. You can check an image really came from this repository:
 
   ```bash

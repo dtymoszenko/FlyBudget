@@ -1,0 +1,115 @@
+<!doctype html>
+<!--
+  Enable Banking only accepts https:// redirect URLs, so the FlyBudget desktop app (and
+  `npm run dev`), which run on http://localhost, register this page instead. The bank sends
+  the browser here with ?code=…&state=…, and relay.js passes them on to FlyBudget on this
+  computer (http://127.0.0.1:<port>, the port is in the state). Nothing is stored or sent
+  anywhere else, and the code is useless without the private key that stays in FlyBudget.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="robots" content="noindex" />
+    <title>Back to FlyBudget</title>
+    <link rel="icon" href="/img/logo.png" />
+    <style>
+      :root {
+        --bg: #f8fafc;
+        --card: #ffffff;
+        --border: #e2e8f0;
+        --text: #0f172a;
+        --muted: #475569;
+        --accent: #2563eb;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0f172a;
+          --card: #1e293b;
+          --border: #334155;
+          --text: #f1f5f9;
+          --muted: #cbd5e1;
+          --accent: #60a5fa;
+        }
+      }
+      body {
+        font-family:
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 16px;
+        box-sizing: border-box;
+      }
+      main {
+        max-width: 32rem;
+        width: 100%;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 24px;
+        box-sizing: border-box;
+      }
+      h1 {
+        font-size: 1.25rem;
+        margin: 0 0 8px;
+      }
+      p {
+        margin: 0 0 12px;
+        line-height: 1.5;
+        color: var(--muted);
+      }
+      a {
+        color: var(--accent);
+      }
+      textarea {
+        width: 100%;
+        box-sizing: border-box;
+        font:
+          0.85rem ui-monospace,
+          monospace;
+        padding: 8px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--bg);
+        color: var(--text);
+        resize: vertical;
+      }
+      [hidden] {
+        display: none;
+      }
+    </style>
+    <script src="relay.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <h1 id="title">Going back to FlyBudget…</h1>
+      <p id="message">Your bank login is passed to FlyBudget on this computer.</p>
+      <div id="manual" hidden>
+        <p>
+          If FlyBudget didn't open, <a id="link" href="#">click here</a>, or copy this address and
+          paste it into FlyBudget, in the window where you chose your bank:
+        </p>
+        <textarea
+          id="address"
+          rows="4"
+          readonly
+          aria-label="Address to paste into FlyBudget"
+        ></textarea>
+      </div>
+      <noscript>
+        <p>
+          Copy the address of this page from your browser's address bar and paste it into FlyBudget,
+          in the window where you chose your bank.
+        </p>
+      </noscript>
+    </main>
+  </body>
+</html>

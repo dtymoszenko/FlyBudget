@@ -1,7 +1,13 @@
 import { eq, sql, type SQL } from 'drizzle-orm';
 import type { SQLiteColumn } from 'drizzle-orm/sqlite-core';
 import { db } from '../db/index.js';
-import { plaidConfig, plaidItems, simplefinConnections } from '../db/schema.js';
+import {
+  enableBankingConfig,
+  enableBankingConnections,
+  plaidConfig,
+  plaidItems,
+  simplefinConnections,
+} from '../db/schema.js';
 import { secretCipher } from '../db/secretCrypto.js';
 
 const notEncrypted = (column: SQLiteColumn): SQL => sql`${column} not like 'enc:v1:%'`;
@@ -38,6 +44,28 @@ export function encryptStoredCredentials(): number {
       tx.update(simplefinConnections)
         .set({ accessUrl: row.accessUrl })
         .where(eq(simplefinConnections.id, row.id))
+        .run();
+      count++;
+    }
+    for (const row of tx
+      .select()
+      .from(enableBankingConfig)
+      .where(notEncrypted(enableBankingConfig.privateKey))
+      .all()) {
+      tx.update(enableBankingConfig)
+        .set({ privateKey: row.privateKey })
+        .where(eq(enableBankingConfig.id, row.id))
+        .run();
+      count++;
+    }
+    for (const row of tx
+      .select()
+      .from(enableBankingConnections)
+      .where(notEncrypted(enableBankingConnections.sessionId))
+      .all()) {
+      tx.update(enableBankingConnections)
+        .set({ sessionId: row.sessionId })
+        .where(eq(enableBankingConnections.id, row.id))
         .run();
       count++;
     }

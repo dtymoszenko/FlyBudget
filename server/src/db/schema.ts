@@ -388,6 +388,68 @@ export const plaidAccountMappings = sqliteTable(
   ],
 );
 
+// --- Enable Banking (European banks, PSD2) ---
+
+/** The user's own Enable Banking application (single row, id='default'). */
+export const enableBankingConfig = sqliteTable('enable_banking_config', {
+  id: text('id').primaryKey(),
+  applicationId: text('application_id').notNull(),
+  /** The application's RSA private key (PEM), used to sign API requests */
+  privateKey: encryptedText('private_key').notNull(),
+  /** Name and environment from Enable Banking, for display only */
+  applicationName: text('application_name'),
+  environment: text('environment'),
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at')
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+/** One bank login (an Enable Banking session), valid until the consent expires. */
+export const enableBankingConnections = sqliteTable('enable_banking_connections', {
+  id: text('id').primaryKey(),
+  sessionId: encryptedText('session_id').notNull(),
+  aspspName: text('aspsp_name').notNull(),
+  aspspCountry: text('aspsp_country').notNull(),
+  psuType: text('psu_type').notNull().default('personal'),
+  /** When the bank's consent ends (ISO timestamp); the user reconnects after that */
+  validUntil: text('valid_until'),
+  syncStatus: text('sync_status').notNull().default('good'),
+  syncError: text('sync_error'),
+  lastSyncedAt: text('last_synced_at'),
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const enableBankingAccountMappings = sqliteTable(
+  'enable_banking_account_mappings',
+  {
+    id: text('id').primaryKey(),
+    connectionId: text('connection_id')
+      .notNull()
+      .references(() => enableBankingConnections.id, { onDelete: 'cascade' }),
+    /** The bank account's id in the current session (changes when the user reconnects) */
+    accountUid: text('account_uid').notNull(),
+    /** Stays the same across sessions, so a reconnect finds the same account */
+    identificationHash: text('identification_hash'),
+    iban: text('iban'),
+    name: text('name').notNull(),
+    currency: text('currency'),
+    cashAccountType: text('cash_account_type'),
+    accountId: text('account_id').references(() => accounts.id, { onDelete: 'set null' }),
+    isEnabled: integer('is_enabled').notNull().default(1),
+    /** Latest booking date imported, so the next sync asks for a little before it */
+    lastBookedDate: text('last_booked_date'),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (table) => [index('enable_banking_account_mappings_connection_idx').on(table.connectionId)],
+);
+
 // --- Server mode (self-hosted / Docker) login ---
 
 /** The single login password, as an scrypt hash. Only used in server mode. */

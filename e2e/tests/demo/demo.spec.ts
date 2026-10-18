@@ -125,6 +125,24 @@ test("bank connections can't be set up in the demo", async ({ page }) => {
       ).status,
   );
   expect(status).toBe(403);
+
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Add account' }).click();
+  await page.getByRole('button', { name: 'Connect via Enable Banking' }).click();
+  await expect(page.getByRole('dialog', { name: 'Connect a bank' })).toContainText(
+    'Enable Banking',
+  );
+  const ebStatus = await page.evaluate(
+    async () =>
+      (
+        await fetch('/api/enable-banking/configure', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ applicationId: 'x', privateKey: 'x' }),
+        })
+      ).status,
+  );
+  expect(ebStatus).toBe(403);
 });
 
 test('the payment waiting to be matched can be confirmed', async ({ page }) => {
