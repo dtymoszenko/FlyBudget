@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -21,6 +21,12 @@ import { SidebarAccountList } from './SidebarAccountList';
 import { ServerStatus } from './ServerStatus';
 import { DOCS_URL } from '../../utils/project';
 import { BrandName } from '../ui/BrandName';
+import {
+  SIDEBAR_DEFAULT_WIDTH,
+  SIDEBAR_MAX_WIDTH,
+  SIDEBAR_MIN_WIDTH,
+  SIDEBAR_WIDTH_STEP,
+} from '../../utils/sidebarWidth';
 import logoUrl from '/logo.png';
 
 interface NavItemProps {
@@ -58,6 +64,7 @@ function NavItem({ to, icon, label, collapsed }: NavItemProps) {
 
 export function Sidebar() {
   const sidebarMode = usePreferencesStore((s) => s.sidebarMode);
+  const width = usePreferencesStore((s) => s.sidebarWidth);
 
   // Tracked in both modes, so unpinning keeps the sidebar open until the pointer leaves it
   const [hovered, setHovered] = useState(false);
@@ -71,29 +78,109 @@ export function Sidebar() {
     <aside
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      style={isAutoHide ? undefined : { width }}
       className={
         isAutoHide
           ? 'w-16 shrink-0 h-screen relative z-30'
-          : 'w-[208px] shrink-0 h-screen overflow-hidden border-r border-sidebar-border'
+          : 'shrink-0 h-screen relative border-r border-sidebar-border'
       }
     >
       <div
+        style={isAutoHide && isExpanded ? { width } : undefined}
         className={
           isAutoHide
             ? `absolute left-0 top-0 h-full overflow-hidden border-r border-sidebar-border transition-[width,box-shadow] duration-200 ${
-                isExpanded ? 'w-[208px] shadow-xl' : 'w-16'
+                isExpanded ? 'shadow-xl' : 'w-16'
               }`
-            : 'w-full h-full'
+            : 'w-full h-full overflow-hidden'
         }
       >
-        <SidebarContent isExpanded={isExpanded} />
+        <SidebarContent isExpanded={isExpanded} width={width} />
       </div>
+      {!isAutoHide && <ResizeHandle width={width} />}
     </aside>
   );
 }
 
+/** The pinned sidebar's right edge: drag it (or use the arrow keys) to change the width; double-click resets it. */
+function ResizeHandle({ width }: { width: number }) {
+  const setWidth = usePreferencesStore((s) => s.setSidebarWidth);
+  const drag = useRef<{ startX: number; startWidth: number } | null>(null);
+  const [dragging, setDragging] = useState(false);
+
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    drag.current = { startX: e.clientX, startWidth: width };
+    setDragging(true);
+  };
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!drag.current) return;
+    setWidth(drag.current.startWidth + e.clientX - drag.current.startX);
+  };
+  const endDrag = () => {
+    drag.current = null;
+    setDragging(false);
+  };
+  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const next =
+      e.key === 'ArrowLeft'
+        ? width - SIDEBAR_WIDTH_STEP
+        : e.key === 'ArrowRight'
+          ? width + SIDEBAR_WIDTH_STEP
+          : e.key === 'Home'
+            ? SIDEBAR_MIN_WIDTH
+            : e.key === 'End'
+              ? SIDEBAR_MAX_WIDTH
+              : null;
+    if (next === null) return;
+    e.preventDefault();
+    setWidth(next);
+  };
+
+  return (
+    <>
+      <div
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize sidebar"
+        aria-valuenow={width}
+        aria-valuemin={SIDEBAR_MIN_WIDTH}
+        aria-valuemax={SIDEBAR_MAX_WIDTH}
+        tabIndex={0}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        onDoubleClick={() => setWidth(SIDEBAR_DEFAULT_WIDTH)}
+        onKeyDown={onKeyDown}
+        className="group absolute inset-y-0 -right-1.5 z-20 w-3 cursor-col-resize touch-none outline-none"
+      >
+        <div
+          className={`mx-auto h-full w-0.5 transition-colors ${
+            dragging
+              ? 'bg-brand-500'
+              : 'group-hover:bg-brand-500/60 group-focus-visible:bg-brand-500'
+          }`}
+        />
+      </div>
+      {/* Keeps the resize cursor and stops text selection while the pointer is over the page */}
+      {dragging && <div aria-hidden className="fixed inset-0 z-50 cursor-col-resize" />}
+    </>
+  );
+}
+
 /** The sidebar's links, account list and footer, shared by the desktop sidebar and the phone drawer. */
-function SidebarContent({ isExpanded, onClose }: { isExpanded: boolean; onClose?: () => void }) {
+function SidebarContent({
+  isExpanded,
+  onClose,
+  width = SIDEBAR_DEFAULT_WIDTH,
+}: {
+  isExpanded: boolean;
+  onClose?: () => void;
+  width?: number;
+}) {
   const sidebarMode = usePreferencesStore((s) => s.sidebarMode);
   const setSidebarMode = usePreferencesStore((s) => s.setSidebarMode);
   const pinned = sidebarMode === 'persistent';
@@ -101,7 +188,7 @@ function SidebarContent({ isExpanded, onClose }: { isExpanded: boolean; onClose?
     'relative p-1.5 max-md:min-w-11 max-md:min-h-11 flex items-center justify-center rounded-md text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-text-hi';
 
   return (
-    <div className="w-[208px] h-full flex flex-col bg-sidebar-bg">
+    <div style={{ width }} className="h-full flex flex-col bg-sidebar-bg">
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-4 py-3 border-b border-sidebar-border">
         <img src={logoUrl} alt="" className="w-7 h-7 shrink-0" />
