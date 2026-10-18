@@ -1,5 +1,5 @@
 import http from 'http';
-import { ENABLE_BANKING_MOCK_PORT } from './ports';
+import { DESKTOP_PORT, ENABLE_BANKING_MOCK_PORT } from './ports';
 
 // A stand-in for Enable Banking's API (api.enablebanking.com), for the desktop server the
 // tests start (FLYBUDGET_ENABLE_BANKING_API points here). Its "bank login" page sends the
@@ -79,15 +79,19 @@ export function startEnableBankingMock(): Promise<http.Server> {
       return json(res, 200, state);
     }
 
-    // The bank's login page: straight back to FlyBudget, as the relay page would
+    // The bank's login page: straight back to FlyBudget, as the relay page would. Only ever
+    // to the test desktop server (the relay reads the port from the state; tests use one)
     if (path === '/bank') {
-      const st = url.searchParams.get('state') ?? '';
-      const port = st.split('.')[1];
-      const target = `http://127.0.0.1:${port}/api/enable-banking/callback?code=code-${Date.now()}&state=${encodeURIComponent(st)}`;
+      const query = new URLSearchParams({
+        code: `code-${Date.now()}`,
+        state: url.searchParams.get('state') ?? '',
+      });
+      const target = `http://127.0.0.1:${DESKTOP_PORT}/api/enable-banking/callback?${query}`;
       if (state.hold) {
         state.hold = false;
-        res.writeHead(200, { 'Content-Type': 'text/html' });
-        return res.end(`<!doctype html><title>Bank</title><p id="target">${target}</p>`);
+        // Plain text: the address to paste, as the user would copy it
+        res.writeHead(200, { 'Content-Type': 'text/plain' });
+        return res.end(target);
       }
       res.writeHead(302, { Location: target });
       return res.end();

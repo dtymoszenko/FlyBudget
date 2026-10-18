@@ -94,7 +94,7 @@ test('connects a European bank, syncs it, reconnects and disconnects', async ({
     const again = context.waitForEvent('page');
     await reconnect.getByRole('button', { name: 'Log in at your bank' }).click();
     const held = await again;
-    const address = await held.locator('#target').textContent();
+    const address = (await held.locator('body').textContent())?.trim();
     await held.close();
     await reconnect
       .getByRole('button', { name: "Logged in, but FlyBudget didn't continue?" })

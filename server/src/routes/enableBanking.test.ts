@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import express from 'express';
+import { rateLimit } from 'express-rate-limit';
 import { generateKeyPairSync, verify } from 'crypto';
 import type { AddressInfo } from 'net';
 import type { Server } from 'http';
@@ -47,6 +48,10 @@ interface MockState {
   checkingIban: string | null;
   /** The savings account resends its page under a new key each time */
   rotateKeys: boolean;
+  /** Answer as Enable Banking does to a key it doesn't know */
+  rejectKey: boolean;
+  /** Every Authorization header received, checked at the end */
+  authorizations: (string | undefined)[];
 }
 const mock: MockState = {
   states: [],
@@ -60,6 +65,8 @@ const mock: MockState = {
   checkingHash: 'hash-checking',
   checkingIban: IBAN_CHECKING,
   rotateKeys: false,
+  rejectKey: false,
+  authorizations: [],
 };
 
 function verifyJwt(header: string | undefined): boolean {
@@ -101,8 +108,8 @@ const ebApp = express();
 ebApp.use(express.json());
 ebApp.use((req, res, next) => {
   if (mock.down) return void res.socket?.destroy();
-  if (!verifyJwt(req.headers.authorization))
-    return void res.status(401).json({ error: 'UNAUTHORIZED_ACCESS' });
+  mock.authorizations.push(req.headers.authorization);
+  if (mock.rejectKey) return void res.status(401).json({ error: 'UNAUTHORIZED_ACCESS' });
   next();
 });
 ebApp.get('/application', (_req, res) =>
@@ -189,6 +196,8 @@ beforeAll(async () => {
   process.env.FLYBUDGET_ENABLE_BANKING_API = `http://127.0.0.1:${(ebServer.address() as AddressInfo).port}`;
 
   const app = express();
+  // Generous, like the real server's limits on these routes
+  app.use(rateLimit({ windowMs: 60_000, limit: 1_000 }));
   app.use(originGuard);
   app.use(apiTokenGuard(TOKEN));
   app.use(express.json());
@@ -259,10 +268,12 @@ describe('Enable Banking', () => {
       type: 'pkcs8',
       format: 'pem',
     });
+    mock.rejectKey = true;
     const refused = await call('POST', '/enable-banking/configure', {
       applicationId: APP_ID,
       privateKey: wrongKey,
     });
+    mock.rejectKey = false;
     expect(refused.status).toBe(422);
     expect(refused.body.error).toMatch(/didn't accept/);
     expect(db.select().from(enableBankingConfig).all()).toHaveLength(0);
@@ -586,6 +597,15 @@ describe('Enable Banking', () => {
     );
     expect(sync.body).toMatchObject({ added: 0, adopted: 3, errors: [] });
     expect(rowsIn(checkingId)).toHaveLength(3);
+  });
+});
+
+describe('requests to Enable Banking', () => {
+  it('were all signed with the application key: RS256, its id as key id, valid for an hour', () => {
+    // The configure test's wrong key aside, which Enable Banking would refuse
+    const signed = mock.authorizations.filter(verifyJwt);
+    expect(mock.authorizations.length).toBeGreaterThan(20);
+    expect(mock.authorizations.length - signed.length).toBe(1);
   });
 });
 
