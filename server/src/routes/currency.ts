@@ -5,7 +5,14 @@ import { Router } from 'express';
 import { and, desc, eq, ne, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../db/index.js';
-import { accounts, budgetMonths, exchangeRates, transactions } from '../db/schema.js';
+import {
+  accounts,
+  budgetMonths,
+  exchangeRates,
+  goals,
+  schedules,
+  transactions,
+} from '../db/schema.js';
 import { isForeign, minorUnits } from '../utils/currencies.js';
 import { convertMinor, formatRate, parseRate } from '../utils/money.js';
 import { currencySchema, isoDate } from '../utils/validation.js';
@@ -76,7 +83,21 @@ function relabelBlocker(current: string | null, next: string): string | null {
       .from(budgetMonths)
       .where(ne(budgetMonths.budgeted, 0))
       .get();
-    if (planned || all.some((a) => !a.currency && hasAmounts(a))) {
+    // Goals are in the budget's currency, and so are recurring items without an account or on
+    // one in it (those on an account in another currency are in that one's)
+    const goal = db
+      .select({ id: goals.id })
+      .from(goals)
+      .where(or(ne(goals.targetAmount, 0), ne(goals.currentAmount, 0)))
+      .get();
+    const inBudgetCurrency = new Set(all.filter((a) => !a.currency).map((a) => a.id));
+    const schedule = db
+      .select({ accountId: schedules.accountId })
+      .from(schedules)
+      .where(ne(schedules.amount, 0))
+      .all()
+      .some((s) => !s.accountId || inBudgetCurrency.has(s.accountId));
+    if (planned || goal || schedule || all.some((a) => !a.currency && hasAmounts(a))) {
       return `Your budget already has amounts in ${current ?? 'its currency'}, and ${next} has a different number of decimals, so they would change. Choose a currency with ${minorUnits(current)} decimals, or start a new budget.`;
     }
   }
