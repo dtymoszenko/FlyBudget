@@ -74,7 +74,8 @@ const MESSAGES: Record<EnableBankingErrorKind, string> = {
   psu_header_required: 'This bank only allows syncing while you use FlyBudget. Click Sync now.',
   not_found: 'Enable Banking no longer knows this bank account. Reconnect the bank.',
   invalid_request: 'Enable Banking refused the request. Try again, or reconnect the bank.',
-  bank_error: "Your bank didn't answer. Try again later.",
+  bank_error:
+    "Your bank didn't answer. Try again later, and reconnect the bank if it keeps happening.",
   unavailable: 'Could not reach Enable Banking. Try again later.',
 };
 
@@ -87,6 +88,11 @@ export class EnableBankingError extends Error {
     readonly status: number | null = null,
   ) {
     super(MESSAGES[kind]);
+  }
+
+  /** What `logError` writes: Enable Banking's own code, not only the message shown to the user */
+  get response() {
+    return { data: { kind: this.kind, code: this.code, status: this.status } };
   }
 }
 

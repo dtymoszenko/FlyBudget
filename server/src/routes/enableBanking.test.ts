@@ -506,9 +506,9 @@ describe('Enable Banking', () => {
     );
     expect(again).toHaveLength(2);
     expect(again.every((m) => m.accountId)).toBe(true);
-    // The previous session was ended at Enable Banking
+    // The previous session is left to expire: ending it can cut off the new one too
     await new Promise((r) => setTimeout(r, 50));
-    expect(mock.deleted).toContain('session-1');
+    expect(mock.deleted).not.toContain('session-1');
 
     const sync2 = await call('POST', `/enable-banking/connections/${connectionId}/sync`, {});
     expect(sync2.body).toMatchObject({ added: 0, errors: [] });
@@ -606,6 +606,22 @@ describe('Enable Banking', () => {
     );
     expect(sync.body).toMatchObject({ added: 0, adopted: 3, errors: [] });
     expect(rowsIn(checkingId)).toHaveLength(3);
+  });
+
+  it("disconnecting one of two connections to the same bank doesn't end the other's access", async () => {
+    const start = await call('POST', '/enable-banking/auth', {
+      aspspName: 'Nordea',
+      country: 'FI',
+    });
+    await bankRedirect(`state=${mock.states.at(-1)}&code=code-third`);
+    const poll = await call('GET', `/enable-banking/auth/${start.body.authId}`);
+    const [first] = (await call('GET', '/enable-banking/connections')).body;
+    expect(first.id).not.toBe(poll.body.result.connectionId);
+    const deletedBefore = mock.deleted.length;
+    expect((await call('DELETE', `/enable-banking/connections/${first.id}`)).status).toBe(204);
+    // Forgotten locally only: ending its session could revoke the other connection's consent
+    expect(mock.deleted).toHaveLength(deletedBefore);
+    expect(db.select().from(enableBankingConnections).all()).toHaveLength(1);
   });
 });
 

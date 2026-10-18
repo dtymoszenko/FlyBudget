@@ -81,7 +81,7 @@ Use HTTPS (through a reverse proxy like Caddy) before making your server reachab
 - **The bank's redirect proves itself.** When your bank sends you back, the request carries no login or app token (browsers don't send those from another website), so FlyBudget accepts it only with the random, single-use code it made for that login, for 30 minutes. That one address is the only part of FlyBudget that works without them, and it does nothing else.
 - **The desktop app's relay page only goes to your computer.** Enable Banking needs an https redirect address, so the desktop app uses a static page on flybudget.org that forwards the bank's one-time code to `127.0.0.1` on your computer. It can't send anyone anywhere else, keeps nothing, and the code is useless without your private key.
 - **Bank data is double-checked**, like SimpleFIN's: validated before it's saved, amounts converted to exact cents, and text cleaned of control characters.
-- **Disconnecting really disconnects.** FlyBudget ends the session at Enable Banking before forgetting it; if Enable Banking can't be reached, the connection is kept so you can try again.
+- **Disconnecting really disconnects.** FlyBudget ends the session at Enable Banking before forgetting it; if Enable Banking can't be reached, the connection is kept so you can try again. (The one exception is a bank you connected twice: ending one session would also end the other's, so that one is only forgotten and its access runs out on its own date.)
 
 ## Encryption
 

@@ -263,20 +263,16 @@ function completer(psu: PsuContext) {
     if (session.mode.kind === 'new') return saveNewConnection(ebSession, session.validUntil);
 
     const connectionId = session.mode.connectionId;
-    const old = db
-      .select({ sessionId: enableBankingConnections.sessionId })
+    const exists = db
+      .select({ id: enableBankingConnections.id })
       .from(enableBankingConnections)
       .where(eq(enableBankingConnections.id, connectionId))
       .get();
-    if (!old) return saveNewConnection(ebSession, session.validUntil);
-    const result = reconnectConnection(connectionId, ebSession, session.validUntil);
-    // The old session may still be open (reconnecting early): end it, but it isn't needed
-    if (old.sessionId !== ebSession.session_id) {
-      deleteSession(creds, old.sessionId).catch((err) =>
-        logError('Enable Banking: ending the previous session failed', err),
-      );
-    }
-    return result;
+    if (!exists) return saveNewConnection(ebSession, session.validUntil);
+    // The previous session is left to expire on its own. Ending it can also end the new one:
+    // banks revoke the user's consent for these accounts, not just that session (seen with
+    // Nordea in Enable Banking's sandbox)
+    return reconnectConnection(connectionId, ebSession, session.validUntil);
   };
 }
 
@@ -505,12 +501,31 @@ enableBankingRouter.get('/connections', (_req, res) => {
 
 enableBankingRouter.delete('/connections/:id', async (req, res) => {
   const conn = db
-    .select({ id: enableBankingConnections.id, sessionId: enableBankingConnections.sessionId })
+    .select({
+      id: enableBankingConnections.id,
+      sessionId: enableBankingConnections.sessionId,
+      aspspName: enableBankingConnections.aspspName,
+      aspspCountry: enableBankingConnections.aspspCountry,
+    })
     .from(enableBankingConnections)
     .where(eq(enableBankingConnections.id, req.params.id))
     .get();
   if (!conn) return res.status(404).json({ error: 'Connection not found' });
-  const creds = loadEnableBankingConfig();
+  // Ending a session revokes the user's consent at the bank, which can also cut off another
+  // connection to the same bank (the bank was added again rather than reconnected). Then this
+  // one is only forgotten, and its access ends on its own date.
+  const sameBank = db
+    .select({ id: enableBankingConnections.id })
+    .from(enableBankingConnections)
+    .where(
+      and(
+        eq(enableBankingConnections.aspspName, conn.aspspName),
+        eq(enableBankingConnections.aspspCountry, conn.aspspCountry),
+        ne(enableBankingConnections.id, conn.id),
+      ),
+    )
+    .get();
+  const creds = sameBank ? null : loadEnableBankingConfig();
   if (creds) {
     try {
       // Revoke the bank access first; if Enable Banking can't be reached (or asks to wait), keep the connection

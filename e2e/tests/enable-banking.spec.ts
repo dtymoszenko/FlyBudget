@@ -117,7 +117,9 @@ test('connects a European bank, syncs it, reconnects and disconnects', async ({
       .click();
     await expect(page.getByText('→ Mock checking')).toHaveCount(0);
     const state = await mock('renew');
-    expect(state.deleted).toEqual(['e2e-session-1', 'e2e-session-2']);
+    // Only the current session is ended: the one from before the reconnect expires on its own
+    // (ending it could also end the new one)
+    expect(state.deleted).toEqual(['e2e-session-2']);
   } finally {
     // Bank connections aren't part of the database reset between tests
     for (const conn of await api.call<{ id: string }[]>('GET', '/enable-banking/connections')) {
