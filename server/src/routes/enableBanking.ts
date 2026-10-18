@@ -1,5 +1,5 @@
 import { Router, type Request, type RequestHandler } from 'express';
-import { and, eq, ne } from 'drizzle-orm';
+import { and, eq, gt, isNull, ne, or } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
 import { db } from '../db/index.js';
@@ -522,6 +522,12 @@ enableBankingRouter.delete('/connections/:id', async (req, res) => {
         eq(enableBankingConnections.aspspName, conn.aspspName),
         eq(enableBankingConnections.aspspCountry, conn.aspspCountry),
         ne(enableBankingConnections.id, conn.id),
+        // Only one that still has access: an ended one has nothing left to lose
+        ne(enableBankingConnections.syncStatus, 'login_required'),
+        or(
+          isNull(enableBankingConnections.validUntil),
+          gt(enableBankingConnections.validUntil, new Date().toISOString()),
+        ),
       ),
     )
     .get();

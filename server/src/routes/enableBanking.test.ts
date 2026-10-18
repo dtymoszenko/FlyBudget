@@ -5,7 +5,7 @@ import { generateKeyPairSync, verify } from 'crypto';
 import type { AddressInfo } from 'net';
 import type { Server } from 'http';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
-import { eq } from 'drizzle-orm';
+import { eq, ne } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import {
   accounts,
@@ -622,6 +622,23 @@ describe('Enable Banking', () => {
     // Forgotten locally only: ending its session could revoke the other connection's consent
     expect(mock.deleted).toHaveLength(deletedBefore);
     expect(db.select().from(enableBankingConnections).all()).toHaveLength(1);
+  });
+
+  it("a connection whose access already ended doesn't stop the live one from being ended", async () => {
+    const start = await call('POST', '/enable-banking/auth', {
+      aspspName: 'Nordea',
+      country: 'FI',
+    });
+    await bankRedirect(`state=${mock.states.at(-1)}&code=code-fourth`);
+    const poll = await call('GET', `/enable-banking/auth/${start.body.authId}`);
+    const live = poll.body.result.connectionId as string;
+    // The other Nordea connection's access has ended
+    db.update(enableBankingConnections)
+      .set({ syncStatus: 'login_required' })
+      .where(ne(enableBankingConnections.id, live))
+      .run();
+    expect((await call('DELETE', `/enable-banking/connections/${live}`)).status).toBe(204);
+    expect(mock.deleted.at(-1)).toBe(`session-${mock.sessionCount}`);
   });
 });
 
