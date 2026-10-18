@@ -29,10 +29,18 @@ export const importSettingsSchema = z.object({
   encoding: z.enum(CSV_ENCODINGS),
   /** Rows above the header (account details some banks put first) */
   skipRows: z.number().int().min(0).max(1000),
-  /** Column header → what it holds */
+  /**
+   * Column header → what it holds. Read as [header, role] pairs and rebuilt with
+   * Object.fromEntries, which keeps any header as written: a record schema assigns keys one by
+   * one, and assigning a header named "__proto__" changes the object's prototype instead.
+   */
   columns: z
-    .record(z.string().max(200), z.enum(COLUMN_ROLES))
-    .refine((c) => Object.keys(c).length <= 200, 'Too many columns'),
+    .preprocess(
+      (value) =>
+        value && typeof value === 'object' && !Array.isArray(value) ? Object.entries(value) : value,
+      z.array(z.tuple([z.string().max(200), z.enum(COLUMN_ROLES)])).max(200, 'Too many columns'),
+    )
+    .transform((pairs): Record<string, (typeof COLUMN_ROLES)[number]> => Object.fromEntries(pairs)),
   dateFormat: z.enum(['mdy', 'dmy', 'ymd']).nullable(),
   numberFormat: z.enum(['dot', 'comma']).nullable(),
   /** What the direction column says for money going out, if not a word FlyBudget knows */
