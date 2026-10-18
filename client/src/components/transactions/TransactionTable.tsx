@@ -22,6 +22,8 @@ import { docsUrl } from '../../utils/project';
 import { useAddTransaction } from '../../hooks/useOffline';
 import { formatCurrency } from '../../utils/currency';
 import { transactionValue } from '../../utils/accountMoney';
+import { formatMoney } from '../../utils/currency';
+import { useAccountCurrency, useBudgetCurrency } from '../../hooks/useCurrency';
 import type { FilterState } from './TransactionFilters';
 import type { CategoryGroup } from '../../types';
 import type { CreateTransactionData } from '../../api/transactions';
@@ -171,6 +173,12 @@ export function TransactionTable({
     }
   }, [panelVisible]);
 
+  // Day totals: one account's register adds its own amounts (in its currency); all accounts
+  // together add their values in the budget's currency
+  const ownCurrency = useAccountCurrency()(accountId);
+  const budgetCurrency = useBudgetCurrency();
+  const dayAmount = (t: (typeof transactions)[number]) =>
+    accountId ? t.amount : transactionValue(t);
   const groupedByDate = useMemo(() => {
     const result: Array<{ date: string; txs: typeof transactions; total: number }> = [];
     let currentDate = '';
@@ -182,7 +190,7 @@ export function TransactionTable({
           result.push({
             date: currentDate,
             txs: currentTxs,
-            total: currentTxs.reduce((sum, t) => sum + Math.abs(transactionValue(t)), 0),
+            total: currentTxs.reduce((sum, t) => sum + Math.abs(dayAmount(t)), 0),
           });
         }
         currentDate = tx.date;
@@ -196,12 +204,12 @@ export function TransactionTable({
       result.push({
         date: currentDate,
         txs: currentTxs,
-        total: currentTxs.reduce((sum, t) => sum + Math.abs(transactionValue(t)), 0),
+        total: currentTxs.reduce((sum, t) => sum + Math.abs(dayAmount(t)), 0),
       });
     }
 
     return result;
-  }, [transactions]);
+  }, [transactions, accountId]);
 
   // How many rows to draw, back to one page whenever the filters change
   const [shown, setShown] = useState({ params, rows: ROWS_PER_PAGE });
@@ -376,8 +384,17 @@ export function TransactionTable({
                     <span className="text-sm font-medium text-text-secondary">
                       {formatDayLong(group.date)}
                     </span>
-                    <span className="text-sm font-medium text-text-secondary tabular-nums">
-                      {formatCurrency(group.total)}
+                    <span
+                      className="text-sm font-medium text-text-secondary tabular-nums"
+                      title={
+                        !accountId && budgetCurrency
+                          ? `In ${budgetCurrency}, at each day's rate`
+                          : undefined
+                      }
+                    >
+                      {accountId
+                        ? formatMoney(group.total, ownCurrency)
+                        : formatCurrency(group.total)}
                     </span>
                   </div>
 

@@ -582,7 +582,15 @@ function MappingStep({
   const { data: existingAccounts = [] } = useAccounts();
   const canSave = useCanSave();
   const linked = new Set(mappings.filter((m) => m.action === 'link').map((m) => m.accountId));
-  const incomplete = mappings.some((m) => m.action === 'link' && !m.accountId);
+  // A link still to choose, or to an account in another currency than the bank account's
+  // (its amounts would be read in the wrong currency)
+  const incomplete = mappings.some((m) => {
+    if (m.action !== 'link') return false;
+    if (!m.accountId) return true;
+    const bank = result.accounts.find((a) => a.mappingId === m.mappingId)?.currency;
+    const target = existingAccounts.find((a) => a.id === m.accountId)?.currency;
+    return !!bank && !!target && target !== bank.toUpperCase();
+  });
 
   return (
     <div className="space-y-4">

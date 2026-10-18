@@ -70,7 +70,10 @@ export function useDownloadRates() {
   });
 }
 
-export function useRates(params: { base?: string; quote?: string }, enabled = true) {
+export function useRates(
+  params: { base?: string; quote?: string; source?: 'manual' | 'ecb' },
+  enabled = true,
+) {
   return useQuery({
     queryKey: ['currency', 'rates', params],
     queryFn: () => currencyApi.getRates(params),

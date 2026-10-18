@@ -2,6 +2,7 @@
 // currency, at the latest rate (the server's `mainBalance`). An account without a rate
 // can't be counted honestly, so it's left out and named (see unconvertedCurrencies).
 import type { Account, Transaction } from '../types';
+import { convertMinor, impliedRate } from './money';
 
 /** An account's balance in the budget's currency, or null without a rate for its currency */
 export function balanceValue(account: Pick<Account, 'balance' | 'mainBalance'>): number | null {
@@ -41,7 +42,11 @@ export function earlierValue(
   // No conversion was needed: it's in the budget's currency
   if (!account.rateDate) return earlier;
   if (account.balance === 0) return null;
-  return Math.round((earlier * value) / account.balance);
+  // Exact: the rate the two balances imply, applied once (cents times cents can pass 2^53)
+  const rate = impliedRate(account.balance, 0, value, 0);
+  if (!rate) return 0;
+  // impliedRate works on sizes: the sign comes from the two balances
+  return Math.sign(value) * Math.sign(account.balance) * convertMinor(earlier, 0, 0, rate);
 }
 
 /** What a transaction counts as in the budget's currency (nothing while its rate is missing) */

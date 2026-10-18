@@ -5,6 +5,7 @@ import { and, eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
 import { bankCurrency, currencyToStore } from '../services/mainAmountService.js';
+import { minorUnits } from '../utils/currencies.js';
 import { logError } from '../utils/log.js';
 import { accountTypeSchema, defaultOffBudget } from '../utils/accountTypes.js';
 import {
@@ -157,7 +158,12 @@ async function addPlaidItem(publicToken: string, institution: { id: string; name
       subtype: a.subtype,
       mask: a.mask,
       suggestedType: mapPlaidAccountType(a.type, a.subtype),
-      currentBalance: plaidBalanceToCents(a.currentBalance, a.type),
+      // In the bank account's own decimals, like syncs (none for yen)
+      currentBalance: plaidBalanceToCents(
+        a.currentBalance,
+        a.type,
+        minorUnits(bankCurrency(a.currency)),
+      ),
     })),
   };
 }

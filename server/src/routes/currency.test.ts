@@ -12,6 +12,7 @@ import { budgetRouter } from './budget.js';
 import { reportsRouter } from './reports.js';
 import { exportRouter } from './export.js';
 import { currencyRouter } from './currency.js';
+import { todayIso } from '../services/mainAmountService.js';
 
 // Multiple currencies: a budget in euros with accounts in dollars and yen. Its own file, so
 // the database holds only this test's data.
@@ -248,8 +249,22 @@ describe('multiple currencies', () => {
     expect((await call('PUT', `/accounts/${empty.id}`, { currency: 'AUD' })).status).toBe(200);
   });
 
+  it('lists the rates typed in for one currency, however many were downloaded', async () => {
+    const typed = (await call('GET', '/currency/rates?quote=USD&source=manual')).body as {
+      quote: string;
+      source: string;
+    }[];
+    expect(typed.length).toBeGreaterThan(0);
+    expect(typed.every((r) => r.quote === 'USD' && r.source === 'manual')).toBe(true);
+    expect((await call('GET', '/currency/rates?source=other')).status).toBe(400);
+  });
+
   it("can't relabel the budget currency while accounts in other currencies have history", async () => {
     expect((await call('PUT', '/currency', { currency: 'USD' })).status).toBe(409);
+    // Euro amounts have two decimals: as yen (none) they'd mean a hundred times more
+    const yen = await call('PUT', '/currency', { currency: 'JPY' });
+    expect(yen.status).toBe(409);
+    expect(yen.body.error).toMatch(/different number of decimals/);
   });
 
   it('values net worth at the rate of the day', async () => {
@@ -263,7 +278,8 @@ describe('multiple currencies', () => {
   });
 
   it('shows what a change in the rate did, and records it only when asked', async () => {
-    const today = new Date().toISOString().slice(0, 10);
+    // The server's own day (local, not UTC)
+    const today = todayIso();
     await rate(today, 'EUR', 'USD', '1.2');
     const listed = async () =>
       (

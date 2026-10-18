@@ -16,6 +16,8 @@ export function useCreateAccount() {
     mutationFn: accountsApi.createAccount,
     onSuccess: (created) => {
       qc.invalidateQueries({ queryKey: ['accounts'] });
+      // The first account given a currency also gives the budget its own
+      qc.invalidateQueries({ queryKey: ['currency'] });
       useUndoStore.getState().push({
         description: `Create account "${created.name}"`,
         undo: async () => {

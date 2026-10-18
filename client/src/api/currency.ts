@@ -17,7 +17,9 @@ export const downloadRates = () =>
     { method: 'POST' },
   );
 
-export const getRates = (params: { base?: string; quote?: string; limit?: number } = {}) => {
+export const getRates = (
+  params: { base?: string; quote?: string; source?: 'manual' | 'ecb'; limit?: number } = {},
+) => {
   const query = new URLSearchParams(
     Object.entries(params).flatMap(([k, v]) => (v === undefined ? [] : [[k, String(v)]])),
   );

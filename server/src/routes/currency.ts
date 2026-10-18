@@ -2,10 +2,10 @@
 // transactions waiting for a rate. Loaded by the demo too, so no network code here: the
 // download is plugged in by index.ts (setRateDownloader).
 import { Router } from 'express';
-import { and, desc, eq, or, sql } from 'drizzle-orm';
+import { and, desc, eq, ne, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../db/index.js';
-import { accounts, exchangeRates, transactions } from '../db/schema.js';
+import { accounts, budgetMonths, exchangeRates, transactions } from '../db/schema.js';
 import { isForeign, minorUnits } from '../utils/currencies.js';
 import { convertMinor, formatRate, parseRate } from '../utils/money.js';
 import { currencySchema, isoDate } from '../utils/validation.js';
@@ -56,9 +56,11 @@ function foreignCurrencies(): string[] {
 
 /**
  * Whether the budget's currency can be changed to `next` by relabelling (no amount changes):
- * no account with transactions or a balance would end up in another currency than the budget
+ * no account with transactions or a balance would end up in another currency than the budget,
+ * and amounts already in the budget's currency keep meaning the same (amounts are stored in
+ * minor units: from dollars to yen, 10.00 would become 1,000)
  */
-function relabelBlocker(next: string): string | null {
+function relabelBlocker(current: string | null, next: string): string | null {
   const used = new Set(
     db
       .selectDistinct({ accountId: transactions.accountId })
@@ -66,11 +68,19 @@ function relabelBlocker(next: string): string | null {
       .all()
       .map((r) => r.accountId),
   );
-  const blocked = db
-    .select()
-    .from(accounts)
-    .all()
-    .some((a) => (a.startingBalance !== 0 || used.has(a.id)) && a.currency && a.currency !== next);
+  const all = db.select().from(accounts).all();
+  const hasAmounts = (a: (typeof all)[number]) => a.startingBalance !== 0 || used.has(a.id);
+  if (minorUnits(current) !== minorUnits(next)) {
+    const planned = db
+      .select({ id: budgetMonths.id })
+      .from(budgetMonths)
+      .where(ne(budgetMonths.budgeted, 0))
+      .get();
+    if (planned || all.some((a) => !a.currency && hasAmounts(a))) {
+      return `Your budget already has amounts in ${current ?? 'its currency'}, and ${next} has a different number of decimals, so they would change. Choose a currency with ${minorUnits(current)} decimals, or start a new budget.`;
+    }
+  }
+  const blocked = all.some((a) => hasAmounts(a) && a.currency && a.currency !== next);
   return blocked
     ? "Your budget has accounts in other currencies. Changing its currency would mean converting every amount, which FlyBudget can't do yet."
     : null;
@@ -118,7 +128,7 @@ currencyRouter.put('/', (req, res) => {
   const next = parsed.data.currency;
   const current = budgetCurrency();
   if (current !== next) {
-    const blocker = relabelBlocker(next);
+    const blocker = relabelBlocker(current, next);
     if (blocker) return res.status(409).json({ error: blocker });
     db.transaction(() => {
       updateBudgetSettings({ currency: next });
@@ -176,14 +186,15 @@ currencyRouter.post('/download', async (_req, res) => {
 const pairQuery = z.object({
   base: currencySchema.optional(),
   quote: currencySchema.optional(),
+  source: z.enum(['manual', 'ecb']).optional(),
   limit: z.coerce.number().int().min(1).max(1000).default(200),
 });
 
-// GET /currency/rates?base=&quote= — stored rates, newest first
+// GET /currency/rates?base=&quote=&source= — stored rates, newest first
 currencyRouter.get('/rates', (req, res) => {
   const parsed = pairQuery.safeParse(req.query);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
-  const { base, quote, limit } = parsed.data;
+  const { base, quote, source, limit } = parsed.data;
   const where = [];
   if (base && quote) {
     where.push(
@@ -193,6 +204,8 @@ currencyRouter.get('/rates', (req, res) => {
       ),
     );
   } else if (base) where.push(or(eq(exchangeRates.base, base), eq(exchangeRates.quote, base)));
+  else if (quote) where.push(eq(exchangeRates.quote, quote));
+  if (source) where.push(eq(exchangeRates.source, source));
   res.json(
     db
       .select()

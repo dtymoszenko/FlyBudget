@@ -47,7 +47,17 @@ function RecordModal({ account, onClose }: { account: Account; onClose: () => vo
     mutationFn: () =>
       recordCurrencyDifference({ accountId: account.id, categoryId: categoryId || null }),
     onSuccess: () => {
-      qc.invalidateQueries();
+      // What the correction changes: the account, its transactions, the budget and reports
+      for (const key of [
+        'accounts',
+        'transactions',
+        'budget',
+        'budget-summary',
+        'reports',
+        'currency',
+      ]) {
+        qc.invalidateQueries({ queryKey: [key] });
+      }
       onClose();
     },
   });

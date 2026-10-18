@@ -28,13 +28,18 @@ export function CurrencySelect({
   'aria-describedby': describedBy,
   className = '',
 }: Props) {
+  // Callers pass a new array each render: keyed on its contents, so ~150 names are looked up
+  // and sorted once
+  const firstKey = first.join(',');
   const groups = useMemo(() => {
-    const top = [...new Set([...first, ...COMMON])].filter((c) => CURRENCY_CODES.includes(c));
+    const top = [...new Set([...firstKey.split(',').filter(Boolean), ...COMMON])].filter((c) =>
+      CURRENCY_CODES.includes(c),
+    );
     const rest = CURRENCY_CODES.filter((c) => !top.includes(c))
       .map((code) => ({ code, name: currencyName(code) }))
       .sort((a, b) => a.name.localeCompare(b.name));
     return { top: top.map((code) => ({ code, name: currencyName(code) })), rest };
-  }, [first]);
+  }, [firstKey]);
 
   return (
     <select

@@ -68,8 +68,11 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
     { from: ownCurrency, to: otherCurrency, date, amount },
     crossCurrency && !otherTyped,
   );
+  // Until it's typed: the day's rate, or nothing when there's no rate (never one left over
+  // from another day, amount or account)
   useEffect(() => {
-    if (crossCurrency && !otherTyped && converted?.amount != null) setOtherAmount(converted.amount);
+    if (!crossCurrency || otherTyped) return;
+    setOtherAmount(converted?.amount ?? 0);
   }, [crossCurrency, otherTyped, converted]);
 
   const hasConfirmedMerchant = payeeId !== null;

@@ -900,7 +900,11 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
             <Button
               onClick={handleConfirm}
               disabled={
-                confirmMutation.isPending || previewRows.length === excluded.size || !canSave
+                confirmMutation.isPending ||
+                previewRows.length === excluded.size ||
+                !canSave ||
+                // A statement in another currency would be read as this account's
+                !!otherCurrency
               }
             >
               {confirmMutation.isPending

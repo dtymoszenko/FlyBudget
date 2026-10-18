@@ -172,8 +172,10 @@ function Rates() {
   const add = useAddRate();
   const remove = useDeleteRate();
   const canSave = useCanSave();
-  const { data: manual = [] } = useRates({ quote: budget ?? undefined }, !!budget);
-  const typedIn = manual.filter((r) => r.source === 'manual');
+  const { data: typedIn = [] } = useRates(
+    { quote: budget ?? undefined, source: 'manual' },
+    !!budget,
+  );
   if (!budget) return null;
 
   const rateText = rate.trim().replace(',', '.');
