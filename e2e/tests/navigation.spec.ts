@@ -65,6 +65,38 @@ test('the sidebar lists accounts with their balances and opens them', async ({ p
   await expect(page.getByRole('heading', { level: 1, name: 'Rainy Day Savings' })).toBeVisible();
 });
 
+test('the sidebar is resized by dragging its edge or with the keyboard', async ({ page, api }) => {
+  await api.createAccount('Everyday Checking', 100_000);
+  await open(page, '/dashboard');
+  const sidebar = page.locator('aside').first();
+  const edge = page.getByRole('separator', { name: 'Resize sidebar' });
+  const width = async () => (await sidebar.boundingBox())!.width;
+  expect(await width()).toBe(208);
+
+  const box = (await edge.boundingBox())!;
+  const y = box.y + box.height / 2;
+  await page.mouse.move(box.x + box.width / 2, y);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 + 60, y, { steps: 5 });
+  await page.mouse.up();
+  expect(await width()).toBe(268);
+
+  // Never wider than 320 or narrower than 200
+  await edge.press('End');
+  await expect(edge).toHaveAttribute('aria-valuenow', '320');
+  await edge.press('ArrowLeft');
+  await expect(edge).toHaveAttribute('aria-valuenow', '304');
+  await edge.press('Home');
+  await expect(edge).toHaveAttribute('aria-valuenow', '200');
+
+  // Remembered on this device; double-click goes back to the default
+  await edge.press('End');
+  await page.reload();
+  expect(await width()).toBe(320);
+  await edge.dblclick();
+  expect(await width()).toBe(208);
+});
+
 test('unknown routes inside the app fall back gracefully', async ({ page, api }) => {
   await api.createAccount('Everyday Checking');
   await open(page, '/');
