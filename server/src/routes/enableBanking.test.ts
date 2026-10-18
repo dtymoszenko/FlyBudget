@@ -69,19 +69,19 @@ const mock: MockState = {
   authorizations: [],
 };
 
-function verifyJwt(header: string | undefined): boolean {
-  const [h, p, s] = (header ?? '').replace('Bearer ', '').split('.');
-  if (!h || !p || !s) return false;
-  const head = JSON.parse(Buffer.from(h, 'base64url').toString());
-  const body = JSON.parse(Buffer.from(p, 'base64url').toString());
-  return (
-    head.alg === 'RS256' &&
-    head.kid === APP_ID &&
-    body.iss === 'enablebanking.com' &&
-    body.aud === 'api.enablebanking.com' &&
-    body.exp - body.iat <= 3600 &&
-    verify('RSA-SHA256', Buffer.from(`${h}.${p}`), publicKey, Buffer.from(s, 'base64url'))
-  );
+/** A request's JWT, decoded, and whether its signature is the application key's */
+function decodeJwt(header: string | undefined) {
+  const [h = '', p = '', sig = ''] = (header ?? '').replace('Bearer ', '').split('.');
+  return {
+    head: JSON.parse(Buffer.from(h, 'base64url').toString() || 'null'),
+    body: JSON.parse(Buffer.from(p, 'base64url').toString() || 'null'),
+    signedByApp: verify(
+      'RSA-SHA256',
+      Buffer.from(`${h}.${p}`),
+      publicKey,
+      Buffer.from(sig, 'base64url'),
+    ),
+  };
 }
 
 /** Both accounts, with uids that change on every session (as Enable Banking's do) */
@@ -602,10 +602,15 @@ describe('Enable Banking', () => {
 
 describe('requests to Enable Banking', () => {
   it('were all signed with the application key: RS256, its id as key id, valid for an hour', () => {
-    // The configure test's wrong key aside, which Enable Banking would refuse
-    const signed = mock.authorizations.filter(verifyJwt);
-    expect(mock.authorizations.length).toBeGreaterThan(20);
-    expect(mock.authorizations.length - signed.length).toBe(1);
+    const tokens = mock.authorizations.map(decodeJwt);
+    expect(tokens.length).toBeGreaterThan(20);
+    for (const { head, body } of tokens) {
+      expect(head).toEqual({ typ: 'JWT', alg: 'RS256', kid: APP_ID });
+      expect(body).toMatchObject({ iss: 'enablebanking.com', aud: 'api.enablebanking.com' });
+      expect(body.exp - body.iat).toBe(3600);
+    }
+    // All but the configure test's wrong key, which Enable Banking would refuse
+    expect(tokens.filter((t) => !t.signedByApp)).toHaveLength(1);
   });
 });
 
