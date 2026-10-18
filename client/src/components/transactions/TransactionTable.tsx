@@ -24,7 +24,7 @@ import { formatCurrency } from '../../utils/currency';
 import type { FilterState } from './TransactionFilters';
 import type { CategoryGroup } from '../../types';
 import type { CreateTransactionData } from '../../api/transactions';
-import { formatDayLong } from '../../utils/dates';
+import { formatDay, formatDayLong } from '../../utils/dates';
 
 /** Rows drawn at a time: every match is loaded, but drawing thousands at once is slow */
 const ROWS_PER_PAGE = 300;
@@ -34,6 +34,9 @@ interface Props {
   categoryId?: string;
   categoryIds?: string[];
   categoryGroupId?: string;
+  uncategorized?: boolean;
+  from?: string;
+  to?: string;
   month?: string;
   onClearMonth?: () => void;
   overlayDetail?: boolean;
@@ -46,6 +49,9 @@ export function TransactionTable({
   categoryId,
   categoryIds,
   categoryGroupId,
+  uncategorized,
+  from,
+  to,
   month,
   onClearMonth,
   overlayDetail,
@@ -67,16 +73,35 @@ export function TransactionTable({
     if (categoryIds?.length) base.categoryIds = categoryIds;
     else if (categoryId && !base.categoryId) base.categoryId = categoryId;
     if (categoryGroupId) base.categoryGroupId = categoryGroupId;
+    if (uncategorized) {
+      delete base.categoryId;
+      delete base.categoryIds;
+      base.uncategorized = true;
+    }
+    if (from) base.from = from;
+    if (to) base.to = to;
     if (month) {
       delete base.from;
       delete base.to;
       base.month = month;
     }
     return base;
-  }, [filters, accountId, categoryId, categoryIds, categoryGroupId, month]);
+  }, [
+    filters,
+    accountId,
+    categoryId,
+    categoryIds,
+    categoryGroupId,
+    uncategorized,
+    from,
+    to,
+    month,
+  ]);
   const { data: transactions = [], isLoading } = useTransactions(params);
   // Whether there are any transactions at all here, to tell "nothing yet" from "filtered out"
-  const scoped = Boolean(categoryId || categoryIds?.length || categoryGroupId || month);
+  const scoped = Boolean(
+    categoryId || categoryIds?.length || categoryGroupId || uncategorized || month || from || to,
+  );
   const { data: anyTransactions = [] } = useTransactions(
     accountId ? { accountId, limit: 1 } : { limit: 1 },
   );
@@ -226,6 +251,7 @@ export function TransactionTable({
         }}
         categoryName={filters.categoryId ? categoryMap.get(filters.categoryId)?.name : undefined}
         externalMonth={month}
+        externalRange={from && to ? `${formatDay(from)} – ${formatDay(to)}` : undefined}
       />
       <div className="px-4 py-2 border-b border-border-light bg-surface flex flex-wrap gap-2 justify-between items-center">
         <span className="text-xs text-text-tertiary">{transactions.length} transactions</span>

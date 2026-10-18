@@ -266,6 +266,7 @@ export interface TransactionQueryParams {
   from?: string;
   to?: string;
   categoryId?: string;
+  uncategorized?: boolean;
   categoryGroupId?: string;
   categoryIds?: string[];
   search?: string;

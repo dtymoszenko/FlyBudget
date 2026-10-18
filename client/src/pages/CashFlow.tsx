@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { format, subMonths, startOfYear, endOfYear, subYears } from 'date-fns';
 import { useSpendingByCategory, useIncomeByCategory } from '../hooks/useReports';
 import { formatCurrency } from '../utils/currency';
+import { cashFlowSelection } from '../utils/cashFlowSelection';
 import { downloadCsv } from '../utils/exportCsv';
 import { usePreferencesStore } from '../store/preferencesStore';
 import { chartColors } from '../utils/chartColors';
@@ -744,6 +745,15 @@ function SankeyDiagram({ from, to, selectedNode, onNodeClick }: SankeyDiagramPro
                   onMouseEnter={(e) => handleNodeEnter(e, n.idx, n)}
                   onMouseMove={(e) => handleNodeMove(e, n)}
                   onMouseLeave={handleLeave}
+                  role={clickable ? 'button' : undefined}
+                  aria-label={clickable ? `Show transactions: ${n.name}` : undefined}
+                  tabIndex={clickable ? 0 : undefined}
+                  onKeyDown={(e) => {
+                    if (clickable && (e.key === 'Enter' || e.key === ' ')) {
+                      e.preventDefault();
+                      handleClick(n);
+                    }
+                  }}
                   onClick={() => handleClick(n)}
                 >
                   {/* Hit area spanning bar through label (label-height only, so big nodes don't block flows) */}
@@ -1247,9 +1257,15 @@ export default function CashFlowPage() {
         )}
 
         {selectedNode && (
-          <div ref={txSectionRef} className="mt-6">
+          <section
+            ref={txSectionRef}
+            className="mt-6"
+            aria-labelledby="cash-flow-transactions-heading"
+          >
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-text">Transactions: {selectedNode.name}</h2>
+              <h2 id="cash-flow-transactions-heading" className="text-sm font-semibold text-text">
+                Transactions: {selectedNode.name}
+              </h2>
               <button
                 onClick={() => setSelectedNode(null)}
                 className="flex items-center gap-1 text-xs text-text-tertiary hover:text-text-secondary cursor-pointer transition-colors"
@@ -1259,20 +1275,12 @@ export default function CashFlowPage() {
             </div>
             <div className="bg-surface rounded-lg shadow-card border border-border-light overflow-hidden">
               <TransactionTable
-                categoryId={
-                  selectedNode.nodeType === 'subcategory' && selectedNode.categoryId
-                    ? selectedNode.categoryId
-                    : undefined
-                }
-                categoryGroupId={
-                  selectedNode.nodeType === 'expense-group' && selectedNode.groupId
-                    ? selectedNode.groupId
-                    : undefined
-                }
+                key={`${selectedNode.nodeType}:${selectedNode.categoryId ?? selectedNode.groupId ?? 'uncategorized'}:${from}:${to}`}
+                {...cashFlowSelection(selectedNode, from, to)}
                 overlayDetail
               />
             </div>
-          </div>
+          </section>
         )}
       </div>
     </div>

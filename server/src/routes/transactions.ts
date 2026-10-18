@@ -1,7 +1,7 @@
 import { Router, type Response } from 'express';
 import { db } from '../db/index.js';
 import { transactions, payees, accounts, categories } from '../db/schema.js';
-import { eq, and, or, like, gte, lte, sql, isNull, inArray } from 'drizzle-orm';
+import { eq, and, or, like, gte, lte, sql, isNull, isNotNull, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
 import { deleteTransactionRow, resolvePayee } from '../services/transactionHelpers.js';
@@ -16,6 +16,7 @@ import {
   unlinkTransfer,
 } from '../services/transferService.js';
 import { isoDate } from '../utils/validation.js';
+import { isIncomeOrSpending } from '../services/balances.js';
 
 export const transactionsRouter = Router();
 
@@ -96,6 +97,7 @@ transactionsRouter.get('/', (req, res) => {
     category_id,
     category_ids,
     category_group_id,
+    uncategorized,
     search,
     reconciled,
   } = req.query as Record<string, string>;
@@ -110,6 +112,20 @@ transactionsRouter.get('/', (req, res) => {
   }
   if (from) conditions.push(gte(transactions.date, from));
   if (to) conditions.push(lte(transactions.date, to));
+  if (uncategorized === '1') {
+    const parentsWithUncategorizedPart = db
+      .select({ id: transactions.parentTransactionId })
+      .from(transactions)
+      .where(and(isNull(transactions.categoryId), isNotNull(transactions.parentTransactionId)));
+    conditions.push(
+      or(
+        and(isNull(transactions.categoryId), eq(transactions.isParent, 0)),
+        inArray(transactions.id, parentsWithUncategorizedPart),
+      )!,
+    );
+    conditions.push(isNull(transactions.transferTransactionId));
+    conditions.push(isIncomeOrSpending);
+  }
   if (category_ids) {
     const ids = category_ids.split(',').filter(Boolean);
     if (ids.length) conditions.push(inCategories(ids));

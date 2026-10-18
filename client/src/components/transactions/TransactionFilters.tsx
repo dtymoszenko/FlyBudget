@@ -63,9 +63,16 @@ interface Props {
   onChange: (s: FilterState) => void;
   categoryName?: string;
   externalMonth?: string;
+  externalRange?: string;
 }
 
-export function TransactionFilters({ state, onChange, categoryName, externalMonth }: Props) {
+export function TransactionFilters({
+  state,
+  onChange,
+  categoryName,
+  externalMonth,
+  externalRange,
+}: Props) {
   const [rawSearch, setRawSearch] = useState(state.search);
 
   useEffect(() => {
@@ -116,19 +123,23 @@ export function TransactionFilters({ state, onChange, categoryName, externalMont
       )}
 
       <div className="flex gap-0 border-b border-transparent max-md:max-w-full max-md:overflow-x-auto [scrollbar-width:none]">
-        {DATE_PRESETS.map((p) => (
-          <button
-            key={p.value}
-            onClick={() => onChange({ ...state, datePreset: p.value })}
-            className={`px-2.5 py-1 max-md:min-h-11 max-md:text-sm whitespace-nowrap shrink-0 text-xs font-medium transition-colors border-b-2 -mb-px ${
-              !externalMonth && state.datePreset === p.value
-                ? 'border-brand-600 text-brand-600'
-                : 'border-transparent text-text-tertiary hover:text-text-secondary'
-            }`}
-          >
-            {p.label}
-          </button>
-        ))}
+        {externalRange ? (
+          <span className="px-2.5 py-1 text-xs text-text-secondary">{externalRange}</span>
+        ) : (
+          DATE_PRESETS.map((p) => (
+            <button
+              key={p.value}
+              onClick={() => onChange({ ...state, datePreset: p.value })}
+              className={`px-2.5 py-1 max-md:min-h-11 max-md:text-sm whitespace-nowrap shrink-0 text-xs font-medium transition-colors border-b-2 -mb-px ${
+                !externalMonth && state.datePreset === p.value
+                  ? 'border-brand-600 text-brand-600'
+                  : 'border-transparent text-text-tertiary hover:text-text-secondary'
+              }`}
+            >
+              {p.label}
+            </button>
+          ))
+        )}
       </div>
     </div>
   );
