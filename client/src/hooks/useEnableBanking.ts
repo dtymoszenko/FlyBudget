@@ -124,6 +124,8 @@ export function useEnableBankingLogin(onSuccess: (result: EnableBankingConnectio
   const [state, setState] = useState<BankLoginState>({ phase: 'idle' });
   const login = useRef<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Bumped by every start, finish and unmount: a start that resolves after it was cancelled is dropped */
+  const attempt = useRef(0);
   const onSuccessRef = useRef(onSuccess);
   onSuccessRef.current = onSuccess;
 
@@ -135,6 +137,7 @@ export function useEnableBankingLogin(onSuccess: (result: EnableBankingConnectio
   const finish = useCallback(
     (next: BankLoginState) => {
       stopPolling();
+      attempt.current++;
       login.current = null;
       setState(next);
     },
@@ -182,6 +185,7 @@ export function useEnableBankingLogin(onSuccess: (result: EnableBankingConnectio
   const start = useCallback(
     async (target: ebApi.EnableBankingLoginTarget) => {
       stopPolling();
+      const mine = ++attempt.current;
       setState({ phase: 'starting' });
       // Open the tab now, while the click still counts: browsers block a window opened after
       // waiting for the server. It's pointed at the bank once its address is known. (The
@@ -190,6 +194,12 @@ export function useEnableBankingLogin(onSuccess: (result: EnableBankingConnectio
       if (tab) tab.opener = null;
       try {
         const { authId, url } = await ebApi.startEnableBankingLogin(target);
+        if (attempt.current !== mine) {
+          // Cancelled (or the dialog closed) while the server was answering
+          tab?.close();
+          ebApi.cancelEnableBankingLogin(authId).catch(() => {});
+          return;
+        }
         login.current = authId;
         if (tab && !tab.closed) tab.location.href = url;
         else window.open(url, '_blank', 'noopener,noreferrer');
@@ -197,6 +207,7 @@ export function useEnableBankingLogin(onSuccess: (result: EnableBankingConnectio
         timer.current = setTimeout(() => poll(authId), POLL_INTERVAL_MS);
       } catch (err) {
         tab?.close();
+        if (attempt.current !== mine) return;
         setState({ phase: 'error', message: (err as Error).message });
       }
     },
@@ -227,6 +238,7 @@ export function useEnableBankingLogin(onSuccess: (result: EnableBankingConnectio
   useEffect(
     () => () => {
       stopPolling();
+      attempt.current++;
       if (login.current) ebApi.cancelEnableBankingLogin(login.current).catch(() => {});
       login.current = null;
     },

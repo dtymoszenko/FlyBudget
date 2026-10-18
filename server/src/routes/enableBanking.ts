@@ -513,14 +513,15 @@ enableBankingRouter.delete('/connections/:id', async (req, res) => {
   const creds = loadEnableBankingConfig();
   if (creds) {
     try {
-      // Revoke the bank access first; if Enable Banking can't be reached, keep the connection
+      // Revoke the bank access first; if Enable Banking can't be reached (or asks to wait), keep the connection
       // so the user can try again rather than leave the access open
       await deleteSession(creds, conn.sessionId);
     } catch (err) {
       if (
         !(err instanceof EnableBankingError) ||
         err.kind === 'unavailable' ||
-        err.kind === 'bank_error'
+        err.kind === 'bank_error' ||
+        err.kind === 'rate_limited'
       ) {
         logError('Enable Banking disconnect error', err);
         return res.status(422).json({

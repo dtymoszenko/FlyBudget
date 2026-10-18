@@ -50,6 +50,8 @@ interface MockState {
   rotateKeys: boolean;
   /** Answer as Enable Banking does to a key it doesn't know */
   rejectKey: boolean;
+  /** Enable Banking asks to wait before ending a session */
+  limitDelete: boolean;
   /** Every Authorization header received, checked at the end */
   authorizations: (string | undefined)[];
 }
@@ -66,6 +68,7 @@ const mock: MockState = {
   checkingIban: IBAN_CHECKING,
   rotateKeys: false,
   rejectKey: false,
+  limitDelete: false,
   authorizations: [],
 };
 
@@ -154,6 +157,7 @@ ebApp.post('/sessions', (req, res) => {
   });
 });
 ebApp.delete('/sessions/:id', (req, res) => {
+  if (mock.limitDelete) return void res.status(429).json({ error: 'ASPSP_RATE_LIMIT_EXCEEDED' });
   mock.deleted.push(req.params.id);
   res.json({ message: 'OK' });
 });
@@ -564,6 +568,11 @@ describe('Enable Banking', () => {
     expect((await call('DELETE', `/enable-banking/connections/${connectionId}`)).status).toBe(422);
     expect(db.select().from(enableBankingConnections).all()).toHaveLength(1);
     mock.down = false;
+    // Or when it asks to wait: the bank access would stay open with nothing left to end it
+    mock.limitDelete = true;
+    expect((await call('DELETE', `/enable-banking/connections/${connectionId}`)).status).toBe(422);
+    expect(db.select().from(enableBankingConnections).all()).toHaveLength(1);
+    mock.limitDelete = false;
     expect((await call('DELETE', `/enable-banking/connections/${connectionId}`)).status).toBe(204);
     // The current session (from the last reconnect) was ended at Enable Banking
     expect(mock.deleted.at(-1)).toBe(`session-${mock.sessionCount}`);

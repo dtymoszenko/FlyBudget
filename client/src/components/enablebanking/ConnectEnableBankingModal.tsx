@@ -799,7 +799,7 @@ function SyncDone({
           )}
         </div>
       )}
-      {(error || result?.errors.length) && (
+      {failed && (
         <ul className="text-xs text-negative space-y-0.5" role="alert">
           {error && <li>{error}</li>}
           {result?.errors.map((e) => (
