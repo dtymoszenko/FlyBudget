@@ -94,7 +94,10 @@ test('connects a European bank, syncs it, reconnects and disconnects', async ({
     const again = context.waitForEvent('page');
     await reconnect.getByRole('button', { name: 'Log in at your bank' }).click();
     const held = await again;
+    // The tab opens blank on the click, then goes to the bank once FlyBudget has its address
+    await held.waitForURL(/\/bank\?/);
     const address = (await held.locator('body').textContent())?.trim();
+    expect(address).toContain('/api/enable-banking/callback?');
     await held.close();
     await reconnect
       .getByRole('button', { name: "Logged in, but FlyBudget didn't continue?" })
