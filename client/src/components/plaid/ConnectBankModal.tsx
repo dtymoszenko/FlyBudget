@@ -6,7 +6,7 @@ import { HostedLinkWaiting } from './HostedLinkWaiting';
 import { useMapAccounts, useSyncItem } from '../../hooks/usePlaid';
 import { usePlaidHostedLink } from '../../hooks/usePlaidHostedLink';
 import { useAccounts } from '../../hooks/useAccounts';
-import { formatCurrency } from '../../utils/currency';
+import { formatCurrency, formatMoney } from '../../utils/currency';
 import type {
   PlaidDiscoveredAccount,
   PlaidExchangeResult,
@@ -312,7 +312,7 @@ function AccountMappingCard({
           <option value="">Select an account...</option>
           {availableAccounts.map((a) => (
             <option key={a.id} value={a.id}>
-              {a.name} ({formatCurrency(a.balance)})
+              {a.name} ({formatMoney(a.balance, a.currency)})
             </option>
           ))}
         </select>

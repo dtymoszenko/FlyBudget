@@ -7,7 +7,9 @@ import {
   type AmountFormat,
   type SymbolPosition,
 } from '../../store/preferencesStore';
-import { amountStyle, formatAmount, useAmountStyle } from '../../utils/currency';
+import { amountStyle, formatAmount, formatMoney, useAmountStyle } from '../../utils/currency';
+import { Link } from 'react-router-dom';
+import { useCurrencySettings } from '../../hooks/useCurrency';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { IS_DEMO } from '../../demo/isDemo';
 
@@ -73,6 +75,12 @@ export function PreferencesPanel() {
   const [resetOpen, setResetOpen] = useState(false);
   const style = useAmountStyle();
   const example = formatAmount(-123_456, style);
+  // Once the budget has a currency, its symbol comes from it; other currencies show too
+  const { data: currencySettings } = useCurrencySettings();
+  const budgetCurrency = currencySettings?.currency ?? null;
+  const otherExamples = (currencySettings?.foreignCurrencies ?? []).map((c) =>
+    formatMoney(-123_456, c),
+  );
   // What Automatic means on this device
   const auto = amountStyle({ amountFormat: 'auto', symbolPosition: 'auto', currencySymbol });
 
@@ -246,16 +254,20 @@ export function PreferencesPanel() {
         </div>
 
         <div className="space-y-2" role="group" aria-label="Currency symbol position">
-          <div className="text-xs font-medium text-text-secondary">Currency symbol</div>
+          <div className="text-xs font-medium text-text-secondary">
+            {budgetCurrency ? `${budgetCurrency} symbol` : 'Currency symbol'}
+          </div>
           <div className="flex flex-wrap items-center gap-2">
-            <input
-              type="text"
-              aria-label="Currency symbol"
-              value={currencySymbol}
-              onChange={(e) => setCurrencySymbol(e.target.value.slice(0, 3))}
-              maxLength={3}
-              className="w-20 text-center text-sm border border-border rounded-md px-3 py-1.5 max-md:min-h-11 bg-surface text-text focus:outline-none focus:ring-1 focus:ring-brand-600 focus:border-brand-600"
-            />
+            {!budgetCurrency && (
+              <input
+                type="text"
+                aria-label="Currency symbol"
+                value={currencySymbol}
+                onChange={(e) => setCurrencySymbol(e.target.value.slice(0, 3))}
+                maxLength={3}
+                className="w-20 text-center text-sm border border-border rounded-md px-3 py-1.5 max-md:min-h-11 bg-surface text-text focus:outline-none focus:ring-1 focus:ring-brand-600 focus:border-brand-600"
+              />
+            )}
             {symbolPositions.map((opt) => (
               <button
                 key={opt.value}
@@ -268,11 +280,36 @@ export function PreferencesPanel() {
               </button>
             ))}
           </div>
-          <p className="text-xs text-text-tertiary">Up to 3 characters (e.g. $, €, EUR, kr)</p>
+          <p className="text-xs text-text-tertiary">
+            {budgetCurrency ? (
+              <>
+                Automatic writes it as {budgetCurrency} is written at home. Symbols of other
+                currencies are in{' '}
+                <Link to="/settings?tab=currencies" className="underline hover:no-underline">
+                  Currencies
+                </Link>
+                .
+              </>
+            ) : (
+              <>
+                Up to 3 characters (e.g. $, €, EUR, kr). Or choose your budget&apos;s currency in{' '}
+                <Link to="/settings?tab=currencies" className="underline hover:no-underline">
+                  Currencies
+                </Link>
+                .
+              </>
+            )}
+          </p>
         </div>
 
         <p className="text-sm text-text-secondary">
           Example: <span className="font-medium text-text tabular-nums">{example}</span>
+          {otherExamples.map((e) => (
+            <span key={e} className="font-medium text-text tabular-nums">
+              {' · '}
+              {e}
+            </span>
+          ))}
         </p>
       </section>
 

@@ -5,7 +5,7 @@ import { useCanSave } from '../../hooks/useConnection';
 import { SavingPausedHint } from '../connection/SavingPausedHint';
 import { CurrencyInput } from '../ui/CurrencyInput';
 import { useCreateTransaction } from '../../hooks/useTransactions';
-import { formatCurrency } from '../../utils/currency';
+import { formatMoney } from '../../utils/currency';
 import { isLiabilityType } from '../../utils/accountTypes';
 import type { Account } from '../../types';
 
@@ -52,20 +52,21 @@ export function UpdateValueModal({ account, onClose }: Props) {
             {liability ? 'Amount owed today' : 'Value today'}
           </label>
           <CurrencyInput
+            currency={account.currency}
             value={value}
             onChange={setValue}
             allowNegative={!liability}
             aria-label={liability ? 'Amount owed today' : 'Value today'}
           />
           <p className="mt-1 text-xs text-text-tertiary">
-            Currently {formatCurrency(current)}.
+            Currently {formatMoney(current, account.currency)}.
             {change !== 0 && (
               <>
                 {' '}
                 Adds a{' '}
                 <span className={change > 0 ? 'text-positive' : 'text-negative'}>
                   {change > 0 ? '+' : ''}
-                  {formatCurrency(change)}
+                  {formatMoney(change, account.currency)}
                 </span>{' '}
                 adjustment dated today.
               </>

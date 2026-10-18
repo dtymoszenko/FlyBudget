@@ -4,6 +4,8 @@ import { logError } from '../utils/log.js';
 import { eq, and, inArray } from 'drizzle-orm';
 import { syncTransactions, plaidAmountToCents, plaidBalanceToCents } from './plaidService.js';
 import { buildRuleContext, insertNewTransaction, loadRules } from './ruleService.js';
+import { currencyContext, refreshMainAmounts } from './mainAmountService.js';
+import { minorUnits } from '../utils/currencies.js';
 import { accountTransactionSum } from './balances.js';
 import { deleteTransactionRow } from './transactionHelpers.js';
 import { syncedTransferChange } from './transferService.js';
@@ -46,11 +48,17 @@ export async function syncPlaidItem(plaidItemId: string): Promise<SyncResult> {
       .all();
 
     const mappingByPlaidId = new Map(mappings.map((m) => [m.plaidAccountId, m]));
-    const ruleOpts = { rules: loadRules(), ctx: buildRuleContext() };
+    const ruleOpts = { rules: loadRules(), ctx: buildRuleContext(), currencies: currencyContext() };
+
+    /** A transaction in another currency than its bank account isn't imported (yet) */
+    const otherCurrency = (m: { currency: string | null }, tx: { currency: string | null }) =>
+      !!m.currency && !!tx.currency && m.currency !== tx.currency;
+    const minorOf = (m: { currency: string | null }) => minorUnits(m.currency);
 
     for (const tx of syncData.added) {
       const mapping = mappingByPlaidId.get(tx.accountId);
       if (!mapping || !mapping.accountId || !mapping.isEnabled) continue;
+      if (otherCurrency(mapping, tx)) continue;
 
       const importedId = `plaid:${tx.transactionId}`;
       const existing = db
@@ -69,7 +77,7 @@ export async function syncPlaidItem(plaidItemId: string): Promise<SyncResult> {
         {
           accountId: mapping.accountId,
           date: tx.date,
-          amount: plaidAmountToCents(tx.amount),
+          amount: plaidAmountToCents(tx.amount, minorOf(mapping)),
           payeeId: null,
           payeeName: tx.merchantName || tx.name,
           // Plaid's `name` is the original bank description; `merchantName` its cleaned-up guess
@@ -87,6 +95,7 @@ export async function syncPlaidItem(plaidItemId: string): Promise<SyncResult> {
     for (const tx of syncData.modified) {
       const mapping = mappingByPlaidId.get(tx.accountId);
       if (!mapping || !mapping.accountId || !mapping.isEnabled) continue;
+      if (otherCurrency(mapping, tx)) continue;
 
       const importedId = `plaid:${tx.transactionId}`;
       const existing = db
@@ -101,7 +110,7 @@ export async function syncPlaidItem(plaidItemId: string): Promise<SyncResult> {
         .get();
       if (!existing || existing.reconciled === 1) continue;
 
-      const amount = plaidAmountToCents(tx.amount);
+      const amount = plaidAmountToCents(tx.amount, minorOf(mapping));
       const payeeName = tx.merchantName || tx.name;
 
       // Plaid's `name` is the original bank description, as on the added path
@@ -129,6 +138,9 @@ export async function syncPlaidItem(plaidItemId: string): Promise<SyncResult> {
           )
           .where(eq(transactions.id, existing.id))
           .run();
+        // Its value (and a transfer's other side's) follows; a typed-in one stays unless the
+        // amount changed
+        refreshMainAmounts([existing.id], { keepManual: amount === existing.amount });
       });
 
       result.modified++;
@@ -159,7 +171,11 @@ export async function syncPlaidItem(plaidItemId: string): Promise<SyncResult> {
       const mapping = mappingByPlaidId.get(bal.accountId);
       if (!mapping || !mapping.accountId || !mapping.isEnabled) continue;
 
-      const targetBalance = plaidBalanceToCents(bal.current, mapping.plaidAccountType);
+      const targetBalance = plaidBalanceToCents(
+        bal.current,
+        mapping.plaidAccountType,
+        minorOf(mapping),
+      );
 
       const newStartingBalance = targetBalance - accountTransactionSum(mapping.accountId);
 

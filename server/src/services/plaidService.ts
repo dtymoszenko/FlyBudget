@@ -158,6 +158,8 @@ export interface PlaidAccountInfo {
   mask: string | null;
   currentBalance: number;
   availableBalance: number | null;
+  /** ISO 4217, or null for Plaid's unofficial currencies (crypto) */
+  currency: string | null;
 }
 
 export async function exchangePublicToken(publicToken: string) {
@@ -179,6 +181,7 @@ export async function exchangePublicToken(publicToken: string) {
     mask: a.mask ?? null,
     currentBalance: a.balances.current ?? 0,
     availableBalance: a.balances.available ?? null,
+    currency: a.balances.iso_currency_code ?? null,
   }));
 
   return {
@@ -213,6 +216,7 @@ export interface PlaidSyncResult {
     merchantName: string | null;
     category: string[];
     pending: boolean;
+    currency: string | null;
   }>;
   modified: Array<{
     transactionId: string;
@@ -221,6 +225,7 @@ export interface PlaidSyncResult {
     amount: number;
     name: string;
     merchantName: string | null;
+    currency: string | null;
   }>;
   removed: Array<{ transactionId: string }>;
   nextCursor: string;
@@ -262,6 +267,7 @@ export async function syncTransactions(
         merchantName: t.merchant_name ?? null,
         category: t.category ?? [],
         pending: t.pending,
+        currency: t.iso_currency_code ?? null,
       });
     }
 
@@ -274,6 +280,7 @@ export async function syncTransactions(
         amount: t.amount,
         name: t.name,
         merchantName: t.merchant_name ?? null,
+        currency: t.iso_currency_code ?? null,
       });
     }
 
@@ -306,8 +313,9 @@ export async function syncTransactions(
   };
 }
 
-export function plaidAmountToCents(plaidAmount: number): number {
-  return Math.round(-plaidAmount * 100);
+/** Plaid's amount (positive = money out) in minor units of a currency with `minor` decimals */
+export function plaidAmountToCents(plaidAmount: number, minor = 2): number {
+  return Math.round(-plaidAmount * 10 ** minor) || 0;
 }
 
 export function mapPlaidAccountType(type: string, subtype: string | null): AccountType {
@@ -338,9 +346,9 @@ export function mapPlaidAccountType(type: string, subtype: string | null): Accou
   return 'checking';
 }
 
-export function plaidBalanceToCents(balance: number, accountType: string): number {
+export function plaidBalanceToCents(balance: number, accountType: string, minor = 2): number {
   if (accountType === 'credit' || accountType === 'loan') {
-    return -Math.round(balance * 100);
+    return -Math.round(balance * 10 ** minor) || 0;
   }
-  return Math.round(balance * 100);
+  return Math.round(balance * 10 ** minor);
 }

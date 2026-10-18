@@ -14,7 +14,9 @@ import { PayeeIcon } from '../payees/PayeeIcon';
 import { useUpdatePayee } from '../../hooks/usePayees';
 import { usePreferencesStore } from '../../store/preferencesStore';
 import { AccountIcon } from '../accounts/AccountIcon';
-import { formatCurrency } from '../../utils/currency';
+import { formatMoney } from '../../utils/currency';
+import { useAccountCurrency } from '../../hooks/useCurrency';
+import { MainAmountField } from '../currency/MainAmountField';
 import { RECURRENCE_TYPE_LABELS } from '../../types';
 import type {
   Transaction,
@@ -49,6 +51,7 @@ export function TransactionDetailPanel({
   onClose,
 }: Props) {
   const updateTx = useUpdateTransaction();
+  const currency = useAccountCurrency()(tx.accountId);
   const updatePayee = useUpdatePayee();
   const deleteTx = useDeleteTransaction();
   const transferTo = useTransferToAccount();
@@ -197,7 +200,7 @@ export function TransactionDetailPanel({
           <span
             className={`text-lg font-semibold tabular-nums ${tx.amount > 0 ? 'text-positive' : 'text-text'}`}
           >
-            {formatCurrency(Math.abs(tx.amount))}
+            {formatMoney(Math.abs(tx.amount), currency)}
           </span>
         </div>
 
@@ -221,6 +224,8 @@ export function TransactionDetailPanel({
           />
         </div>
 
+        <MainAmountField tx={tx} disabled={isReconciled} />
+
         <div>
           <label className="text-xs font-medium text-text-secondary mb-1.5 block">Category</label>
           {isSplitParent ? (
@@ -241,7 +246,7 @@ export function TransactionDetailPanel({
                       </span>
                     </div>
                     <span className="tabular-nums text-text-tertiary">
-                      {formatCurrency(Math.abs(child.amount))}
+                      {formatMoney(Math.abs(child.amount), currency)}
                     </span>
                   </div>
                 );

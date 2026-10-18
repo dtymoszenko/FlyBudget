@@ -10,14 +10,25 @@ export type AmountFormat = 'dot' | 'comma' | 'space' | 'apostrophe';
 /** Whether the currency symbol goes before (€12.50) or after (12,50 €) the amount */
 export type SymbolPosition = 'before' | 'after';
 export type SidebarMode = 'persistent' | 'auto-hide';
+/** How one currency's amounts are shown, when its own convention isn't wanted */
+export interface CurrencyDisplay {
+  position?: SymbolPosition;
+  /** Shown instead of the usual symbol ("zł", "USD", "US$") */
+  symbol?: string;
+}
 
 interface PreferencesState {
   theme: Theme;
   currencySymbol: string;
   /** 'auto' = as the device's language writes amounts */
   amountFormat: AmountFormat | 'auto';
-  /** 'auto' = as the device's language writes amounts */
+  /**
+   * Where the budget currency's symbol goes; 'auto' = as that currency is written (12,50 zł,
+   * $12.50). Other currencies follow their own convention unless set in currencyStyles.
+   */
   symbolPosition: SymbolPosition | 'auto';
+  /** Per currency (ISO code): its symbol or position on this device */
+  currencyStyles: Record<string, CurrencyDisplay>;
   dateFormat: DateFormatOption;
   savingsGoal: number;
   sidebarMode: SidebarMode;
@@ -36,6 +47,8 @@ interface PreferencesState {
   setCurrencySymbol: (symbol: string) => void;
   setAmountFormat: (format: AmountFormat | 'auto') => void;
   setSymbolPosition: (position: SymbolPosition | 'auto') => void;
+  /** Null goes back to the currency's own convention */
+  setCurrencyStyle: (currency: string, style: CurrencyDisplay | null) => void;
   setDateFormat: (format: DateFormatOption) => void;
   setSavingsGoal: (goal: number) => void;
   setSidebarMode: (mode: SidebarMode) => void;
@@ -74,6 +87,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       currencySymbol: '$',
       amountFormat: 'auto',
       symbolPosition: 'auto',
+      currencyStyles: {},
       dateFormat: 'MMM d, yyyy',
       savingsGoal: 20,
       sidebarMode: 'persistent',
@@ -88,6 +102,13 @@ export const usePreferencesStore = create<PreferencesState>()(
       setCurrencySymbol: (currencySymbol) => set({ currencySymbol }),
       setAmountFormat: (amountFormat) => set({ amountFormat }),
       setSymbolPosition: (symbolPosition) => set({ symbolPosition }),
+      setCurrencyStyle: (currency, style) =>
+        set((s) => {
+          const next = { ...s.currencyStyles };
+          if (style && (style.position || style.symbol)) next[currency] = style;
+          else delete next[currency];
+          return { currencyStyles: next };
+        }),
       setDateFormat: (dateFormat) => set({ dateFormat }),
       setSavingsGoal: (savingsGoal) => set({ savingsGoal }),
       setSidebarMode: (sidebarMode) => set({ sidebarMode }),

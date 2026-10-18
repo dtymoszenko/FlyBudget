@@ -37,6 +37,10 @@ import { plaidRouter } from './routes/plaid.js';
 import { simplefinRouter } from './routes/simplefin.js';
 import { enableBankingCallback, enableBankingRouter } from './routes/enableBanking.js';
 import { serverRouter } from './routes/server.js';
+import { currencyRouter, setRateDownloader } from './routes/currency.js';
+import { DEFAULT_RATES_URL, fetchRates, fetchRatesIfDue } from './services/rateFetchService.js';
+import { assertSafeUrl } from './services/safeFetch.js';
+import { fillMissingMainAmounts } from './services/mainAmountService.js';
 import { syncAllItems } from './services/plaidSyncService.js';
 import { encryptStoredCredentials } from './services/credentialEncryption.js';
 import { seedDefaultCategories } from './db/defaultCategories.js';
@@ -100,6 +104,8 @@ app.use('/api/custom-reports', customReportsRouter);
 app.use('/api/dashboards', dashboardsRouter);
 app.use('/api/schedules', schedulesRouter);
 app.use('/api/goals', goalsRouter);
+setRateDownloader({ download: fetchRates, checkUrl: assertSafeUrl, defaultUrl: DEFAULT_RATES_URL });
+app.use('/api/currency', currencyRouter);
 app.use('/api/plaid', bankRateLimit, plaidRouter);
 app.use('/api/simplefin', bankRateLimit, simplefinRouter);
 app.use('/api/enable-banking', bankRateLimit, enableBankingRouter);
@@ -188,6 +194,15 @@ function runStartupTasks() {
     const legacyOccs = migrateOccurrencesFromLegacy();
     if (legacyOccs > 0) console.log(`Created ${legacyOccs} legacy occurrence(s)`);
   });
+
+  // Transactions in another currency still waiting for a rate, or saved by an older version
+  runStartupTask('Currency values', () => {
+    const looked = fillMissingMainAmounts();
+    if (looked > 0) console.log(`Checked ${looked} transaction value(s) in other currencies`);
+  });
+  // Opt in (Settings → Currencies): ECB rates, at most every 12 hours
+  void fetchRatesIfDue();
+  setInterval(() => void fetchRatesIfDue(), 6 * 60 * 60 * 1000).unref();
 
   runStartupTask('Schedule occurrences', () => {
     const horizon = format(addDays(new Date(), 90), 'yyyy-MM-dd');

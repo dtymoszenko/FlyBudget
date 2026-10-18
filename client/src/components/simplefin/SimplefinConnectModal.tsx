@@ -8,7 +8,8 @@ import {
   useSyncSimplefinConnection,
 } from '../../hooks/useSimplefin';
 import { useAccounts } from '../../hooks/useAccounts';
-import { formatCurrency } from '../../utils/currency';
+import { formatMoney } from '../../utils/currency';
+import { isCurrencyCode } from '../../utils/currencies';
 import type {
   SimplefinDiscoveredAccount,
   SimplefinSetupResult,
@@ -283,7 +284,7 @@ function SimplefinAccountMappingCard({
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-text">{account.name}</span>
         <span className="text-sm font-medium text-text-secondary">
-          {formatCurrency(account.balance)}
+          {formatMoney(account.balance, isCurrencyCode(account.currency) ? account.currency : null)}
         </span>
       </div>
 
@@ -332,7 +333,7 @@ function SimplefinAccountMappingCard({
           <option value="">Select an account...</option>
           {availableAccounts.map((a) => (
             <option key={a.id} value={a.id}>
-              {a.name} ({formatCurrency(a.balance)})
+              {a.name} ({formatMoney(a.balance, a.currency)})
             </option>
           ))}
         </select>

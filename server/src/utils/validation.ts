@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isCurrencyCode } from './currencies.js';
 
 // Shared request validators. Dates are checked against the calendar, not just their
 // shape: "2024-13-45" matches /\d{4}-\d{2}-\d{2}/ but becomes an Invalid Date, which
@@ -21,3 +22,9 @@ export const isoMonth = z.string().regex(MONTH_RE, 'Expected a month as YYYY-MM'
 
 export const isMonth = (value: unknown): value is string =>
   typeof value === 'string' && MONTH_RE.test(value);
+
+/** An ISO 4217 currency code FlyBudget knows (EUR, USD, PLN…) */
+export const currencySchema = z
+  .string()
+  .transform((s) => s.toUpperCase())
+  .refine(isCurrencyCode, 'Expected an ISO 4217 currency code, like EUR');

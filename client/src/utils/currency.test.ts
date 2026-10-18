@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
 import {
+  amountPlaceholder,
   amountStyle,
+  currencyConvention,
   amountToInput,
   formatAmount,
   formatAxisAmount,
@@ -254,5 +256,60 @@ describe('formatCentsAxis (property-based)', () => {
     const ticks = [0, 35_000, 70_000, 100_000, 135_000, 250_000, 1_000_000, 1_500_000];
     const labels = ticks.map((d) => formatAxisAmount(d * 100, US));
     expect(new Set(labels).size).toBe(ticks.length);
+  });
+});
+
+describe('amounts in other currencies', () => {
+  const arbMinorStyle = arbStyle.chain((style) =>
+    fc.record({
+      style: fc.constant(style),
+      minor: fc.constantFrom(0, 2, 3),
+      space: fc.boolean(),
+    }),
+  );
+
+  it('formats and reads back every amount, with 0, 2 or 3 decimals and the symbol on either side', () => {
+    fc.assert(
+      fc.property(arbCents, arbMinorStyle, (cents, { style, minor, space }) => {
+        const s: AmountStyle = { ...style, minor, space };
+        expect(parseAmount(formatAmount(cents, s), s)).toBe(cents);
+        expect(parseAmount(amountToInput(cents, s), s)).toBe(Math.abs(cents));
+      }),
+    );
+  });
+
+  it('writes each currency its own way', () => {
+    const pln: AmountStyle = { format: 'space', position: 'after', symbol: 'zł', minor: 2 };
+    expect(formatAmount(-123_456, pln)).toBe('-1 234,56 zł');
+    const chf: AmountStyle = {
+      format: 'apostrophe',
+      position: 'before',
+      symbol: 'CHF',
+      space: true,
+    };
+    expect(formatAmount(1250, chf)).toBe('CHF 12.50');
+    const yen: AmountStyle = { format: 'dot', position: 'before', symbol: '¥', minor: 0 };
+    expect(formatAmount(1_500, yen)).toBe('¥1,500');
+    expect(amountPlaceholder(yen)).toBe('0');
+    const kwd: AmountStyle = { format: 'dot', position: 'after', symbol: 'KWD', minor: 3 };
+    expect(formatAmount(12_345, kwd)).toBe('12.345 KWD');
+    expect(amountPlaceholder(kwd)).toBe('0.000');
+    expect(parseAmount('12.345', kwd)).toBe(12_345);
+  });
+
+  it("doesn't read decimals a currency doesn't have, and reads its grouping", () => {
+    const yen: AmountStyle = { format: 'dot', position: 'before', symbol: '¥', minor: 0 };
+    expect(isUnreadableAmount('12.5', yen)).toBe(true);
+    expect(parseAmount('1.234', yen)).toBe(1_234);
+    expect(parseAmount('1,234', yen)).toBe(1_234);
+    expect(parseAmount('1.234.567', yen)).toBe(1_234_567);
+    expect(parseAmount('¥1,500', yen)).toBe(1_500);
+  });
+
+  it("puts each currency's symbol where its country does", () => {
+    expect(currencyConvention('PLN')).toEqual({ position: 'after', space: true });
+    expect(currencyConvention('USD')).toEqual({ position: 'before', space: false });
+    expect(currencyConvention('BRL')).toEqual({ position: 'before', space: true });
+    expect(currencyConvention('SEK').position).toBe('after');
   });
 });

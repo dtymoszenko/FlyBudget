@@ -4,6 +4,8 @@ import type { SQLiteTable } from 'drizzle-orm/sqlite-core';
 import { databasePath, db, sqlite } from '../db/index.js';
 import {
   accounts,
+  budgetSettings,
+  exchangeRates,
   budgetMonths,
   categories,
   categoryGroups,
@@ -22,6 +24,7 @@ import {
   transactions,
   transferMatchDismissals,
 } from '../db/schema.js';
+import { fillMissingMainAmounts, ratesChanged } from './mainAmountService.js';
 
 // Full JSON backup of the user's data, and restoring one.
 //
@@ -32,10 +35,12 @@ import {
 // this installation.
 
 export const BACKUP_FORMAT = 'flybudget-backup';
-export const BACKUP_VERSION = 2;
+export const BACKUP_VERSION = 3;
 
 /** Every table in a backup, parents before the tables that reference them. */
 const TABLES = {
+  budgetSettings,
+  exchangeRates,
   accounts,
   categoryGroups,
   categories,
@@ -79,7 +84,10 @@ type Row = Record<string, unknown>;
  * column has the right type (SQLite would otherwise happily store "abc" as an amount).
  * Tables missing from older backups are restored as empty. Unknown fields are dropped.
  */
-export function parseBackup(input: unknown): Record<BackupTable, Row[]> {
+/** A parsed backup: its rows, and whether it's from before the budget had a currency */
+export type ParsedBackup = Record<BackupTable, Row[]> & { beforeCurrencies?: boolean };
+
+export function parseBackup(input: unknown): ParsedBackup {
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
     throw new InvalidBackupError('This is not a FlyBudget backup file');
   }
@@ -92,7 +100,12 @@ export function parseBackup(input: unknown): Record<BackupTable, Row[]> {
     throw new InvalidBackupError('This backup was made by a newer version of FlyBudget');
   }
 
-  const result = {} as Record<BackupTable, Row[]>;
+  const result = {} as ParsedBackup;
+  // Made before currencies existed: it has no budget settings, and restoring it keeps this
+  // budget's currency (it was only a symbol then)
+  if (body.budgetSettings === undefined) {
+    Object.defineProperty(result, 'beforeCurrencies', { value: true, enumerable: false });
+  }
   for (const name of BACKUP_TABLES) {
     const rows = body[name] ?? [];
     if (!Array.isArray(rows) || rows.length > MAX_ROWS_PER_TABLE) {
@@ -136,7 +149,7 @@ export async function saveSafetyCopy(): Promise<string | null> {
 }
 
 /** Replaces all budget data with the backup's, in one transaction: all or nothing. */
-export function restoreBackup(data: Record<BackupTable, Row[]>) {
+export function restoreBackup(data: ParsedBackup) {
   // Bank connections aren't in backups; remember which accounts they sync into
   const plaidLinks = db
     .select({ id: plaidAccountMappings.id, accountId: plaidAccountMappings.accountId })
@@ -161,7 +174,11 @@ export function restoreBackup(data: Record<BackupTable, Row[]>) {
   db.transaction((tx) => {
     // Foreign keys are checked once, at commit, so rows can go in table by table
     tx.run(sql`PRAGMA defer_foreign_keys = ON`);
-    for (const name of [...BACKUP_TABLES].reverse()) tx.delete(TABLES[name]).run();
+    for (const name of [...BACKUP_TABLES].reverse()) {
+      // A backup from before currencies keeps this budget's currency (it was only a symbol then)
+      if (name === 'budgetSettings' && data.beforeCurrencies) continue;
+      tx.delete(TABLES[name]).run();
+    }
     for (const name of BACKUP_TABLES) {
       const rows = data[name];
       // Chunked: SQLite limits how many values one statement may bind
@@ -196,6 +213,10 @@ export function restoreBackup(data: Record<BackupTable, Row[]>) {
       }
     }
   });
+  // Rates came with the backup; a backup from an older version has no values in other
+  // currencies yet
+  ratesChanged();
+  fillMissingMainAmounts();
 
   return Object.fromEntries(BACKUP_TABLES.map((name) => [name, data[name].length]));
 }

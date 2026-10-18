@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { formatCurrency } from '../../utils/currency';
+import { balanceValue, unconvertedCurrencies } from '../../utils/accountMoney';
+import { UnconvertedNote } from '../currency/UnconvertedNote';
 import { chartColors } from '../../utils/chartColors';
 import { accountTypeInfo } from '../../utils/accountTypes';
 import type { Account, AccountGroup } from '../../types';
@@ -36,7 +38,8 @@ export function AssetLiabilitySummary({ accounts }: Props) {
     for (const a of accounts) {
       const info = accountTypeInfo(a.type);
       const sums = info.liability ? liabilitySums : assetSums;
-      sums.set(info.group, (sums.get(info.group) ?? 0) + a.balance);
+      // In the budget's currency; one without a rate counts as nothing (see the page's note)
+      sums.set(info.group, (sums.get(info.group) ?? 0) + (balanceValue(a) ?? 0));
     }
     return { assets: assetSums, liabilities: liabilitySums };
   }, [accounts]);
@@ -57,6 +60,7 @@ export function AssetLiabilitySummary({ accounts }: Props) {
         emptyText="No credit cards or loans yet."
         owed
       />
+      <UnconvertedNote currencies={unconvertedCurrencies(accounts)} className="mt-3" />
     </div>
   );
 }

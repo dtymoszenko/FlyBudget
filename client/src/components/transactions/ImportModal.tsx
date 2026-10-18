@@ -37,7 +37,9 @@ import {
 import { importPreview } from '../../api/transactions';
 import { getImportSettings, saveImportSettings, saveStatementAccount } from '../../api/accounts';
 import { useImportConfirm } from '../../hooks/useTransactions';
-import { formatCurrency } from '../../utils/currency';
+import { formatMoney } from '../../utils/currency';
+import { minorUnits } from '../../utils/currencies';
+import { useAccountCurrency } from '../../hooks/useCurrency';
 import type { ImportPreviewRow } from '../../types';
 import type { ImportRow } from '../../api/transactions';
 import { IS_DEMO } from '../../demo/demoApi';
@@ -80,6 +82,8 @@ const MAX_IMPORT_ROWS = 100_000;
 
 export function ImportModal({ isOpen, onClose, accountId }: Props) {
   const [step, setStep] = useState<Step>('upload');
+  // Amounts are read in the account's currency (no decimals for yen)
+  const currency = useAccountCurrency()(accountId);
   const canSave = useCanSave();
   const queryClient = useQueryClient();
   const [source, setSource] = useState<'csv' | 'camt'>('csv');
@@ -399,7 +403,12 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
     if (!dateFormat) return setError('Choose how this file writes dates');
     if (!numberFormat) return setError('Choose how this file writes amounts');
     if (needsOutWord) return setError('Type the word your bank uses for money going out');
-    const built = buildImportRows(rawRows, roles, { dateFormat, numberFormat, outWord });
+    const built = buildImportRows(rawRows, roles, {
+      dateFormat,
+      numberFormat,
+      outWord,
+      minor: minorUnits(currency),
+    });
     if (typeof built === 'string') {
       setError(built);
       return;
@@ -523,6 +532,10 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
       ? statementAccount
       : null;
   const entriesLeftOut = `${skippedEntries} ${skippedEntries === 1 ? 'entry is' : 'entries are'} pending or couldn't be read, and left out.`;
+  // A statement in another currency than this account's: its amounts would mean something else
+  const statementCurrency = source === 'camt' ? (statements[statementIdx]?.currency ?? null) : null;
+  const otherCurrency =
+    statementCurrency && currency && statementCurrency !== currency ? statementCurrency : null;
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Import Transactions" size="lg">
@@ -793,6 +806,18 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
             {previewRows.length - excluded.size} will be imported.
             {skippedEntries > 0 && ` ${entriesLeftOut}`}
           </p>
+          {otherCurrency && (
+            <p
+              role="alert"
+              className="flex items-start gap-2 px-3 py-2 text-sm bg-caution-subtle text-caution rounded-lg"
+            >
+              <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+              <span>
+                This statement is in {otherCurrency}, but this account is in {currency}. Import it
+                into an account in {otherCurrency} instead (you can add one with that currency).
+              </span>
+            </p>
+          )}
           {otherStatementAccount && (
             <p
               role="alert"
@@ -860,7 +885,7 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
                     <td
                       className={`px-2 py-1.5 text-xs text-right tabular-nums ${row.amount < 0 ? 'text-text' : 'text-positive'}`}
                     >
-                      {formatCurrency(row.amount)}
+                      {formatMoney(row.amount, currency)}
                     </td>
                   </tr>
                 ))}

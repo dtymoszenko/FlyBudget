@@ -33,7 +33,13 @@ export interface CreateTransferData {
   fromAccountId: string;
   toAccountId: string;
   date: string;
+  /** In the sending account's currency */
   amount: number;
+  /**
+   * What arrived, in the receiving account's currency, when the two differ (left out: the
+   * day's rate)
+   */
+  toAmount?: number;
   notes?: string | null;
 }
 
@@ -66,8 +72,11 @@ export function getTransactions(params: TransactionQueryParams = {}) {
 export const createTransaction = (data: CreateTransactionData) =>
   apiFetch<Transaction>('/transactions', { method: 'POST', body: JSON.stringify(data) });
 
-export const updateTransaction = (id: string, data: Partial<CreateTransactionData>) =>
-  apiFetch<Transaction>(`/transactions/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const updateTransaction = (
+  id: string,
+  // mainAmount: what it's worth in the budget's currency, typed in (null = the day's rate)
+  data: Partial<CreateTransactionData> & { mainAmount?: number | null },
+) => apiFetch<Transaction>(`/transactions/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 
 export const deleteTransaction = (id: string) =>
   apiFetch<void>(`/transactions/${id}`, { method: 'DELETE' });

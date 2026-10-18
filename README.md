@@ -210,6 +210,8 @@ updates.
   category's history
 - **Accounts:** 17 account types across cash, credit, investments, property and loans, with
   net worth, reconciliation and value updates
+- **Multiple currencies:** accounts in their own currency, counted in your budget's at each
+  day's exchange rate (typed in, or ECB rates when you turn them on)
 - **Transactions:** splits, transfers, search and filters, CSV import with duplicate
   detection, and bank sync through SimpleFIN or Plaid
 - **Rules:** conditions on payee, amount, date, account and more; actions that rename,
@@ -298,7 +300,6 @@ Ideas we're considering (not promises):
 - Syncing one budget between devices that also work offline
 - MCP support
 - Bank connections for European banks
-- Multiple currencies
 
 Have an idea? [Open an issue](https://github.com/dtymoszenko/FlyBudget/issues).
 

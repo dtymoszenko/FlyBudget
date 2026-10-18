@@ -104,13 +104,14 @@ HTTPS is also what [Enable Banking](/docs/bank-sync#enable-banking) (European ba
 
 ## Settings
 
-| Variable                  | What it does                                                                                                                               |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `FLYBUDGET_DATA_KEY_FILE` | Path to the file holding the encryption key (a Docker secret). **Required** (or `FLYBUDGET_DATA_KEY`).                                     |
-| `FLYBUDGET_DATA_KEY`      | The key itself, instead of a file. Less private: anyone who can run `docker inspect` can see it.                                           |
-| `FLYBUDGET_ALLOWED_HOSTS` | Comma-separated addresses FlyBudget answers to, e.g. `budget.example.com,192.168.1.20`. Recommended; by default it answers to any address. |
-| `FLYBUDGET_TRUST_PROXY`   | Set to the number of reverse proxies in front of FlyBudget (usually `1`) when using one.                                                   |
-| `PORT`                    | Port inside the container (default `3001`). You'll usually change the port mapping in `docker-compose.yml` instead.                        |
+| Variable                       | What it does                                                                                                                                                                                            |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `FLYBUDGET_DATA_KEY_FILE`      | Path to the file holding the encryption key (a Docker secret). **Required** (or `FLYBUDGET_DATA_KEY`).                                                                                                  |
+| `FLYBUDGET_DATA_KEY`           | The key itself, instead of a file. Less private: anyone who can run `docker inspect` can see it.                                                                                                        |
+| `FLYBUDGET_ALLOWED_HOSTS`      | Comma-separated addresses FlyBudget answers to, e.g. `budget.example.com,192.168.1.20`. Recommended; by default it answers to any address.                                                              |
+| `FLYBUDGET_TRUST_PROXY`        | Set to the number of reverse proxies in front of FlyBudget (usually `1`) when using one.                                                                                                                |
+| `FLYBUDGET_EXCHANGE_RATES_URL` | Your own [Frankfurter](https://frankfurter.dev) server for exchange rates, e.g. `http://frankfurter:8080/v1` (may be on your network). Only used once rates are turned on in **Settings → Currencies**. |
+| `PORT`                         | Port inside the container (default `3001`). You'll usually change the port mapping in `docker-compose.yml` instead.                                                                                     |
 
 ## Your password
 

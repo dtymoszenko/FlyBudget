@@ -11,6 +11,9 @@ import {
 import { eq, and, gte, lte } from 'drizzle-orm';
 import { z } from 'zod';
 import { isRealDate } from '../utils/validation.js';
+import { minorUnits } from '../utils/currencies.js';
+import { minorToDecimal } from '../utils/money.js';
+import { budgetCurrency, hasForeignAccounts } from '../services/mainAmountService.js';
 
 export const exportRouter = Router();
 
@@ -32,11 +35,12 @@ export function escapeCsv(val: string | null | undefined, separator: ',' | ';' =
   return s;
 }
 
-/** Cents as a CSV amount, exactly: -1234.56, or -1234,56 with a decimal comma */
-export function csvAmount(cents: number, decimal: '.' | ','): string {
-  const abs = Math.abs(cents);
-  const text = `${Math.floor(abs / 100)}${decimal}${String(abs % 100).padStart(2, '0')}`;
-  return cents < 0 ? `-${text}` : text;
+/**
+ * An amount as a CSV amount, exactly: -1234.56, or -1234,56 with a decimal comma (with the
+ * currency's own decimals: 1234 yen, 12.345 dinars)
+ */
+export function csvAmount(cents: number, decimal: '.' | ',', minor = 2): string {
+  return minorToDecimal(cents, minor).replace('.', decimal);
 }
 
 // How the file writes amounts: `comma` for spreadsheets in languages with a decimal comma,
@@ -71,19 +75,20 @@ exportRouter.get('/transactions/csv', (req, res) => {
       reconciled: transactions.reconciled,
       categoryId: transactions.categoryId,
       accountId: transactions.accountId,
+      mainAmount: transactions.mainAmount,
+      mainAmountSource: transactions.mainAmountSource,
     })
     .from(transactions)
     .where(and(...filters))
     .orderBy(transactions.date)
     .all();
 
-  const accts = Object.fromEntries(
-    db
-      .select()
-      .from(accounts)
-      .all()
-      .map((a) => [a.id, a.name]),
-  );
+  const accountRows = db.select().from(accounts).all();
+  const accts = Object.fromEntries(accountRows.map((a) => [a.id, a.name]));
+  // With accounts in other currencies, each row says its currency and its budget value
+  const budget = budgetCurrency();
+  const multi = hasForeignAccounts();
+  const currencyOf = Object.fromEntries(accountRows.map((a) => [a.id, a.currency ?? budget]));
   const cats = Object.fromEntries(
     db
       .select()
@@ -92,19 +97,26 @@ exportRouter.get('/transactions/csv', (req, res) => {
       .map((c) => [c.id, c.name]),
   );
 
-  const header = `${['Date', 'Account', 'Payee', 'Category', 'Notes', 'Amount', 'Reconciled'].join(sep)}\n`;
+  const columns = ['Date', 'Account', 'Payee', 'Category', 'Notes', 'Amount'];
+  if (multi) columns.push('Currency', `Amount (${budget})`);
+  const header = `${[...columns, 'Reconciled'].join(sep)}\n`;
   const body = rows
-    .map((r) =>
-      [
+    .map((r) => {
+      const currency = currencyOf[r.accountId] ?? null;
+      const value = r.mainAmountSource === 'missing' ? null : (r.mainAmount ?? r.amount);
+      return [
         r.date,
         escapeCsv(accts[r.accountId] ?? '', sep),
         escapeCsv(r.payeeName, sep),
         escapeCsv(r.categoryId ? (cats[r.categoryId] ?? '') : '', sep),
         escapeCsv(r.notes, sep),
-        csvAmount(r.amount, decimal),
+        csvAmount(r.amount, decimal, minorUnits(currency)),
+        ...(multi
+          ? [currency ?? '', value === null ? '' : csvAmount(value, decimal, minorUnits(budget))]
+          : []),
         r.reconciled ? 'Yes' : 'No',
-      ].join(sep),
-    )
+      ].join(sep);
+    })
     .join('\n');
 
   res.setHeader('Content-Type', 'text/csv');

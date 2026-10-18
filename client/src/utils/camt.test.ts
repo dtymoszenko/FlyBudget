@@ -313,6 +313,7 @@ describe('parseCamt', () => {
 </Document>`)!;
     expect(statement).toEqual({
       account: 'DE02120300000000202051',
+      currency: 'EUR',
       skipped: 1,
       transactions: [
         {
@@ -403,5 +404,35 @@ describe('statementAccountKey (property-based)', () => {
     );
     expect(statementAccountKey(null)).toBeNull();
     expect(statementAccountKey('   ')).toBeNull();
+  });
+});
+
+describe('CAMT statements in other currencies', () => {
+  const statement = (currency: string, amount: string, details = '') =>
+    parseCamt(`<?xml version="1.0"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.02"><BkToCstmrStmt><Stmt>
+  <Id>1</Id><Acct><Id><IBAN>JP00TEST</IBAN></Id><Ccy>${currency}</Ccy></Acct>
+  <Ntry><Amt Ccy="${currency}">${amount}</Amt><CdtDbtInd>DBIT</CdtDbtInd><Sts>BOOK</Sts>
+    <BookgDt><Dt>2025-03-01</Dt></BookgDt>
+    <NtryDtls><TxDtls>${details}<RltdPties><Cdtr><Nm>Shop</Nm></Cdtr></RltdPties></TxDtls></NtryDtls>
+  </Ntry>
+</Stmt></BkToCstmrStmt></Document>`)![0];
+
+  it("says the account's currency and reads amounts in its decimals", () => {
+    const yen = statement('JPY', '1500');
+    expect(yen.currency).toBe('JPY');
+    expect(yen.transactions[0].amount).toBe(-1500);
+    const dinars = statement('KWD', '12.345');
+    expect(dinars.transactions[0].amount).toBe(-12_345);
+  });
+
+  it("never takes an amount in the shop's currency for the account's", () => {
+    // One entry, with the card payment's original amount in dollars
+    const euros = statement(
+      'EUR',
+      '92.50',
+      '<AmtDtls><InstdAmt><Amt Ccy="USD">100.00</Amt></InstdAmt></AmtDtls>',
+    );
+    expect(euros.transactions[0].amount).toBe(-9250);
   });
 });

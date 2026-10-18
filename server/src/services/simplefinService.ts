@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { assertSafeUrl, readTextLimited, safeFetch, UnsafeUrlError } from './safeFetch.js';
+import { decimalToMinor } from '../utils/money.js';
 
 // SimpleFIN protocol: https://www.simplefin.org/protocol.html
 // Everything that comes from outside (the setup token the user pastes, the access
@@ -150,23 +151,22 @@ export function parseSimplefinResponse(body: string): SimplefinResponse {
   return parsed.data;
 }
 
-/** Exact conversion of a validated decimal string to integer cents (no float rounding surprises). */
-function decimalToCents(value: string): number {
-  const negative = value.startsWith('-');
-  const [whole, frac = ''] = value.replace('-', '').split('.');
-  const cents = Number(whole) * 100 + Number((frac + '00').slice(0, 2));
-  // Round half away from zero on the third decimal
-  const rounded = Number(frac[2] ?? '0') >= 5 ? cents + 1 : cents;
-  if (!Number.isSafeInteger(rounded)) throw new SimplefinError('Amount out of range');
-  return negative ? -rounded : rounded;
+/**
+ * Exact conversion of a validated decimal string to minor units (no float rounding
+ * surprises): cents, or the currency's own decimals (yen have none, dinars three)
+ */
+function decimalToCents(value: string, minor: number): number {
+  const result = decimalToMinor(value, minor);
+  if (result === null) throw new SimplefinError('Amount out of range');
+  return result;
 }
 
-export function simpleFinAmountToCents(amount: string): number {
-  return decimalToCents(decimalString.parse(amount));
+export function simpleFinAmountToCents(amount: string, minor = 2): number {
+  return decimalToCents(decimalString.parse(amount), minor);
 }
 
-export function simpleFinBalanceToCents(balance: string): number {
-  return decimalToCents(decimalString.parse(balance));
+export function simpleFinBalanceToCents(balance: string, minor = 2): number {
+  return decimalToCents(decimalString.parse(balance), minor);
 }
 
 export function connectionNameFromResponse(response: SimplefinResponse): string {

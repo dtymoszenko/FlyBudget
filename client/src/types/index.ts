@@ -199,9 +199,18 @@ export interface Transaction {
   /** 1 for a balance correction; reports leave it out while it has no category */
   isAdjustment?: number;
   scheduleId: string | null;
+  /**
+   * In an account with another currency than the budget's: what it's worth in the budget's
+   * currency (null = the same as `amount`, or `missing`)
+   */
+  mainAmount?: number | null;
+  /** rate | manual | transfer | missing (no rate for its day yet: counted as nothing) */
+  mainAmountSource?: MainAmountSource | null;
   createdAt: string;
   children?: Transaction[];
 }
+
+export type MainAmountSource = 'rate' | 'manual' | 'transfer' | 'missing';
 
 /** Two existing transactions that look like one transfer (GET /transactions/transfers/suggestions) */
 export interface TransferSuggestion {
@@ -317,7 +326,21 @@ export interface Account {
   /** Custom logo image (data URL); null = colored initials */
   logo: string | null;
   createdAt: string;
+  /** In the account's own currency */
   balance: number;
+  /** ISO 4217: the account's own, or the budget's (null while the budget has none) */
+  currency: string | null;
+  /** The balance in the budget's currency at the latest rate; null without a rate */
+  mainBalance: number | null;
+  /** The day of the rate used for mainBalance (null when no conversion was needed) */
+  rateDate: string | null;
+  /** Its currency can only change while it has none */
+  hasTransactions: boolean;
+  /**
+   * In another currency: how much more (or less) it's worth today in the budget's currency
+   * than it was counted as when its money came in (the rate moved). Null when not known.
+   */
+  currencyDifference?: number | null;
 }
 
 export interface NetWorthPoint {
@@ -325,6 +348,45 @@ export interface NetWorthPoint {
   assets: number;
   liabilities: number;
   netWorth: number;
+  /** Currencies of accounts left out of this point, for want of a rate */
+  unconverted?: string[];
+}
+
+/** The budget's currency and its exchange rates (GET /api/currency) */
+export interface CurrencySettings {
+  currency: string | null;
+  ratesEnabled: boolean;
+  ratesUrl: string | null;
+  defaultRatesUrl: string | null;
+  /** False in the demo, which never talks to another server */
+  canDownload: boolean;
+  lastFetchedAt: string | null;
+  lastError: string | null;
+  /** Currencies accounts are in, other than the budget's */
+  foreignCurrencies: string[];
+  latestRates: Array<{
+    currency: string;
+    rate: string | null;
+    date: string | null;
+    source: string | null;
+  }>;
+  missing: MissingRates;
+}
+
+/** Transactions waiting for a rate, so they count as nothing in the budget for now */
+export interface MissingRates {
+  count: number;
+  currencies: string[];
+  oldest?: string | null;
+}
+
+export interface ExchangeRate {
+  id: string;
+  date: string;
+  base: string;
+  quote: string;
+  rate: string;
+  source: 'ecb' | 'manual' | string;
 }
 export interface IncomeExpensesPoint {
   month: string;

@@ -3,6 +3,8 @@ import { addDays, format } from 'date-fns';
 import { db } from '../db/index.js';
 import {
   accounts,
+  budgetSettings,
+  exchangeRates,
   budgetMonths,
   categories,
   categoryGroups,
@@ -42,6 +44,8 @@ export function loadDemoBudget(today: Date): void {
       }
     };
     // Parents before the rows that point at them
+    insert(budgetSettings, demo.budgetSettings);
+    insert(exchangeRates, demo.exchangeRates);
     insert(categoryGroups, demo.categoryGroups);
     insert(categories, demo.categories);
     insert(accounts, demo.accounts);

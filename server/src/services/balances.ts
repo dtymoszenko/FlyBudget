@@ -25,3 +25,12 @@ export function accountTransactionSum(accountId: string): number {
     .get();
   return row?.sum ?? 0;
 }
+
+/**
+ * What a row counts as in the budget and in reports that add up more than one account: its
+ * value in the budget's currency (services/mainAmounts.ts). That's its amount in an account
+ * with the budget's currency, the converted one in another, and nothing while its rate is
+ * missing (shown as a warning instead of counting it at a made-up rate).
+ * Per-account sums (balances, reconciling) use `amount`, in the account's own currency.
+ */
+export const mainAmount: SQL<number> = sql<number>`(case when ${transactions.mainAmountSource} = 'missing' then 0 else coalesce(${transactions.mainAmount}, ${transactions.amount}) end)`;

@@ -5,6 +5,7 @@ import { AUTH_REQUIRED_EVENT, NetworkError } from '../../api/client';
 import * as authApi from '../../api/auth';
 import { appModeFrom } from '../../hooks/useServer';
 import { OutboxSender } from '../../offline/OutboxSender';
+import { useBudgetCurrencySync } from '../../hooks/useCurrency';
 import { clearOfflineCopy, useOfflineCopy } from '../../offline/snapshot';
 import { useConnectionStore } from '../../store/connectionStore';
 import { connectionSecurity } from '../../utils/connection';
@@ -62,6 +63,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     <>
       {children}
       <OutboxSender />
+      <BudgetCurrencySync />
     </>
   );
 
@@ -215,4 +217,10 @@ function PasswordForm({ mode, onDone }: { mode: 'setup' | 'login'; onDone: () =>
       </form>
     </AuthScreen>
   );
+}
+
+/** Keeps the budget's currency where amounts are formatted (see useBudgetCurrencySync) */
+function BudgetCurrencySync() {
+  useBudgetCurrencySync();
+  return null;
 }

@@ -65,7 +65,8 @@ describe('the demo budget (property-based)', () => {
           if (t.transferTransactionId) {
             const other = byId.get(t.transferTransactionId)!;
             expect(other.transferTransactionId).toBe(t.id);
-            expect(other.amount).toBe(-t.amount);
+            // In dollars, the two sides cancel out (between currencies the amounts differ)
+            expect((other.mainAmount ?? other.amount) + (t.mainAmount ?? t.amount)).toBe(0);
             expect(other.date).toBe(t.date);
           }
           if (t.isParent) {
@@ -74,6 +75,27 @@ describe('the demo budget (property-based)', () => {
             expect(parts.reduce((s, c) => s + c.amount, 0)).toBe(t.amount);
           }
         }
+      }),
+      { numRuns: 30 },
+    );
+  });
+
+  it('values every euro transaction in dollars, at a rate it has', () => {
+    fc.assert(
+      fc.property(anyDay, (today) => {
+        const demo = buildDemoBudget(today);
+        const euro = demo.accounts.find((a) => a.currency === 'EUR')!;
+        const rows = demo.transactions.filter((t) => t.accountId === euro.id);
+        expect(rows.length).toBeGreaterThan(0);
+        for (const t of rows) {
+          expect(t.mainAmount).toEqual(expect.any(Number));
+          expect(['rate', 'transfer']).toContain(t.mainAmountSource);
+          expect(Math.sign(t.mainAmount!)).toBe(Math.sign(t.amount));
+        }
+        // Euros for every working day back to the first transaction
+        const first = demo.transactions.map((t) => t.date).sort()[0];
+        expect(demo.exchangeRates[0].date <= first).toBe(true);
+        expect(demo.exchangeRates.every((r) => r.base === 'EUR' && r.quote === 'USD')).toBe(true);
       }),
       { numRuns: 30 },
     );

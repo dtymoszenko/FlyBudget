@@ -17,6 +17,8 @@ import {
 } from 'date-fns';
 import type {
   accounts,
+  budgetSettings,
+  exchangeRates,
   budgetMonths,
   categories,
   categoryGroups,
@@ -36,6 +38,8 @@ import {
   type RecurrenceType,
 } from '../utils/recurrence.js';
 import type { Action, Condition } from '../services/rulesEngine.js';
+import { buildRateBook } from '../services/exchangeRates.js';
+import { mainAmountFor } from '../services/mainAmounts.js';
 import { DEMO_LOGOS, type DemoLogo } from './logos.js';
 
 type Row<T extends { $inferInsert: unknown }> = T['$inferInsert'];
@@ -48,6 +52,10 @@ export interface ScheduleLink {
 }
 
 export interface DemoBudget {
+  /** In US dollars, with one account in euros */
+  budgetSettings: Row<typeof budgetSettings>[];
+  /** Daily ECB-style euro rates for the whole history (made up, but plausible) */
+  exchangeRates: Row<typeof exchangeRates>[];
   categoryGroups: Row<typeof categoryGroups>[];
   categories: Row<typeof categories>[];
   accounts: Row<typeof accounts>[];
@@ -183,9 +191,13 @@ const ACCOUNTS: {
   offBudget?: boolean;
   logo: DemoLogo;
   startingBalance?: number;
+  /** Another currency than the budget's dollars */
+  currency?: string;
 }[] = [
   { key: 'checking', name: 'Harbor Checking', type: 'checking', logo: 'harbor' },
   { key: 'savings', name: 'Harbor Savings', type: 'savings', logo: 'harborSavings' },
+  // For their trip to Europe: money moved over in dollars, spent in euros
+  { key: 'euro', name: 'Alpine Euro Account', type: 'checking', logo: 'alpine', currency: 'EUR' },
   { key: 'card', name: 'Summit Rewards Card', type: 'credit', logo: 'summit' },
   {
     key: 'retirement',
@@ -221,7 +233,11 @@ const ACCOUNTS: {
   },
 ];
 
-type AccountKey = 'checking' | 'savings' | 'card' | 'retirement' | 'brokerage' | 'carLoan' | 'car';
+type AccountKey =
+  'checking' | 'savings' | 'euro' | 'card' | 'retirement' | 'brokerage' | 'carLoan' | 'car';
+
+/** The budget's currency, and the euro account's */
+const BUDGET_CURRENCY = 'USD';
 
 /** Payees: key → [name, logo, default category, raw bank text] */
 const PAYEES: Record<string, [string, DemoLogo, CategoryKey | null, string | null]> = {
@@ -294,6 +310,8 @@ export function buildDemoBudget(today: Date): DemoBudget {
   // Categories
   const cat = {} as Record<CategoryKey, string>;
   const result: DemoBudget = {
+    budgetSettings: [{ id: 'budget', currency: BUDGET_CURRENCY }],
+    exchangeRates: [],
     categoryGroups: [],
     categories: [],
     accounts: [],
@@ -345,9 +363,34 @@ export function buildDemoBudget(today: Date): DemoBudget {
       isOffBudget: a.offBudget ? 1 : 0,
       sortOrder: i,
       logo: DEMO_LOGOS[a.logo],
+      currency: a.currency ?? null,
       createdAt: `${ymd(firstMonth)} 09:00:00`,
     });
   });
+
+  // Euro rates for every working day, a gentle random walk around $1.08 (its own random
+  // numbers, so the rest of the budget is the same as without them)
+  const rateRand = seededRandom(1999);
+  let usdPerEuro = 1.08;
+  for (let d = subDays(firstMonth, 7); ymd(d) <= todayStr; d = addDays(d, 1)) {
+    if (getDay(d) === 0 || getDay(d) === 6) continue;
+    usdPerEuro = Math.min(1.16, Math.max(1.02, usdPerEuro + (rateRand() - 0.5) * 0.008));
+    const date = ymd(d);
+    result.exchangeRates.push({
+      id: `ecb:${date}:EUR:USD`,
+      date,
+      base: 'EUR',
+      quote: 'USD',
+      rate: usdPerEuro.toFixed(4),
+      source: 'ecb',
+    });
+  }
+  const rates = buildRateBook(
+    result.exchangeRates.map((r) => ({ ...r, source: r.source ?? 'ecb' })),
+  );
+  /** What euros cost in dollars that day */
+  const usdRate = (date: string) =>
+    Number(result.exchangeRates.filter((r) => r.date <= date).at(-1)?.rate ?? '1.08');
 
   // Payees
   for (const [key, [name, logo, defaultCategory]] of Object.entries(PAYEES)) {
@@ -375,11 +418,14 @@ export function buildDemoBudget(today: Date): DemoBudget {
   }): string {
     const id = nextTxId();
     const payee = t.payee ? PAYEES[t.payee] : null;
+    const currency = ACCOUNTS.find((a) => a.key === t.account)?.currency ?? null;
     result.transactions.push({
       id,
       accountId: acct[t.account],
       date: t.date,
       amount: t.amount,
+      // In euros: what the budget counts it as, at the day's rate
+      ...mainAmountFor({ amount: t.amount, date: t.date, currency }, BUDGET_CURRENCY, rates),
       payeeId: t.payee ? `demo-payee-${t.payee}` : null,
       payeeName: payee?.[0] ?? null,
       // Everything except adjustments gets its payee's category unless told otherwise
@@ -432,6 +478,39 @@ export function buildDemoBudget(today: Date): DemoBudget {
       },
     );
     return outId;
+  }
+
+  /** Dollars moved to the euro account: what left, and the euros that arrived after the fee */
+  function toEuros(from: AccountKey, date: string, dollars: number) {
+    const outId = nextTxId();
+    const inId = nextTxId();
+    const reconciled = date < reconciledBefore ? 1 : 0;
+    const euros = Math.round((dollars / usdRate(date)) * 0.995);
+    result.transactions.push(
+      {
+        id: outId,
+        accountId: acct[from],
+        date,
+        amount: -dollars,
+        payeeName: `Transfer: ${accountNames.euro}`,
+        transferTransactionId: inId,
+        notes: 'For the trip',
+        reconciled,
+      },
+      {
+        id: inId,
+        accountId: acct.euro,
+        date,
+        amount: euros,
+        payeeName: `Transfer: ${accountNames[from]}`,
+        transferTransactionId: outId,
+        notes: 'For the trip',
+        reconciled,
+        // Worth exactly the dollars that left: a transfer is neither income nor spending
+        mainAmount: dollars,
+        mainAmountSource: 'transfer',
+      },
+    );
   }
 
   function split(
@@ -967,17 +1046,20 @@ export function buildDemoBudget(today: Date): DemoBudget {
     payee: 'skyhop',
     notes: 'Flights to the coast (2)',
   });
+  // The trip was in Europe: euros moved over beforehand, the hotel and dinner paid in euros
+  toEuros('savings', ymd(new Date(tripMonth.getFullYear(), tripMonth.getMonth() - 1, 20)), 50_000);
+  toEuros('checking', ymd(new Date(tripMonth.getFullYear(), tripMonth.getMonth(), 2)), 30_000);
   add({
-    account: 'card',
+    account: 'euro',
     date: ymd(new Date(tripMonth.getFullYear(), tripMonth.getMonth(), 9)),
-    amount: -61_200,
+    amount: -56_400,
     payee: 'lakesideInn',
     notes: '4 nights, ocean view',
   });
   add({
-    account: 'card',
+    account: 'euro',
     date: ymd(new Date(tripMonth.getFullYear(), tripMonth.getMonth(), 10)),
-    amount: -8_740,
+    amount: -8_050,
     payee: 'sakura',
     category: 'vacation',
     notes: 'Trip dinner',
@@ -1121,19 +1203,21 @@ export function buildDemoBudget(today: Date): DemoBudget {
   // income"), so this month's To Be Budgeted is a small, tidy number.
   const spending = new Map<string, number>();
   const income = new Map<string, number>();
-  const onBudget = new Set([acct.checking, acct.savings, acct.card]);
+  const onBudget = new Set([acct.checking, acct.savings, acct.euro, acct.card]);
   const incomeCats = new Set(
     ['paychecks', 'interest', 'otherIncome'].map((k) => cat[k as CategoryKey]),
   );
   for (const t of result.transactions) {
     if (!t.categoryId || !onBudget.has(t.accountId) || t.isParent) continue;
     const month = t.date.slice(0, 7);
+    // In dollars: the euro account's rows count as what they cost
+    const value = t.mainAmount ?? t.amount;
     if (incomeCats.has(t.categoryId)) {
-      income.set(month, (income.get(month) ?? 0) + t.amount);
+      income.set(month, (income.get(month) ?? 0) + value);
     } else {
       spending.set(
         `${t.categoryId}|${month}`,
-        (spending.get(`${t.categoryId}|${month}`) ?? 0) - t.amount,
+        (spending.get(`${t.categoryId}|${month}`) ?? 0) - value,
       );
     }
   }

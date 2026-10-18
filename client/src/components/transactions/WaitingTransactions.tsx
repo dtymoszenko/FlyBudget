@@ -3,7 +3,8 @@ import { AlertCircle, CloudUpload, Loader2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { discardWaiting, retryWaiting, sendWaiting, useOutbox } from '../../offline/outbox';
 import { useConnectionStore } from '../../store/connectionStore';
-import { formatCurrency } from '../../utils/currency';
+import { formatMoney } from '../../utils/currency';
+import { useAccountCurrency } from '../../hooks/useCurrency';
 import { outboxEntryFor, type OutboxItem } from '../../utils/offline';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { formatDay } from '../../utils/dates';
@@ -21,6 +22,7 @@ interface Props {
  */
 export function WaitingTransactions({ accountId, categoryName, accountName }: Props) {
   const qc = useQueryClient();
+  const currencyOf = useAccountCurrency();
   const items = useOutbox((s) => s.items);
   const sending = useOutbox((s) => s.sending);
   const connected = useConnectionStore((s) => s.status === 'connected');
@@ -88,7 +90,7 @@ export function WaitingTransactions({ accountId, categoryName, accountName }: Pr
               className={`text-sm font-medium tabular-nums ${entry.amount > 0 ? 'text-positive' : 'text-text'}`}
             >
               {entry.amount > 0 ? '+' : ''}
-              {formatCurrency(entry.amount)}
+              {formatMoney(entry.amount, currencyOf(entry.accountId))}
             </span>
             {item.error ? (
               <span className="basis-full flex flex-wrap items-center gap-2 text-xs">

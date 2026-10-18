@@ -4,6 +4,7 @@ import { plaidConfig, plaidItems, plaidAccountMappings, accounts } from '../db/s
 import { and, eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
+import { bankCurrency, currencyToStore } from '../services/mainAmountService.js';
 import { logError } from '../utils/log.js';
 import { accountTypeSchema, defaultOffBudget } from '../utils/accountTypes.js';
 import {
@@ -138,6 +139,7 @@ async function addPlaidItem(publicToken: string, institution: { id: string; name
           plaidAccountName: acct.officialName || acct.name,
           plaidAccountType: acct.type,
           plaidAccountMask: acct.mask,
+          currency: bankCurrency(acct.currency),
           isEnabled: 1,
           createdAt: new Date().toISOString(),
         })
@@ -267,6 +269,7 @@ plaidRouter.post('/items/:itemId/map-accounts', (req, res) => {
           id: accountId,
           name: m.accountName || mapping.plaidAccountName,
           type,
+          currency: currencyToStore(bankCurrency(mapping.currency)),
           startingBalance: 0,
           isOffBudget: m.isOffBudget ?? defaultOffBudget(type),
           sortOrder: 0,

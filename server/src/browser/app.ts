@@ -20,6 +20,7 @@ import { customReportsRouter } from '../routes/customReports.js';
 import { dashboardsRouter } from '../routes/dashboards.js';
 import { schedulesRouter } from '../routes/schedules.js';
 import { goalsRouter } from '../routes/goals.js';
+import { currencyRouter } from '../routes/currency.js';
 
 /** Answer for anything that needs a real server: bank connections, sign-in. */
 const NOT_IN_DEMO = "This isn't available in the demo. Download FlyBudget to use it.";
@@ -61,6 +62,13 @@ app.use('/custom-reports', customReportsRouter as unknown as ShimRouter);
 app.use('/dashboards', dashboardsRouter as unknown as ShimRouter);
 app.use('/schedules', schedulesRouter as unknown as ShimRouter);
 app.use('/goals', goalsRouter as unknown as ShimRouter);
+// Rates can be typed in, but not downloaded: the demo never talks to another server
+app.put('/currency/download', (req, res, next) => {
+  const body = req.body as { enabled?: unknown; url?: unknown } | undefined;
+  if (body?.enabled === true || body?.url) return res.status(403).json({ error: NOT_IN_DEMO });
+  next();
+});
+app.use('/currency', currencyRouter as unknown as ShimRouter);
 
 app.use('/plaid', (_req, res) => res.status(403).json({ error: NOT_IN_DEMO }));
 app.use('/simplefin', (_req, res) => res.status(403).json({ error: NOT_IN_DEMO }));

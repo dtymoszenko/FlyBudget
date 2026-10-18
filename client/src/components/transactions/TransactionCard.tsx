@@ -1,7 +1,9 @@
 import { useMemo } from 'react';
 import { ArrowLeftRight, ChevronRight, Lock, Split } from 'lucide-react';
 import { PayeeIcon } from '../payees/PayeeIcon';
-import { formatCurrency } from '../../utils/currency';
+import { formatMoney } from '../../utils/currency';
+import { useAccountCurrency } from '../../hooks/useCurrency';
+import { ForeignValue } from '../currency/ForeignValue';
 import { usePreferencesStore } from '../../store/preferencesStore';
 import type { Transaction, PayeeWithCount } from '../../types';
 
@@ -29,6 +31,7 @@ export function TransactionCard({
   onOpenDetail,
 }: Props) {
   const showCategoryIcons = usePreferencesStore((s) => s.showCategoryIcons);
+  const currencyOf = useAccountCurrency();
   const isTransfer = !!tx.transferTransactionId;
   const isSplit = tx.isParent === 1 && !!tx.children?.length;
   const payeeName = tx.payeeName || (isTransfer ? 'Transfer' : '—');
@@ -74,9 +77,10 @@ export function TransactionCard({
             className={`shrink-0 text-[15px] font-medium tabular-nums ${tx.amount > 0 ? 'text-positive' : 'text-text'}`}
           >
             {tx.amount > 0 ? '+' : ''}
-            {formatCurrency(Math.abs(tx.amount))}
+            {formatMoney(Math.abs(tx.amount), currencyOf(tx.accountId))}
           </span>
         </span>
+        <ForeignValue tx={tx} className="justify-self-end" />
         <span className="flex items-center gap-1.5 text-xs text-text-tertiary min-w-0">
           <span className="truncate">{category}</span>
           {accountName && <span className="truncate">· {accountName}</span>}

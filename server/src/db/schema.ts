@@ -28,6 +28,8 @@ export const accounts = sqliteTable('accounts', {
   logo: text('logo'),
   /** How this account's bank writes its CSV files (JSON `ImportSettings`), from the last import */
   importSettings: text('import_settings'),
+  /** ISO 4217 code of the account's currency; null = the budget's currency */
+  currency: text('currency'),
   createdAt: text('created_at')
     .notNull()
     .default(sql`(datetime('now'))`),
@@ -96,6 +98,13 @@ export const transactions = sqliteTable(
      */
     isAdjustment: integer('is_adjustment').notNull().default(0),
     scheduleId: text('schedule_id').references(() => schedules.id, { onDelete: 'set null' }),
+    /**
+     * In an account with another currency than the budget's: what the transaction is worth in
+     * the budget's currency (budget and reports count this). Null = the same as `amount`.
+     */
+    mainAmount: integer('main_amount'),
+    /** Where `mainAmount` came from: rate | manual | transfer | missing (services/mainAmounts.ts) */
+    mainAmountSource: text('main_amount_source'),
     createdAt: text('created_at')
       .notNull()
       .default(sql`(datetime('now'))`),
@@ -324,6 +333,8 @@ export const simplefinAccountMappings = sqliteTable(
     simplefinAccountId: text('simplefin_account_id').notNull(),
     accountId: text('account_id').references(() => accounts.id, { onDelete: 'set null' }),
     simplefinAccountName: text('simplefin_account_name').notNull(),
+    /** The bank account's currency (ISO 4217), for accounts created from it */
+    currency: text('currency'),
     isEnabled: integer('is_enabled').notNull().default(1),
     createdAt: text('created_at')
       .notNull()
@@ -378,6 +389,8 @@ export const plaidAccountMappings = sqliteTable(
     plaidAccountName: text('plaid_account_name').notNull(),
     plaidAccountType: text('plaid_account_type').notNull(),
     plaidAccountMask: text('plaid_account_mask'),
+    /** The bank account's currency (ISO 4217), for accounts created from it */
+    currency: text('currency'),
     isEnabled: integer('is_enabled').notNull().default(1),
     createdAt: text('created_at')
       .notNull()
@@ -476,3 +489,40 @@ export const sessions = sqliteTable('sessions', {
   /** Roughly when the session was last used (updated at most every few minutes) */
   lastUsedAt: text('last_used_at'),
 });
+
+/** The budget's own settings: one row, id 'budget' */
+export const budgetSettings = sqliteTable('budget_settings', {
+  id: text('id').primaryKey(),
+  /** ISO 4217 code of the budget's currency; null = not chosen yet (the device's symbol is shown) */
+  currency: text('currency'),
+  /** 1 = download ECB reference rates (opt in: it's a request to another server) */
+  ratesEnabled: integer('rates_enabled').notNull().default(0),
+  /** Where to download them from; null = Frankfurter's public server */
+  ratesUrl: text('rates_url'),
+  ratesLastFetchedAt: text('rates_last_fetched_at'),
+  ratesLastError: text('rates_last_error'),
+  updatedAt: text('updated_at')
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+/**
+ * Exchange rates: on `date`, one `base` was `rate` `quote` (a decimal string, never a float).
+ * Ids are `source:date:base:quote`, so two devices downloading the same day write the same row.
+ */
+export const exchangeRates = sqliteTable(
+  'exchange_rates',
+  {
+    id: text('id').primaryKey(),
+    date: text('date').notNull(),
+    base: text('base').notNull(),
+    quote: text('quote').notNull(),
+    rate: text('rate').notNull(),
+    /** ecb | manual */
+    source: text('source').notNull(),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (table) => [index('exchange_rates_pair_date_idx').on(table.base, table.quote, table.date)],
+);

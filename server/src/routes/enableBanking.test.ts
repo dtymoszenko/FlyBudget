@@ -547,7 +547,7 @@ describe('Enable Banking', () => {
   it('keeps bank links through a backup restore', async () => {
     const tables = Object.fromEntries(
       BACKUP_TABLES.map((name) => [name, [] as Record<string, unknown>[]]),
-    ) as Parameters<typeof restoreBackup>[0];
+    ) as unknown as Parameters<typeof restoreBackup>[0];
     tables.accounts = db.select().from(accounts).all() as never;
     restoreBackup(tables);
     const [conn] = (await call('GET', '/enable-banking/connections')).body;

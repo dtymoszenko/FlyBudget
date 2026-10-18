@@ -7,6 +7,12 @@ import { z } from 'zod';
 import { format, addDays } from 'date-fns';
 import { buildRecurrenceRule, type RecurrenceType } from '../utils/recurrence.js';
 import { isMonth, isoDate, isRealDate } from '../utils/validation.js';
+import {
+  currencyContext,
+  refreshMainAmounts,
+  todayIso,
+  valueToday,
+} from '../services/mainAmountService.js';
 import { findSchedules, createDiscoveredSchedules } from '../services/scheduleDiscovery.js';
 import {
   ensureOccurrences,
@@ -213,6 +219,8 @@ schedulesRouter.get('/summary', (req, res) => {
   const rows = db
     .select({
       expectedAmount: scheduleOccurrences.expectedAmount,
+      expectedDate: scheduleOccurrences.expectedDate,
+      accountId: schedules.accountId,
     })
     .from(scheduleOccurrences)
     .innerJoin(schedules, eq(scheduleOccurrences.scheduleId, schedules.id))
@@ -225,14 +233,30 @@ schedulesRouter.get('/summary', (req, res) => {
     )
     .all();
 
+  // In the budget's currency: a bill in another currency at its day's rate (the latest one for
+  // bills still to come). One without a rate is left out, and named.
+  const ctx = currencyContext();
+  const today = todayIso();
   let income = 0;
   let expenses = 0;
+  const unconverted = new Set<string>();
   for (const row of rows) {
-    if (row.expectedAmount > 0) income += row.expectedAmount;
-    else expenses += row.expectedAmount;
+    const currency = row.accountId ? (ctx.currencies.get(row.accountId) ?? null) : null;
+    const date = row.expectedDate < today ? row.expectedDate : today;
+    const value = valueToday(row.expectedAmount, currency ?? ctx.budget, ctx, date).mainBalance;
+    if (value === null) {
+      unconverted.add(currency!);
+      continue;
+    }
+    if (value > 0) income += value;
+    else expenses += value;
   }
 
-  res.json({ income, expenses });
+  res.json({
+    income,
+    expenses,
+    ...(unconverted.size ? { unconverted: [...unconverted].sort() } : {}),
+  });
 });
 
 // GET /match-suggestions — pending ambiguous matches
@@ -508,9 +532,10 @@ schedulesRouter.post('/:id/mark-paid', (req, res) => {
   };
 
   db.insert(transactions).values(tx).run();
+  refreshMainAmounts([txId]);
   linkOccurrenceToTransaction(occId, txId, 'manual', 100);
 
-  res.status(201).json(tx);
+  res.status(201).json(db.select().from(transactions).where(eq(transactions.id, txId)).get());
 });
 
 // POST /occurrences/:occId/skip

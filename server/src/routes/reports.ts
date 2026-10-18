@@ -6,7 +6,9 @@ import type { Request, Response } from 'express';
 import { monthBounds } from '../utils/date.js';
 import { isLiabilityType } from '../utils/accountTypes.js';
 import { isMonth, isRealDate } from '../utils/validation.js';
-import { inAccountBalance, isIncomeOrSpending } from '../services/balances.js';
+import { inAccountBalance, isIncomeOrSpending, mainAmount } from '../services/balances.js';
+import { currencyContext, todayIso, valueToday } from '../services/mainAmountService.js';
+import { isForeign } from '../utils/currencies.js';
 
 export const reportsRouter = Router();
 
@@ -145,21 +147,50 @@ reportsRouter.get('/net-worth', (req, res) => {
     balance: acct.startingBalance,
   }));
 
+  // Accounts in another currency count at the rate on each period's last day (today at most):
+  // net worth is what everything is worth then, not what it cost
+  const ctx = currencyContext();
+  const today = todayIso();
   const result = periods.map((period) => {
     let assets = 0,
       liabilities = 0;
+    const unconverted = new Set<string>();
+    const asOf = isDaily ? period : monthEnd(period);
     for (const c of cursors) {
       while (c.next < c.entries.length && c.entries[c.next].period <= period) {
         c.balance += c.entries[c.next++].total;
       }
-      if (isLiabilityType(c.acct.type)) liabilities += Math.abs(Math.min(c.balance, 0));
-      else assets += Math.max(c.balance, 0);
+      let balance = c.balance;
+      const currency = c.acct.currency ?? ctx.budget;
+      if (isForeign(currency, ctx.budget)) {
+        const value = valueToday(balance, currency, ctx, asOf < today ? asOf : today);
+        if (value.mainBalance === null) {
+          if (balance !== 0) unconverted.add(currency!);
+          continue;
+        }
+        balance = value.mainBalance;
+      }
+      if (isLiabilityType(c.acct.type)) liabilities += Math.abs(Math.min(balance, 0));
+      else assets += Math.max(balance, 0);
     }
-    return { month: period, assets, liabilities, netWorth: assets - liabilities };
+    return {
+      month: period,
+      assets,
+      liabilities,
+      netWorth: assets - liabilities,
+      // Accounts left out for want of a rate on that day
+      ...(unconverted.size ? { unconverted: [...unconverted].sort() } : {}),
+    };
   });
 
   res.json(result);
 });
+
+/** The last day of a `YYYY-MM` month */
+function monthEnd(month: string): string {
+  const [y, m] = month.split('-').map(Number);
+  return `${month}-${String(new Date(Date.UTC(y, m, 0)).getUTCDate()).padStart(2, '0')}`;
+}
 
 reportsRouter.get('/spending-by-category', (req, res) => {
   const range = optionalMonthParams(req, res);
@@ -183,7 +214,7 @@ reportsRouter.get('/spending-by-category', (req, res) => {
       categoryIcon: categories.icon,
       groupId: categoryGroups.id,
       groupName: categoryGroups.name,
-      totalSpent: sql<number>`coalesce(sum(${transactions.amount}), 0)`,
+      totalSpent: sql<number>`coalesce(sum(${mainAmount}), 0)`,
     })
     .from(transactions)
     .leftJoin(categories, eq(transactions.categoryId, categories.id))
@@ -211,8 +242,8 @@ reportsRouter.get('/income-vs-expenses', (req, res) => {
     .select({
       month: sql<string>`strftime('%Y-%m', ${transactions.date})`,
       isIncome,
-      total: sql<number>`coalesce(sum(${transactions.amount}), 0)`,
-      outflowCount: sql<number>`sum(case when ${transactions.amount} < 0 then 1 else 0 end)`,
+      total: sql<number>`coalesce(sum(${mainAmount}), 0)`,
+      outflowCount: sql<number>`sum(case when ${mainAmount} < 0 then 1 else 0 end)`,
     })
     .from(transactions)
     .leftJoin(categories, eq(transactions.categoryId, categories.id))
@@ -267,7 +298,7 @@ reportsRouter.get('/cash-flow', (req, res) => {
   const txRows = db
     .select({
       month: sql<string>`strftime('%Y-%m', ${transactions.date})`,
-      net: sql<number>`coalesce(sum(${transactions.amount}), 0)`,
+      net: sql<number>`coalesce(sum(${mainAmount}), 0)`,
     })
     .from(transactions)
     .innerJoin(accounts, eq(transactions.accountId, accounts.id))
@@ -296,8 +327,8 @@ reportsRouter.get('/daily-flow', (req, res) => {
   const rows = db
     .select({
       date: transactions.date,
-      income: sql<number>`coalesce(sum(case when ${transactions.amount} > 0 then ${transactions.amount} else 0 end), 0)`,
-      expenses: sql<number>`coalesce(sum(case when ${transactions.amount} < 0 then -${transactions.amount} else 0 end), 0)`,
+      income: sql<number>`coalesce(sum(case when ${mainAmount} > 0 then ${mainAmount} else 0 end), 0)`,
+      expenses: sql<number>`coalesce(sum(case when ${mainAmount} < 0 then -${mainAmount} else 0 end), 0)`,
       count: sql<number>`count(distinct coalesce(${transactions.parentTransactionId}, ${transactions.id}))`,
     })
     .from(transactions)
@@ -333,7 +364,7 @@ reportsRouter.get('/income-by-category', (req, res) => {
       categoryIcon: categories.icon,
       groupId: categoryGroups.id,
       groupName: categoryGroups.name,
-      totalReceived: sql<number>`coalesce(sum(${transactions.amount}), 0)`,
+      totalReceived: sql<number>`coalesce(sum(${mainAmount}), 0)`,
     })
     .from(transactions)
     .leftJoin(categories, eq(transactions.categoryId, categories.id))
@@ -368,7 +399,7 @@ reportsRouter.get('/spending-trends', (req, res) => {
       categoryName: categories.name,
       categoryIcon: categories.icon,
       month: period,
-      total: sql<number>`coalesce(sum(${transactions.amount}), 0)`,
+      total: sql<number>`coalesce(sum(${mainAmount}), 0)`,
     })
     .from(transactions)
     .leftJoin(categories, eq(transactions.categoryId, categories.id))
@@ -397,7 +428,7 @@ reportsRouter.get('/spending-comparison', (req, res) => {
     const rows = db
       .select({
         date: transactions.date,
-        total: sql<number>`coalesce(sum(${transactions.amount}), 0)`,
+        total: sql<number>`coalesce(sum(${mainAmount}), 0)`,
       })
       .from(transactions)
       .innerJoin(accounts, eq(transactions.accountId, accounts.id))
@@ -710,7 +741,7 @@ reportsRouter.get('/custom', (req, res) => {
       name: groupByCol.name,
       id: groupByCol.id,
       ...(mode === 'time' ? { month: sql<string>`strftime('%Y-%m', ${transactions.date})` } : {}),
-      value: sql<number>`coalesce(sum(${transactions.amount}), 0)`,
+      value: sql<number>`coalesce(sum(${mainAmount}), 0)`,
     })
     .from(transactions)
     .leftJoin(categories, eq(transactions.categoryId, categories.id))
@@ -751,7 +782,7 @@ reportsRouter.get('/custom', (req, res) => {
       .orderBy(
         group_by === 'month'
           ? sql`strftime('%Y-%m', ${transactions.date})`
-          : sql`abs(sum(${transactions.amount})) desc`,
+          : sql`abs(sum(${mainAmount})) desc`,
       )
       .all() as { name: string | null; id: string | null; value: number }[];
 

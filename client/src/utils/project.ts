@@ -27,6 +27,7 @@ export type DocsPage =
   | 'reports'
   | 'rules'
   | 'goals'
+  | 'currencies'
   | 'backups';
 
 export const docsUrl = (page: DocsPage) => `${WEBSITE_URL}/docs/${page}`;

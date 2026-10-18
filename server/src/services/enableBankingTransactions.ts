@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { isRealDate } from '../utils/validation.js';
 import type { AccountType } from '../utils/accountTypes.js';
+import { minorUnits } from '../utils/currencies.js';
+import { decimalToMinor } from '../utils/money.js';
 
 // Turning Enable Banking (PSD2) account data into FlyBudget transactions. Pure: no database,
 // no clock, so the same rules can be tested exhaustively and re-run anywhere.
@@ -65,7 +67,7 @@ export interface SkippedCounts {
   noDate: number;
   /** Amount missing, unreadable or zero */
   badAmount: number;
-  /** In another currency than the account (FlyBudget has one currency for now) */
+  /** In another currency than the bank account (a card payment abroad the bank lists as such) */
   otherCurrency: number;
 }
 
@@ -75,20 +77,22 @@ export const ENABLE_BANKING_ID_PREFIX = 'eb:';
 
 const AMOUNT_RE = /^[+-]?\d{1,15}(\.\d{1,8})?$/;
 
-/** Exact conversion of a decimal string to integer cents, rounding half away from zero. */
-export function decimalToCents(value: string): number | null {
+/**
+ * Exact conversion of a decimal string to minor units (cents, or the currency's own
+ * decimals), rounding half away from zero.
+ */
+export function decimalToCents(value: string, minor = 2): number | null {
   if (!AMOUNT_RE.test(value)) return null;
-  const negative = value.startsWith('-');
-  const [whole, frac = ''] = value.replace(/^[+-]/, '').split('.');
-  let cents = Number(whole) * 100 + Number((frac + '00').slice(0, 2));
-  if (Number(frac[2] ?? '0') >= 5) cents += 1;
-  if (!Number.isSafeInteger(cents)) return null;
-  return negative && cents !== 0 ? -cents : cents;
+  return decimalToMinor(value.replace(/^\+/, ''), minor);
 }
 
 /** Signed cents: DBIT is money out, CRDT money in; without an indicator the bank's sign stands. */
-export function signedCents(amount: string, indicator: string | null | undefined): number | null {
-  const cents = decimalToCents(amount);
+export function signedCents(
+  amount: string,
+  indicator: string | null | undefined,
+  minor = 2,
+): number | null {
+  const cents = decimalToCents(amount, minor);
   if (cents === null) return null;
   if (indicator === 'DBIT') return cents === 0 ? 0 : -Math.abs(cents);
   if (indicator === 'CRDT') return Math.abs(cents);
@@ -164,6 +168,7 @@ export function mapTransactions(
   /** Records already mapped, by their bank reference and content */
   const repeats = new Set<string>();
   const accountCurrency = opts.currency?.toUpperCase() || null;
+  const minor = minorUnits(accountCurrency);
 
   for (const item of raw) {
     const parsed = ebTransactionSchema.safeParse(item);
@@ -180,7 +185,7 @@ export function mapTransactions(
       skipped.noDate++;
       continue;
     }
-    const amount = signedCents(tx.transaction_amount.amount, tx.credit_debit_indicator);
+    const amount = signedCents(tx.transaction_amount.amount, tx.credit_debit_indicator, minor);
     if (amount === null || amount === 0) {
       skipped.badAmount++;
       continue;
@@ -249,14 +254,22 @@ const balanceSchema = z
   })
   .passthrough();
 
-/** The balance to match, in signed cents, or null when the bank gave none that's readable. */
-export function pickBalance(raw: readonly unknown[]): number | null {
+/**
+ * The balance to match, in signed cents (the currency's minor units), or null when the bank
+ * gave none that's readable. Balances in another currency than the account's are ignored.
+ */
+export function pickBalance(raw: readonly unknown[], currency?: string | null): number | null {
+  const own = currency?.toUpperCase() || null;
   const balances = raw
     .map((b) => balanceSchema.safeParse(b))
     .flatMap((r) => (r.success ? [r.data] : []))
+    .filter((b) => {
+      const theirs = b.balance_amount.currency?.toUpperCase() || null;
+      return !own || !theirs || theirs === own;
+    })
     .map((b) => ({
       type: b.balance_type?.toUpperCase() ?? '',
-      cents: decimalToCents(b.balance_amount.amount),
+      cents: decimalToCents(b.balance_amount.amount, minorUnits(own)),
     }))
     .filter((b): b is { type: string; cents: number } => b.cents !== null);
   if (!balances.length) return null;

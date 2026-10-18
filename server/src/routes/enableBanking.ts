@@ -2,6 +2,7 @@ import { Router, type Request, type RequestHandler } from 'express';
 import { and, eq, gt, isNull, ne, or } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
+import { bankCurrency, currencyToStore } from '../services/mainAmountService.js';
 import { db } from '../db/index.js';
 import {
   accounts,
@@ -371,6 +372,7 @@ enableBankingRouter.post('/connections/:id/map-accounts', (req, res) => {
             id: accountId,
             name: m.accountName || mapping.name,
             type,
+            currency: currencyToStore(bankCurrency(mapping.currency)),
             startingBalance: 0,
             isOffBudget: m.isOffBudget ?? defaultOffBudget(type),
             sortOrder: 0,

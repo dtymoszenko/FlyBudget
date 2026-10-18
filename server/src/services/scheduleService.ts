@@ -12,6 +12,7 @@ import {
   type WeekendAdjust,
 } from '../utils/recurrence.js';
 import { linkOccurrenceToTransaction } from './matchingEngine.js';
+import { refreshMainAmounts } from './mainAmountService.js';
 
 export function ensureOccurrences(scheduleId: string, throughDate: string): number {
   const schedule = db.select().from(schedules).where(eq(schedules.id, scheduleId)).get();
@@ -164,6 +165,7 @@ export function autoCreateDueScheduled(): number {
         })
         .run();
 
+      refreshMainAmounts([txId]);
       linkOccurrenceToTransaction(occ.id, txId, 'automatic', 100);
       created++;
     }

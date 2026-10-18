@@ -8,6 +8,10 @@ import { useCreateAccount } from '../../hooks/useAccounts';
 import type { AccountType } from '../../types';
 import { accountTypeInfo } from '../../utils/accountTypes';
 import { AccountTypeSelect } from './AccountTypeSelect';
+import { CurrencySelect } from '../currency/CurrencySelect';
+import { useBudgetCurrency, useCurrencySettings } from '../../hooks/useCurrency';
+import { usePreferencesStore } from '../../store/preferencesStore';
+import { guessCurrency } from '../../utils/currency';
 
 interface Props {
   isOpen: boolean;
@@ -19,6 +23,11 @@ export function AddAccountModal({ isOpen, onClose }: Props) {
   const [type, setType] = useState<AccountType>('checking');
   const [amount, setAmount] = useState(0);
   const [isOffBudget, setIsOffBudget] = useState(false);
+  // Null = the budget's currency. A budget without one gets it from its first account given one
+  const [currency, setCurrency] = useState<string | null>(null);
+  const budgetCurrency = useBudgetCurrency();
+  const { data: currencySettings } = useCurrencySettings();
+  const legacySymbol = usePreferencesStore((s) => s.currencySymbol);
   const canSave = useCanSave();
   // An amount that can't be read would be created as 0
   const { allValid: amountValid, report } = useAmountValidity();
@@ -30,6 +39,7 @@ export function AddAccountModal({ isOpen, onClose }: Props) {
     setType('checking');
     setAmount(0);
     setIsOffBudget(false);
+    setCurrency(null);
     onClose();
   }
 
@@ -47,6 +57,7 @@ export function AddAccountModal({ isOpen, onClose }: Props) {
       // Debts are entered as the amount owed and stored as a negative balance
       startingBalance: info.liability ? -Math.abs(amount) : amount,
       isOffBudget: isOffBudget ? 1 : 0,
+      ...(currency ? { currency } : {}),
     });
     handleClose();
   }
@@ -85,6 +96,42 @@ export function AddAccountModal({ isOpen, onClose }: Props) {
 
           <AccountTypeSelect value={type} onChange={handleTypeChange} />
 
+          {budgetCurrency || currency ? (
+            <div>
+              <label
+                htmlFor="add-account-currency"
+                className="block text-sm font-medium text-text-secondary mb-1"
+              >
+                Currency
+              </label>
+              <CurrencySelect
+                id="add-account-currency"
+                value={currency ?? budgetCurrency ?? guessCurrency(legacySymbol)}
+                onChange={(next) => setCurrency(next === budgetCurrency ? null : next)}
+                first={[
+                  ...(budgetCurrency ? [budgetCurrency] : []),
+                  ...(currencySettings?.foreignCurrencies ?? []),
+                ]}
+                aria-describedby="add-account-currency-hint"
+              />
+              <p id="add-account-currency-hint" className="mt-1 text-xs text-text-secondary">
+                {!budgetCurrency
+                  ? "This also becomes your budget's currency."
+                  : currency
+                    ? `Its amounts stay in ${currency}; your budget counts them in ${budgetCurrency} at each day's rate.`
+                    : "Can't be changed once the account has transactions."}
+              </p>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setCurrency(guessCurrency(legacySymbol))}
+              className="text-sm font-medium text-brand-600 hover:underline max-md:min-h-11"
+            >
+              Choose a currency
+            </button>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-1">
               {amountLabel}
@@ -94,6 +141,7 @@ export function AddAccountModal({ isOpen, onClose }: Props) {
               onChange={setAmount}
               aria-label={amountLabel}
               allowNegative={!info.liability}
+              currency={currency ?? budgetCurrency}
             />
             <p className="mt-1 text-xs text-text-secondary">{amountHint}</p>
           </div>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Check, LayoutGrid, Plus } from 'lucide-react';
+import { MissingRatesBanner } from '../components/currency/MissingRatesBanner';
 import { Button } from '../components/ui/Button';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { useModalValue } from '../components/ui/Modal';
@@ -116,6 +117,7 @@ export default function ReportsPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 py-6 bg-page">
+        <MissingRatesBanner className="mb-4" />
         {active && (
           <div className="flex items-center gap-x-3 gap-y-1 flex-wrap mb-4">
             <span className="text-xs font-medium text-text-secondary">Date range</span>

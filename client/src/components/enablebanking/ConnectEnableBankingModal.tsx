@@ -734,6 +734,17 @@ function MappingCard({
               Your last bank statement for this account went here.
             </p>
           )}
+          {(() => {
+            // The bank's amounts are in its account's currency: another one would misread them
+            const target = existingAccounts.find((a) => a.id === mapping.accountId);
+            const theirs = account.currency?.toUpperCase();
+            return target?.currency && theirs && target.currency !== theirs ? (
+              <p role="alert" className="text-[11px] text-caution">
+                This bank account is in {theirs}, but {target.name} is in {target.currency}. Link it
+                to an account in {theirs}, or create a new one.
+              </p>
+            ) : null;
+          })()}
           {!account.accountId && (
             <label className="flex items-start gap-2 text-xs text-text-secondary">
               <input

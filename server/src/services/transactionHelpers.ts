@@ -3,6 +3,7 @@ import { payees, transactions } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { unlinkOccurrenceByTransactionId } from './matchingEngine.js';
+import { refreshMainAmounts } from './mainAmountService.js';
 
 export function resolvePayee(
   payeeName: string | null | undefined,
@@ -76,5 +77,7 @@ export function deleteTransactionRow(row: { id: string; transferTransactionId: s
     }
     tx.delete(transactions).where(eq(transactions.parentTransactionId, row.id)).run();
     tx.delete(transactions).where(eq(transactions.id, row.id)).run();
+    // The other side is an ordinary transaction again, worth its own amount
+    if (other) refreshMainAmounts([other.id]);
   });
 }

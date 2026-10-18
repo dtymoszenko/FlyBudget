@@ -7,13 +7,15 @@ import { CategorySelect } from './CategorySelect';
 import type { Account, CategoryGroup, Payee, Transaction } from '../../types';
 import type { CreateTransactionData, SplitItem } from '../../api/transactions';
 import {
-  parseCents,
-  centsToInput,
-  formatCurrency,
-  amountPlaceholder,
-  isUnreadableAmount,
+  parseAmount,
+  amountToInput,
+  formatAmount,
+  amountPlaceholder as placeholderIn,
+  readTypedAmount,
+  useAmountStyle,
   UNREADABLE_AMOUNT,
 } from '../../utils/currency';
+import { useAccountCurrency } from '../../hooks/useCurrency';
 
 interface Props {
   initial?: Transaction;
@@ -46,6 +48,13 @@ export function TransactionFormRow({
   layout = 'row',
 }: Props) {
   const sheet = layout === 'sheet';
+  // Amounts are typed and shown in the account's currency (no decimals for yen)
+  const style = useAmountStyle(useAccountCurrency()(initial?.accountId ?? accountId));
+  const parseCents = (text: string) => parseAmount(text, style);
+  const centsToInput = (cents: number) => amountToInput(cents, style);
+  const formatCurrency = (cents: number) => formatAmount(cents, style);
+  const amountPlaceholder = () => placeholderIn(style);
+  const isUnreadableAmount = (text: string) => readTypedAmount(text, style) === null;
   const today = format(new Date(), 'yyyy-MM-dd');
   const [date, setDate] = useState(initial?.date ?? today);
   const [payee, setPayee] = useState({

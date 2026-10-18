@@ -7,3 +7,5 @@ export const CONTROL_PORT = 3173;
 export const DEMO_PORT = 3174;
 /** Stand-in for Enable Banking's API (mockEnableBanking.ts), used by the desktop server */
 export const ENABLE_BANKING_MOCK_PORT = 3175;
+/** Stand-in for Frankfurter's exchange rates (mockFrankfurter.ts), used by the desktop server */
+export const FRANKFURTER_MOCK_PORT = 3176;

@@ -18,6 +18,7 @@ const DESIGNS = {
   // Banks and accounts
   harbor: ['#1E40AF', '#1E3A8A', 'Landmark'],
   harborSavings: ['#0F766E', '#115E59', 'PiggyBank'],
+  alpine: ['#B91C1C', '#7F1D1D', 'Euro'],
   summit: ['#7C3AED', '#5B21B6', 'Mountain'],
   evergreen: ['#16A34A', '#166534', 'TreePine'],
   pinecone: ['#D97706', '#B45309', 'TrendingUp'],

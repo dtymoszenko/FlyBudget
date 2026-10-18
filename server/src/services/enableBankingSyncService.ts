@@ -14,6 +14,7 @@ import { readStatementAccount } from '../utils/importSettings.js';
 import type { AccountType } from '../utils/accountTypes.js';
 import { accountTransactionSum } from './balances.js';
 import { buildRuleContext, insertNewTransaction, loadRules } from './ruleService.js';
+import { currencyContext } from './mainAmountService.js';
 import {
   EnableBankingError,
   enableBankingErrorMessage,
@@ -440,7 +441,7 @@ export async function syncEnableBankingConnection(
     .where(eq(enableBankingAccountMappings.connectionId, connectionId))
     .all()
     .filter((m): m is typeof m & { accountId: string } => !!m.accountId && m.isEnabled === 1);
-  const ruleOpts = { rules: loadRules(), ctx: buildRuleContext() };
+  const ruleOpts = { rules: loadRules(), ctx: buildRuleContext(), currencies: currencyContext() };
   const fullHistory = new Set(opts.fullHistory ?? []);
 
   try {
@@ -459,7 +460,10 @@ export async function syncEnableBankingConnection(
       }
       // The balance is a bonus: a bank that can't give one still gets its transactions
       try {
-        const balance = pickBalance(await getBalances(creds, mapping.accountUid, opts.psu));
+        const balance = pickBalance(
+          await getBalances(creds, mapping.accountUid, opts.psu),
+          mapping.currency,
+        );
         if (balance !== null) {
           db.update(accounts)
             .set({ startingBalance: balance - accountTransactionSum(mapping.accountId) })

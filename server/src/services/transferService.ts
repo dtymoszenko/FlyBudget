@@ -4,6 +4,13 @@ import { db } from '../db/index.js';
 import { accounts, transactions, transferMatchDismissals } from '../db/schema.js';
 import { restoreBankPayee } from './transactionHelpers.js';
 import {
+  accountCurrency,
+  budgetCurrency,
+  convertAmount,
+  currencyContext,
+  refreshMainAmounts,
+} from './mainAmountService.js';
+import {
   bestCounterpart,
   findTransferMatches,
   pairKey,
@@ -71,17 +78,26 @@ const eligible = and(
 );
 
 function loadCandidates(accountId?: string): TransferCandidate[] {
+  const budget = budgetCurrency();
   return db
     .select({
       id: transactions.id,
       accountId: transactions.accountId,
       date: transactions.date,
       amount: transactions.amount,
+      currency: accounts.currency,
+      mainAmount: transactions.mainAmount,
+      mainAmountSource: transactions.mainAmountSource,
     })
     .from(transactions)
     .innerJoin(accounts, eq(accounts.id, transactions.accountId))
     .where(accountId ? and(eligible, eq(transactions.accountId, accountId)) : eligible)
-    .all();
+    .all()
+    .map(({ mainAmount, mainAmountSource, ...row }) => ({
+      ...row,
+      currency: row.currency ?? budget,
+      value: mainAmountSource === 'missing' ? null : (mainAmount ?? row.amount),
+    }));
 }
 
 function loadDismissed(): Set<string> {
@@ -184,7 +200,14 @@ function linkRows(id: string, otherId: string): LinkResult {
     if (reason) throw new TransferError(reason, row.reconciled === 1 ? 403 : 400);
   }
   if (a.accountId === b.accountId) throw new TransferError('Choose two different accounts');
-  if (a.amount !== -b.amount) {
+  // Between currencies, what left and what arrived are different numbers: only the direction
+  // has to match
+  const ctx = currencyContext();
+  if (accountCurrency(a.accountId, ctx) !== accountCurrency(b.accountId, ctx)) {
+    if (Math.sign(a.amount) === Math.sign(b.amount)) {
+      throw new TransferError('One side of a transfer must leave an account and the other arrive');
+    }
+  } else if (a.amount !== -b.amount) {
     throw new TransferError('The two sides of a transfer must be the same amount, in and out');
   }
   const accountA = getOpenAccount(a.accountId);
@@ -196,6 +219,8 @@ function linkRows(id: string, otherId: string): LinkResult {
   db.delete(transferMatchDismissals)
     .where(eq(transferMatchDismissals.id, pairKey(a.id, b.id)))
     .run();
+  // A transfer is worth the same on both sides: neither income nor spending
+  refreshMainAmounts([a.id]);
 
   return { transactions: [getRow(a.id), getRow(b.id)], previous: [a, b], created: false };
 }
@@ -203,8 +228,14 @@ function linkRows(id: string, otherId: string): LinkResult {
 /**
  * Makes `id` a transfer to or from `accountId`: links the matching transaction already there
  * (same amount the other way, within a few days: the bank imported both sides), or creates it.
+ * Into an account with another currency, the new side is `otherAmount` when given (what
+ * arrived), else the amount at the day's rate.
  */
-export function transferToAccount(id: string, accountId: string): LinkResult {
+export function transferToAccount(
+  id: string,
+  accountId: string,
+  { otherAmount }: { otherAmount?: number } = {},
+): LinkResult {
   return db.transaction(() => {
     const tx = getRow(id);
     const reason = ineligibleReason(tx);
@@ -215,8 +246,29 @@ export function transferToAccount(id: string, accountId: string): LinkResult {
 
     // The user asked for this transfer, so an earlier "not a transfer" doesn't hide its match
     // (linking forgets that dismissal); skipping it would add a duplicate of the real row
-    const match = bestCounterpart(tx, loadCandidates(accountId));
-    if (match) return linkRows(tx.id, match.id);
+    const ctx = currencyContext();
+    const fromCurrency = accountCurrency(from.id, ctx);
+    const toCurrency = accountCurrency(to.id, ctx);
+    const crossCurrency = fromCurrency !== toCurrency;
+    if (!crossCurrency && otherAmount !== undefined && otherAmount !== Math.abs(tx.amount)) {
+      throw new TransferError('Both accounts have the same currency: the amounts must match');
+    }
+
+    const [self] = loadCandidates(tx.accountId).filter((c) => c.id === tx.id);
+    const match = bestCounterpart(self ?? tx, loadCandidates(accountId));
+    if (match && otherAmount === undefined) return linkRows(tx.id, match.id);
+
+    let amount = -tx.amount;
+    if (crossCurrency) {
+      const converted =
+        otherAmount !== undefined
+          ? otherAmount
+          : convertAmount(Math.abs(tx.amount), fromCurrency, toCurrency, tx.date, ctx);
+      if (converted === null) {
+        throw new TransferError(`Enter the amount that arrived in ${toCurrency}`, 422);
+      }
+      amount = tx.amount < 0 ? Math.abs(converted) : -Math.abs(converted);
+    }
 
     const otherId = nanoid();
     db.insert(transactions)
@@ -225,7 +277,7 @@ export function transferToAccount(id: string, accountId: string): LinkResult {
           id: otherId,
           accountId: to.id,
           date: tx.date,
-          amount: -tx.amount,
+          amount,
           otherAccountName: from.name,
           otherId: tx.id,
           notes: tx.notes,
@@ -233,6 +285,7 @@ export function transferToAccount(id: string, accountId: string): LinkResult {
       )
       .run();
     markTransfer(tx, otherId, to.name);
+    refreshMainAmounts([tx.id]);
 
     return { transactions: [getRow(tx.id), getRow(otherId)], previous: [tx, null], created: true };
   });
@@ -261,6 +314,8 @@ export function unlinkTransfer(
     for (const row of other ? [tx, other] : [tx]) {
       db.update(transactions).set(restoreBankPayee(row)).where(eq(transactions.id, row.id)).run();
     }
+    // Each side is worth its own amount again, at its day's rate
+    refreshMainAmounts([tx.id, other?.id]);
     if (other && dismiss) dismissPair(tx.id, other.id);
     return [getRow(tx.id), other ? getRow(other.id) : null];
   });
@@ -302,6 +357,20 @@ export function syncedTransferChange(
     .where(eq(transactions.id, before.transferTransactionId))
     .get();
   const amountChanged = change.amount !== before.amount;
+  // Between currencies the sides' amounts differ anyway: the pair stays, and each side keeps
+  // its own amount (the caller refreshes their values after saving)
+  if (other) {
+    const ctx = currencyContext();
+    if (accountCurrency(before.accountId, ctx) !== accountCurrency(other.accountId, ctx)) {
+      if (other.importedId === null && other.reconciled !== 1) {
+        db.update(transactions)
+          .set({ date: change.date })
+          .where(eq(transactions.id, other.id))
+          .run();
+      }
+      return 'linked';
+    }
+  }
   if (other?.reconciled === 1) return amountChanged ? 'locked' : 'linked';
   if (other && other.importedId === null) {
     db.update(transactions)

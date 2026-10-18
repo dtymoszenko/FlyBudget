@@ -5,6 +5,7 @@ import { eq, and, gte, lte, lt, sql, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
 import { monthBounds } from '../utils/date.js';
+import { mainAmount } from '../services/balances.js';
 import { isMonth } from '../utils/validation.js';
 
 export const budgetRouter = Router();
@@ -37,7 +38,7 @@ budgetRouter.get('/:month', (req, res) => {
   const spentRows = db
     .select({
       categoryId: transactions.categoryId,
-      spent: sql<number>`coalesce(sum(${transactions.amount}), 0)`,
+      spent: sql<number>`coalesce(sum(${mainAmount}), 0)`,
     })
     .from(transactions)
     .where(and(gte(transactions.date, from), lte(transactions.date, to), onBudget))
@@ -57,7 +58,7 @@ budgetRouter.get('/:month', (req, res) => {
   const priorActivityRows = db
     .select({
       categoryId: transactions.categoryId,
-      total: sql<number>`coalesce(sum(${transactions.amount}), 0)`,
+      total: sql<number>`coalesce(sum(${mainAmount}), 0)`,
     })
     .from(transactions)
     .where(and(lt(transactions.date, from), onBudget))
@@ -163,8 +164,8 @@ budgetRouter.get('/category/:categoryId/history', (req, res) => {
   const startDate = `${adjustedYear}-${String(adjustedMonth).padStart(2, '0')}-01`;
 
   const amountExpr = isIncome
-    ? sql<number>`coalesce(sum(max(${transactions.amount}, 0)), 0)`
-    : sql<number>`coalesce(sum(abs(min(${transactions.amount}, 0))), 0)`;
+    ? sql<number>`coalesce(sum(max(${mainAmount}, 0)), 0)`
+    : sql<number>`coalesce(sum(abs(min(${mainAmount}, 0))), 0)`;
 
   const rows = db
     .select({
@@ -261,7 +262,7 @@ budgetRouter.get('/:month/summary', (req, res) => {
   const { from, to } = monthBounds(month);
 
   const incomeRow = db
-    .select({ total: sql<number>`coalesce(sum(${transactions.amount}), 0)` })
+    .select({ total: sql<number>`coalesce(sum(${mainAmount}), 0)` })
     .from(transactions)
     .innerJoin(categories, eq(transactions.categoryId, categories.id))
     .innerJoin(categoryGroups, eq(categories.groupId, categoryGroups.id))
@@ -284,7 +285,7 @@ budgetRouter.get('/:month/summary', (req, res) => {
     .get();
 
   const priorIncomeRow = db
-    .select({ total: sql<number>`coalesce(sum(${transactions.amount}), 0)` })
+    .select({ total: sql<number>`coalesce(sum(${mainAmount}), 0)` })
     .from(transactions)
     .innerJoin(categories, eq(transactions.categoryId, categories.id))
     .innerJoin(categoryGroups, eq(categories.groupId, categoryGroups.id))

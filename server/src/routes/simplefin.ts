@@ -4,6 +4,8 @@ import { simplefinConnections, simplefinAccountMappings, accounts } from '../db/
 import { and, eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
+import { bankCurrency, currencyToStore } from '../services/mainAmountService.js';
+import { minorUnits } from '../utils/currencies.js';
 import { logError } from '../utils/log.js';
 import { accountTypeSchema, defaultOffBudget } from '../utils/accountTypes.js';
 import {
@@ -80,6 +82,7 @@ simplefinRouter.post('/setup', async (req, res) => {
             simplefinAccountId: acct.id,
             accountId: null,
             simplefinAccountName: acct.name,
+            currency: bankCurrency(acct.currency),
             isEnabled: 1,
             createdAt: new Date().toISOString(),
           })
@@ -94,7 +97,7 @@ simplefinRouter.post('/setup', async (req, res) => {
       accounts: data.accounts.map((a) => ({
         simplefinAccountId: a.id,
         name: a.name,
-        balance: simpleFinBalanceToCents(a.balance),
+        balance: simpleFinBalanceToCents(a.balance, minorUnits(bankCurrency(a.currency))),
         currency: a.currency,
       })),
     });
@@ -155,6 +158,7 @@ simplefinRouter.post('/connections/:id/map-accounts', (req, res) => {
           id: accountId,
           name: m.accountName || mapping.simplefinAccountName,
           type,
+          currency: currencyToStore(bankCurrency(mapping.currency)),
           startingBalance: 0,
           isOffBudget: m.isOffBudget ?? defaultOffBudget(type),
           sortOrder: 0,

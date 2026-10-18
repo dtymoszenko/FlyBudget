@@ -5,12 +5,13 @@ import { useAccounts } from '../hooks/useAccounts';
 import { Badge } from '../components/ui/Badge';
 import { Button, ButtonLink } from '../components/ui/Button';
 import { EmptyState } from '../components/ui/EmptyState';
-import { formatCurrency } from '../utils/currency';
+import { formatCurrency, formatMoney } from '../utils/currency';
 import { TransactionTable } from '../components/transactions/TransactionTable';
 import { AccountIcon } from '../components/accounts/AccountIcon';
 import { EditAccountModal } from '../components/accounts/EditAccountModal';
 import { UpdateValueModal } from '../components/accounts/UpdateValueModal';
 import { accountTypeInfo } from '../utils/accountTypes';
+import { CurrencyDifference } from '../components/currency/CurrencyDifference';
 
 export default function AccountTransactionsPage() {
   const { id } = useParams<{ id: string }>();
@@ -51,8 +52,14 @@ export default function AccountTransactionsPage() {
             <span
               className={`text-base font-medium tabular-nums ${account.balance < 0 ? 'text-negative' : 'text-text-secondary'}`}
             >
-              {formatCurrency(account.balance)}
+              {formatMoney(account.balance, account.currency)}
             </span>
+            {account.rateDate && account.mainBalance !== null && (
+              <span className="text-sm tabular-nums text-text-tertiary">
+                ≈ {formatCurrency(account.mainBalance)}
+              </span>
+            )}
+            <CurrencyDifference account={account} />
           </div>
           <div className="flex items-center gap-2">
             <Button variant="secondary" size="sm" onClick={() => setEditOpen(true)}>

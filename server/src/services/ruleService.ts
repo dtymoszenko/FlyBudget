@@ -15,6 +15,13 @@ import {
   type TxState,
 } from './rulesEngine.js';
 import { resolvePayee } from './transactionHelpers.js';
+import {
+  currencyContext,
+  newRowValue,
+  refreshMainAmounts,
+  splitPartValues,
+  type CurrencyContext,
+} from './mainAmountService.js';
 
 type RuleRow = typeof rules.$inferSelect;
 type TxRow = typeof transactions.$inferSelect;
@@ -77,6 +84,7 @@ type InsertOptions = {
   /** Pass these when inserting many transactions (bank sync, CSV) so they load once */
   rules?: EngineRule[];
   ctx?: RuleContext;
+  currencies?: CurrencyContext;
   /** Keep a category/notes the user entered themselves instead of letting rules replace them */
   keepUserCategory?: boolean;
   keepUserNotes?: boolean;
@@ -88,7 +96,7 @@ type InsertOptions = {
  * category, the payee's default category applies. A split action creates a parent plus children.
  */
 export function insertNewTransaction(input: NewTransactionInput, opts: InsertOptions = {}) {
-  if (input.isAdjustment) return insertAdjustment(input);
+  if (input.isAdjustment) return insertAdjustment(input, opts.currencies);
   let payeeId = input.payeeId;
   if (!payeeId && input.payeeName) {
     payeeId =
@@ -129,6 +137,8 @@ export function insertNewTransaction(input: NewTransactionInput, opts: InsertOpt
     transferTransactionId: null,
     parentTransactionId: null,
     importedId: input.importedId,
+    // What it's worth in the budget's currency, when its account has another
+    ...newRowValue(tx, opts.currencies ?? currencyContext()),
     createdAt: now,
   };
 
@@ -139,8 +149,13 @@ export function insertNewTransaction(input: NewTransactionInput, opts: InsertOpt
   }
 
   const parent = { ...row, isParent: 1, categoryId: null };
-  const children = parts.map((p) => ({
+  const partValues = splitPartValues(
+    row,
+    parts.map((p) => p.amount),
+  );
+  const children = parts.map((p, i) => ({
     ...row,
+    ...partValues[i],
     id: nanoid(),
     amount: p.amount,
     categoryId: p.categoryId,
@@ -160,7 +175,7 @@ export function insertNewTransaction(input: NewTransactionInput, opts: InsertOpt
  * could turn it into income or spending ("inflow → Paychecks"). Reports leave it out while it
  * has no category.
  */
-function insertAdjustment(input: NewTransactionInput) {
+function insertAdjustment(input: NewTransactionInput, currencies?: CurrencyContext) {
   const row = {
     id: input.id ?? nanoid(),
     accountId: input.accountId,
@@ -177,6 +192,7 @@ function insertAdjustment(input: NewTransactionInput) {
     transferTransactionId: null,
     parentTransactionId: null,
     importedId: input.importedId,
+    ...newRowValue(input, currencies ?? currencyContext()),
     createdAt: new Date().toISOString(),
   };
   db.insert(transactions).values(row).run();
@@ -337,6 +353,8 @@ export function applyRules(opts: PlanOptions & { transactionIds: string[] }): nu
           })
           .run();
       }
+      // The parts share the whole's budget-currency value
+      if (split) refreshMainAmounts([t.id]);
     }
   });
   return plan.length;

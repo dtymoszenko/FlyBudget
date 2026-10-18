@@ -8,7 +8,9 @@ import { useUpdatePayee } from '../../hooks/usePayees';
 import { CategoryPicker } from './CategoryPicker';
 import { PayeePicker } from './PayeePicker';
 import { PayeeIcon } from '../payees/PayeeIcon';
-import { formatCurrency } from '../../utils/currency';
+import { formatMoney } from '../../utils/currency';
+import { useAccountCurrency } from '../../hooks/useCurrency';
+import { ForeignValue } from '../currency/ForeignValue';
 import { usePreferencesStore } from '../../store/preferencesStore';
 import { AccountIcon } from '../accounts/AccountIcon';
 import type { Transaction, CategoryGroup, PayeeWithCount } from '../../types';
@@ -48,6 +50,7 @@ export function TransactionRow({
   transferAccounts = [],
 }: Props) {
   const [expanded, setExpanded] = useState(false);
+  const currency = useAccountCurrency()(tx.accountId);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showPayeePicker, setShowPayeePicker] = useState(false);
   const updateTx = useUpdateTransaction();
@@ -261,13 +264,14 @@ export function TransactionRow({
           <div className="w-8 shrink-0" />
         )}
 
-        {/* Amount */}
+        {/* Amount, in its account's currency (with the budget's value under it when they differ) */}
         <div className="w-24 text-right shrink-0 mx-2">
           <span
-            className={`text-sm font-medium tabular-nums ${tx.amount > 0 ? 'text-positive' : 'text-text'}`}
+            className={`block text-sm font-medium tabular-nums ${tx.amount > 0 ? 'text-positive' : 'text-text'}`}
           >
-            {formatCurrency(Math.abs(tx.amount))}
+            {formatMoney(Math.abs(tx.amount), currency)}
           </span>
+          <ForeignValue tx={tx} className="block" />
         </div>
 
         {/* Detail panel arrow */}
@@ -304,7 +308,7 @@ export function TransactionRow({
               <span
                 className={`text-xs tabular-nums shrink-0 ${child.amount > 0 ? 'text-positive' : 'text-text-secondary'}`}
               >
-                {formatCurrency(Math.abs(child.amount))}
+                {formatMoney(Math.abs(child.amount), currency)}
               </span>
             </div>
           );

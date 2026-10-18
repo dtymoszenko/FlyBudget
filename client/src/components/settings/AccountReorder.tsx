@@ -19,7 +19,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { useAccounts, useReorderAccounts } from '../../hooks/useAccounts';
 import { Badge } from '../ui/Badge';
-import { formatCurrency } from '../../utils/currency';
+import { formatMoney } from '../../utils/currency';
 import type { Account, AccountType } from '../../types';
 
 function SortableAccountRow({ account }: { account: Account }) {
@@ -55,7 +55,7 @@ function SortableAccountRow({ account }: { account: Account }) {
       <span
         className={`text-sm tabular-nums font-medium shrink-0 ${account.balance >= 0 ? 'text-text-secondary' : 'text-negative'}`}
       >
-        {formatCurrency(account.balance)}
+        {formatMoney(account.balance, account.currency)}
       </span>
     </div>
   );

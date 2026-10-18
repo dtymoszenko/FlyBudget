@@ -14,6 +14,8 @@ import {
   simplefinErrorMessage,
 } from './simplefinService.js';
 import { buildRuleContext, insertNewTransaction, loadRules } from './ruleService.js';
+import { bankCurrency, currencyContext } from './mainAmountService.js';
+import { minorUnits } from '../utils/currencies.js';
 import { accountTransactionSum } from './balances.js';
 
 export interface SimplefinSyncResult {
@@ -55,10 +57,12 @@ export async function syncSimplefinConnection(connectionId: string): Promise<Sim
 
     const mappingBySfId = new Map(mappings.map((m) => [m.simplefinAccountId, m]));
 
-    const ruleOpts = { rules: loadRules(), ctx: buildRuleContext() };
+    const ruleOpts = { rules: loadRules(), ctx: buildRuleContext(), currencies: currencyContext() };
     for (const sfAccount of data.accounts) {
       const mapping = mappingBySfId.get(sfAccount.id);
       if (!mapping || !mapping.accountId || !mapping.isEnabled) continue;
+      // Amounts in the account's own decimals (SimpleFIN sends one currency per account)
+      const minor = minorUnits(bankCurrency(sfAccount.currency));
 
       for (const tx of sfAccount.transactions) {
         if (tx.pending) continue;
@@ -76,7 +80,7 @@ export async function syncSimplefinConnection(connectionId: string): Promise<Sim
           .get();
         if (existing) continue;
 
-        const amount = simpleFinAmountToCents(tx.amount);
+        const amount = simpleFinAmountToCents(tx.amount, minor);
         const date =
           tx.posted > 0
             ? new Date(tx.posted * 1000).toISOString().split('T')[0]
@@ -105,7 +109,7 @@ export async function syncSimplefinConnection(connectionId: string): Promise<Sim
         result.added++;
       }
 
-      const targetBalance = simpleFinBalanceToCents(sfAccount.balance);
+      const targetBalance = simpleFinBalanceToCents(sfAccount.balance, minor);
       const newStartingBalance = targetBalance - accountTransactionSum(mapping.accountId);
 
       db.update(accounts)

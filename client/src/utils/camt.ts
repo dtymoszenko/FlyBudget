@@ -1,4 +1,5 @@
 import { decodeCsvBytes, generateImportId, normalizeDate, readImportAmount } from './csv';
+import { minorUnits } from './currencies';
 
 /**
  * ISO 20022 bank statements (CAMT.053, also the CAMT.052 report and CAMT.054 notification),
@@ -24,6 +25,8 @@ export interface CamtTransaction {
 export interface CamtStatement {
   /** The account's IBAN (or other id), if the file says */
   account: string | null;
+  /** The account's currency (ISO 4217), if the file says */
+  currency: string | null;
   transactions: CamtTransaction[];
   /** Pending entries, and entries without a readable date or amount */
   skipped: number;
@@ -92,11 +95,19 @@ function dateOf(el: Element | null): string | null {
   return /^\d{4}-\d{2}-\d{2}$/.test(date) ? normalizeDate(date) || null : null;
 }
 
-/** Cents in an `Amt`, never negative (the indicator says which way the money went) */
+/**
+ * Minor units in an `Amt` (cents, or the currency's own decimals: none for yen), never
+ * negative (the indicator says which way the money went)
+ */
 const amountOf = (el: Element | null) => {
-  const cents = readImportAmount(text(el) ?? undefined, 'dot');
+  const cents = readImportAmount(text(el) ?? undefined, 'dot', {
+    minor: minorUnits(currencyOf(el)),
+  });
   return cents === null ? null : Math.abs(cents);
 };
+
+/** The `Ccy` an amount is in ("EUR"), if it says */
+const currencyOf = (el: Element | null) => el?.getAttribute('Ccy')?.trim().toUpperCase() || null;
 
 /** The other party's name: who was paid for money out, who paid for money in */
 function partyName(details: Element | null, isDebit: boolean): string | null {
@@ -116,12 +127,25 @@ function remittance(details: Element | null): string | null {
   return lines.length ? lines.join(' ') : null;
 }
 
-/** A transaction's amount in cents, from the transaction amount the bank booked */
-function detailAmount(details: Element, entryIsDebit: boolean): number | null {
+/**
+ * A transaction's amount in cents, from the transaction amount the bank booked. The amount
+ * instructed (what a card payment abroad was in the shop's currency) only counts when it's in
+ * the entry's currency.
+ */
+function detailAmount(
+  details: Element,
+  entryIsDebit: boolean,
+  entryCurrency: string | null,
+): number | null {
+  const instructed = find(details, 'AmtDtls', 'InstdAmt', 'Amt');
+  const sameCurrency = (el: Element | null) => {
+    const c = currencyOf(el);
+    return !c || !entryCurrency || c === entryCurrency;
+  };
   const amountEl =
-    find(details, 'AmtDtls', 'TxAmt', 'Amt') ??
-    find(details, 'Amt') ??
-    find(details, 'AmtDtls', 'InstdAmt', 'Amt');
+    [find(details, 'AmtDtls', 'TxAmt', 'Amt'), find(details, 'Amt')].find(
+      (el) => el && sameCurrency(el),
+    ) ?? (sameCurrency(instructed) ? instructed : null);
   const cents = amountOf(amountEl);
   if (cents === null) return null;
   const indicator = text(find(details, 'CdtDbtInd'));
@@ -165,7 +189,9 @@ function readEntry(entry: Element): Draft[] | null {
   const indicator = text(find(entry, 'CdtDbtInd'));
   if (indicator !== 'DBIT' && indicator !== 'CRDT') return null;
   const isDebit = indicator === 'DBIT';
-  const cents = amountOf(find(entry, 'Amt'));
+  const entryAmount = find(entry, 'Amt');
+  const entryCurrency = currencyOf(entryAmount);
+  const cents = amountOf(entryAmount);
   const date = dateOf(find(entry, 'BookgDt')) ?? dateOf(find(entry, 'ValDt'));
   if (cents === null || !date) return null;
   if (cents === 0) return [];
@@ -181,7 +207,7 @@ function readEntry(entry: Element): Draft[] | null {
   );
 
   if (details.length > 1) {
-    const amounts = details.map((d) => detailAmount(d, isDebit));
+    const amounts = details.map((d) => detailAmount(d, isDebit, entryCurrency));
     const sum = amounts.reduce<number | null>(
       (s, a) => (s === null || a === null ? null : s + a),
       0,
@@ -227,6 +253,12 @@ function accountId(statement: Element): string | null {
   return text(find(id, 'IBAN')) ?? text(find(id, 'Othr', 'Id'));
 }
 
+/** The account's currency: as the statement names it, else its first entry's */
+function statementCurrency(statement: Element): string | null {
+  const own = text(find(statement, 'Acct', 'Ccy'))?.toUpperCase();
+  return own || currencyOf(find(findAll(statement, 'Ntry')[0] ?? null, 'Amt'));
+}
+
 /**
  * The statements in a CAMT file, one per account (a file can hold several days, or several
  * accounts). Null if it isn't a CAMT file.
@@ -245,7 +277,10 @@ export function parseCamt(xml: string): CamtStatement[] | null {
   if (!root) return null;
 
   // Each statement's transactions, by account
-  const byAccount = new Map<string | null, { statements: Draft[][]; skipped: number }>();
+  const byAccount = new Map<
+    string | null,
+    { statements: Draft[][]; skipped: number; currency: string | null }
+  >();
   const statementIds = new Set<string>();
   for (const statement of elements(root).filter((e) =>
     ['Stmt', 'Rpt', 'Ntfctn'].includes(e.localName),
@@ -259,7 +294,11 @@ export function parseCamt(xml: string): CamtStatement[] | null {
       if (statementIds.has(key)) continue;
       statementIds.add(key);
     }
-    const group = byAccount.get(account) ?? { statements: [], skipped: 0 };
+    const group = byAccount.get(account) ?? {
+      statements: [],
+      skipped: 0,
+      currency: statementCurrency(statement),
+    };
     byAccount.set(account, group);
     const drafts: Draft[] = [];
     for (const entry of findAll(statement, 'Ntry')) {
@@ -270,7 +309,7 @@ export function parseCamt(xml: string): CamtStatement[] | null {
     group.statements.push(drafts);
   }
 
-  return [...byAccount].map(([account, { statements, skipped }]) => {
+  return [...byAccount].map(([account, { statements, skipped, currency }]) => {
     // Ids from earlier statements: the same id again is the same transaction, repeated by an
     // overlapping statement
     const earlier = new Set<string>();
@@ -304,6 +343,6 @@ export function parseCamt(xml: string): CamtStatement[] | null {
       }
       ids.forEach((id) => earlier.add(id));
     }
-    return { account, transactions, skipped };
+    return { account, currency, transactions, skipped };
   });
 }

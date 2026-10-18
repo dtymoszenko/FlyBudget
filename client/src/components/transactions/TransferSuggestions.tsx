@@ -6,7 +6,8 @@ import {
   useTransferSuggestions,
 } from '../../hooks/useTransfers';
 import { useCanSave } from '../../hooks/useConnection';
-import { formatCurrency } from '../../utils/currency';
+import { formatMoney } from '../../utils/currency';
+import { useAccountCurrency } from '../../hooks/useCurrency';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { SavingPausedHint } from '../connection/SavingPausedHint';
@@ -187,6 +188,12 @@ function SuggestionRow({
   disabled,
 }: RowProps) {
   const { outflow, inflow } = suggestion;
+  const currencyOf = useAccountCurrency();
+  const sent = formatMoney(-outflow.amount, currencyOf(outflow.accountId));
+  const received = formatMoney(inflow.amount, currencyOf(inflow.accountId));
+  // Between currencies: what left and what arrived
+  const amount =
+    currencyOf(outflow.accountId) === currencyOf(inflow.accountId) ? sent : `${sent} → ${received}`;
   const from = accountName(outflow.accountId) ?? 'Another account';
   const to = accountName(inflow.accountId) ?? 'another account';
   const side = (tx: Transaction, account: string) => (
@@ -205,7 +212,7 @@ function SuggestionRow({
           type="checkbox"
           checked={checked}
           onChange={onToggle}
-          aria-label={`Link ${formatCurrency(-outflow.amount)} from ${from} to ${to}`}
+          aria-label={`Link ${amount} from ${from} to ${to}`}
           className="h-4 w-4 shrink-0 rounded border-border text-brand-600 focus:ring-brand-500"
         />
         <span className="flex-1 min-w-0 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
@@ -213,16 +220,14 @@ function SuggestionRow({
           <ArrowRight size={14} className="text-text-tertiary" aria-hidden />
           {side(inflow, to)}
         </span>
-        <span className="text-sm font-medium tabular-nums text-text shrink-0">
-          {formatCurrency(-outflow.amount)}
-        </span>
+        <span className="text-sm font-medium tabular-nums text-text shrink-0">{amount}</span>
       </label>
       <Button
         variant="ghost"
         size="sm"
         onClick={onDismiss}
         disabled={disabled}
-        aria-label={`Not a transfer: ${formatCurrency(-outflow.amount)} from ${from} to ${to}`}
+        aria-label={`Not a transfer: ${amount} from ${from} to ${to}`}
       >
         Not a transfer
       </Button>

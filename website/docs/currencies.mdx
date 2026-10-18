@@ -1,0 +1,117 @@
+---
+sidebar_position: 11
+---
+
+# Currencies
+
+Your budget has **one currency**: your envelopes, To Be Budgeted, reports and net worth are all
+counted in it. Each **account** can have its own: a euro account next to your dollar ones, a
+card from home while you live abroad, cash for a trip. Its amounts stay in its currency, exactly
+as your bank shows them, and your budget counts each transaction at what it was worth in yours
+on its day.
+
+If all your money is in one currency, there's nothing to set up: everything works as before.
+
+## The budget's currency
+
+Choose it in **Settings → Currencies**. Nothing is converted: it only says which currency your
+amounts are in, so they show with the right symbol and so accounts in other currencies can be
+added. A budget gets one automatically when you first give an account a currency, or connect a
+bank.
+
+You can correct it as long as no account in another currency has transactions. Changing it after
+that would mean converting every amount, which FlyBudget doesn't do.
+
+## Accounts in another currency
+
+When you add an account, pick its **Currency**. It can be changed until the account has its first
+transaction; after that, add a new account in the other currency and move the money with a
+transfer.
+
+Accounts you connect to a bank get the bank account's currency. Linking a bank account to an
+existing account in another currency warns you.
+
+Everywhere an account's own amounts appear (its register, balance, reconciling, imports) they're
+in its currency. Totals across accounts are in your budget's: the sidebar, the Accounts page and
+net worth add each account at today's rate, with `≈ $1,080.00` under a balance in another
+currency.
+
+### What a transaction is worth
+
+Each transaction in another currency keeps its value in your budget's currency next to its own
+amount, worked out at the exchange rate of its day. That's what the budget and income and
+spending reports count, and it stays: a later change in the rate doesn't move what you spent last
+month.
+
+Your bank charged a different amount? Open the transaction and type it in **Value in USD** (or
+your currency): what your card statement says it cost, fees included. **Use the day's rate**
+goes back.
+
+### Missing rates
+
+A transaction whose day has no exchange rate yet can't be counted honestly, so it counts as
+nothing until there is one, and FlyBudget says so: the budget and reports show how many are
+waiting, the register marks them **No rate**, and totals name the currencies they left out. Add a
+rate (below) and they're filled in. FlyBudget never quietly counts one currency as another.
+
+## Exchange rates
+
+**Settings → Currencies** shows the latest rate for each currency you use, and lets you type one
+in: **1 GBP in EUR** for a day. A day without a rate uses the closest earlier one, up to a month
+back. A rate you type in wins over a downloaded one for its day.
+
+### Downloading rates
+
+Turn on **Download ECB reference rates** to fetch the European Central Bank's daily rates from
+[Frankfurter](https://frankfurter.dev), an open-source service. It's off until you turn it on,
+because it's a request to another server; only currency codes and dates are sent, never anything
+about your budget. Once on, FlyBudget checks every few hours and fills in transactions waiting for
+a rate. The ECB publishes about 30 currencies; others need rates typed in.
+
+You can point it at your own Frankfurter server under **Server**. Self-hosted installs can also
+set `FLYBUDGET_EXCHANGE_RATES_URL` (see [self-hosting](/community/self-hosting)).
+
+**Recalculate from rates** works out values again after you correct a rate. Values you typed in
+and reconciled transactions stay as they are.
+
+## Transfers between currencies
+
+Moving money between accounts in different currencies has two amounts: what left one account and
+what arrived in the other. In **Add transaction**, choose the transfer as the category and a
+second field asks for the amount in the other account, filled in at the day's rate. Type over it
+with what your bank shows.
+
+Both sides of a transfer are worth the same in your budget's currency (the side in it decides),
+so moving money is never income or spending, whatever the rate. Editing one side's amount leaves
+the other's alone: what left isn't what arrived.
+
+[Transfer suggestions](./transactions#transfers) also find pairs in different currencies whose
+values are within 3% of each other.
+
+## Currency difference
+
+Money you keep in another currency is worth more or less in yours as rates move. An account in
+another currency shows that next to its balance, like **+$12.40 from the rate**. It never
+changes your envelopes on its own. Choose it to **Record difference**: it adds a correction worth
+that much, in a category you pick (income for a gain, spending for a loss), or none to keep it
+out of income and spending.
+
+## How amounts are written
+
+Each currency is written as at home: `1 234,56 zł` with the złoty after the amount, `$1,234.56`
+before, `CHF 1'234.56` with a space. The **Number format** in [Preferences](./settings) still
+decides the separators. Under **How amounts are written** you can choose another symbol or side
+for any currency you use, on this device.
+
+Amounts are typed with the currency's own decimals: yen have none (`12.5` isn't an amount in yen),
+Kuwaiti dinars three.
+
+## Good to know
+
+- **Backups** include your currency, the exchange rates and every value. A backup from before
+  currencies existed restores into your budget's currency.
+- **CSV exports** add a **Currency** column and the value in your budget's currency when you have
+  accounts in more than one.
+- **Imports** read amounts in the account's currency. A bank statement (CAMT) in another currency
+  than the account warns you.
+- **Rules** compare amounts in the transaction's own currency.

@@ -17,6 +17,13 @@ import {
 } from '../services/transferService.js';
 import { isoDate } from '../utils/validation.js';
 import { isIncomeOrSpending } from '../services/balances.js';
+import {
+  accountCurrency,
+  convertAmount,
+  currencyContext,
+  refreshMainAmounts,
+} from '../services/mainAmountService.js';
+import { isForeign } from '../utils/currencies.js';
 
 export const transactionsRouter = Router();
 
@@ -52,7 +59,16 @@ const createSchema = z.object({
     .optional(),
 });
 
-const updateSchema = createSchema.omit({ id: true, splits: true, adjustment: true }).partial();
+const updateSchema = createSchema
+  .omit({ id: true, splits: true, adjustment: true })
+  .extend({
+    /**
+     * What it cost in the budget's currency, typed in (from the card statement), for a
+     * transaction in an account with another currency. Null goes back to the day's rate.
+     */
+    mainAmount: cents.nullable(),
+  })
+  .partial();
 
 const transferSchema = z
   .object({
@@ -61,6 +77,8 @@ const transferSchema = z
     toAccountId: id,
     date: isoDate,
     amount: cents.positive(),
+    /** What arrived, when the two accounts have different currencies (in the receiving one's) */
+    toAmount: cents.positive().optional(),
     notes: z.string().max(5_000).nullable().optional(),
   })
   .refine((t) => t.fromAccountId !== t.toAccountId, 'Choose two different accounts');
@@ -259,8 +277,9 @@ transactionsRouter.post('/', (req, res) => {
       tx.insert(transactions).values(parent).run();
       for (const child of childRows) tx.insert(transactions).values(child).run();
     });
+    refreshMainAmounts([parentId]);
 
-    return res.status(201).json({ ...parent, children: childRows });
+    return res.status(201).json(alreadyCreated(parentId));
   }
 
   // Rules run on manual entries too, but never replace a category or notes the user entered
@@ -291,12 +310,27 @@ transactionsRouter.post('/transfer', (req, res) => {
   const parsed = transferSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
-  const { id: txId, fromAccountId, toAccountId, date, amount, notes } = parsed.data;
+  const { id: txId, fromAccountId, toAccountId, date, amount, toAmount, notes } = parsed.data;
   const existing = txId && alreadyCreated(txId);
   if (existing) return res.status(200).json(existing);
   const fromAcct = db.select().from(accounts).where(eq(accounts.id, fromAccountId)).get();
   const toAcct = db.select().from(accounts).where(eq(accounts.id, toAccountId)).get();
   if (!fromAcct || !toAcct) return res.status(404).json({ error: 'Account not found' });
+  // Between currencies: what left and what arrived (at the day's rate when it isn't given);
+  // within one currency, one amount
+  const ctx = currencyContext();
+  const fromCurrency = accountCurrency(fromAccountId, ctx);
+  const toCurrency = accountCurrency(toAccountId, ctx);
+  const crossCurrency = fromCurrency !== toCurrency;
+  if (!crossCurrency && toAmount !== undefined && toAmount !== amount) {
+    return res.status(400).json({ error: 'Both accounts have the same currency: use one amount' });
+  }
+  const arrived = crossCurrency
+    ? (toAmount ?? convertAmount(amount, fromCurrency, toCurrency, date, ctx))
+    : amount;
+  if (arrived === null || arrived <= 0) {
+    return res.status(422).json({ error: `Enter the amount that arrived in ${toCurrency}` });
+  }
 
   const fromId = txId ?? nanoid();
   const toId = nanoid();
@@ -313,7 +347,7 @@ transactionsRouter.post('/transfer', (req, res) => {
     ...shared,
     id: toId,
     accountId: toAccountId,
-    amount,
+    amount: arrived,
     otherAccountName: fromAcct.name,
     otherId: fromId,
   });
@@ -322,7 +356,8 @@ transactionsRouter.post('/transfer', (req, res) => {
     tx.insert(transactions).values(fromTx).run();
     tx.insert(transactions).values(toTx).run();
   });
-  res.status(201).json([fromTx, toTx]);
+  refreshMainAmounts([fromId]);
+  res.status(201).json(alreadyCreated(fromId));
 });
 
 // Existing transactions as transfers: suggestions (an outflow and the same amount arriving
@@ -368,9 +403,15 @@ transactionsRouter.post('/transfers/dismiss', (req, res) => {
 
 // POST /transactions/:id/transfer — "Transfer: account" on an existing transaction
 transactionsRouter.post('/:id/transfer', (req, res) => {
-  const parsed = z.object({ accountId: id }).safeParse(req.body);
+  const parsed = z
+    .object({ accountId: id, otherAmount: cents.positive().optional() })
+    .safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
-  transferAction(res, () => transferToAccount(req.params.id, parsed.data.accountId));
+  transferAction(res, () =>
+    transferToAccount(req.params.id, parsed.data.accountId, {
+      otherAmount: parsed.data.otherAmount,
+    }),
+  );
 });
 
 // POST /transactions/:id/unlink-transfer — "Not a transfer"
@@ -418,7 +459,7 @@ transactionsRouter.post('/import/confirm', (req, res) => {
     return res.status(404).json({ error: 'Account not found' });
   }
   let imported = 0;
-  const ruleOpts = { rules: loadRules(), ctx: buildRuleContext() };
+  const ruleOpts = { rules: loadRules(), ctx: buildRuleContext(), currencies: currencyContext() };
 
   // One transaction: all rows or none, and far faster than a commit per row
   db.transaction(() => {
@@ -482,10 +523,46 @@ transactionsRouter.put('/:id', (req, res) => {
   if (existing.transferTransactionId && (changes('accountId') || data.categoryId)) {
     return res.status(400).json({ error: 'Transfers have no category and stay in their accounts' });
   }
+  const ctx = currencyContext();
+  const accountId = data.accountId ?? existing.accountId;
+  if (data.accountId !== undefined && !ctx.currencies.has(data.accountId)) {
+    return res.status(404).json({ error: 'Account not found' });
+  }
+  if (
+    data.mainAmount !== undefined &&
+    (existing.parentTransactionId || !isForeign(ctx.currencies.get(accountId), ctx.budget))
+  ) {
+    return res.status(400).json({
+      error: existing.parentTransactionId
+        ? 'Change the value of the whole split transaction instead of a part'
+        : "This account is in the budget's currency: its amount is already the value",
+    });
+  }
+  const other = existing.transferTransactionId
+    ? db
+        .select()
+        .from(transactions)
+        .where(eq(transactions.id, existing.transferTransactionId))
+        .get()
+    : undefined;
+  // A transfer between two currencies keeps each side's own amount: what left isn't what arrived
+  const crossCurrency =
+    !!other && accountCurrency(existing.accountId, ctx) !== accountCurrency(other.accountId, ctx);
+  const { mainAmount, ...fields } = data;
 
   db.transaction((tx) => {
-    if (Object.keys(data).length) {
-      tx.update(transactions).set(data).where(eq(transactions.id, existing.id)).run();
+    if (Object.keys(fields).length) {
+      tx.update(transactions).set(fields).where(eq(transactions.id, existing.id)).run();
+    }
+    if (mainAmount !== undefined) {
+      tx.update(transactions)
+        .set(
+          mainAmount === null
+            ? { mainAmountSource: null }
+            : { mainAmount, mainAmountSource: 'manual' },
+        )
+        .where(eq(transactions.id, existing.id))
+        .run();
     }
     if (existing.isParent === 1) {
       const shared = {
@@ -501,13 +578,17 @@ transactionsRouter.put('/:id', (req, res) => {
           .run();
       }
     }
-    if (existing.transferTransactionId && (data.date !== undefined || data.amount !== undefined)) {
+    const otherAmount = data.amount === undefined || crossCurrency ? undefined : -data.amount;
+    if (existing.transferTransactionId && (data.date !== undefined || otherAmount !== undefined)) {
       tx.update(transactions)
-        .set({ date: data.date, amount: data.amount === undefined ? undefined : -data.amount })
+        .set({ date: data.date, amount: otherAmount })
         .where(eq(transactions.id, existing.transferTransactionId))
         .run();
     }
   });
+  // A typed-in value stays unless what it was for changed (another amount, day or account)
+  const moved = changes('amount') || changes('date') || changes('accountId');
+  refreshMainAmounts([existing.id], { keepManual: mainAmount !== undefined || !moved });
   const updated = db.select().from(transactions).where(eq(transactions.id, req.params.id)).get();
   res.json(updated);
 });

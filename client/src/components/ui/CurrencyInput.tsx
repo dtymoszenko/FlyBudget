@@ -16,6 +16,8 @@ interface Props {
   className?: string;
   allowNegative?: boolean;
   'aria-label'?: string;
+  /** The currency the amount is in (an account's); null or left out = the budget's */
+  currency?: string | null;
 }
 
 export function CurrencyInput({
@@ -25,6 +27,7 @@ export function CurrencyInput({
   className = '',
   allowNegative = false,
   'aria-label': ariaLabel,
+  currency,
 }: Props) {
   const [focused, setFocused] = useState(false);
   const [raw, setRaw] = useState('');
@@ -34,7 +37,7 @@ export function CurrencyInput({
   // submitted (and a dialog keeps Save disabled) while it isn't, even before the field is left
   const [readable, setReadable] = useState(true);
   useReportAmountValidity(readable);
-  const style = useAmountStyle();
+  const style = useAmountStyle(currency);
   const hintId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
 

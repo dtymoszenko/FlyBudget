@@ -6,9 +6,10 @@ import { Button } from '../ui/Button';
 import { SavedOnDeviceHint } from '../connection/SavingPausedHint';
 import { CurrencyInput } from '../ui/CurrencyInput';
 import { AmountFields, useAmountValidity } from '../ui/amountValidity';
-import { formatCurrency } from '../../utils/currency';
+import { formatMoney } from '../../utils/currency';
 import { useAccounts } from '../../hooks/useAccounts';
 import { useAddTransaction } from '../../hooks/useOffline';
+import { useAccountCurrency, useConverted } from '../../hooks/useCurrency';
 import { MerchantSelect } from './MerchantSelect';
 import { CategorySelectButton } from './CategorySelectButton';
 import { AccountIcon } from '../accounts/AccountIcon';
@@ -31,6 +32,11 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [showAccountPicker, setShowAccountPicker] = useState(false);
   const [notes, setNotes] = useState('');
+  // A transfer between currencies: the amount on the other account's side, in its currency.
+  // Filled in at the day's rate until it's typed over (the bank's rate and fees differ).
+  const [otherAmount, setOtherAmount] = useState(0);
+  const [otherTyped, setOtherTyped] = useState(false);
+  const currencyOf = useAccountCurrency();
 
   const accountRef = useRef<HTMLDivElement>(null);
 
@@ -54,6 +60,17 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
       ? 'From account'
       : 'To account'
     : 'Account';
+  const ownCurrency = currencyOf(accountId || null);
+  const otherCurrency = transferToId ? currencyOf(transferToId) : null;
+  const crossCurrency = !!transferToId && !!accountId && ownCurrency !== otherCurrency;
+  const otherName = openAccounts.find((a) => a.id === transferToId)?.name ?? 'the other account';
+  const { data: converted } = useConverted(
+    { from: ownCurrency, to: otherCurrency, date, amount },
+    crossCurrency && !otherTyped,
+  );
+  useEffect(() => {
+    if (crossCurrency && !otherTyped && converted?.amount != null) setOtherAmount(converted.amount);
+  }, [crossCurrency, otherTyped, converted]);
 
   const hasConfirmedMerchant = payeeId !== null;
   const dateValid = date !== '' && /^\d{4}-\d{2}-\d{2}$/.test(date) && isValidDate(parseISO(date));
@@ -62,6 +79,7 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
   const isValid =
     amount > 0 &&
     amountValid &&
+    (!crossCurrency || otherAmount > 0) &&
     (hasConfirmedMerchant || transferToId !== null) &&
     dateValid &&
     accountId !== '';
@@ -87,6 +105,8 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
       setShowAccountPicker(false);
       setCategoryId(null);
       setNotes('');
+      setOtherAmount(0);
+      setOtherTyped(false);
     }
   }, [isOpen]);
 
@@ -100,7 +120,9 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
   function handleSubmit() {
     if (!isValid) return;
     if (transferToId) {
-      // A debit moves money out of this account, a credit brings it in
+      // A debit moves money out of this account, a credit brings it in. Between currencies,
+      // each side's amount is in its own account's currency.
+      const [sent, arrived] = type === 'debit' ? [amount, otherAmount] : [otherAmount, amount];
       newTx.add(
         {
           kind: 'transfer',
@@ -108,7 +130,8 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
             fromAccountId: type === 'debit' ? accountId : transferToId,
             toAccountId: type === 'debit' ? transferToId : accountId,
             date,
-            amount,
+            amount: crossCurrency ? sent : amount,
+            ...(crossCurrency ? { toAmount: arrived } : {}),
             notes: notes || null,
           },
         },
@@ -169,8 +192,39 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
           {/* Amount */}
           <div>
             <label className="block text-sm font-medium text-text mb-1">Amount *</label>
-            <CurrencyInput value={amount} onChange={setAmount} aria-label="Amount" />
+            <CurrencyInput
+              value={amount}
+              onChange={setAmount}
+              aria-label="Amount"
+              currency={ownCurrency}
+            />
           </div>
+
+          {/* Between currencies: what the other account sees */}
+          {crossCurrency && (
+            <div>
+              <label className="block text-sm font-medium text-text mb-1">
+                {type === 'debit' ? 'Amount received' : 'Amount sent'} in {otherName} (
+                {otherCurrency}) *
+              </label>
+              <CurrencyInput
+                value={otherAmount}
+                onChange={(v) => {
+                  setOtherAmount(v);
+                  setOtherTyped(true);
+                }}
+                aria-label={`Amount in ${otherCurrency}`}
+                currency={otherCurrency}
+              />
+              <p className="mt-1 text-xs text-text-secondary">
+                {otherTyped
+                  ? 'As your bank shows it.'
+                  : converted?.rate
+                    ? `At the rate on ${converted.date} (${converted.rate}). Change it to what your bank shows.`
+                    : `No rate for this day: type what ${type === 'debit' ? 'arrived' : 'was sent'}.`}
+              </p>
+            </div>
+          )}
 
           {/* Merchant (a transfer has none: it's named after the other account) */}
           {!transferToId && (
@@ -249,7 +303,7 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
                           <span
                             className={`text-xs tabular-nums shrink-0 ${a.balance >= 0 ? 'text-text-tertiary' : 'text-negative'}`}
                           >
-                            {formatCurrency(a.balance)}
+                            {formatMoney(a.balance, a.currency)}
                           </span>
                         </button>
                       ))}
@@ -277,7 +331,7 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
                           <span
                             className={`text-xs tabular-nums shrink-0 ${a.balance >= 0 ? 'text-text-tertiary' : 'text-negative'}`}
                           >
-                            {formatCurrency(a.balance)}
+                            {formatMoney(a.balance, a.currency)}
                           </span>
                         </button>
                       ))}

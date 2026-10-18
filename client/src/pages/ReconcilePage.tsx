@@ -12,7 +12,7 @@ import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { CurrencyInput } from '../components/ui/CurrencyInput';
 import { AmountFields, useAmountValidity } from '../components/ui/amountValidity';
-import { formatCurrency } from '../utils/currency';
+import { formatMoney } from '../utils/currency';
 import type { Transaction } from '../types';
 import { formatDay } from '../utils/dates';
 
@@ -123,6 +123,7 @@ export default function ReconcilePage() {
               <label className="text-sm font-medium text-text-secondary">Statement Balance</label>
               <AmountFields report={report}>
                 <CurrencyInput
+                  currency={account.currency}
                   value={statementBalance}
                   onChange={setStatementBalance}
                   aria-label="Statement balance"
@@ -134,7 +135,7 @@ export default function ReconcilePage() {
             <div className="rounded-lg border border-border-light bg-surface-alt px-4 py-3">
               <p className="text-xs text-text-tertiary">Current selected balance in app</p>
               <p className="text-lg font-semibold text-text mt-0.5 tabular-nums">
-                {formatCurrency(selectedBalance)}
+                {formatMoney(selectedBalance, account.currency)}
               </p>
             </div>
 
@@ -219,7 +220,7 @@ export default function ReconcilePage() {
                       <td
                         className={`px-4 py-2 text-sm text-right tabular-nums font-medium ${tx.amount < 0 ? 'text-text' : 'text-positive'}`}
                       >
-                        {formatCurrency(tx.amount)}
+                        {formatMoney(tx.amount, account.currency)}
                       </td>
                       <td className="px-4 py-2 text-center">
                         <div
@@ -243,13 +244,13 @@ export default function ReconcilePage() {
             <div>
               <p className="text-xs text-text-tertiary mb-0.5">Selected Balance</p>
               <p className="text-xl font-semibold text-text tabular-nums">
-                {formatCurrency(selectedBalance)}
+                {formatMoney(selectedBalance, account.currency)}
               </p>
             </div>
             <div>
               <p className="text-xs text-text-tertiary mb-0.5">Statement Balance</p>
               <p className="text-xl font-semibold text-text tabular-nums">
-                {formatCurrency(statementBalance)}
+                {formatMoney(statementBalance, account.currency)}
               </p>
             </div>
             <div className="pt-3 border-t border-border-light">
@@ -257,7 +258,7 @@ export default function ReconcilePage() {
               <p
                 className={`text-2xl font-semibold tabular-nums ${isBalanced ? 'text-positive' : 'text-negative'}`}
               >
-                {formatCurrency(difference)}
+                {formatMoney(difference, account.currency)}
               </p>
               {isBalanced && <p className="text-xs text-positive mt-1">Ready to finish!</p>}
             </div>

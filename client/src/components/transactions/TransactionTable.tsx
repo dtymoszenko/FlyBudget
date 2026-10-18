@@ -21,6 +21,7 @@ import { useOpenFromLink } from '../../hooks/useOpenFromLink';
 import { docsUrl } from '../../utils/project';
 import { useAddTransaction } from '../../hooks/useOffline';
 import { formatCurrency } from '../../utils/currency';
+import { transactionValue } from '../../utils/accountMoney';
 import type { FilterState } from './TransactionFilters';
 import type { CategoryGroup } from '../../types';
 import type { CreateTransactionData } from '../../api/transactions';
@@ -181,7 +182,7 @@ export function TransactionTable({
           result.push({
             date: currentDate,
             txs: currentTxs,
-            total: currentTxs.reduce((sum, t) => sum + Math.abs(t.amount), 0),
+            total: currentTxs.reduce((sum, t) => sum + Math.abs(transactionValue(t)), 0),
           });
         }
         currentDate = tx.date;
@@ -195,7 +196,7 @@ export function TransactionTable({
       result.push({
         date: currentDate,
         txs: currentTxs,
-        total: currentTxs.reduce((sum, t) => sum + Math.abs(t.amount), 0),
+        total: currentTxs.reduce((sum, t) => sum + Math.abs(transactionValue(t)), 0),
       });
     }
 

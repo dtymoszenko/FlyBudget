@@ -17,7 +17,14 @@ import { Card } from '../components/ui/Card';
 import { EmptyState } from '../components/ui/EmptyState';
 import { useOpenFromLink } from '../hooks/useOpenFromLink';
 import { docsUrl } from '../utils/project';
-import { formatCurrency } from '../utils/currency';
+import { formatCurrency, formatMoney } from '../utils/currency';
+import {
+  balanceValue,
+  earlierValue,
+  totalValue,
+  unconvertedCurrencies,
+} from '../utils/accountMoney';
+import { UnconvertedNote } from '../components/currency/UnconvertedNote';
 import NetWorthMini from '../components/dashboard/NetWorthMini';
 import { ACCOUNT_GROUPS, type Account, type AccountGroup } from '../types';
 import { AccountIcon } from '../components/accounts/AccountIcon';
@@ -46,8 +53,14 @@ interface AccountGroupProps {
 function AccountGroup({ label, accounts, balancesAgo }: AccountGroupProps) {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
-  const groupTotal = accounts.reduce((sum, a) => sum + a.balance, 0);
-  const groupTotalAgo = accounts.reduce((sum, a) => sum + (balancesAgo[a.id] ?? a.balance), 0);
+  // In the budget's currency, at today's rate (so the change is the accounts', not the rate's)
+  const groupTotal = totalValue(accounts);
+  const groupTotalAgo = accounts.reduce((sum, a) => {
+    const now = balanceValue(a) ?? 0;
+    const ago = balancesAgo[a.id];
+    return sum + (ago === undefined ? now : (earlierValue(a, ago) ?? now));
+  }, 0);
+  const missing = unconvertedCurrencies(accounts);
   const change = groupTotal - groupTotalAgo;
   const changePct = groupTotalAgo !== 0 ? (change / Math.abs(groupTotalAgo)) * 100 : 0;
 
@@ -75,10 +88,13 @@ function AccountGroup({ label, accounts, balancesAgo }: AccountGroupProps) {
           )}
           <span className="text-xs text-text-tertiary">past month</span>
         </div>
-        <span
-          className={`text-base font-semibold tabular-nums ${groupTotal < 0 ? 'text-negative' : 'text-text'}`}
-        >
-          {formatCurrency(groupTotal)}
+        <span className="text-right">
+          <span
+            className={`block text-base font-semibold tabular-nums ${groupTotal < 0 ? 'text-negative' : 'text-text'}`}
+          >
+            {formatCurrency(groupTotal)}
+          </span>
+          <UnconvertedNote currencies={missing} link={false} />
         </span>
       </button>
       {!collapsed && (
@@ -107,8 +123,15 @@ function AccountGroup({ label, accounts, balancesAgo }: AccountGroupProps) {
                   </div>
                 </div>
               </div>
-              <span className="text-sm font-medium tabular-nums text-text">
-                {formatCurrency(account.balance)}
+              <span className="text-right">
+                <span className="block text-sm font-medium tabular-nums text-text">
+                  {formatMoney(account.balance, account.currency)}
+                </span>
+                {account.rateDate && account.mainBalance !== null && (
+                  <span className="block text-xs tabular-nums text-text-tertiary">
+                    ≈ {formatCurrency(account.mainBalance)}
+                  </span>
+                )}
               </span>
             </div>
           ))}

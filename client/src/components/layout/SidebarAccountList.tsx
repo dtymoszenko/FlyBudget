@@ -4,7 +4,8 @@ import { NavLink } from 'react-router-dom';
 import { Plus, Building2, Link2, ChevronDown, ChevronRight, Euro } from 'lucide-react';
 import { useAccounts } from '../../hooks/useAccounts';
 import { usePlaidStatus } from '../../hooks/usePlaid';
-import { formatCurrency } from '../../utils/currency';
+import { formatCurrency, formatMoney } from '../../utils/currency';
+import { totalValue, unconvertedCurrencies } from '../../utils/accountMoney';
 import { AddAccountModal } from '../accounts/AddAccountModal';
 import { ConnectBankModal } from '../plaid/ConnectBankModal';
 import { PlaidSetupModal } from '../plaid/PlaidSetupModal';
@@ -32,7 +33,7 @@ function AccountRow({ account }: { account: Account }) {
       <span
         className={`ml-2 tabular-nums text-[11px] shrink-0 ${isNegative ? 'text-negative/80' : 'text-sidebar-text/50'}`}
       >
-        {formatCurrency(account.balance)}
+        {formatMoney(account.balance, account.currency)}
       </span>
     </NavLink>
   );
@@ -94,9 +95,14 @@ export function SidebarAccountList() {
 
   const onBudget = accounts.filter((a) => a.isOffBudget === 0);
   const offBudget = accounts.filter((a) => a.isOffBudget === 1);
-  const allTotal = accounts.reduce((sum, a) => sum + a.balance, 0);
-  const onBudgetTotal = onBudget.reduce((sum, a) => sum + a.balance, 0);
-  const offBudgetTotal = offBudget.reduce((sum, a) => sum + a.balance, 0);
+  // In the budget's currency; accounts without a rate are left out (named in the tooltip)
+  const allTotal = totalValue(accounts);
+  const onBudgetTotal = totalValue(onBudget);
+  const offBudgetTotal = totalValue(offBudget);
+  const missing = unconvertedCurrencies(accounts);
+  const missingTitle = missing.length
+    ? `Without ${missing.join(', ')}: no exchange rate yet`
+    : undefined;
 
   return (
     <>
@@ -108,7 +114,10 @@ export function SidebarAccountList() {
           className="flex items-center justify-between py-1.5 text-[13px] font-bold text-sidebar-text-hi hover:text-sidebar-text-hi transition-colors"
         >
           <span>All accounts</span>
-          <span className="tabular-nums ml-2">{formatCurrency(allTotal)}</span>
+          <span className="tabular-nums ml-2" title={missingTitle}>
+            {formatCurrency(allTotal)}
+            {missing.length > 0 && '*'}
+          </span>
         </NavLink>
 
         {/* For Budget section */}

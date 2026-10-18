@@ -316,7 +316,17 @@ const AMOUNT_PATTERN: Record<NumberFormat, RegExp> = {
 export function readImportAmount(
   raw: string | undefined,
   format: NumberFormat = 'dot',
-  { directionWords = true }: { directionWords?: boolean } = {},
+  {
+    directionWords = true,
+    minor = 2,
+    exact = false,
+  }: {
+    directionWords?: boolean;
+    /** Decimals of the account's currency: 2 for cents, 0 for yen, 3 for dinars */
+    minor?: number;
+    /** Refuse more decimals than the currency has, instead of rounding (typed amounts) */
+    exact?: boolean;
+  } = {},
 ): number | null {
   // A direction written after the amount (45.00 DR, 1.234,56 S) decides the sign: the letters
   // are removed below with the currency words. Only after it: C$ or S/ before an amount are
@@ -347,10 +357,11 @@ export function readImportAmount(
   // Exact decimal arithmetic on the digits: parseFloat would turn 0.29 into 28.999… cents
   const [thousands, decimal] = format === 'dot' ? [',', '.'] : ['.', ','];
   const [whole, fraction = ''] = s.split(thousands).join('').split(decimal);
+  if (exact && /[1-9]/.test(fraction.slice(minor))) return null;
   const cents =
-    Number(whole || '0') * 100 +
-    Number(fraction.padEnd(2, '0').slice(0, 2)) +
-    (fraction[2] >= '5' ? 1 : 0);
+    Number(whole || '0') * 10 ** minor +
+    (minor ? Number(fraction.padEnd(minor, '0').slice(0, minor)) : 0) +
+    ((fraction[minor] ?? '0') >= '5' ? 1 : 0);
   if (!Number.isSafeInteger(cents) || cents > MAX_IMPORT_CENTS) return null;
   if (marker) return marker === 'out' ? -cents : cents;
   return negative ? -cents : cents;
@@ -551,6 +562,8 @@ export interface ImportFormats {
   numberFormat?: NumberFormat;
   /** What the direction column says for money out, if not a word FlyBudget knows */
   outWord?: string | null;
+  /** Decimals of the account's currency (2 unless given: none for yen) */
+  minor?: number;
 }
 
 /**
@@ -560,7 +573,7 @@ export interface ImportFormats {
 export function buildImportRows(
   rawRows: string[][],
   roles: ColumnRole[],
-  { dateFormat = 'mdy', numberFormat = 'dot', outWord = null }: ImportFormats = {},
+  { dateFormat = 'mdy', numberFormat = 'dot', outWord = null, minor = 2 }: ImportFormats = {},
 ): { rows: ImportRow[]; skipped: SkippedRow[] } | string {
   const dateIdx = roles.indexOf('date');
   const payeeIdx = roles.indexOf('payee');
@@ -578,7 +591,7 @@ export function buildImportRows(
   /** Cents, 0 for an empty cell, or null if the cell holds something that isn't a number */
   const cellAmount = (idx: number, raw: string[]) => {
     const cell = raw[idx]?.trim() ?? '';
-    return cell === '' ? 0 : readImportAmount(cell, numberFormat);
+    return cell === '' ? 0 : readImportAmount(cell, numberFormat, { minor });
   };
   /** Inflow/outflow cells: the unused one may say "-" or "n/a" instead of being empty */
   const sideAmount = (idx: number, raw: string[]) =>

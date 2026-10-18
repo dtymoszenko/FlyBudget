@@ -9,6 +9,8 @@ export const createAccount = (data: {
   type: AccountType;
   startingBalance: number;
   isOffBudget?: number;
+  /** ISO 4217; left out = the budget's */
+  currency?: string | null;
 }) => apiFetch<Account>('/accounts', { method: 'POST', body: JSON.stringify(data) });
 
 export const updateAccount = (
@@ -20,6 +22,7 @@ export const updateAccount = (
     isOffBudget: number;
     logo: string | null;
     closedAt: null;
+    currency: string | null;
   }>,
 ) => apiFetch<Account>(`/accounts/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 

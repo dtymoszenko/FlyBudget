@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
 import { addDays, format } from 'date-fns';
 import {
+  CROSS_CURRENCY_TOLERANCE,
   TRANSFER_MATCH_DAYS,
   bestCounterpart,
   couldBeTransfer,
@@ -127,5 +128,85 @@ describe('bestCounterpart', () => {
     const other = { id: 'b', accountId: 'savings', date: '2024-01-10', amount: 500 };
     expect(bestCounterpart(tx, [other])).toEqual(other);
     expect(bestCounterpart(tx, [other], new Set([pairKey('b', 'a')]))).toBeNull();
+  });
+});
+
+describe('transfers between currencies', () => {
+  // Values in the budget currency; the amounts themselves differ between currencies
+  const arbForeign = fc
+    .array(
+      fc.record({
+        accountId: fc.constantFrom('eur', 'usd', 'chf'),
+        date: fc.integer({ min: 0, max: 20 }).map((n) => iso(addDays(EPOCH, n))),
+        value: fc.constantFrom(-10_000, -9_900, -5_000, 5_000, 9_800, 10_000, 10_400),
+        missing: fc.boolean(),
+      }),
+      { maxLength: 30 },
+    )
+    .map((rows): TransferCandidate[] =>
+      rows.map((r, i) => ({
+        id: `f${i}`,
+        accountId: r.accountId,
+        currency: r.accountId.toUpperCase(),
+        date: r.date,
+        // A made-up rate per currency, so amounts never line up across currencies
+        amount:
+          r.accountId === 'eur'
+            ? r.value
+            : r.accountId === 'usd'
+              ? Math.round(r.value * 1.08)
+              : Math.round(r.value * 0.95),
+        value: r.missing && r.accountId !== 'eur' ? null : r.value,
+      })),
+    );
+
+  it('pairs values within the tolerance, never ones without a value, each row once', () => {
+    fc.assert(
+      fc.property(arbForeign, (rows) => {
+        const byId = new Map(rows.map((r) => [r.id, r]));
+        const used = new Set<string>();
+        for (const m of findTransferMatches(rows)) {
+          const out = byId.get(m.outflowId)!;
+          const inflow = byId.get(m.inflowId)!;
+          expect(used.has(out.id) || used.has(inflow.id)).toBe(false);
+          used.add(out.id).add(inflow.id);
+          expect(out.value).not.toBeNull();
+          expect(inflow.value).not.toBeNull();
+          expect(Math.abs(out.value! + inflow.value!)).toBeLessThanOrEqual(
+            CROSS_CURRENCY_TOLERANCE * Math.abs(out.value!),
+          );
+        }
+      }),
+    );
+  });
+
+  it('suggests a payment to a dollar account by its euro value', () => {
+    const matches = findTransferMatches([
+      {
+        id: 'a',
+        accountId: 'eur',
+        currency: 'EUR',
+        date: '2025-01-02',
+        amount: -10_000,
+        value: -10_000,
+      },
+      {
+        id: 'b',
+        accountId: 'usd',
+        currency: 'USD',
+        date: '2025-01-03',
+        amount: 10_750,
+        value: 9_950,
+      },
+      {
+        id: 'c',
+        accountId: 'usd',
+        currency: 'USD',
+        date: '2025-01-03',
+        amount: 9_000,
+        value: 8_330,
+      },
+    ]);
+    expect(matches).toEqual([{ outflowId: 'a', inflowId: 'b', days: 1 }]);
   });
 });

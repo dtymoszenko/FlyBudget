@@ -11,6 +11,7 @@ import type { CreateTransactionData, CreateTransferData } from '../api/transacti
  */
 export const OFFLINE_QUERY_KEYS: ReadonlySet<string> = new Set([
   'accounts',
+  'currency',
   'budget',
   'budget-summary',
   'categories',
@@ -130,11 +131,12 @@ export function outboxEntryFor(
     if (accountId && item.data.accountId !== accountId) return null;
     return { accountId: item.data.accountId, amount: item.data.amount };
   }
-  const { fromAccountId, toAccountId, amount } = item.data;
+  const { fromAccountId, toAccountId, amount, toAmount } = item.data;
   // All accounts: the transfer shows once, as money leaving the first account
   if (!accountId || accountId === fromAccountId)
     return { accountId: fromAccountId, amount: -amount };
-  if (accountId === toAccountId) return { accountId: toAccountId, amount };
+  // Between currencies, what arrived (when it was given)
+  if (accountId === toAccountId) return { accountId: toAccountId, amount: toAmount ?? amount };
   return null;
 }
 
