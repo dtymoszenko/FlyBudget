@@ -95,7 +95,7 @@ export function MerchantSelect({
                 e.preventDefault();
                 select(p.id, p.name);
               }}
-              className="w-full text-left px-3 py-2 text-sm flex items-center gap-2.5 hover:bg-hover cursor-pointer"
+              className="w-full text-left px-3 py-2 text-sm text-text flex items-center gap-2.5 hover:bg-hover cursor-pointer"
             >
               <PayeeIcon name={p.name} logo={p.logo} />
               <span className="truncate flex-1">{p.name}</span>
