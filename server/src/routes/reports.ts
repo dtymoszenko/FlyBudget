@@ -15,6 +15,7 @@ export const reportsRouter = Router();
 /** Longest range a report may cover, so a bad request can't make the server build millions of rows */
 const MAX_MONTHS = 1200;
 const MAX_DAYS = 3700;
+const DAY_MS = 86_400_000;
 
 const monthIndex = (month: string) => Number(month.slice(0, 4)) * 12 + Number(month.slice(5, 7));
 
@@ -60,16 +61,16 @@ function monthRange(from: string, to: string): string[] {
   return months;
 }
 
+/**
+ * Every calendar day from `from` to `to` (YYYY-MM-DD, both included), empty when `to` is
+ * earlier. Walks UTC days: a calendar day has nothing to do with the machine's time zone, and
+ * walking local midnights loses days where a daylight-saving change removes one.
+ */
 export function dayRange(from: string, to: string): string[] {
   const days: string[] = [];
-  const d = new Date(from + 'T00:00:00');
-  const end = new Date(to + 'T00:00:00');
-  while (d <= end) {
-    // Local date parts: toISOString() is UTC, which is the previous day east of UTC
-    days.push(
-      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
-    );
-    d.setDate(d.getDate() + 1);
+  const end = Date.parse(`${to}T00:00:00Z`);
+  for (let t = Date.parse(`${from}T00:00:00Z`); t <= end; t += DAY_MS) {
+    days.push(new Date(t).toISOString().slice(0, 10));
   }
   return days;
 }
@@ -86,7 +87,7 @@ reportsRouter.get('/net-worth', (req, res) => {
       !isRealDate(q.from) ||
       !isRealDate(q.to) ||
       q.from > q.to ||
-      Date.parse(q.to) - Date.parse(q.from) > MAX_DAYS * 86_400_000
+      Date.parse(q.to) - Date.parse(q.from) > MAX_DAYS * DAY_MS
     ) {
       return res.status(400).json({ error: 'Expected `from` and `to` as YYYY-MM-DD' });
     }
@@ -475,7 +476,7 @@ reportsRouter.get('/spending-comparison', (req, res) => {
   const dayOfYear = (s: string) => {
     const d = new Date(s + 'T00:00:00');
     const jan1 = new Date(d.getFullYear(), 0, 1);
-    return Math.floor((d.getTime() - jan1.getTime()) / 86400000) + 1;
+    return Math.floor((d.getTime() - jan1.getTime()) / DAY_MS) + 1;
   };
 
   let currentLabel: string, comparisonLabel: string, periodLabel: string;
@@ -613,7 +614,7 @@ reportsRouter.get('/spending-comparison', (req, res) => {
       maxDays = Math.max(daysThisYear, daysLastYear);
 
       const jan1 = new Date(year, 0, 1);
-      todayDay = Math.floor((today.getTime() - jan1.getTime()) / 86400000) + 1;
+      todayDay = Math.floor((today.getTime() - jan1.getTime()) / DAY_MS) + 1;
       periodLabel = 'this year';
       currentLabel = 'This year';
       comparisonLabel = 'Last year';
