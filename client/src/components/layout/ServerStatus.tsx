@@ -127,6 +127,7 @@ export function ServerStatus({ collapsed }: { collapsed: boolean }) {
             ref={menuRef}
             role="menu"
             aria-label="Server"
+            data-sidebar-popup
             onKeyDown={onMenuKey}
             className="fixed z-50 bg-surface border border-border rounded-md shadow-hover py-1 animate-menu-in"
             style={{ bottom: pos.bottom, left: pos.left, width: MENU_W }}

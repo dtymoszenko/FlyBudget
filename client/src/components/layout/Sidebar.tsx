@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useRef } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -19,6 +19,7 @@ import {
 import { usePreferencesStore } from '../../store/preferencesStore';
 import { SidebarAccountList } from './SidebarAccountList';
 import { ServerStatus } from './ServerStatus';
+import { useAutoHideExpansion } from './useAutoHideExpansion';
 import { DOCS_URL } from '../../utils/project';
 import { BrandName } from '../ui/BrandName';
 import logoUrl from '/logo.png';
@@ -34,6 +35,7 @@ function NavItem({ to, icon, label, collapsed }: NavItemProps) {
   return (
     <NavLink
       to={to}
+      data-nav-to={to}
       title={collapsed ? label : undefined}
       className={({ isActive }) =>
         // Phones (the drawer): full-size touch targets
@@ -58,29 +60,26 @@ function NavItem({ to, icon, label, collapsed }: NavItemProps) {
 
 export function Sidebar() {
   const sidebarMode = usePreferencesStore((s) => s.sidebarMode);
-
-  // Tracked in both modes, so unpinning keeps the sidebar open until the pointer leaves it
-  const [hovered, setHovered] = useState(false);
-  const handleMouseEnter = useCallback(() => setHovered(true), []);
-  const handleMouseLeave = useCallback(() => setHovered(false), []);
-
+  const asideRef = useRef<HTMLElement>(null);
   const isAutoHide = sidebarMode === 'auto-hide';
-  const isExpanded = isAutoHide ? hovered : true;
+  const { isExpanded, ...expansionHandlers } = useAutoHideExpansion(asideRef, isAutoHide);
 
   return (
     <aside
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
+      ref={asideRef}
+      {...expansionHandlers}
       className={
         isAutoHide
           ? 'w-16 shrink-0 h-screen relative z-30'
-          : 'w-[208px] shrink-0 h-screen overflow-hidden border-r border-sidebar-border'
+          : 'w-[208px] shrink-0 h-screen overflow-clip border-r border-sidebar-border'
       }
     >
+      {/* overflow-clip, not hidden: a hidden box can still be scrolled, and focusing something
+          past its edge would slide the content sideways */}
       <div
         className={
           isAutoHide
-            ? `absolute left-0 top-0 h-full overflow-hidden border-r border-sidebar-border transition-[width,box-shadow] duration-200 ${
+            ? `absolute left-0 top-0 h-full overflow-clip border-r border-sidebar-border transition-[width,box-shadow] duration-200 motion-reduce:transition-none ${
                 isExpanded ? 'w-[208px] shadow-xl' : 'w-16'
               }`
             : 'w-full h-full'
@@ -114,6 +113,7 @@ function SidebarContent({ isExpanded, onClose }: { isExpanded: boolean; onClose?
           budgetClassName="text-sidebar-text-hi"
         />
         <div
+          data-escape-to="/dashboard"
           className={`ml-auto -mr-1.5 flex items-center gap-0.5 transition-opacity duration-200 ${
             isExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'
           }`}
@@ -160,7 +160,7 @@ function SidebarContent({ isExpanded, onClose }: { isExpanded: boolean; onClose?
       </div>
 
       {/* Primary nav */}
-      <nav className="pt-3 px-3 space-y-0.5">
+      <nav aria-label="Main" className="pt-3 px-3 space-y-0.5">
         <NavItem
           to="/dashboard"
           icon={<LayoutDashboard size={18} />}
@@ -203,6 +203,7 @@ function SidebarContent({ isExpanded, onClose }: { isExpanded: boolean; onClose?
 
       {/* Account list */}
       <div
+        data-escape-to="/accounts"
         className={`flex-1 flex flex-col min-h-0 overflow-hidden transition-opacity duration-200 ${
           isExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
@@ -211,7 +212,7 @@ function SidebarContent({ isExpanded, onClose }: { isExpanded: boolean; onClose?
       </div>
 
       {/* Footer nav */}
-      <nav className="py-2 px-3 border-t border-sidebar-border space-y-0.5">
+      <nav aria-label="Manage" className="py-2 px-3 border-t border-sidebar-border space-y-0.5">
         <NavItem to="/payees" icon={<Users size={18} />} label="Payees" collapsed={!isExpanded} />
         <NavItem to="/rules" icon={<Zap size={18} />} label="Rules" collapsed={!isExpanded} />
         <NavItem

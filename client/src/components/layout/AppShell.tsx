@@ -10,6 +10,7 @@ import { ConnectionBanner } from '../connection/ConnectionBanner';
 import { DemoBanner } from '../demo/DemoBanner';
 import { Sidebar, SidebarDrawer } from './Sidebar';
 import { BrandName } from '../ui/BrandName';
+import { MAIN_ID, SkipToContent } from './SkipToContent';
 import logoUrl from '/logo.png';
 
 export function AppShell() {
@@ -34,11 +35,12 @@ export function AppShell() {
 
   return (
     <div className="flex h-screen bg-page overflow-hidden">
+      <SkipToContent />
       <Sidebar />
       <div className="flex-1 min-w-0 flex flex-col">
         <DemoBanner />
         <ConnectionBanner />
-        <main className="flex-1 overflow-y-auto">
+        <main id={MAIN_ID} tabIndex={-1} className="flex-1 overflow-y-auto outline-none">
           <Outlet />
         </main>
       </div>

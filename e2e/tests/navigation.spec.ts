@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test';
 import { test, expect, open, isoDay } from './fixtures';
 
 // Every page opens from the sidebar and renders without errors (the console guard
@@ -68,4 +69,111 @@ test('unknown routes inside the app fall back gracefully', async ({ page, api })
   await api.createAccount('Everyday Checking');
   await open(page, '/');
   await expect(page).toHaveURL(/#\/dashboard$/);
+});
+
+test('the unpinned sidebar works from the keyboard', async ({ page, api }) => {
+  await api.createAccount('Everyday Checking');
+  await open(page, '/dashboard');
+  const sidebar = page.getByRole('complementary');
+  const pin = sidebar.getByRole('button', { name: 'Pin sidebar' });
+
+  await pin.click();
+  await expect(pin).toHaveAttribute('aria-pressed', 'false');
+  // Starts over, so Tab begins at the top of the page (the setting is kept)
+  await page.reload();
+  await page.mouse.move(900, 400);
+  // Collapsed: the links' names are hidden
+  await expect(sidebar.getByText('Dashboard', { exact: true })).toHaveCSS('opacity', '0');
+
+  // The first Tab offers a way past the sidebar
+  await page.keyboard.press('Tab');
+  const skip = page.getByRole('link', { name: 'Skip to main content' });
+  await expect(skip).toBeFocused();
+  await expect(skip).toBeInViewport();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('main')).toBeFocused();
+
+  // Tabbing into the sidebar opens it, so the pin can be reached
+  await page.keyboard.press('Shift+Tab');
+  await expect(sidebar.getByRole('button', { name: /^Server status/ })).toBeFocused();
+  await expect(sidebar.getByText('Dashboard', { exact: true })).toHaveCSS('opacity', '1');
+  await skip.focus();
+  await page.keyboard.press('Tab');
+  await expect(sidebar.getByRole('link', { name: /Help & docs/ })).toBeFocused();
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Tab');
+  await expect(sidebar.getByRole('link', { name: 'Dashboard' })).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(pin).toBeFocused();
+  const box = (await pin.boundingBox())!;
+  expect(box.x + box.width).toBeLessThanOrEqual(208);
+  await page.keyboard.press('Enter');
+  await expect(pin).toHaveAttribute('aria-pressed', 'true');
+});
+
+test.describe('Escape collapses the unpinned sidebar', () => {
+  test.beforeEach(async ({ page, api }) => {
+    await api.createAccount('Everyday Checking');
+    await open(page, '/dashboard');
+    await page.getByRole('complementary').getByRole('button', { name: 'Pin sidebar' }).click();
+    await page.reload();
+    await page.mouse.move(900, 400);
+  });
+
+  const sidebar = (page: Page) => page.getByRole('complementary');
+  const label = (page: Page) => sidebar(page).getByText('Dashboard', { exact: true });
+  const dashboard = (page: Page) => sidebar(page).getByRole('link', { name: 'Dashboard' });
+  const accounts = (page: Page) =>
+    sidebar(page).getByRole('link', { name: 'Accounts', exact: true });
+
+  test('on a link, focus stays and the next Tab opens it again', async ({ page }) => {
+    await page.getByRole('link', { name: 'Skip to main content' }).focus();
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Tab');
+    await expect(dashboard(page)).toBeFocused();
+    await expect(label(page)).toHaveCSS('opacity', '1');
+    await page.keyboard.press('Escape');
+    await expect(label(page)).toHaveCSS('opacity', '0');
+    await expect(dashboard(page)).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(accounts(page)).toBeFocused();
+    await expect(label(page)).toHaveCSS('opacity', '1');
+  });
+
+  test('on a header button, which the strip hides, focus moves to Dashboard', async ({ page }) => {
+    await dashboard(page).focus();
+    await page.keyboard.press('Shift+Tab');
+    await expect(sidebar(page).getByRole('button', { name: 'Pin sidebar' })).toBeFocused();
+    await expect(label(page)).toHaveCSS('opacity', '1');
+    await page.keyboard.press('Escape');
+    await expect(label(page)).toHaveCSS('opacity', '0');
+    await expect(dashboard(page)).toBeFocused();
+  });
+
+  test('in the account list, focus moves to Accounts', async ({ page }) => {
+    await sidebar(page).getByRole('link', { name: 'Goals' }).focus();
+    await page.keyboard.press('Tab');
+    await expect(sidebar(page).getByRole('link', { name: /^All accounts/ })).toBeFocused();
+    await expect(label(page)).toHaveCSS('opacity', '1');
+    await page.keyboard.press('Escape');
+    await expect(label(page)).toHaveCSS('opacity', '0');
+    await expect(accounts(page)).toBeFocused();
+  });
+
+  test('in the Add account menu, the first Escape only closes the menu', async ({ page }) => {
+    await sidebar(page).getByRole('button', { name: 'For budget' }).focus();
+    await page.keyboard.press('Tab');
+    const add = sidebar(page).getByRole('button', { name: 'Add account' });
+    await expect(add).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(add).toHaveAttribute('aria-expanded', 'true');
+    await page.keyboard.press('Escape');
+    await expect(add).toHaveAttribute('aria-expanded', 'false');
+    await expect(add).toBeFocused();
+    await expect(label(page)).toHaveCSS('opacity', '1');
+    await page.keyboard.press('Escape');
+    await expect(label(page)).toHaveCSS('opacity', '0');
+    await expect(accounts(page)).toBeFocused();
+  });
 });

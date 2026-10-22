@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useId } from 'react';
 import { createPortal } from 'react-dom';
 import { NavLink } from 'react-router-dom';
 import { Plus, Building2, Link2, ChevronDown, ChevronRight, Euro } from 'lucide-react';
@@ -68,9 +68,11 @@ export function SidebarAccountList() {
   const [enableBankingOpen, setEnableBankingOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuId = useId();
 
   useEffect(() => {
     if (!menuOpen) return;
+    menuRef.current?.querySelector<HTMLElement>('button')?.focus();
     function handleClickOutside(e: MouseEvent) {
       const target = e.target as Node;
       if (!menuRef.current?.contains(target) && !buttonRef.current?.contains(target)) {
@@ -78,7 +80,9 @@ export function SidebarAccountList() {
       }
     }
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') setMenuPos(null);
+      if (e.key !== 'Escape') return;
+      setMenuPos(null);
+      buttonRef.current?.focus();
     }
     const close = () => setMenuPos(null);
     document.addEventListener('mousedown', handleClickOutside);
@@ -124,6 +128,7 @@ export function SidebarAccountList() {
         <div className="mt-2">
           <button
             onClick={() => setForBudgetOpen((o) => !o)}
+            aria-expanded={forBudgetOpen}
             className="flex items-center justify-between w-full py-1.5 text-[13px] font-semibold text-sidebar-text-hi border-b border-sidebar-text/20 hover:text-sidebar-text-hi transition-colors"
           >
             <span>For budget</span>
@@ -149,6 +154,7 @@ export function SidebarAccountList() {
           <div className="mt-2">
             <button
               onClick={() => setOffBudgetOpen((o) => !o)}
+              aria-expanded={offBudgetOpen}
               className="flex items-center justify-between w-full py-1.5 text-[13px] font-semibold text-sidebar-text-hi border-b border-sidebar-text/20 hover:text-sidebar-text-hi transition-colors"
             >
               <span>Off budget</span>
@@ -172,6 +178,8 @@ export function SidebarAccountList() {
           <button
             ref={buttonRef}
             onClick={() => setMenuOpen(!menuOpen)}
+            aria-expanded={menuOpen}
+            aria-controls={menuOpen ? menuId : undefined}
             className="flex items-center gap-1.5 px-3 py-1.5 text-[13px] text-sidebar-text hover:text-sidebar-text-hi transition-colors"
           >
             <Plus size={14} />
@@ -183,6 +191,9 @@ export function SidebarAccountList() {
             createPortal(
               <div
                 ref={menuRef}
+                id={menuId}
+                // Focus in here keeps the auto-hide sidebar open (see useAutoHideExpansion)
+                data-sidebar-popup
                 className="fixed z-50 min-w-48 w-max bg-surface rounded-md border border-border shadow-hover py-1 animate-menu-in"
                 style={menuPos}
               >
