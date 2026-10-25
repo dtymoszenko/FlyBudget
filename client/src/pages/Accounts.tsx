@@ -30,9 +30,23 @@ import { ACCOUNT_GROUPS, type Account, type AccountGroup } from '../types';
 import { AccountIcon } from '../components/accounts/AccountIcon';
 import { accountTypeInfo, accountTypeLabel } from '../utils/accountTypes';
 
-function groupAccountsByType(accounts: Account[]) {
+type AccountSort = 'order' | 'balance' | 'name';
+
+// Balance: biggest first by size (the largest debt too), accounts without a rate last
+const size = (a: Account) => {
+  const value = balanceValue(a);
+  return value === null ? -1 : Math.abs(value);
+};
+
+const SORTS: Record<Exclude<AccountSort, 'order'>, (a: Account, b: Account) => number> = {
+  balance: (a, b) => size(b) - size(a),
+  name: (a, b) => a.name.localeCompare(b.name),
+};
+
+function groupAccountsByType(accounts: Account[], sort: AccountSort) {
   const groups = new Map<AccountGroup, Account[]>();
-  for (const a of accounts) {
+  const sorted = sort === 'order' ? accounts : [...accounts].sort(SORTS[sort]);
+  for (const a of sorted) {
     const group = accountTypeInfo(a.type).group;
     const list = groups.get(group) ?? [];
     list.push(a);
@@ -146,7 +160,8 @@ export default function AccountsPage() {
   const { data: balancesAgo = {} } = useBalancesAgo();
   const [addOpen, setAddOpen] = useState(false);
   useOpenFromLink('add', () => setAddOpen(true));
-  const allGroups = useMemo(() => groupAccountsByType(accounts), [accounts]);
+  const [sort, setSort] = useState<AccountSort>('order');
+  const allGroups = useMemo(() => groupAccountsByType(accounts, sort), [accounts, sort]);
 
   if (isLoading) {
     return (
@@ -165,11 +180,25 @@ export default function AccountsPage() {
 
   return (
     <div className="flex flex-col h-full bg-surface">
-      <div className="px-6 py-4 border-b border-border shrink-0 flex items-center justify-between">
+      <div className="px-6 py-4 border-b border-border shrink-0 flex items-center justify-between gap-2 max-md:flex-wrap">
         <h1 className="text-lg font-semibold text-text">Accounts</h1>
-        <Button size="sm" onClick={() => setAddOpen(true)}>
-          <Plus size={14} /> Add Account
-        </Button>
+        <div className="flex items-center gap-2">
+          {accounts.length > 1 && (
+            <select
+              aria-label="Sort accounts"
+              value={sort}
+              onChange={(e) => setSort(e.target.value as AccountSort)}
+              className="text-sm border border-border rounded-md px-3 py-1.5 max-md:min-h-11 bg-surface text-text focus:outline-none focus:ring-1 focus:ring-brand-600 focus:border-brand-600"
+            >
+              <option value="order">Your order</option>
+              <option value="balance">Balance</option>
+              <option value="name">Name</option>
+            </select>
+          )}
+          <Button size="sm" onClick={() => setAddOpen(true)}>
+            <Plus size={14} /> Add Account
+          </Button>
+        </div>
       </div>
 
       {accounts.length === 0 ? (
