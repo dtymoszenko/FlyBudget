@@ -218,10 +218,12 @@ export function currencyAmountStyle(
   const format = prefs.amountFormat === 'auto' ? device().format : prefs.amountFormat;
   const code = currency ?? budgetCurrency;
   if (!code) {
+    const symbol = prefs.currencySymbol || '$';
     return {
       format,
       position: prefs.symbolPosition === 'auto' ? device().position : prefs.symbolPosition,
-      symbol: prefs.currencySymbol || '$',
+      symbol,
+      space: /\p{L}$/u.test(symbol),
     };
   }
   const own = prefs.currencyStyles?.[code];

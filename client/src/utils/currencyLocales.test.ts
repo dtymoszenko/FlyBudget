@@ -30,6 +30,15 @@ describe('currency symbols on devices in other languages', () => {
     expect(format(123_456, 'USD')).toBe('$1,234.56');
   });
 
+  it('puts a space after a typed symbol made of letters when the budget has no currency', async () => {
+    vi.resetModules();
+    const { currencyAmountStyle, formatAmount } = await import('./currency');
+    const prefs = { amountFormat: 'dot', symbolPosition: 'before', currencySymbol: 'CHF' } as const;
+    expect(formatAmount(1250, currencyAmountStyle(null, prefs, null))).toBe('CHF 12.50');
+    const dollar = { ...prefs, currencySymbol: '$' };
+    expect(formatAmount(1250, currencyAmountStyle(null, dollar, null))).toBe('$12.50');
+  });
+
   it.each(['es-419', 'es-UY', 'en-US', 'de-CH', 'fr-FR', 'pl-PL', 'ja-JP', 'ar-EG'])(
     'never writes a letter of the symbol right next to a digit in %s',
     async (language) => {

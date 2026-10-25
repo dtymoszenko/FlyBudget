@@ -194,7 +194,7 @@ describe('currency helpers (property-based)', () => {
   it('uses the preferences when no style is given', () => {
     expect(
       amountStyle({ amountFormat: 'comma', symbolPosition: 'after', currencySymbol: '' }),
-    ).toEqual({ format: 'comma', position: 'after', symbol: '$' });
+    ).toEqual({ format: 'comma', position: 'after', symbol: '$', space: false });
   });
 });
 
