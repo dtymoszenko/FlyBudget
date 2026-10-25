@@ -48,6 +48,10 @@ const SORTS: Record<
     label: 'Balance: low to high',
     compare: (a, b) => (size(a) < 0 ? 1 : size(b) < 0 ? -1 : size(a) - size(b)),
   },
+  transactions: {
+    label: 'Transactions: most first',
+    compare: (a, b) => (b.transactionCount ?? 0) - (a.transactionCount ?? 0),
+  },
   name: { label: 'Name: A to Z', compare: (a, b) => a.name.localeCompare(b.name) },
 };
 

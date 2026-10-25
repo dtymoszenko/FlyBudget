@@ -10,7 +10,7 @@ export type AmountFormat = 'dot' | 'comma' | 'space' | 'apostrophe';
 /** Whether the currency symbol goes before (€12.50) or after (12,50 €) the amount */
 export type SymbolPosition = 'before' | 'after';
 export type SidebarMode = 'persistent' | 'auto-hide';
-export type AccountSort = 'manual' | 'balance-desc' | 'balance-asc' | 'name';
+export type AccountSort = 'manual' | 'balance-desc' | 'balance-asc' | 'transactions' | 'name';
 /** How one currency's amounts are shown, when its own convention isn't wanted */
 export interface CurrencyDisplay {
   position?: SymbolPosition;
