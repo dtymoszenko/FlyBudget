@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, MoreVertical } from 'lucide-react';
 import { PHONE_MAX_WIDTH } from '../../hooks/useIsPhone';
+import { buttonClass } from './Button';
 
 export interface RowMenuItem {
   label: string;
@@ -10,6 +11,8 @@ export interface RowMenuItem {
   hidden?: boolean;
   /** Makes the menu a choice: true marks the chosen item with a check */
   checked?: boolean;
+  /** Draws a line above the item, e.g. between choices and an action */
+  divider?: boolean;
 }
 
 const MENU_W = 200;
@@ -62,7 +65,7 @@ export default function RowMenu({
     const r = btnRef.current!.getBoundingClientRect();
     // Items are taller on phones (touch-sized), which decides whether it opens upward
     const itemH = window.matchMedia(`(max-width: ${PHONE_MAX_WIDTH}px)`).matches ? 44 : 34;
-    const menuH = visible.length * itemH + 8;
+    const menuH = visible.length * itemH + visible.filter((i) => i.divider).length * 9 + 8;
     const top = r.bottom + 4 + menuH > window.innerHeight ? r.top - 4 - menuH : r.bottom + 4;
     setPos({ top, left: Math.max(8, r.right - MENU_W) });
   }
@@ -75,11 +78,13 @@ export default function RowMenu({
         aria-label={label}
         aria-haspopup="menu"
         aria-expanded={pos !== null}
-        className={`max-md:min-w-11 max-md:min-h-11 flex items-center justify-center transition-colors cursor-pointer ${
+        className={
           trigger
-            ? 'gap-1.5 px-3 py-1.5 text-sm font-medium whitespace-nowrap rounded-md border border-border bg-surface text-text hover:bg-hover'
-            : 'p-1 rounded text-text-tertiary hover:text-text-secondary hover:bg-hover'
-        } ${pos ? (trigger ? 'bg-hover' : 'bg-hover text-text-secondary') : ''}`}
+            ? buttonClass('secondary', 'sm', 'cursor-pointer aria-expanded:bg-surface-alt')
+            : `p-1 max-md:min-w-11 max-md:min-h-11 flex items-center justify-center rounded text-text-tertiary hover:text-text-secondary hover:bg-hover transition-colors cursor-pointer ${
+                pos ? 'bg-hover text-text-secondary' : ''
+              }`
+        }
       >
         {trigger ?? <MoreVertical size={15} />}
       </button>
@@ -92,7 +97,14 @@ export default function RowMenu({
             className="fixed z-50 bg-surface border border-border rounded-md shadow-hover py-1 animate-menu-in"
             style={{ top: pos.top, left: pos.left, width: MENU_W }}
           >
-            {visible.map((item) => (
+            {visible.flatMap((item) => [
+              item.divider && (
+                <div
+                  key={`${item.label}-divider`}
+                  role="separator"
+                  className="my-1 border-t border-border-light"
+                />
+              ),
               <button
                 key={item.label}
                 role={item.checked === undefined ? 'menuitem' : 'menuitemradio'}
@@ -111,8 +123,8 @@ export default function RowMenu({
                   <Check size={14} className={item.checked ? 'text-brand-600' : 'invisible'} />
                 )}
                 {item.label}
-              </button>
-            ))}
+              </button>,
+            ])}
           </div>,
           document.body,
         )}

@@ -41,18 +41,29 @@ const size = (a: Account) => {
 
 const SORTS: Record<
   Exclude<AccountSort, 'manual'>,
-  { label: string; compare: (a: Account, b: Account) => number }
+  { label: string; short: string; compare: (a: Account, b: Account) => number }
 > = {
-  'balance-desc': { label: 'Balance: high to low', compare: (a, b) => size(b) - size(a) },
+  'balance-desc': {
+    label: 'Balance: high to low',
+    short: 'Highest balance',
+    compare: (a, b) => size(b) - size(a),
+  },
   'balance-asc': {
     label: 'Balance: low to high',
-    compare: (a, b) => (size(a) < 0 ? 1 : size(b) < 0 ? -1 : size(a) - size(b)),
+    short: 'Lowest balance',
+    compare: (a, b) => Number(size(a) < 0) - Number(size(b) < 0) || size(a) - size(b),
   },
   transactions: {
-    label: 'Transactions: most first',
+    label: 'Most transactions',
+    short: 'Most transactions',
     compare: (a, b) => (b.transactionCount ?? 0) - (a.transactionCount ?? 0),
   },
-  name: { label: 'Name: A to Z', compare: (a, b) => a.name.localeCompare(b.name) },
+  name: {
+    label: 'Name: A to Z',
+    short: 'Name',
+    // Card 2 before Card 10
+    compare: (a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }),
+  },
 };
 
 function groupAccountsByType(accounts: Account[], sort: AccountSort) {
@@ -173,7 +184,9 @@ export default function AccountsPage() {
   const [addOpen, setAddOpen] = useState(false);
   useOpenFromLink('add', () => setAddOpen(true));
   const navigate = useNavigate();
-  const sort = usePreferencesStore((s) => s.accountSort);
+  const saved = usePreferencesStore((s) => s.accountSort);
+  // A choice this version doesn't know (saved by another one) is manual order
+  const sort: AccountSort = Object.hasOwn(SORTS, saved) ? saved : 'manual';
   const setSort = usePreferencesStore((s) => s.setAccountSort);
   const allGroups = useMemo(() => groupAccountsByType(accounts, sort), [accounts, sort]);
 
@@ -203,7 +216,7 @@ export default function AccountsPage() {
               trigger={
                 <>
                   <ArrowUpDown size={14} />
-                  Sort: {sort === 'manual' ? 'Manual' : SORTS[sort].label.split(':')[0]}
+                  Sort: {sort === 'manual' ? 'Manual order' : SORTS[sort].short}
                 </>
               }
               items={[
@@ -219,6 +232,7 @@ export default function AccountsPage() {
                 },
                 {
                   label: 'Edit manual order…',
+                  divider: true,
                   onClick: () => navigate('/settings?tab=accounts'),
                 },
               ]}

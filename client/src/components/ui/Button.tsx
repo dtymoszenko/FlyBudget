@@ -22,7 +22,7 @@ const sizes = {
   md: 'px-4 py-2 text-sm max-md:min-h-11',
 };
 
-const buttonClass = (variant: Variant, size: Size, className: string) =>
+export const buttonClass = (variant: Variant, size: Size, className: string) =>
   `inline-flex items-center justify-center gap-1.5 whitespace-nowrap font-medium rounded-md transition-colors disabled:opacity-50 disabled:pointer-events-none ${variants[variant]} ${sizes[size]} ${className}`;
 
 export function Button({
