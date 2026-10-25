@@ -336,6 +336,8 @@ export interface Account {
   rateDate: string | null;
   /** Its currency can only change while it has none */
   hasTransactions: boolean;
+  /** How many transactions it has (a split counts once); only in the accounts list */
+  transactionCount?: number;
   /**
    * In another currency: how much more (or less) it's worth today in the budget's currency
    * than it was counted as when its money came in (the rate moved). Null when not known.

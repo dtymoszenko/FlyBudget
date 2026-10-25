@@ -65,7 +65,11 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: Props) 
   if (!mounted) return null;
 
   return createPortal(
-    <div className={`fixed inset-0 z-50 overflow-y-auto ${closing ? 'pointer-events-none' : ''}`}>
+    <div
+      inert={closing}
+      aria-hidden={closing || undefined}
+      className={`fixed inset-0 z-50 overflow-y-auto ${closing ? 'pointer-events-none' : ''}`}
+    >
       <div
         className={`fixed inset-0 bg-black/30 backdrop-blur-sm cursor-pointer ${closing ? 'animate-fade-out' : 'animate-fade-in'}`}
         onClick={onClose}

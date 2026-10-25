@@ -192,6 +192,147 @@ test.describe('account register', () => {
     await expect(page.getByText('Transaction Details')).toBeHidden();
   });
 
+  test('keeps a date typed while the notes are still saving', async ({ page, api }) => {
+    const { checking } = await setup(api);
+    const tx = await api.createTransaction({
+      accountId: checking.id,
+      date: isoDay(),
+      amount: -1_999,
+      payeeName: 'Streamflix',
+    });
+    let releaseNotes!: () => void;
+    const notesHeld = new Promise<void>((resolve) => (releaseNotes = resolve));
+    await page.route(`**/api/transactions/${tx.id}`, async (route) => {
+      if (route.request().method() === 'PUT' && route.request().postData()?.includes('notes')) {
+        await notesHeld;
+      }
+      await route.continue();
+    });
+    await open(page, `/accounts/${checking.id}`);
+    await row(page, 'Streamflix').click();
+    const panel = page.getByRole('complementary', { name: 'Transaction details' });
+
+    await panel.getByRole('textbox', { name: 'Notes' }).fill('family plan');
+    await panel.getByRole('textbox', { name: 'Notes' }).blur();
+    await panel.getByRole('textbox', { name: 'Date' }).fill(otherDayThisMonth());
+    // The notes save finishes and the register refetches before the date field loses focus
+    const refetched = page.waitForResponse(
+      (r) => r.request().method() === 'GET' && /\/api\/transactions\?/.test(r.url()),
+    );
+    releaseNotes();
+    await refetched;
+    await page.evaluate(
+      () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+    );
+    await expect(panel.getByRole('textbox', { name: 'Date' })).toHaveValue(otherDayThisMonth());
+    await panel.getByRole('textbox', { name: 'Date' }).blur();
+
+    await expect
+      .poll(async () => (await api.transactions(`?account_id=${checking.id}`))[0])
+      .toMatchObject({ id: tx.id, notes: 'family plan', date: otherDayThisMonth() });
+  });
+
+  test('says when a change in the detail panel could not be saved', async ({ page, api }) => {
+    const { checking } = await setup(api);
+    const tx = await api.createTransaction({
+      accountId: checking.id,
+      date: isoDay(),
+      amount: -1_999,
+      payeeName: 'Streamflix',
+    });
+    let refused = false;
+    await page.route(`**/api/transactions/${tx.id}`, async (route) => {
+      if (!refused && route.request().method() === 'PUT') {
+        refused = true;
+        return route.fulfill({ status: 422, json: { error: 'Could not save' } });
+      }
+      await route.continue();
+    });
+    await open(page, `/accounts/${checking.id}`);
+    await row(page, 'Streamflix').click();
+    const panel = page.getByRole('complementary', { name: 'Transaction details' });
+    const notes = panel.getByRole('textbox', { name: 'Notes' });
+
+    await notes.fill('family plan');
+    await notes.blur();
+    await expect(panel.getByRole('alert')).toHaveText(/Couldn't save this change/);
+    await expect(notes).toHaveValue('family plan');
+
+    await notes.focus();
+    await notes.blur();
+    await expect(panel.getByRole('alert')).toBeHidden();
+    await expect
+      .poll(async () => (await api.transactions(`?account_id=${checking.id}`))[0])
+      .toMatchObject({ id: tx.id, notes: 'family plan' });
+  });
+
+  test('says when a category picked in the detail panel could not be saved', async ({
+    page,
+    api,
+  }) => {
+    const { checking } = await setup(api);
+    const tx = await api.createTransaction({
+      accountId: checking.id,
+      date: isoDay(),
+      amount: -1_999,
+      payeeName: 'Streamflix',
+    });
+    let refused = false;
+    await page.route(`**/api/transactions/${tx.id}`, async (route) => {
+      if (!refused && route.request().method() === 'PUT') {
+        refused = true;
+        return route.fulfill({ status: 422, json: { error: 'Could not save' } });
+      }
+      await route.continue();
+    });
+    await open(page, `/accounts/${checking.id}`);
+    await row(page, 'Streamflix').click();
+    const panel = page.getByRole('complementary', { name: 'Transaction details' });
+    const pickStreaming = async () => {
+      await panel.getByRole('button', { name: 'Uncategorized' }).click();
+      await page.getByPlaceholder('Search categories...').fill('stream');
+      await page.getByRole('button', { name: /Streaming Services/ }).click();
+    };
+
+    await pickStreaming();
+    await expect(panel.getByRole('alert')).toHaveText(/Couldn't save this change/);
+    await expect(panel.getByRole('button', { name: 'Uncategorized' })).toBeVisible();
+
+    await pickStreaming();
+    await expect(panel.getByRole('alert')).toBeHidden();
+    await expect
+      .poll(async () => (await api.transactions(`?account_id=${checking.id}`))[0])
+      .toMatchObject({ id: tx.id, categoryId: (await api.category('Streaming Services')).id });
+  });
+
+  test('keeps the message in sight when the offline banner pushes the panel down', async ({
+    page,
+    api,
+  }) => {
+    const { checking } = await setup(api);
+    const tx = await api.createTransaction({
+      accountId: checking.id,
+      date: isoDay(),
+      amount: -1_999,
+      payeeName: 'Streamflix',
+    });
+    // A short window, so the notes are at the bottom of the panel
+    await page.setViewportSize({ width: 1400, height: 620 });
+    // The save never reaches the server, and neither do the reconnect checks: the banner stays
+    await page.route(`**/api/transactions/${tx.id}`, (route) =>
+      route.request().method() === 'PUT' ? route.abort() : route.continue(),
+    );
+    await page.route('**/api/health', (route) => route.abort());
+    await open(page, `/accounts/${checking.id}`);
+    await row(page, 'Streamflix').click();
+    const panel = page.getByRole('complementary', { name: 'Transaction details' });
+
+    await panel.getByRole('textbox', { name: 'Notes' }).fill('family plan');
+    await panel.getByRole('textbox', { name: 'Notes' }).blur();
+    await expect(page.getByRole('status', { name: 'Connection' })).toBeVisible();
+    await expect(panel.getByRole('alert')).toBeInViewport({ ratio: 1 });
+  });
+
   test('deletes a transaction after confirming', async ({ page, api }) => {
     const { checking } = await setup(api);
     await api.createTransaction({

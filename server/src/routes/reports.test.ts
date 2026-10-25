@@ -1,3 +1,4 @@
+import { execFileSync } from 'child_process';
 import { afterAll, beforeAll, describe, it, expect } from 'vitest';
 import fc from 'fast-check';
 import express from 'express';
@@ -23,6 +24,23 @@ describe('dayRange (property-based)', () => {
       }),
       { numRuns: 200 },
     );
+  });
+
+  it('keeps a day whose midnight a daylight-saving change removed (Montevideo, 1990-10-21)', () => {
+    // Fails in that time zone when the days are walked as local midnights. Run in a child
+    // process with TZ set, so it doesn't depend on the time zone of the machine running the tests
+    const script = `import('./src/routes/reports.ts').then((m) =>
+      console.log(JSON.stringify(m.dayRange('1990-10-20', '1990-10-23'))))`;
+    const out = execFileSync('./node_modules/.bin/tsx', ['--eval', script], {
+      env: { ...process.env, TZ: 'America/Montevideo' },
+      encoding: 'utf8',
+    });
+    expect(JSON.parse(out)).toEqual(['1990-10-20', '1990-10-21', '1990-10-22', '1990-10-23']);
+    expect(dayRange('2024-02-28', '2024-03-01')).toEqual([
+      '2024-02-28',
+      '2024-02-29',
+      '2024-03-01',
+    ]);
   });
 
   it('is empty when `to` is before `from`', () => {

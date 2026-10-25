@@ -96,15 +96,20 @@ accountsRouter.get('/', (_req, res) => {
     .select({
       accountId: transactions.accountId,
       sum: sql<number>`coalesce(sum(case when ${inAccountBalance} then ${transactions.amount} else 0 end), 0)`,
+      // A split counts once, not once per part
+      count: sql<number>`count(case when ${inAccountBalance} then 1 end)`,
     })
     .from(transactions)
     .groupBy(transactions.accountId)
     .all();
 
-  const sumMap = new Map(sums.map((s) => [s.accountId, s.sum]));
+  const sumMap = new Map(sums.map((s) => [s.accountId, s]));
   const ctx = currencyContext();
   res.json(
-    rows.map((a) => shown(a, a.startingBalance + (sumMap.get(a.id) ?? 0), sumMap.has(a.id), ctx)),
+    rows.map((a) => ({
+      ...shown(a, a.startingBalance + (sumMap.get(a.id)?.sum ?? 0), sumMap.has(a.id), ctx),
+      transactionCount: sumMap.get(a.id)?.count ?? 0,
+    })),
   );
 });
 

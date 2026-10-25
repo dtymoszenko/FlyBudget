@@ -1,0 +1,6 @@
+# Known issues that don't affect FlyBudget, read by OpenSSF Scorecard's
+# Vulnerabilities check. Remove an entry once a fixed version is available.
+
+[[IgnoredVulns]]
+id = "GHSA-vfj7-8cjw-p6xm"
+reason = "braces has no fixed release yet. Only the website's build tools use it (chokidar and micromatch, through Docusaurus), on the project's own file paths, never on input from visitors. It isn't part of the app."

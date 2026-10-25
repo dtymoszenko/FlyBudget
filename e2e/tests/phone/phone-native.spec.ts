@@ -327,6 +327,7 @@ test('the month picker fits the screen and is easy to tap', async ({ page, api }
   await page.getByRole('main').getByRole('button', { name: 'Frozen' }).click();
   const picker = page.getByRole('dialog', { name: 'Choose months' });
   await expect(picker).toBeVisible();
+  await picker.evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)));
   const box = (await picker.boundingBox())!;
   const viewport = page.viewportSize()!;
   expect(box.x).toBeGreaterThanOrEqual(0);

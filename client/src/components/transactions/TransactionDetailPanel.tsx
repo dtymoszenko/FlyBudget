@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { X, Lock, Trash2, Repeat, Unlink, Wand2 } from 'lucide-react';
 import { useUpdateTransaction, useDeleteTransaction } from '../../hooks/useTransactions';
 import { useTransferToAccount, useUnlinkTransfer } from '../../hooks/useTransfers';
@@ -26,6 +26,8 @@ import type {
   RuleCondition,
   RuleInput,
 } from '../../types';
+
+type EditedField = 'date' | 'payee' | 'notes' | 'category';
 
 interface Props {
   transaction: Transaction;
@@ -69,13 +71,32 @@ export function TransactionDetailPanel({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [ruleDraft, setRuleDraft] = useState<RuleInput | null>(null);
   const ruleModal = useModalValue(ruleDraft);
+  const [unsaved, setUnsaved] = useState<Partial<Record<EditedField, boolean>>>({});
+  const markUnsaved = (field: EditedField, failed: boolean) =>
+    setUnsaved((u) => (!!u[field] === failed ? u : { ...u, [field]: failed }));
 
+  const currentTxId = useRef(tx.id);
+  useLayoutEffect(() => {
+    currentTxId.current = tx.id;
+  }, [tx.id]);
+  const latestSave = useRef<Partial<Record<EditedField, symbol>>>({});
+
+  // Each field follows the server only when its own value changes (undo, a sync), so the
+  // refetch after saving one field never wipes another the user is still typing in
   useEffect(() => {
     setLocalDate(tx.date);
+    markUnsaved('date', false);
+  }, [tx.id, tx.date]);
+  useEffect(() => {
     setLocalNotes(tx.notes ?? '');
+    markUnsaved('notes', false);
+  }, [tx.id, tx.notes]);
+  useEffect(() => {
     setLocalPayee({ id: tx.payeeId, name: tx.payeeName ?? '' });
-    setShowCategoryPicker(false);
-  }, [tx.id, tx.date, tx.notes, tx.payeeId, tx.payeeName]);
+    markUnsaved('payee', false);
+  }, [tx.id, tx.payeeId, tx.payeeName]);
+  useEffect(() => setShowCategoryPicker(false), [tx.id]);
+  useEffect(() => markUnsaved('category', false), [tx.id, tx.categoryId, tx.transferTransactionId]);
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
@@ -99,41 +120,52 @@ export function TransactionDetailPanel({
   const transferAccounts =
     canSave && !tx.isAdjustment ? accounts.filter((a) => a.id !== tx.accountId && !a.closedAt) : [];
 
+  function trackSave(field: EditedField, save: Promise<unknown>) {
+    // Takes mutateAsync's promise, since mutate's own callbacks only run for the latest call
+    const attempt = Symbol(field);
+    const txId = tx.id;
+    latestSave.current[field] = attempt;
+    const settle = (failed: boolean) => {
+      if (currentTxId.current === txId && latestSave.current[field] === attempt)
+        markUnsaved(field, failed);
+    };
+    save.then(
+      () => settle(false),
+      () => settle(true),
+    );
+  }
+
+  function saveField(field: EditedField, data: Parameters<typeof updateTx.mutate>[0]['data']) {
+    trackSave(field, updateTx.mutateAsync({ id: tx.id, data }));
+  }
+
   function saveDate() {
-    if (localDate !== tx.date) {
-      updateTx.mutate({ id: tx.id, data: { date: localDate } });
-    }
+    if (localDate !== tx.date) saveField('date', { date: localDate });
   }
 
   function saveNotes() {
     const val = localNotes || null;
-    if (val !== tx.notes) {
-      updateTx.mutate({ id: tx.id, data: { notes: val } });
-    }
+    if (val !== tx.notes) saveField('notes', { notes: val });
   }
 
   function handlePayeeChange(v: { id: string | null; name: string }) {
     setLocalPayee(v);
-    if (v.id !== null) {
-      updateTx.mutate({ id: tx.id, data: { payeeId: v.id, payeeName: v.name || null } });
-    }
+    if (v.id !== null) saveField('payee', { payeeId: v.id, payeeName: v.name || null });
   }
 
   function savePayeeOnBlur() {
     if (localPayee.id !== tx.payeeId || localPayee.name !== (tx.payeeName ?? '')) {
-      updateTx.mutate({
-        id: tx.id,
-        data: { payeeId: localPayee.id, payeeName: localPayee.name || null },
-      });
+      saveField('payee', { payeeId: localPayee.id, payeeName: localPayee.name || null });
     }
   }
 
   function handleCategoryChange(catId: string | null) {
     if (catId?.startsWith('transfer:')) {
       // Links the matching transaction in that account, or creates it
-      transferTo.mutate({ id: tx.id, accountId: catId.slice('transfer:'.length) });
+      const accountId = catId.slice('transfer:'.length);
+      trackSave('category', transferTo.mutateAsync({ id: tx.id, accountId }));
     } else {
-      updateTx.mutate({ id: tx.id, data: { categoryId: catId } });
+      saveField('category', { categoryId: catId });
     }
     setShowCategoryPicker(false);
   }
@@ -222,6 +254,7 @@ export function TransactionDetailPanel({
             disabled={isReconciled}
             className={inputCls}
           />
+          {unsaved.date && <NotSaved />}
         </div>
 
         <MainAmountField tx={tx} disabled={isReconciled} />
@@ -293,6 +326,7 @@ export function TransactionDetailPanel({
                   transferAccounts={transferAccounts}
                 />
               )}
+              {unsaved.category && <NotSaved retry="Pick it again to retry." />}
             </div>
           )}
         </div>
@@ -308,6 +342,7 @@ export function TransactionDetailPanel({
                 className={`border border-border rounded-lg px-3 py-2 focus:border-brand-600 focus:ring-1 focus:ring-brand-600 ${isReconciled ? 'opacity-60 pointer-events-none' : ''}`}
               />
             </div>
+            {unsaved.payee && <NotSaved />}
           </div>
         )}
 
@@ -323,6 +358,7 @@ export function TransactionDetailPanel({
             rows={3}
             className={`${inputCls} resize-none`}
           />
+          {unsaved.notes && <NotSaved />}
         </div>
 
         {linkedSchedule && (
@@ -386,5 +422,20 @@ export function TransactionDetailPanel({
         onClose={() => setShowDeleteConfirm(false)}
       />
     </aside>
+  );
+}
+
+function NotSaved({ retry = 'Leave the field again to retry.' }: { retry?: string }) {
+  const ref = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => ref.current?.scrollIntoView({ block: 'nearest' }));
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  return (
+    <p ref={ref} role="alert" className="mt-1 text-xs text-negative">
+      Couldn't save this change. {retry}
+    </p>
   );
 }

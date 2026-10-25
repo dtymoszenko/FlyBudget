@@ -218,10 +218,12 @@ export function currencyAmountStyle(
   const format = prefs.amountFormat === 'auto' ? device().format : prefs.amountFormat;
   const code = currency ?? budgetCurrency;
   if (!code) {
+    const symbol = prefs.currencySymbol || '$';
     return {
       format,
       position: prefs.symbolPosition === 'auto' ? device().position : prefs.symbolPosition,
-      symbol: prefs.currencySymbol || '$',
+      symbol,
+      space: /\p{L}$/u.test(symbol),
     };
   }
   const own = prefs.currencyStyles?.[code];
@@ -236,9 +238,11 @@ export function currencyAmountStyle(
     position,
     symbol,
     minor: minorUnits(code),
-    // Its own convention's spacing; on a side chosen by hand, a space after letters (CHF 12)
+    // A space after letters (CHF 12, USD 12), else its own convention's spacing (R$ 12) unless
+    // the side or symbol was chosen by hand
     space:
-      position === convention.position && !own?.symbol ? convention.space : /\p{L}$/u.test(symbol),
+      /\p{L}$/u.test(symbol) ||
+      (position === convention.position && !own?.symbol && convention.space),
   };
 }
 
