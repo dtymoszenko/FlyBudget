@@ -8,6 +8,7 @@ import {
   TrendingDown,
   Landmark,
   Link2,
+  ArrowUpDown,
 } from 'lucide-react';
 import { useAccounts, useBalancesAgo } from '../hooks/useAccounts';
 import { AddAccountModal } from '../components/accounts/AddAccountModal';
@@ -26,26 +27,33 @@ import {
 } from '../utils/accountMoney';
 import { UnconvertedNote } from '../components/currency/UnconvertedNote';
 import NetWorthMini from '../components/dashboard/NetWorthMini';
+import RowMenu from '../components/ui/RowMenu';
+import { usePreferencesStore, type AccountSort } from '../store/preferencesStore';
 import { ACCOUNT_GROUPS, type Account, type AccountGroup } from '../types';
 import { AccountIcon } from '../components/accounts/AccountIcon';
 import { accountTypeInfo, accountTypeLabel } from '../utils/accountTypes';
 
-type AccountSort = 'order' | 'balance' | 'name';
-
-// Balance: biggest first by size (the largest debt too), accounts without a rate last
+// Balance sorts go by size, so the largest debt counts as a high balance; no rate goes last
 const size = (a: Account) => {
   const value = balanceValue(a);
   return value === null ? -1 : Math.abs(value);
 };
 
-const SORTS: Record<Exclude<AccountSort, 'order'>, (a: Account, b: Account) => number> = {
-  balance: (a, b) => size(b) - size(a),
-  name: (a, b) => a.name.localeCompare(b.name),
+const SORTS: Record<
+  Exclude<AccountSort, 'manual'>,
+  { label: string; compare: (a: Account, b: Account) => number }
+> = {
+  'balance-desc': { label: 'Balance: high to low', compare: (a, b) => size(b) - size(a) },
+  'balance-asc': {
+    label: 'Balance: low to high',
+    compare: (a, b) => (size(a) < 0 ? 1 : size(b) < 0 ? -1 : size(a) - size(b)),
+  },
+  name: { label: 'Name: A to Z', compare: (a, b) => a.name.localeCompare(b.name) },
 };
 
 function groupAccountsByType(accounts: Account[], sort: AccountSort) {
   const groups = new Map<AccountGroup, Account[]>();
-  const sorted = sort === 'order' ? accounts : [...accounts].sort(SORTS[sort]);
+  const sorted = sort === 'manual' ? accounts : [...accounts].sort(SORTS[sort].compare);
   for (const a of sorted) {
     const group = accountTypeInfo(a.type).group;
     const list = groups.get(group) ?? [];
@@ -160,7 +168,9 @@ export default function AccountsPage() {
   const { data: balancesAgo = {} } = useBalancesAgo();
   const [addOpen, setAddOpen] = useState(false);
   useOpenFromLink('add', () => setAddOpen(true));
-  const [sort, setSort] = useState<AccountSort>('order');
+  const navigate = useNavigate();
+  const sort = usePreferencesStore((s) => s.accountSort);
+  const setSort = usePreferencesStore((s) => s.setAccountSort);
   const allGroups = useMemo(() => groupAccountsByType(accounts, sort), [accounts, sort]);
 
   if (isLoading) {
@@ -184,16 +194,31 @@ export default function AccountsPage() {
         <h1 className="text-lg font-semibold text-text">Accounts</h1>
         <div className="flex items-center gap-2">
           {accounts.length > 1 && (
-            <select
-              aria-label="Sort accounts"
-              value={sort}
-              onChange={(e) => setSort(e.target.value as AccountSort)}
-              className="text-sm border border-border rounded-md px-3 py-1.5 max-md:min-h-11 bg-surface text-text focus:outline-none focus:ring-1 focus:ring-brand-600 focus:border-brand-600"
-            >
-              <option value="order">Your order</option>
-              <option value="balance">Balance</option>
-              <option value="name">Name</option>
-            </select>
+            <RowMenu
+              label="Sort accounts"
+              trigger={
+                <>
+                  <ArrowUpDown size={14} />
+                  Sort: {sort === 'manual' ? 'Manual' : SORTS[sort].label.split(':')[0]}
+                </>
+              }
+              items={[
+                ...(Object.keys(SORTS) as (keyof typeof SORTS)[]).map((key) => ({
+                  label: SORTS[key].label,
+                  checked: sort === key,
+                  onClick: () => setSort(key),
+                })),
+                {
+                  label: 'Manual order',
+                  checked: sort === 'manual',
+                  onClick: () => setSort('manual'),
+                },
+                {
+                  label: 'Edit manual order…',
+                  onClick: () => navigate('/settings?tab=accounts'),
+                },
+              ]}
+            />
           )}
           <Button size="sm" onClick={() => setAddOpen(true)}>
             <Plus size={14} /> Add Account

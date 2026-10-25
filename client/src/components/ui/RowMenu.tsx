@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { MoreVertical } from 'lucide-react';
+import { Check, MoreVertical } from 'lucide-react';
 import { PHONE_MAX_WIDTH } from '../../hooks/useIsPhone';
 
 export interface RowMenuItem {
@@ -8,6 +8,8 @@ export interface RowMenuItem {
   onClick: () => void;
   danger?: boolean;
   hidden?: boolean;
+  /** Makes the menu a choice: true marks the chosen item with a check */
+  checked?: boolean;
 }
 
 const MENU_W = 200;
@@ -16,10 +18,13 @@ const MENU_W = 200;
 export default function RowMenu({
   items,
   label = 'Actions',
+  trigger,
 }: {
   items: RowMenuItem[];
   /** The button's accessible name, e.g. "Actions for Rent" when a page has several */
   label?: string;
+  /** What the button shows instead of ⋮, drawn as a bordered button */
+  trigger?: ReactNode;
 }) {
   const btnRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -70,11 +75,13 @@ export default function RowMenu({
         aria-label={label}
         aria-haspopup="menu"
         aria-expanded={pos !== null}
-        className={`p-1 max-md:min-w-11 max-md:min-h-11 flex items-center justify-center rounded text-text-tertiary hover:text-text-secondary hover:bg-hover transition-colors cursor-pointer ${
-          pos ? 'bg-hover text-text-secondary' : ''
-        }`}
+        className={`max-md:min-w-11 max-md:min-h-11 flex items-center justify-center transition-colors cursor-pointer ${
+          trigger
+            ? 'gap-1.5 px-3 py-1.5 text-sm font-medium whitespace-nowrap rounded-md border border-border bg-surface text-text hover:bg-hover'
+            : 'p-1 rounded text-text-tertiary hover:text-text-secondary hover:bg-hover'
+        } ${pos ? (trigger ? 'bg-hover' : 'bg-hover text-text-secondary') : ''}`}
       >
-        <MoreVertical size={15} />
+        {trigger ?? <MoreVertical size={15} />}
       </button>
       {pos &&
         createPortal(
@@ -88,17 +95,21 @@ export default function RowMenu({
             {visible.map((item) => (
               <button
                 key={item.label}
-                role="menuitem"
+                role={item.checked === undefined ? 'menuitem' : 'menuitemradio'}
+                aria-checked={item.checked}
                 onClick={() => {
                   setPos(null);
                   item.onClick();
                 }}
-                className={`w-full text-left px-3 py-2 max-md:py-3 text-sm transition-colors cursor-pointer ${
+                className={`w-full flex items-center gap-2 text-left px-3 py-2 max-md:py-3 text-sm transition-colors cursor-pointer ${
                   item.danger
                     ? 'text-negative hover:bg-negative-subtle'
                     : 'text-text hover:bg-hover'
                 }`}
               >
+                {visible.some((i) => i.checked !== undefined) && (
+                  <Check size={14} className={item.checked ? 'text-brand-600' : 'invisible'} />
+                )}
                 {item.label}
               </button>
             ))}
