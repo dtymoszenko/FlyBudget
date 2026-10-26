@@ -68,7 +68,7 @@
         "arch": ["x64", "arm64"]
       }
     ],
-    "icon": "electron/resources/icon-1024.png",
+    "icon": "electron/resources/linux",
     "category": "Office",
     "executableName": "flybudget",
     "synopsis": "Budgeting that keeps your financial data on your computer",
