@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { format, isValid as isValidDate, parseISO } from 'date-fns';
-import { MinusCircle, PlusCircle, ChevronDown } from 'lucide-react';
+import { MinusCircle, PlusCircle, ChevronDown, Split } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { SavedOnDeviceHint } from '../connection/SavingPausedHint';
@@ -12,6 +12,8 @@ import { useAddTransaction } from '../../hooks/useOffline';
 import { useAccountCurrency, useConverted } from '../../hooks/useCurrency';
 import { MerchantSelect } from './MerchantSelect';
 import { CategorySelectButton } from './CategorySelectButton';
+import { SplitPartsEditor } from './SplitPartsEditor';
+import { emptyPart, partsBalanced, partsToSend, type SplitPart } from '../../utils/splitParts';
 import { AccountIcon } from '../accounts/AccountIcon';
 
 interface Props {
@@ -32,6 +34,9 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [showAccountPicker, setShowAccountPicker] = useState(false);
   const [notes, setNotes] = useState('');
+  // Split between categories instead of one category (not for a transfer)
+  const [splitting, setSplitting] = useState(false);
+  const [parts, setParts] = useState<SplitPart[]>([emptyPart(), emptyPart()]);
   // A transfer between currencies: the amount on the other account's side, in its currency.
   // Filled in at the day's rate until it's typed over (the bank's rate and fees differ).
   const [otherAmount, setOtherAmount] = useState(0);
@@ -85,7 +90,8 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
     (!crossCurrency || otherAmount > 0) &&
     (hasConfirmedMerchant || transferToId !== null) &&
     dateValid &&
-    accountId !== '';
+    accountId !== '' &&
+    (!splitting || partsBalanced(amount, parts));
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -108,6 +114,8 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
       setShowAccountPicker(false);
       setCategoryId(null);
       setNotes('');
+      setSplitting(false);
+      setParts([emptyPart(), emptyPart()]);
       setOtherAmount(0);
       setOtherTyped(false);
     }
@@ -152,8 +160,9 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
           amount: finalAmount,
           payeeId,
           payeeName,
-          categoryId,
+          categoryId: splitting ? null : categoryId,
           notes: notes || null,
+          ...(splitting ? { splits: partsToSend(parts, type === 'debit') } : {}),
         },
       },
       onClose,
@@ -345,15 +354,39 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
             </div>
           </div>
 
-          {/* Category */}
+          {/* Category, or the parts of a split */}
           <div>
-            <label className="block text-sm font-medium text-text mb-1">Category</label>
-            <CategorySelectButton
-              value={categoryId}
-              onChange={setCategoryId}
-              position="above"
-              transferAccounts={transferAccounts}
-            />
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm font-medium text-text">
+                {splitting ? 'Split between categories' : 'Category'}
+              </label>
+              {!transferToId && (
+                <button
+                  type="button"
+                  onClick={() => setSplitting(!splitting)}
+                  aria-pressed={splitting}
+                  className={`flex items-center gap-1 text-sm rounded px-1.5 max-md:min-h-11 ${splitting ? 'text-brand-600 bg-brand-50' : 'text-text-tertiary hover:text-text-secondary'}`}
+                >
+                  <Split size={14} />
+                  Split
+                </button>
+              )}
+            </div>
+            {splitting ? (
+              <SplitPartsEditor
+                parts={parts}
+                onChange={setParts}
+                total={amount}
+                currency={ownCurrency}
+              />
+            ) : (
+              <CategorySelectButton
+                value={categoryId}
+                onChange={setCategoryId}
+                position="above"
+                transferAccounts={transferAccounts}
+              />
+            )}
           </div>
 
           {/* Notes */}

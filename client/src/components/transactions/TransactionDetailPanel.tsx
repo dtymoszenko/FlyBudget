@@ -1,5 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { X, Lock, Trash2, Repeat, Unlink, Wand2 } from 'lucide-react';
+import { X, Lock, Trash2, Repeat, Unlink, Wand2, Split } from 'lucide-react';
 import { useUpdateTransaction, useDeleteTransaction } from '../../hooks/useTransactions';
 import { useTransferToAccount, useUnlinkTransfer } from '../../hooks/useTransfers';
 import { useCanSave } from '../../hooks/useConnection';
@@ -10,6 +10,7 @@ import { Button } from '../ui/Button';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { useModalValue } from '../ui/Modal';
 import { RuleEditorFlow } from '../rules/RuleEditorFlow';
+import { SplitTransactionModal } from './SplitTransactionModal';
 import { PayeeIcon } from '../payees/PayeeIcon';
 import { useUpdatePayee } from '../../hooks/usePayees';
 import { usePreferencesStore } from '../../store/preferencesStore';
@@ -69,6 +70,7 @@ export function TransactionDetailPanel({
   const [localPayee, setLocalPayee] = useState({ id: tx.payeeId, name: tx.payeeName ?? '' });
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showSplit, setShowSplit] = useState(false);
   const [ruleDraft, setRuleDraft] = useState<RuleInput | null>(null);
   const ruleModal = useModalValue(ruleDraft);
   const [unsaved, setUnsaved] = useState<Partial<Record<EditedField, boolean>>>({});
@@ -100,11 +102,18 @@ export function TransactionDetailPanel({
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape' && !showCategoryPicker && !showDeleteConfirm && !ruleDraft) onClose();
+      if (
+        e.key === 'Escape' &&
+        !showCategoryPicker &&
+        !showDeleteConfirm &&
+        !showSplit &&
+        !ruleDraft
+      )
+        onClose();
     }
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
-  }, [onClose, showCategoryPicker, showDeleteConfirm, ruleDraft]);
+  }, [onClose, showCategoryPicker, showDeleteConfirm, showSplit, ruleDraft]);
 
   const isReconciled = tx.reconciled === 1;
   const isTransfer = !!tx.transferTransactionId;
@@ -119,6 +128,19 @@ export function TransactionDetailPanel({
   const canSave = useCanSave();
   const transferAccounts =
     canSave && !tx.isAdjustment ? accounts.filter((a) => a.id !== tx.accountId && !a.closedAt) : [];
+  // Splitting needs the server too; a balance correction isn't spending to divide up
+  const canSplit = canSave && !isReconciled && !isTransfer && !tx.isAdjustment;
+  const splitButton = canSplit && (
+    <Button
+      variant="secondary"
+      size="sm"
+      onClick={() => setShowSplit(true)}
+      title="Divide this transaction between categories"
+    >
+      <Split size={13} />
+      {isSplitParent ? 'Edit split' : 'Split'}
+    </Button>
+  );
 
   function trackSave(field: EditedField, save: Promise<unknown>) {
     // Takes mutateAsync's promise, since mutate's own callbacks only run for the latest call
@@ -284,6 +306,7 @@ export function TransactionDetailPanel({
                   </div>
                 );
               })}
+              {splitButton}
             </div>
           ) : isTransfer ? (
             <div className="flex items-center gap-2">
@@ -304,11 +327,11 @@ export function TransactionDetailPanel({
               )}
             </div>
           ) : (
-            <div className="relative">
+            <div className="relative flex items-center gap-2">
               <button
                 onClick={() => canEditCategory && setShowCategoryPicker(!showCategoryPicker)}
                 disabled={isReconciled}
-                className={`${inputCls} text-left flex items-center gap-2 ${canEditCategory ? 'cursor-pointer' : ''}`}
+                className={`${inputCls} flex-1 min-w-0 text-left flex items-center gap-2 ${canEditCategory ? 'cursor-pointer' : ''}`}
               >
                 {showCategoryIcons && categoryEntry?.icon && (
                   <span className="text-base">{categoryEntry.icon}</span>
@@ -317,6 +340,7 @@ export function TransactionDetailPanel({
                   {categoryEntry?.name ?? 'Uncategorized'}
                 </span>
               </button>
+              {splitButton}
               {showCategoryPicker && (
                 <CategoryPicker
                   value={tx.categoryId}
@@ -409,6 +433,15 @@ export function TransactionDetailPanel({
           onClose={() => setRuleDraft(null)}
           initial={ruleModal.value}
           title="New rule from transaction"
+        />
+      )}
+
+      {canSplit && (
+        <SplitTransactionModal
+          isOpen={showSplit}
+          onClose={() => setShowSplit(false)}
+          transaction={tx}
+          currency={currency}
         />
       )}
 
