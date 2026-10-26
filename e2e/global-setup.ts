@@ -1,5 +1,5 @@
 import { spawn, execFileSync, type ChildProcess } from 'child_process';
-import { randomBytes, timingSafeEqual } from 'crypto';
+import { createHash, randomBytes, timingSafeEqual } from 'crypto';
 import http from 'http';
 import { gzipSync } from 'zlib';
 import fs from 'fs';
@@ -13,6 +13,7 @@ import {
   ENABLE_BANKING_MOCK_PORT,
   FRANKFURTER_MOCK_PORT,
   SERVER_PORT,
+  assertPortsFree,
 } from './ports';
 import { startEnableBankingMock } from './mockEnableBanking';
 import { startFrankfurterMock } from './mockFrankfurter';
@@ -32,9 +33,21 @@ import { startFrankfurterMock } from './mockFrankfurter';
 // Tests can also stop and restart the desktop server (to check how the app behaves
 // while it can't reach it) through a small control server on 127.0.0.1:CONTROL_PORT,
 // which only accepts requests carrying a per-run token (see tests/serverControl.ts).
+//
+// Several checkouts (git worktrees) can run at once on one machine: each run takes its ports
+// from E2E_PORT_BASE (ports.ts) and keeps its reusable client builds to its own checkout.
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const isWindows = process.platform === 'win32';
+
+/**
+ * Where E2E_SKIP_BUILD finds this checkout's last client build. The checkout's path is in the
+ * name: a build shared between checkouts would serve one branch's client to another's tests.
+ */
+function buildCache(target: string) {
+  const checkout = createHash('sha256').update(root).digest('hex').slice(0, 12);
+  return path.join(os.tmpdir(), `flybudget-e2e-cache-${checkout}-${target}`);
+}
 
 function buildClient(outDir: string, mode?: string) {
   const vite = path.join(root, 'client/node_modules/vite/bin/vite.js');
@@ -218,22 +231,29 @@ function startDemoServer(root: string): Promise<http.Server> {
 }
 
 export default async function globalSetup() {
+  // Before the builds, which take a while
+  await assertPortsFree([
+    DESKTOP_PORT,
+    SERVER_PORT,
+    CONTROL_PORT,
+    DEMO_PORT,
+    ENABLE_BANKING_MOCK_PORT,
+    FRANKFURTER_MOCK_PORT,
+  ]);
+
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'flybudget-e2e-'));
-  if (!process.env.E2E_SKIP_BUILD) {
-    buildClient(path.join(dir, 'client-desktop'), 'electron');
-    buildClient(path.join(dir, 'client-web'));
-    buildClient(path.join(dir, 'client-demo'), 'demo');
-  } else {
-    // Reuse builds from a previous run (faster while writing tests)
-    for (const [target, mode] of [
-      ['client-desktop', 'electron'],
-      ['client-web', undefined],
-      ['client-demo', 'demo'],
-    ] as const) {
-      const cached = path.join(os.tmpdir(), `flybudget-e2e-cache-${target}`);
-      if (!fs.existsSync(cached)) buildClient(cached, mode);
-      fs.cpSync(cached, path.join(dir, target), { recursive: true });
-    }
+  for (const [target, mode] of [
+    ['client-desktop', 'electron'],
+    ['client-web', undefined],
+    ['client-demo', 'demo'],
+  ] as const) {
+    // E2E_SKIP_BUILD reuses the build of this checkout's last run (faster while writing tests).
+    // Look for a file, not the folder: macOS empties old files in the temp directory but
+    // leaves the folders, which would serve an empty build.
+    const cached = buildCache(target);
+    const built = fs.existsSync(path.join(cached, 'index.html'));
+    if (!process.env.E2E_SKIP_BUILD || !built) buildClient(cached, mode);
+    fs.cpSync(cached, path.join(dir, target), { recursive: true });
   }
 
   const demo = await startDemoServer(path.join(dir, 'client-demo'));
