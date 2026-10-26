@@ -4,6 +4,8 @@ import { Button } from '../ui/Button';
 import { AmountFields, useAmountValidity } from '../ui/amountValidity';
 import { useFormReset } from '../../hooks/useFormReset';
 import { useSetTransactionSplits } from '../../hooks/useTransactions';
+import { useCanSave } from '../../hooks/useConnection';
+import { SavingPausedHint } from '../connection/SavingPausedHint';
 import { formatMoney } from '../../utils/currency';
 import { SplitPartsEditor } from './SplitPartsEditor';
 import { emptyPart, partsBalanced, partsToSend, type SplitPart } from '../../utils/splitParts';
@@ -32,6 +34,7 @@ function startingParts(tx: Transaction): SplitPart[] {
 export function SplitTransactionModal({ isOpen, onClose, transaction: tx, currency }: Props) {
   const [parts, setParts] = useState<SplitPart[]>(() => startingParts(tx));
   useFormReset(isOpen ? tx.id : null, () => setParts(startingParts(tx)));
+  const canSave = useCanSave();
   const setSplits = useSetTransactionSplits();
   const { allValid, report } = useAmountValidity();
   const total = Math.abs(tx.amount);
@@ -63,7 +66,7 @@ export function SplitTransactionModal({ isOpen, onClose, transaction: tx, curren
                 <Button
                   variant="ghost"
                   onClick={() => save([])}
-                  disabled={setSplits.isPending}
+                  disabled={!canSave || setSplits.isPending}
                   title="Make it one uncategorized transaction again"
                 >
                   Unsplit
@@ -76,12 +79,15 @@ export function SplitTransactionModal({ isOpen, onClose, transaction: tx, curren
               </Button>
               <Button
                 onClick={() => save(partsToSend(parts, tx.amount < 0))}
-                disabled={!allValid || !partsBalanced(total, parts) || setSplits.isPending}
+                disabled={
+                  !canSave || !allValid || !partsBalanced(total, parts) || setSplits.isPending
+                }
               >
                 {setSplits.isPending ? 'Saving...' : 'Save split'}
               </Button>
             </div>
           </div>
+          <SavingPausedHint />
         </div>
       </AmountFields>
     </Modal>

@@ -450,6 +450,14 @@ transactionsRouter.put('/:id/splits', (req, res) => {
     return res.status(400).json({ error: "A balance correction can't be split" });
   if (splits.length && splits.reduce((sum, s) => sum + s.amount, 0) !== existing.amount)
     return res.status(400).json({ error: 'Split amounts must equal transaction total' });
+  if (
+    splits.length &&
+    (existing.amount === 0 ||
+      splits.some((s) => Math.sign(s.amount) !== Math.sign(existing.amount)))
+  )
+    return res
+      .status(400)
+      .json({ error: 'Split parts must have the same sign as the transaction' });
   const categoryIds = [...new Set(splits.flatMap((s) => (s.categoryId ? [s.categoryId] : [])))];
   if (
     categoryIds.length &&

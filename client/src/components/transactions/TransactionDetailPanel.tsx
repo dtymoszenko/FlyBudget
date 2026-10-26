@@ -129,8 +129,9 @@ export function TransactionDetailPanel({
   const transferAccounts =
     canSave && !tx.isAdjustment ? accounts.filter((a) => a.id !== tx.accountId && !a.closedAt) : [];
   // Splitting needs the server too; a balance correction isn't spending to divide up
-  const canSplit = canSave && !isReconciled && !isTransfer && !tx.isAdjustment;
-  const splitButton = canSplit && (
+  // The dialog stays mounted when saving pauses, so typed parts survive and it shows the hint
+  const splittable = !isReconciled && !isTransfer && !tx.isAdjustment;
+  const splitButton = splittable && canSave && (
     <Button
       variant="secondary"
       size="sm"
@@ -436,7 +437,7 @@ export function TransactionDetailPanel({
         />
       )}
 
-      {canSplit && (
+      {splittable && (
         <SplitTransactionModal
           isOpen={showSplit}
           onClose={() => setShowSplit(false)}

@@ -118,13 +118,16 @@ describe('split transactions (property-based)', () => {
 });
 
 describe('splitting an existing transaction', () => {
-  // Two to five non-zero parts and their total
+  // Two to five non-zero parts, all spending or all income, and their total
   const arbParts = fc
-    .array(
-      fc.integer({ min: -100_000, max: 100_000 }).filter((p) => p !== 0),
-      { minLength: 2, maxLength: 5 },
+    .tuple(
+      fc.array(fc.integer({ min: 1, max: 100_000 }), { minLength: 2, maxLength: 5 }),
+      fc.boolean(),
     )
-    .map((parts) => ({ total: parts.reduce((s, p) => s + p, 0), parts }));
+    .map(([abs, spending]) => {
+      const parts = abs.map((p) => (spending ? -p : p));
+      return { total: parts.reduce((s, p) => s + p, 0), parts };
+    });
 
   const partsOf = async (accountId: string) => {
     const { body: rows } = await send('GET', `/transactions?account_id=${accountId}`);
@@ -164,7 +167,7 @@ describe('splitting an existing transaction', () => {
           ...second.parts.slice(0, -1),
           first.total - second.parts.slice(0, -1).reduce((s, p) => s + p, 0),
         ];
-        if (again.every((p) => p !== 0)) {
+        if (again.every((p) => Math.sign(p) === Math.sign(first.total))) {
           expect((await split(again)).status).toBe(200);
           expect((await partsOf(accountId)).children).toHaveLength(again.length);
         }
@@ -179,7 +182,7 @@ describe('splitting an existing transaction', () => {
     );
   });
 
-  it('refuses a part, a transfer, a single part and an unknown category', async () => {
+  it('refuses a part, a transfer, a single part, an unknown category and opposite-sign parts', async () => {
     const accountId = await newAccount();
     const otherId = await newAccount();
     const { body: parent } = await send('POST', '/transactions', {
@@ -223,6 +226,14 @@ describe('splitting an existing transaction', () => {
       ],
     };
     expect((await send('PUT', `/transactions/${plain.id}/splits`, unknown)).status).toBe(400);
+    // Parts that sum to the total but pull against its sign would skew category reports
+    const opposite = {
+      splits: [
+        { categoryId: null, amount: 500 },
+        { categoryId: null, amount: -1100 },
+      ],
+    };
+    expect((await send('PUT', `/transactions/${plain.id}/splits`, opposite)).status).toBe(400);
     expect((await send('PUT', `/transactions/${plain.id}/splits`, two)).status).toBe(200);
   });
 });
