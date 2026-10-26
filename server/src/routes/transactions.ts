@@ -4,7 +4,11 @@ import { transactions, payees, accounts, categories } from '../db/schema.js';
 import { eq, and, or, like, gte, lte, sql, isNull, isNotNull, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
-import { deleteTransactionRow, resolvePayee } from '../services/transactionHelpers.js';
+import {
+  deleteTransactionRow,
+  resolvePayee,
+  setSplitParts,
+} from '../services/transactionHelpers.js';
 import { buildRuleContext, insertNewTransaction, loadRules } from '../services/ruleService.js';
 import {
   TransferError,
@@ -412,6 +416,62 @@ transactionsRouter.post('/:id/transfer', (req, res) => {
       otherAmount: parsed.data.otherAmount,
     }),
   );
+});
+
+// PUT /transactions/:id/splits — split an existing transaction (an import), change its
+// parts, or with no parts make it one uncategorized transaction again
+const splitPartsSchema = z.object({
+  splits: z
+    .array(
+      z.object({
+        categoryId: id.nullable(),
+        amount: cents.refine((a) => a !== 0, 'A part needs an amount'),
+        notes: z.string().max(5_000).nullable().optional(),
+      }),
+    )
+    .max(100)
+    .refine((parts) => parts.length !== 1, 'A split needs at least two parts'),
+});
+
+transactionsRouter.put('/:id/splits', (req, res) => {
+  const parsed = splitPartsSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+  const { splits } = parsed.data;
+
+  const existing = db.select().from(transactions).where(eq(transactions.id, req.params.id)).get();
+  if (!existing) return res.status(404).json({ error: 'Not found' });
+  if (existing.reconciled === 1)
+    return res.status(403).json({ error: 'Cannot modify a reconciled transaction' });
+  if (existing.parentTransactionId)
+    return res.status(400).json({ error: 'Split the whole transaction instead of a part' });
+  if (existing.transferTransactionId)
+    return res.status(400).json({ error: "A transfer can't be split" });
+  if (existing.isAdjustment === 1)
+    return res.status(400).json({ error: "A balance correction can't be split" });
+  if (splits.length && splits.reduce((sum, s) => sum + s.amount, 0) !== existing.amount)
+    return res.status(400).json({ error: 'Split amounts must equal transaction total' });
+  if (
+    splits.length &&
+    (existing.amount === 0 ||
+      splits.some((s) => Math.sign(s.amount) !== Math.sign(existing.amount)))
+  )
+    return res
+      .status(400)
+      .json({ error: 'Split parts must have the same sign as the transaction' });
+  const categoryIds = [...new Set(splits.flatMap((s) => (s.categoryId ? [s.categoryId] : [])))];
+  if (
+    categoryIds.length &&
+    db
+      .select({ id: categories.id })
+      .from(categories)
+      .where(inArray(categories.id, categoryIds))
+      .all().length !== categoryIds.length
+  ) {
+    return res.status(400).json({ error: 'Category not found' });
+  }
+
+  setSplitParts(existing, splits);
+  res.json(alreadyCreated(existing.id));
 });
 
 // POST /transactions/:id/unlink-transfer — "Not a transfer"

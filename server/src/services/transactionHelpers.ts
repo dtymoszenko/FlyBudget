@@ -51,6 +51,48 @@ export function restoreBankPayee(row: {
 }
 
 /**
+ * Splits an existing transaction into parts, replaces the parts of one that's already split,
+ * or (no parts) makes it one uncategorized transaction again. The parts are new rows in the
+ * same account, like a rule's split; the caller checks they add up to the whole.
+ */
+export function setSplitParts(
+  row: typeof transactions.$inferSelect,
+  parts: { categoryId: string | null; amount: number; notes?: string | null }[],
+) {
+  db.transaction((tx) => {
+    const old = tx
+      .select({ id: transactions.id })
+      .from(transactions)
+      .where(eq(transactions.parentTransactionId, row.id))
+      .all();
+    for (const c of old) unlinkOccurrenceByTransactionId(c.id);
+    tx.delete(transactions).where(eq(transactions.parentTransactionId, row.id)).run();
+    tx.update(transactions)
+      .set({ isParent: parts.length ? 1 : 0, categoryId: null })
+      .where(eq(transactions.id, row.id))
+      .run();
+    for (const p of parts) {
+      tx.insert(transactions)
+        .values({
+          ...row,
+          id: nanoid(),
+          amount: p.amount,
+          categoryId: p.categoryId,
+          notes: p.notes ?? null,
+          isParent: 0,
+          parentTransactionId: row.id,
+          importedId: null,
+          scheduleId: null,
+          createdAt: new Date().toISOString(),
+        })
+        .run();
+    }
+  });
+  // The parts share the whole's budget-currency value
+  refreshMainAmounts([row.id]);
+}
+
+/**
  * Deletes a transaction with everything that hangs off it: a split's parts, the link
  * from a transfer's other side (back to the bank's payee), and a schedule occurrence it paid (back to pending).
  */

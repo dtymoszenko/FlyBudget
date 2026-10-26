@@ -117,6 +117,127 @@ describe('split transactions (property-based)', () => {
   });
 });
 
+describe('splitting an existing transaction', () => {
+  // Two to five non-zero parts, all spending or all income, and their total
+  const arbParts = fc
+    .tuple(
+      fc.array(fc.integer({ min: 1, max: 100_000 }), { minLength: 2, maxLength: 5 }),
+      fc.boolean(),
+    )
+    .map(([abs, spending]) => {
+      const parts = abs.map((p) => (spending ? -p : p));
+      return { total: parts.reduce((s, p) => s + p, 0), parts };
+    });
+
+  const partsOf = async (accountId: string) => {
+    const { body: rows } = await send('GET', `/transactions?account_id=${accountId}`);
+    return rows[0];
+  };
+
+  it('keeps the balance and the parts add up, through split, re-split and unsplit', async () => {
+    await fc.assert(
+      fc.asyncProperty(arbParts, arbParts, async (first, second) => {
+        const accountId = await newAccount(5_000);
+        const { body: tx } = await send('POST', '/transactions', {
+          accountId,
+          date: '2025-04-02',
+          amount: first.total,
+          payeeName: 'Store',
+        });
+        const split = (parts: number[]) =>
+          send('PUT', `/transactions/${tx.id}/splits`, {
+            splits: parts.map((amount) => ({ categoryId: null, amount })),
+          });
+
+        expect((await split(first.parts)).status).toBe(200);
+        let row = await partsOf(accountId);
+        expect(row.isParent).toBe(1);
+        expect(row.children.map((c: { amount: number }) => c.amount).sort()).toEqual(
+          [...first.parts].sort(),
+        );
+        expect(await balanceOf(accountId)).toBe(5_000 + first.total);
+
+        // Parts for another total are refused and change nothing
+        if (second.total !== first.total) {
+          expect((await split(second.parts)).status).toBe(400);
+          expect((await partsOf(accountId)).children).toHaveLength(first.parts.length);
+        }
+        // New parts for the same total replace the old ones
+        const again = [
+          ...second.parts.slice(0, -1),
+          first.total - second.parts.slice(0, -1).reduce((s, p) => s + p, 0),
+        ];
+        if (again.every((p) => Math.sign(p) === Math.sign(first.total))) {
+          expect((await split(again)).status).toBe(200);
+          expect((await partsOf(accountId)).children).toHaveLength(again.length);
+        }
+
+        expect((await split([])).status).toBe(200);
+        row = await partsOf(accountId);
+        expect(row).toMatchObject({ isParent: 0, categoryId: null, amount: first.total });
+        expect(row.children).toBeUndefined();
+        expect(await balanceOf(accountId)).toBe(5_000 + first.total);
+      }),
+      { numRuns: 20 },
+    );
+  });
+
+  it('refuses a part, a transfer, a single part, an unknown category and opposite-sign parts', async () => {
+    const accountId = await newAccount();
+    const otherId = await newAccount();
+    const { body: parent } = await send('POST', '/transactions', {
+      accountId,
+      date: '2025-04-02',
+      amount: -1000,
+      splits: [
+        { categoryId: null, amount: -600 },
+        { categoryId: null, amount: -400 },
+      ],
+    });
+    const two = {
+      splits: [
+        { categoryId: null, amount: -300 },
+        { categoryId: null, amount: -300 },
+      ],
+    };
+    expect((await send('PUT', `/transactions/${parent.children[0].id}/splits`, two)).status).toBe(
+      400,
+    );
+
+    const { body: transfer } = await send('POST', '/transactions/transfer', {
+      fromAccountId: accountId,
+      toAccountId: otherId,
+      date: '2025-04-02',
+      amount: 600,
+    });
+    expect((await send('PUT', `/transactions/${transfer[0].id}/splits`, two)).status).toBe(400);
+
+    const { body: plain } = await send('POST', '/transactions', {
+      accountId,
+      date: '2025-04-02',
+      amount: -600,
+    });
+    const one = { splits: [{ categoryId: null, amount: -600 }] };
+    expect((await send('PUT', `/transactions/${plain.id}/splits`, one)).status).toBe(400);
+    const unknown = {
+      splits: [
+        { categoryId: 'nope', amount: -300 },
+        { categoryId: null, amount: -300 },
+      ],
+    };
+    expect((await send('PUT', `/transactions/${plain.id}/splits`, unknown)).status).toBe(400);
+    // Parts that sum to the total but pull against its sign would skew category reports
+    const opposite = {
+      splits: [
+        { categoryId: null, amount: 500 },
+        { categoryId: null, amount: -1100 },
+      ],
+    };
+    expect((await send('PUT', `/transactions/${plain.id}/splits`, opposite)).status).toBe(400);
+    expect((await send('PUT', `/transactions/${plain.id}/splits`, two)).status).toBe(200);
+  });
+});
+
 describe('transfers', () => {
   it('keep both sides in step when edited', async () => {
     const from = await newAccount();

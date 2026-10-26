@@ -78,6 +78,13 @@ export const updateTransaction = (
   data: Partial<CreateTransactionData> & { mainAmount?: number | null },
 ) => apiFetch<Transaction>(`/transactions/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 
+/** Split an existing transaction, change its parts, or with no parts make it whole again */
+export const setTransactionSplits = (id: string, splits: SplitItem[]) =>
+  apiFetch<Transaction>(`/transactions/${id}/splits`, {
+    method: 'PUT',
+    body: JSON.stringify({ splits }),
+  });
+
 export const deleteTransaction = (id: string) =>
   apiFetch<void>(`/transactions/${id}`, { method: 'DELETE' });
 
