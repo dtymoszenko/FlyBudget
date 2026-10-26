@@ -5,7 +5,8 @@ import { DEMO_PORT, DESKTOP_PORT, SERVER_PORT } from './ports';
 //   npm test                      run everything
 //   npm test -- --project=desktop only the desktop-app suite
 //   npm test -- --project=demo    only the website demo
-//   E2E_SKIP_BUILD=1 npm test     reuse the client builds from the last run
+//   E2E_SKIP_BUILD=1 npm test     reuse the client builds from this checkout's last run
+//   E2E_PORT_BASE=3271 npm test   other ports, to run next to another checkout's run (ports.ts)
 //   E2E_SERVER_LOGS=1 npm test    show the servers' logs
 
 export default defineConfig({

@@ -14,12 +14,13 @@ import http from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { chromium, type Browser, type Locator, type Page } from '@playwright/test';
+import { SCREENSHOT_PORT, assertPortsFree } from './ports.ts';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const demoDir = path.join(root, 'website', 'static', 'demo');
 const outDir =
   process.env.SCREENSHOT_DIR ?? path.join(root, 'website', 'static', 'img', 'screenshots');
-const PORT = 3175;
+const PORT = SCREENSHOT_PORT;
 
 interface Shot {
   name: string;
@@ -385,6 +386,7 @@ const filters = process.argv.slice(2);
 const ALL_SHOTS = SHOTS.flatMap((s) => [s, { ...s, name: `dark-${s.name}`, dark: true }]);
 const wanted = ALL_SHOTS.filter((s) => !filters.length || filters.some((f) => s.name.includes(f)));
 
+await assertPortsFree([PORT]);
 const server = await serveDemo();
 const browser = await chromium.launch();
 try {
