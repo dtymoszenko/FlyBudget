@@ -6,7 +6,10 @@ permissions: {}
 
 jobs:
   auto-merge:
-    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    # github.actor too: never approve a push someone else made to Dependabot's branch
+    if: >-
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      github.actor == 'dependabot[bot]'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -17,14 +20,18 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Patch/minor only, and never Electron or native modules. Merges once
-      # the required "CI passed" check goes green and a maintainer approves
-      # (main requires one approving review).
+      # Patch/minor only, and never Electron or native modules: approve (main
+      # requires one approving review; needs "Allow GitHub Actions to create and
+      # approve pull requests" in Settings → Actions) and merge once the required
+      # "CI passed" check goes green. Runs again after every Dependabot push, since
+      # a push dismisses the approval. Majors and Electron wait for a maintainer.
       - if: >-
           steps.meta.outputs.update-type != 'version-update:semver-major' &&
           !contains(steps.meta.outputs.dependency-names, 'electron') &&
           !contains(steps.meta.outputs.dependency-names, 'better-sqlite3')
-        run: gh pr merge --auto --squash "$PR_URL"
+        run: |
+          gh pr review --approve "$PR_URL"
+          gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
