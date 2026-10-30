@@ -4,10 +4,11 @@ import { test, expect, open, isoDay } from './fixtures';
 
 // Settings: managing categories and groups, and preferences.
 
+// Emojis in the picker's grid are gridcells (emoji-picker-react 5), not plain buttons
 async function pickEmoji(page: Page, name: string) {
   const picker = page.locator('aside.EmojiPickerReact');
   await picker.getByRole('textbox', { name: 'Type to search for an emoji' }).fill(name);
-  await picker.getByRole('button', { name, exact: true }).click();
+  await picker.getByRole('gridcell', { name, exact: true }).click();
   await expect(picker).toBeHidden();
 }
 
@@ -41,7 +42,9 @@ test.describe('categories', () => {
     await page.getByRole('button', { name: 'Pick icon' }).click();
 
     const picker = page.locator('aside.EmojiPickerReact');
-    await expect(picker.getByRole('button', { name: 'grinning face', exact: true })).toBeVisible();
+    await expect(
+      picker.getByRole('gridcell', { name: 'grinning face', exact: true }),
+    ).toBeVisible();
     await expect(picker.locator('img')).toHaveCount(0); // the CSP blocks the default CDN images
     await expect(picker).toBeInViewport({ ratio: 1 });
   });
