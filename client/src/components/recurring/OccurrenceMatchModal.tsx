@@ -71,7 +71,7 @@ export default function OccurrenceMatchModal({ isOpen, onClose, occurrence }: Pr
           <p className="text-sm font-medium text-text">{occurrence.scheduleName}</p>
           <p className="text-xs text-text-tertiary mt-0.5">
             Expected: {formatDay(occurrence.expectedDate)} ·{' '}
-            {formatMoney(occurrence.expectedAmount, accountCurrency(occurrence.scheduleAccountId))}
+            {formatMoney(occurrence.expectedAmount, occurrence.currency)}
           </p>
         </div>
 
@@ -101,7 +101,14 @@ export default function OccurrenceMatchModal({ isOpen, onClose, occurrence }: Pr
                   <span
                     className={`text-sm font-medium tabular-nums ${tx.amount > 0 ? 'text-positive' : 'text-text'}`}
                   >
-                    {formatMoney(tx.amount, accountCurrency(tx.accountId))}
+                    {formatMoney(
+                      tx.amount,
+                      // The schedule's own account can be closed (not in the account list): the
+                      // occurrence brings its currency along
+                      tx.accountId === occurrence.scheduleAccountId
+                        ? occurrence.currency
+                        : accountCurrency(tx.accountId),
+                    )}
                   </span>
                   <button
                     onClick={() => handleMatch(tx.id)}

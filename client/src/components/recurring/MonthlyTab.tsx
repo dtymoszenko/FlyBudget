@@ -49,10 +49,7 @@ interface Totals {
  * In the budget's currency. Paid uses the actual matched amount; remaining uses the expected
  * amount of unpaid items. An item in another currency without a rate is left out, and named.
  */
-function computeTotals(
-  occs: ScheduleOccurrence[],
-  currencyOf: (accountId: string | null) => string | null,
-): Totals {
+function computeTotals(occs: ScheduleOccurrence[]): Totals {
   let paid = 0,
     remaining = 0;
   const unconverted = new Set<string>();
@@ -63,7 +60,7 @@ function computeTotals(
     const matched = o.displayStatus === 'paid' && o.matchedAmount !== null;
     const value = matched ? o.matchedMainAmount : o.expectedMainAmount;
     if (value === null) {
-      const currency = currencyOf(matched ? o.matchedAccountId : o.scheduleAccountId);
+      const currency = matched ? o.matchedCurrency : o.currency;
       if (currency) unconverted.add(currency);
       continue;
     }
@@ -144,14 +141,8 @@ export default function MonthlyTab({
     };
   }, [occurrences]);
 
-  const { incomeTotals, expenseTotals } = useMemo(() => {
-    const currencyOf = (accountId: string | null) =>
-      (accountId && accountMap.get(accountId)?.currency) || null;
-    return {
-      incomeTotals: computeTotals(income, currencyOf),
-      expenseTotals: computeTotals(expenses, currencyOf),
-    };
-  }, [income, expenses, accountMap]);
+  const incomeTotals = useMemo(() => computeTotals(income), [income]);
+  const expenseTotals = useMemo(() => computeTotals(expenses), [expenses]);
 
   // After a calendar day click, scroll the list to that day's first row
   useEffect(() => {
@@ -190,12 +181,8 @@ export default function MonthlyTab({
             accountName={
               occ.scheduleAccountId ? accountMap.get(occ.scheduleAccountId)?.name : undefined
             }
-            currency={
-              (occ.scheduleAccountId && accountMap.get(occ.scheduleAccountId)?.currency) || null
-            }
-            matchedCurrency={
-              (occ.matchedAccountId && accountMap.get(occ.matchedAccountId)?.currency) || null
-            }
+            currency={occ.currency}
+            matchedCurrency={occ.matchedCurrency}
             onMarkPaid={() =>
               markPaid.mutate({
                 scheduleId: occ.scheduleId,

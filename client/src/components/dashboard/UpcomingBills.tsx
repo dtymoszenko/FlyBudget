@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { format, addDays, parseISO, differenceInCalendarDays } from 'date-fns';
 import { useScheduleOccurrences } from '../../hooks/useSchedules';
 import { formatMoney } from '../../utils/currency';
-import { useAccountCurrency } from '../../hooks/useCurrency';
 import { CalendarClock } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { EmptyState } from '../ui/EmptyState';
@@ -17,7 +16,6 @@ export default function UpcomingBills() {
 
   const { data: occurrences = [], isLoading } = useScheduleOccurrences(today, thirtyDaysOut);
   const { data: schedules = [] } = useSchedules();
-  const accountCurrency = useAccountCurrency();
 
   const upcoming = useMemo(
     () =>
@@ -108,7 +106,7 @@ export default function UpcomingBills() {
                     occ.expectedAmount > 0 ? 'text-positive' : 'text-text'
                   }`}
                 >
-                  {formatMoney(occ.expectedAmount, accountCurrency(occ.scheduleAccountId))}
+                  {formatMoney(occ.expectedAmount, occ.currency)}
                 </span>
               </div>
             );

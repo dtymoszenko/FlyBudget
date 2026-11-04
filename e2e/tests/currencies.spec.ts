@@ -200,6 +200,12 @@ test('a bill paid from an account in another currency shows what was paid there'
   await expect(main.getByText('£16.50').first()).toBeVisible();
   // Left out of the euro totals, and named, rather than counted as nothing
   await expect(main.getByText('Without GBP: no exchange rate yet.')).toBeVisible();
+
+  // Still in pounds once that account is closed (it's no longer in the account list)
+  await api.call('DELETE', `/accounts/${pounds.id}`);
+  await page.reload();
+  await expect(main.getByText('£16.50').first()).toBeVisible();
+  await expect(main.getByText('Without GBP: no exchange rate yet.')).toBeVisible();
 });
 
 test('ECB rates download only when turned on', async ({ page, api }) => {

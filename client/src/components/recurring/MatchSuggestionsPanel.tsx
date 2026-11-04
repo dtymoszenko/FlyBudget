@@ -2,14 +2,12 @@ import { useState } from 'react';
 import { ChevronDown, ChevronRight, Check, X } from 'lucide-react';
 import { useMatchSuggestions, useMatchOccurrence, useDismissMatch } from '../../hooks/useSchedules';
 import { formatMoney } from '../../utils/currency';
-import { useAccountCurrency } from '../../hooks/useCurrency';
 import { formatShortDay } from '../../utils/dates';
 
 export default function MatchSuggestionsPanel() {
   const { data: suggestions = [] } = useMatchSuggestions();
   const matchOcc = useMatchOccurrence();
   const dismissMatch = useDismissMatch();
-  const accountCurrency = useAccountCurrency();
   const [expanded, setExpanded] = useState(false);
 
   if (suggestions.length === 0) return null;
@@ -39,8 +37,7 @@ export default function MatchSuggestionsPanel() {
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-sm font-medium text-text">{sg.scheduleName}</span>
                 <span className="text-xs text-text-tertiary">
-                  {formatShortDay(sg.expectedDate)} ·{' '}
-                  {formatMoney(sg.expectedAmount, accountCurrency(sg.accountId))}
+                  {formatShortDay(sg.expectedDate)} · {formatMoney(sg.expectedAmount, sg.currency)}
                 </span>
               </div>
 
@@ -50,8 +47,7 @@ export default function MatchSuggestionsPanel() {
                     <div className="flex-1 min-w-0">
                       <span className="text-text-secondary">{c.payeeName || '—'}</span>
                       <span className="text-text-tertiary ml-2 text-xs">
-                        {formatShortDay(c.date)} ·{' '}
-                        {formatMoney(c.amount, accountCurrency(c.accountId))}
+                        {formatShortDay(c.date)} · {formatMoney(c.amount, c.currency)}
                       </span>
                       <span className="text-text-tertiary ml-2 text-xs">({c.score}% match)</span>
                     </div>
