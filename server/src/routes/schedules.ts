@@ -13,7 +13,6 @@ import {
   todayIso,
   valueToday,
 } from '../services/mainAmountService.js';
-import { mainAmount } from '../services/balances.js';
 import { findSchedules, createDiscoveredSchedules } from '../services/scheduleDiscovery.js';
 import {
   ensureOccurrences,
@@ -176,11 +175,26 @@ schedulesRouter.get('/occurrences', (req, res) => {
     .filter((r) => r.occ.matchedTransactionId)
     .map((r) => r.occ.matchedTransactionId!);
 
-  const matchedTxMap = new Map<string, { amount: number; mainAmount: number; date: string }>();
+  const matchedTxMap = new Map<
+    string,
+    {
+      accountId: string;
+      amount: number;
+      mainAmount: number | null;
+      mainAmountSource: string | null;
+      date: string;
+    }
+  >();
   if (matchedTxIds.length > 0) {
     for (const txId of matchedTxIds) {
       const tx = db
-        .select({ amount: transactions.amount, mainAmount, date: transactions.date })
+        .select({
+          accountId: transactions.accountId,
+          amount: transactions.amount,
+          mainAmount: transactions.mainAmount,
+          mainAmountSource: transactions.mainAmountSource,
+          date: transactions.date,
+        })
         .from(transactions)
         .where(eq(transactions.id, txId))
         .get();
@@ -188,9 +202,10 @@ schedulesRouter.get('/occurrences', (req, res) => {
     }
   }
 
-  // Amounts are in the schedule's account's currency; the budget-currency values are for
-  // totals across accounts (expected: the day's rate, the latest one for days still to come;
-  // null without a rate)
+  // Amounts are in the schedule's account's currency (a matched transaction's in its own
+  // account's, which can be another one); the budget-currency values are for totals across
+  // accounts (expected: the day's rate, the latest one for days still to come; null without a
+  // rate)
   const ctx = currencyContext();
   const today = todayIso();
   const result = rows.map(({ occ, schedule }) => {
@@ -208,8 +223,12 @@ schedulesRouter.get('/occurrences', (req, res) => {
       schedulePayeeId: schedule.payeeId,
       expectedMainAmount: valueToday(occ.expectedAmount, currency ?? ctx.budget, ctx, date)
         .mainBalance,
+      matchedAccountId: matchedTx?.accountId ?? null,
       matchedAmount: matchedTx?.amount ?? null,
-      matchedMainAmount: matchedTx?.mainAmount ?? null,
+      matchedMainAmount:
+        !matchedTx || matchedTx.mainAmountSource === 'missing'
+          ? null
+          : (matchedTx.mainAmount ?? matchedTx.amount),
       matchedDate: matchedTx?.date ?? null,
     };
   });

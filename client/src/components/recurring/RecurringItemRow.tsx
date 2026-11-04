@@ -16,6 +16,8 @@ interface Props {
   accountName?: string;
   /** The account's currency, which the amounts are in (null = the budget's) */
   currency: string | null;
+  /** The matched transaction's account's currency, which can be another account's */
+  matchedCurrency: string | null;
   upcomingDays: number;
   highlighted?: boolean;
   onMarkPaid?: () => void;
@@ -29,6 +31,7 @@ export default function RecurringItemRow({
   occurrence: occ,
   accountName,
   currency,
+  matchedCurrency,
   upcomingDays,
   highlighted,
   onMarkPaid,
@@ -46,7 +49,9 @@ export default function RecurringItemRow({
     occ.displayStatus === 'waiting';
   const isMuted = !isPending;
   const hasDifferentAmount =
-    isPaid && occ.matchedAmount !== null && occ.matchedAmount !== occ.expectedAmount;
+    isPaid &&
+    occ.matchedAmount !== null &&
+    (occ.matchedAmount !== occ.expectedAmount || matchedCurrency !== currency);
 
   let relative: { text: string; tone: string } | null = null;
   if (occ.displayStatus === 'waiting') {
@@ -117,7 +122,7 @@ export default function RecurringItemRow({
             <StatusBadge status={occurrenceBadgeStatus(occ, upcomingDays)} />
             {hasDifferentAmount && (
               <span className="text-xs text-caution tabular-nums" title="Actual paid amount">
-                Paid {formatMoney(occ.matchedAmount!, currency)}
+                Paid {formatMoney(occ.matchedAmount!, matchedCurrency)}
               </span>
             )}
           </div>
@@ -163,7 +168,7 @@ export default function RecurringItemRow({
         {amount}
         {hasDifferentAmount && (
           <p className="text-xs text-caution tabular-nums" title="Actual paid amount">
-            {formatMoney(occ.matchedAmount!, currency)}
+            {formatMoney(occ.matchedAmount!, matchedCurrency)}
           </p>
         )}
       </div>

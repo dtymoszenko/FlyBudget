@@ -678,8 +678,10 @@ export interface ScheduleOccurrence {
   schedulePayeeId: string | null;
   /** expectedAmount in the budget's currency (amounts are in the account's); null without a rate */
   expectedMainAmount: number | null;
+  /** The matched transaction's account: matchedAmount is in its currency */
+  matchedAccountId: string | null;
   matchedAmount: number | null;
-  /** matchedAmount in the budget's currency */
+  /** matchedAmount in the budget's currency; null without a rate */
   matchedMainAmount: number | null;
   matchedDate: string | null;
 }

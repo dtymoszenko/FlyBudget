@@ -165,6 +165,43 @@ test("a recurring bill is in its account's currency, and totalled in the budget'
   await expect(main.getByText(/^\S*\$19\.99$/).first()).toBeVisible();
 });
 
+test('a bill paid from an account in another currency shows what was paid there', async ({
+  page,
+  api,
+}) => {
+  await setCurrency(api, 'EUR');
+  const dollars = await api.createAccount('US checking', 100_000, 'checking', { currency: 'USD' });
+  const pounds = await api.createAccount('UK current account', 100_000, 'checking', {
+    currency: 'GBP',
+  });
+  await addRate(api, 'EUR', 'USD', '1.25');
+  await api.call('POST', '/schedules', {
+    name: 'Hosting',
+    amount: -1_999,
+    recurrenceType: 'monthly',
+    startDate: isoDay(),
+    accountId: dollars.id,
+  });
+  // Paid in pounds, which have no rate yet
+  const tx = await api.createTransaction({
+    accountId: pounds.id,
+    date: isoDay(),
+    amount: -1_650,
+    payeeName: 'Hosting',
+  });
+  const [occ] = await api.call<any[]>(
+    'GET',
+    `/schedules/occurrences?from=${isoDay()}&to=${isoDay()}`,
+  );
+  await api.call('POST', `/schedules/occurrences/${occ.id}/match`, { transactionId: tx.id });
+
+  await open(page, '/recurring');
+  const main = page.getByRole('main');
+  await expect(main.getByText('£16.50').first()).toBeVisible();
+  // Left out of the euro totals, and named, rather than counted as nothing
+  await expect(main.getByText('Without GBP: no exchange rate yet.')).toBeVisible();
+});
+
 test('ECB rates download only when turned on', async ({ page, api }) => {
   await setCurrency(api, 'EUR');
   const zloty = await api.createAccount('Konto', 0, 'checking', { currency: 'PLN' });

@@ -58,12 +58,12 @@ function computeTotals(
   const unconverted = new Set<string>();
   for (const o of occs) {
     if (o.displayStatus === 'skipped' || o.displayStatus === 'cancelled') continue;
-    const value =
-      o.displayStatus === 'paid' && o.matchedMainAmount !== null
-        ? o.matchedMainAmount
-        : o.expectedMainAmount;
+    // Paid with a matched transaction: what that transaction was worth (it can be in another
+    // account than the schedule's)
+    const matched = o.displayStatus === 'paid' && o.matchedAmount !== null;
+    const value = matched ? o.matchedMainAmount : o.expectedMainAmount;
     if (value === null) {
-      const currency = currencyOf(o.scheduleAccountId);
+      const currency = currencyOf(matched ? o.matchedAccountId : o.scheduleAccountId);
       if (currency) unconverted.add(currency);
       continue;
     }
@@ -192,6 +192,9 @@ export default function MonthlyTab({
             }
             currency={
               (occ.scheduleAccountId && accountMap.get(occ.scheduleAccountId)?.currency) || null
+            }
+            matchedCurrency={
+              (occ.matchedAccountId && accountMap.get(occ.matchedAccountId)?.currency) || null
             }
             onMarkPaid={() =>
               markPaid.mutate({
