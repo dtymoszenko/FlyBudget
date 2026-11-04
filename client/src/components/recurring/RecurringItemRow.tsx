@@ -1,5 +1,5 @@
 import { parseISO, differenceInCalendarDays } from 'date-fns';
-import { formatCurrency } from '../../utils/currency';
+import { formatMoney } from '../../utils/currency';
 import type { ScheduleOccurrence } from '../../types';
 import StatusBadge from './StatusBadge';
 import RowMenu, { type RowMenuItem } from '../ui/RowMenu';
@@ -14,6 +14,8 @@ export const OCCURRENCE_GRID =
 interface Props {
   occurrence: ScheduleOccurrence;
   accountName?: string;
+  /** The account's currency, which the amounts are in (null = the budget's) */
+  currency: string | null;
   upcomingDays: number;
   highlighted?: boolean;
   onMarkPaid?: () => void;
@@ -26,6 +28,7 @@ interface Props {
 export default function RecurringItemRow({
   occurrence: occ,
   accountName,
+  currency,
   upcomingDays,
   highlighted,
   onMarkPaid,
@@ -81,7 +84,7 @@ export default function RecurringItemRow({
         isMuted ? 'text-text-tertiary' : occ.expectedAmount > 0 ? 'text-positive' : 'text-text'
       }`}
     >
-      {formatScheduleAmount(occ.expectedAmount, occ.amountType)}
+      {formatScheduleAmount(occ.expectedAmount, occ.amountType, currency)}
     </p>
   );
   const frequency = FREQ_LABEL.get(occ.recurrenceType) ?? occ.recurrenceType;
@@ -114,7 +117,7 @@ export default function RecurringItemRow({
             <StatusBadge status={occurrenceBadgeStatus(occ, upcomingDays)} />
             {hasDifferentAmount && (
               <span className="text-xs text-caution tabular-nums" title="Actual paid amount">
-                Paid {formatCurrency(occ.matchedAmount!)}
+                Paid {formatMoney(occ.matchedAmount!, currency)}
               </span>
             )}
           </div>
@@ -160,7 +163,7 @@ export default function RecurringItemRow({
         {amount}
         {hasDifferentAmount && (
           <p className="text-xs text-caution tabular-nums" title="Actual paid amount">
-            {formatCurrency(occ.matchedAmount!)}
+            {formatMoney(occ.matchedAmount!, currency)}
           </p>
         )}
       </div>

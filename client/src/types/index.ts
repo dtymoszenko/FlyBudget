@@ -676,7 +676,11 @@ export interface ScheduleOccurrence {
   scheduleAccountId: string | null;
   scheduleCategoryId: string | null;
   schedulePayeeId: string | null;
+  /** expectedAmount in the budget's currency (amounts are in the account's); null without a rate */
+  expectedMainAmount: number | null;
   matchedAmount: number | null;
+  /** matchedAmount in the budget's currency */
+  matchedMainAmount: number | null;
   matchedDate: string | null;
 }
 
@@ -709,8 +713,10 @@ export interface MatchSuggestion {
   scheduledDate: string;
   expectedDate: string;
   expectedAmount: number;
+  accountId: string | null;
   candidates: {
     transactionId: string;
+    accountId: string;
     date: string;
     amount: number;
     payeeName: string | null;

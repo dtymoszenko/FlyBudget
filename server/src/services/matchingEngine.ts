@@ -167,8 +167,11 @@ export interface MatchSuggestion {
   scheduledDate: string;
   expectedDate: string;
   expectedAmount: number;
+  /** The schedule's account: its amount is in that account's currency */
+  accountId: string | null;
   candidates: {
     transactionId: string;
+    accountId: string;
     date: string;
     amount: number;
     payeeName: string | null;
@@ -241,6 +244,7 @@ export function getMatchSuggestions(): MatchSuggestion[] {
       if (score >= 40) {
         candidateTxns.push({
           transactionId: tx.id,
+          accountId: tx.accountId,
           date: tx.date,
           amount: tx.amount,
           payeeName: tx.payeeName,
@@ -258,6 +262,7 @@ export function getMatchSuggestions(): MatchSuggestion[] {
         scheduledDate: occ.scheduledDate,
         expectedDate: occ.expectedDate,
         expectedAmount: occ.expectedAmount,
+        accountId: schedule.accountId,
         candidates: candidateTxns,
       });
     }

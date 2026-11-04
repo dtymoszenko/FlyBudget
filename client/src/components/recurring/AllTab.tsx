@@ -43,6 +43,7 @@ interface Row {
   schedule: Schedule;
   payeeName: string;
   accountName: string;
+  currency: string | null;
   nextOcc: ScheduleOccurrence | null; // next unpaid occurrence, for actions
   nextDate: string | null;
   status: RecurringBadgeStatus;
@@ -103,7 +104,7 @@ export default function AllTab({
   );
 
   const rows = useMemo((): Row[] => {
-    const accountMap = new Map(accounts.map((a) => [a.id, a.name]));
+    const accountMap = new Map(accounts.map((a) => [a.id, a]));
     const payeeMap = new Map(payees.map((p) => [p.id, p.name]));
     const occsBySchedule = new Map<string, ScheduleOccurrence[]>();
     for (const o of [...occurrences].sort((a, b) => a.expectedDate.localeCompare(b.expectedDate))) {
@@ -115,7 +116,8 @@ export default function AllTab({
       .map((s) => ({
         schedule: s,
         payeeName: s.payeeId ? (payeeMap.get(s.payeeId) ?? '') : '',
-        accountName: s.accountId ? (accountMap.get(s.accountId) ?? '') : '',
+        accountName: (s.accountId && accountMap.get(s.accountId)?.name) || '',
+        currency: (s.accountId && accountMap.get(s.accountId)?.currency) || null,
         ...deriveRow(s, occsBySchedule.get(s.id) ?? [], upcomingDays),
       }))
       .sort((a, b) => (a.nextDate ?? '9999').localeCompare(b.nextDate ?? '9999'));
@@ -130,7 +132,7 @@ export default function AllTab({
         r.schedule.name,
         r.payeeName,
         r.accountName,
-        formatScheduleAmount(r.schedule.amount, r.schedule.amountType),
+        formatScheduleAmount(r.schedule.amount, r.schedule.amountType, r.currency),
         statusLabel(r.status),
         r.nextDate ? formatDay(r.nextDate) : '',
         FREQ_LABEL.get(r.schedule.recurrenceType) ?? '',
@@ -194,7 +196,7 @@ export default function AllTab({
           muted ? 'text-text-tertiary' : s.amount > 0 ? 'text-positive' : 'text-text'
         }`}
       >
-        {formatScheduleAmount(s.amount, s.amountType)}
+        {formatScheduleAmount(s.amount, s.amountType, r.currency)}
       </span>
     );
     const nextDate = r.nextDate ? formatDay(r.nextDate) : '—';

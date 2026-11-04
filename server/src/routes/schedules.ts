@@ -13,6 +13,7 @@ import {
   todayIso,
   valueToday,
 } from '../services/mainAmountService.js';
+import { mainAmount } from '../services/balances.js';
 import { findSchedules, createDiscoveredSchedules } from '../services/scheduleDiscovery.js';
 import {
   ensureOccurrences,
@@ -175,11 +176,11 @@ schedulesRouter.get('/occurrences', (req, res) => {
     .filter((r) => r.occ.matchedTransactionId)
     .map((r) => r.occ.matchedTransactionId!);
 
-  const matchedTxMap = new Map<string, { amount: number; date: string }>();
+  const matchedTxMap = new Map<string, { amount: number; mainAmount: number; date: string }>();
   if (matchedTxIds.length > 0) {
     for (const txId of matchedTxIds) {
       const tx = db
-        .select({ amount: transactions.amount, date: transactions.date })
+        .select({ amount: transactions.amount, mainAmount, date: transactions.date })
         .from(transactions)
         .where(eq(transactions.id, txId))
         .get();
@@ -187,8 +188,15 @@ schedulesRouter.get('/occurrences', (req, res) => {
     }
   }
 
+  // Amounts are in the schedule's account's currency; the budget-currency values are for
+  // totals across accounts (expected: the day's rate, the latest one for days still to come;
+  // null without a rate)
+  const ctx = currencyContext();
+  const today = todayIso();
   const result = rows.map(({ occ, schedule }) => {
     const matchedTx = occ.matchedTransactionId ? matchedTxMap.get(occ.matchedTransactionId) : null;
+    const currency = schedule.accountId ? (ctx.currencies.get(schedule.accountId) ?? null) : null;
+    const date = occ.expectedDate < today ? occ.expectedDate : today;
     return {
       ...occ,
       displayStatus: deriveDisplayStatus(occ.status, occ.expectedDate),
@@ -198,7 +206,10 @@ schedulesRouter.get('/occurrences', (req, res) => {
       scheduleAccountId: schedule.accountId,
       scheduleCategoryId: schedule.categoryId,
       schedulePayeeId: schedule.payeeId,
+      expectedMainAmount: valueToday(occ.expectedAmount, currency ?? ctx.budget, ctx, date)
+        .mainBalance,
       matchedAmount: matchedTx?.amount ?? null,
+      matchedMainAmount: matchedTx?.mainAmount ?? null,
       matchedDate: matchedTx?.date ?? null,
     };
   });
