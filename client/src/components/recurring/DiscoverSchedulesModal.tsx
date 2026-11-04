@@ -4,6 +4,7 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { useDiscoverSchedules, useCreateDiscoveredSchedules } from '../../hooks/useSchedules';
 import { formatScheduleAmount } from './scheduleFormat';
+import { useAccountCurrency } from '../../hooks/useCurrency';
 import type { DiscoveredSchedule } from '../../types';
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -35,6 +36,7 @@ interface Props {
 export default function DiscoverSchedulesModal({ isOpen, onClose }: Props) {
   const { data: found = [], isLoading, isFetching } = useDiscoverSchedules(isOpen);
   const createMut = useCreateDiscoveredSchedules();
+  const accountCurrency = useAccountCurrency();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [lastClicked, setLastClicked] = useState<number | null>(null);
 
@@ -150,7 +152,11 @@ export default function DiscoverSchedulesModal({ isOpen, onClose }: Props) {
                   <span
                     className={`text-sm font-medium tabular-nums text-right ${item.amount > 0 ? 'text-positive' : 'text-text'}`}
                   >
-                    {formatScheduleAmount(item.amount, item.amountType)}
+                    {formatScheduleAmount(
+                      item.amount,
+                      item.amountType,
+                      accountCurrency(item.accountId),
+                    )}
                   </span>
                 </div>
               );

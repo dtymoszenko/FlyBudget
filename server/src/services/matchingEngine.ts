@@ -8,6 +8,7 @@ import {
 import { eq, and, gte, lte, isNull } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { format, parseISO, addDays, subDays } from 'date-fns';
+import { accountCurrency, currencyContext } from './mainAmountService.js';
 
 export function linkOccurrenceToTransaction(
   occurrenceId: string,
@@ -167,8 +168,12 @@ export interface MatchSuggestion {
   scheduledDate: string;
   expectedDate: string;
   expectedAmount: number;
+  /** The schedule's account's currency, which expectedAmount is in (null = none chosen) */
+  currency: string | null;
   candidates: {
     transactionId: string;
+    /** Its account's currency, which amount is in */
+    currency: string | null;
     date: string;
     amount: number;
     payeeName: string | null;
@@ -198,6 +203,7 @@ export function getMatchSuggestions(): MatchSuggestion[] {
     .all();
 
   const suggestions: MatchSuggestion[] = [];
+  const ctx = currencyContext();
 
   for (const { occ, schedule } of pendingOccs) {
     const nearbyTxns = db
@@ -241,6 +247,7 @@ export function getMatchSuggestions(): MatchSuggestion[] {
       if (score >= 40) {
         candidateTxns.push({
           transactionId: tx.id,
+          currency: accountCurrency(tx.accountId, ctx),
           date: tx.date,
           amount: tx.amount,
           payeeName: tx.payeeName,
@@ -258,6 +265,7 @@ export function getMatchSuggestions(): MatchSuggestion[] {
         scheduledDate: occ.scheduledDate,
         expectedDate: occ.expectedDate,
         expectedAmount: occ.expectedAmount,
+        currency: schedule.accountId ? accountCurrency(schedule.accountId, ctx) : ctx.budget,
         candidates: candidateTxns,
       });
     }

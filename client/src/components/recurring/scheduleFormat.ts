@@ -1,4 +1,4 @@
-import { formatCurrency } from '../../utils/currency';
+import { formatMoney } from '../../utils/currency';
 import {
   addMonths,
   addYears,
@@ -12,11 +12,18 @@ import type { RecurringBadgeStatus } from './StatusBadge';
 
 export const FREQ_LABEL = new Map(RECURRENCE_TYPE_LABELS.map((f) => [f.value, f.label]));
 
-/** Actual-style amount: `~` prefix when not exact, `+` prefix for income. */
-export function formatScheduleAmount(amount: number, amountType: AmountType): string {
+/**
+ * Actual-style amount: `~` prefix when not exact, `+` prefix for income. In the currency of
+ * the schedule's account (null = the budget's).
+ */
+export function formatScheduleAmount(
+  amount: number,
+  amountType: AmountType,
+  currency: string | null,
+): string {
   const approx = amountType !== 'exact' ? '~' : '';
   const sign = amount > 0 ? '+' : '';
-  return `${approx}${sign}${formatCurrency(Math.abs(amount))}`;
+  return `${approx}${sign}${formatMoney(Math.abs(amount), currency)}`;
 }
 
 // ─── Upcoming length (port of Actual Budget's getUpcomingDays) ───────────────

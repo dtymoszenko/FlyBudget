@@ -8,6 +8,7 @@ import { format, addDays } from 'date-fns';
 import { buildRecurrenceRule, type RecurrenceType } from '../utils/recurrence.js';
 import { isMonth, isoDate, isRealDate } from '../utils/validation.js';
 import {
+  accountCurrency,
   currencyContext,
   refreshMainAmounts,
   todayIso,
@@ -175,11 +176,26 @@ schedulesRouter.get('/occurrences', (req, res) => {
     .filter((r) => r.occ.matchedTransactionId)
     .map((r) => r.occ.matchedTransactionId!);
 
-  const matchedTxMap = new Map<string, { amount: number; date: string }>();
+  const matchedTxMap = new Map<
+    string,
+    {
+      accountId: string;
+      amount: number;
+      mainAmount: number | null;
+      mainAmountSource: string | null;
+      date: string;
+    }
+  >();
   if (matchedTxIds.length > 0) {
     for (const txId of matchedTxIds) {
       const tx = db
-        .select({ amount: transactions.amount, date: transactions.date })
+        .select({
+          accountId: transactions.accountId,
+          amount: transactions.amount,
+          mainAmount: transactions.mainAmount,
+          mainAmountSource: transactions.mainAmountSource,
+          date: transactions.date,
+        })
         .from(transactions)
         .where(eq(transactions.id, txId))
         .get();
@@ -187,8 +203,16 @@ schedulesRouter.get('/occurrences', (req, res) => {
     }
   }
 
+  // Amounts are in the schedule's account's currency (a matched transaction's in its own
+  // account's, which can be another one); the budget-currency values are for totals across
+  // accounts (expected: the day's rate, the latest one for days still to come; null without a
+  // rate). The currencies come along, since a closed account isn't in the client's list.
+  const ctx = currencyContext();
+  const today = todayIso();
   const result = rows.map(({ occ, schedule }) => {
     const matchedTx = occ.matchedTransactionId ? matchedTxMap.get(occ.matchedTransactionId) : null;
+    const currency = schedule.accountId ? accountCurrency(schedule.accountId, ctx) : ctx.budget;
+    const date = occ.expectedDate < today ? occ.expectedDate : today;
     return {
       ...occ,
       displayStatus: deriveDisplayStatus(occ.status, occ.expectedDate),
@@ -198,7 +222,14 @@ schedulesRouter.get('/occurrences', (req, res) => {
       scheduleAccountId: schedule.accountId,
       scheduleCategoryId: schedule.categoryId,
       schedulePayeeId: schedule.payeeId,
+      currency,
+      expectedMainAmount: valueToday(occ.expectedAmount, currency, ctx, date).mainBalance,
+      matchedCurrency: matchedTx ? accountCurrency(matchedTx.accountId, ctx) : null,
       matchedAmount: matchedTx?.amount ?? null,
+      matchedMainAmount:
+        !matchedTx || matchedTx.mainAmountSource === 'missing'
+          ? null
+          : (matchedTx.mainAmount ?? matchedTx.amount),
       matchedDate: matchedTx?.date ?? null,
     };
   });
@@ -241,10 +272,11 @@ schedulesRouter.get('/summary', (req, res) => {
   let expenses = 0;
   const unconverted = new Set<string>();
   for (const row of rows) {
-    const currency = row.accountId ? (ctx.currencies.get(row.accountId) ?? null) : null;
+    const currency = row.accountId ? accountCurrency(row.accountId, ctx) : ctx.budget;
     const date = row.expectedDate < today ? row.expectedDate : today;
-    const value = valueToday(row.expectedAmount, currency ?? ctx.budget, ctx, date).mainBalance;
+    const value = valueToday(row.expectedAmount, currency, ctx, date).mainBalance;
     if (value === null) {
+      // Only a currency other than the budget's can be without a rate
       unconverted.add(currency!);
       continue;
     }
