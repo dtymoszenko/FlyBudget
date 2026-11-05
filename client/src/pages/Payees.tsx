@@ -18,8 +18,23 @@ import { PayeeIcon } from '../components/payees/PayeeIcon';
 import RowMenu from '../components/ui/RowMenu';
 import { useIsPhone } from '../hooks/useIsPhone';
 import { usePreferencesStore } from '../store/preferencesStore';
-import { nextSort, sortPayees, type PayeeSort, type PayeeSortKey } from '../utils/payeeSort';
+import {
+  nextSort,
+  sortPayees,
+  type PayeeSort,
+  type PayeeSortKey,
+  type SortDir,
+} from '../utils/payeeSort';
 import type { PayeeWithCount } from '../types';
+
+const PHONE_SORT_OPTIONS = [
+  { value: 'name:asc', label: 'Name (A–Z)' },
+  { value: 'name:desc', label: 'Name (Z–A)' },
+  { value: 'transactions:desc', label: 'Most transactions' },
+  { value: 'transactions:asc', label: 'Fewest transactions' },
+  { value: 'category:asc', label: 'Category (A–Z)' },
+  { value: 'category:desc', label: 'Category (Z–A)' },
+];
 
 function SortHeader({
   label,
@@ -251,7 +266,7 @@ export default function PayeesPage() {
           // Phones: a card per payee. Renaming and deleting are in the ⋮ menu (no hover or
           // double-click on a touch screen), and ticking two or more offers "Merge"
           <ul aria-label="Payees">
-            <li className="flex items-center min-h-11 px-4 border-b border-border-light bg-surface-alt">
+            <li className="flex items-center gap-3 min-h-11 px-4 py-1 border-b border-border-light bg-surface-alt">
               <label className="flex items-center gap-3 min-h-11 text-sm text-text-secondary">
                 <input
                   type="checkbox"
@@ -264,6 +279,21 @@ export default function PayeesPage() {
                 />
                 Select all
               </label>
+              <select
+                aria-label="Sort payees"
+                value={`${payeeSort.key}:${payeeSort.dir}`}
+                onChange={(e) => {
+                  const [key, dir] = e.target.value.split(':') as [PayeeSortKey, SortDir];
+                  setPayeeSort({ key, dir });
+                }}
+                className="ml-auto min-w-0 min-h-11 border border-border rounded-md px-3 bg-surface text-text focus:outline-none focus:ring-1 focus:ring-brand-600"
+              >
+                {PHONE_SORT_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
             </li>
             {visible.map((p) => (
               <li
