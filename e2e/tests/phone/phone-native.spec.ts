@@ -245,6 +245,34 @@ test.describe('payees', () => {
       .click();
     await expect(cards).toHaveCount(0);
   });
+
+  test('sorts the cards from a menu and remembers the choice', async ({ page, api }) => {
+    const { checking } = await seedAccount(api);
+    await api.createTransaction({
+      accountId: checking.id,
+      date: isoDay(),
+      amount: -1_999,
+      payeeName: 'Streamflix',
+    });
+    await open(page, '/payees');
+    const cards = page.getByTestId('payee-card');
+    const sort = page.getByRole('combobox', { name: 'Sort payees' });
+    await expectTouchSize(sort);
+
+    await expect(cards.first()).toContainText('Corner Grocery');
+    await sort.selectOption({ label: 'Most transactions' });
+    await expect(cards.first()).toContainText('Streamflix');
+    await sort.selectOption({ label: 'Name (A–Z)' });
+    await expect(cards.first()).toContainText('Corner Grocery');
+    await sort.selectOption({ label: 'Name (Z–A)' });
+    await expect(cards.first()).toContainText('Streamflix');
+    await sort.selectOption({ label: 'Fewest transactions' });
+    await expect(cards.first()).toContainText('Corner Grocery');
+
+    await page.reload();
+    await expect(sort).toHaveValue('transactions:asc');
+    await expect(cards.first()).toContainText('Corner Grocery');
+  });
 });
 
 test.describe('rules', () => {
