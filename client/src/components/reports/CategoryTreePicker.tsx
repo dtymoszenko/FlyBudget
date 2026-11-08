@@ -6,15 +6,13 @@ import { usePreferencesStore } from '../../store/preferencesStore';
 interface Props {
   selectedCategoryIds: string[];
   selectedGroupIds: string[];
-  onCategoryChange: (ids: string[]) => void;
-  onGroupChange: (ids: string[]) => void;
+  onChange: (categoryIds: string[], groupIds: string[]) => void;
 }
 
 export default function CategoryTreePicker({
   selectedCategoryIds,
   selectedGroupIds,
-  onCategoryChange,
-  onGroupChange,
+  onChange,
 }: Props) {
   const showCategoryIcons = usePreferencesStore((s) => s.showCategoryIcons);
   const { data: groups = [] } = useCategories();
@@ -30,19 +28,20 @@ export default function CategoryTreePicker({
   }
 
   function selectAll() {
-    onCategoryChange([]);
-    onGroupChange([]);
+    onChange([], []);
   }
 
   function toggleGroup(groupId: string) {
     if (allSelected) {
       const allGroupIds = groups.filter((g) => g.id !== groupId).map((g) => g.id);
-      onGroupChange(allGroupIds);
-      onCategoryChange([]);
+      onChange([], allGroupIds);
     } else if (selectedGroupIds.includes(groupId)) {
-      onGroupChange(selectedGroupIds.filter((id) => id !== groupId));
+      onChange(
+        selectedCategoryIds,
+        selectedGroupIds.filter((id) => id !== groupId),
+      );
     } else {
-      onGroupChange([...selectedGroupIds, groupId]);
+      onChange(selectedCategoryIds, [...selectedGroupIds, groupId]);
     }
   }
 
@@ -52,12 +51,14 @@ export default function CategoryTreePicker({
         .flatMap((g) => g.categories)
         .filter((c) => c.id !== catId)
         .map((c) => c.id);
-      onCategoryChange(allCatIds);
-      onGroupChange([]);
+      onChange(allCatIds, []);
     } else if (selectedCategoryIds.includes(catId)) {
-      onCategoryChange(selectedCategoryIds.filter((id) => id !== catId));
+      onChange(
+        selectedCategoryIds.filter((id) => id !== catId),
+        selectedGroupIds,
+      );
     } else {
-      onCategoryChange([...selectedCategoryIds, catId]);
+      onChange([...selectedCategoryIds, catId], selectedGroupIds);
     }
   }
 
@@ -83,7 +84,10 @@ export default function CategoryTreePicker({
         <div key={g.id}>
           <div className="flex items-center gap-1 py-0.5">
             <button
+              type="button"
               onClick={() => toggleExpand(g.id)}
+              aria-label={`${g.name} categories`}
+              aria-expanded={expanded.has(g.id)}
               className="text-text-tertiary hover:text-text-secondary p-0.5"
             >
               {expanded.has(g.id) ? (

@@ -180,11 +180,8 @@ export default function ReportBuilderSidebar({ config, onChange }: Props) {
         <CategoryTreePicker
           selectedCategoryIds={config.filters.categoryIds}
           selectedGroupIds={config.filters.categoryGroupIds}
-          onCategoryChange={(ids) =>
-            onChange(set(config, 'filters', { ...config.filters, categoryIds: ids }))
-          }
-          onGroupChange={(ids) =>
-            onChange(set(config, 'filters', { ...config.filters, categoryGroupIds: ids }))
+          onChange={(categoryIds, categoryGroupIds) =>
+            onChange(set(config, 'filters', { ...config.filters, categoryIds, categoryGroupIds }))
           }
         />
       </Section>
