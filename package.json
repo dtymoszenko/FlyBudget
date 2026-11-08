@@ -39,6 +39,21 @@
   "overrides": {
     "concurrently": {
       "shell-quote": "^1.11.0"
+    },
+    "@electron/universal": {
+      "minimatch": "^11.0.5",
+      "dir-compare": {
+        "minimatch": "^3.1.5"
+      }
+    },
+    "app-builder-lib": {
+      "minimatch": "^11.0.5",
+      "glob": {
+        "minimatch": "^3.1.5"
+      },
+      "dir-compare": {
+        "minimatch": "^3.1.5"
+      }
     }
   }
 }
