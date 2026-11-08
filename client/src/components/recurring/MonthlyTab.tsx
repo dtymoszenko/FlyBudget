@@ -20,6 +20,7 @@ import {
 import { useAccounts } from '../../hooks/useAccounts';
 import { formatCurrency } from '../../utils/currency';
 import { Button } from '../ui/Button';
+import { UnconvertedNote } from '../currency/UnconvertedNote';
 import { EmptyState } from '../ui/EmptyState';
 import { docsUrl } from '../../utils/project';
 import { usePreferencesStore } from '../../store/preferencesStore';
@@ -40,18 +41,33 @@ interface Totals {
   total: number;
   paid: number;
   remaining: number;
+  /** Currencies left out of the totals for want of an exchange rate */
+  unconverted: string[];
 }
 
-/** Paid uses the actual matched amount; remaining uses the expected amount of unpaid items. */
+/**
+ * In the budget's currency. Paid uses the actual matched amount; remaining uses the expected
+ * amount of unpaid items. An item in another currency without a rate is left out, and named.
+ */
 function computeTotals(occs: ScheduleOccurrence[]): Totals {
   let paid = 0,
     remaining = 0;
+  const unconverted = new Set<string>();
   for (const o of occs) {
     if (o.displayStatus === 'skipped' || o.displayStatus === 'cancelled') continue;
-    if (o.displayStatus === 'paid') paid += Math.abs(o.matchedAmount ?? o.expectedAmount);
-    else remaining += Math.abs(o.expectedAmount);
+    // Paid with a matched transaction: what that transaction was worth (it can be in another
+    // account than the schedule's)
+    const matched = o.displayStatus === 'paid' && o.matchedAmount !== null;
+    const value = matched ? o.matchedMainAmount : o.expectedMainAmount;
+    if (value === null) {
+      const currency = matched ? o.matchedCurrency : o.currency;
+      if (currency) unconverted.add(currency);
+      continue;
+    }
+    if (o.displayStatus === 'paid') paid += Math.abs(value);
+    else remaining += Math.abs(value);
   }
-  return { total: paid + remaining, paid, remaining };
+  return { total: paid + remaining, paid, remaining, unconverted: [...unconverted].sort() };
 }
 
 function SummaryColumn({
@@ -83,8 +99,11 @@ function SummaryColumn({
           </p>
         </>
       ) : (
-        <p className="text-sm text-text-tertiary mt-1">None this month</p>
+        !totals.unconverted.length && (
+          <p className="text-sm text-text-tertiary mt-1">None this month</p>
+        )
       )}
+      <UnconvertedNote currencies={totals.unconverted} className="mt-1.5" />
     </div>
   );
 }
@@ -111,7 +130,7 @@ export default function MonthlyTab({
   const skipOcc = useSkipOccurrence();
   const unmatchOcc = useUnmatchOccurrence();
 
-  const accountMap = useMemo(() => new Map(accounts.map((a) => [a.id, a.name])), [accounts]);
+  const accountMap = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
   const recMap = useMemo(() => new Map(allRecurring.map((r) => [r.id, r])), [allRecurring]);
 
   const { income, expenses } = useMemo(() => {
@@ -159,7 +178,11 @@ export default function MonthlyTab({
             occurrence={occ}
             upcomingDays={upcomingDays}
             highlighted={highlightDate === occ.expectedDate}
-            accountName={occ.scheduleAccountId ? accountMap.get(occ.scheduleAccountId) : undefined}
+            accountName={
+              occ.scheduleAccountId ? accountMap.get(occ.scheduleAccountId)?.name : undefined
+            }
+            currency={occ.currency}
+            matchedCurrency={occ.matchedCurrency}
             onMarkPaid={() =>
               markPaid.mutate({
                 scheduleId: occ.scheduleId,

@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { format, addDays, parseISO, differenceInCalendarDays } from 'date-fns';
 import { useScheduleOccurrences } from '../../hooks/useSchedules';
-import { formatCurrency } from '../../utils/currency';
+import { formatMoney } from '../../utils/currency';
 import { CalendarClock } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { EmptyState } from '../ui/EmptyState';
@@ -106,7 +106,7 @@ export default function UpcomingBills() {
                     occ.expectedAmount > 0 ? 'text-positive' : 'text-text'
                   }`}
                 >
-                  {formatCurrency(occ.expectedAmount)}
+                  {formatMoney(occ.expectedAmount, occ.currency)}
                 </span>
               </div>
             );

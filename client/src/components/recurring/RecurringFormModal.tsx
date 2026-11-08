@@ -6,6 +6,7 @@ import { CurrencyInput } from '../ui/CurrencyInput';
 import { MerchantSelect } from '../transactions/MerchantSelect';
 import { CategorySelectButton } from '../transactions/CategorySelectButton';
 import { useAccounts } from '../../hooks/useAccounts';
+import { useAccountCurrency } from '../../hooks/useCurrency';
 import { usePayees } from '../../hooks/usePayees';
 import { useCanSave } from '../../hooks/useConnection';
 import { SavingPausedHint } from '../connection/SavingPausedHint';
@@ -42,6 +43,7 @@ export default function RecurringFormModal({ isOpen, onClose, onSave, editItem }
   const { data: accounts = [] } = useAccounts();
   const { data: payees = [] } = usePayees();
   const canSave = useCanSave();
+  const accountCurrency = useAccountCurrency();
 
   const [name, setName] = useState('');
   const [amount, setAmount] = useState(0);
@@ -175,7 +177,13 @@ export default function RecurringFormModal({ isOpen, onClose, onSave, editItem }
             <label className="block text-sm font-medium text-text-secondary mb-1">
               {amountType === 'variable' ? 'Estimated Amount' : 'Amount'}
             </label>
-            <CurrencyInput value={amount} onChange={setAmount} aria-label="Amount" />
+            {/* In the account's currency: that's what its transactions will be in */}
+            <CurrencyInput
+              value={amount}
+              onChange={setAmount}
+              aria-label="Amount"
+              currency={accountCurrency(accountId)}
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-1">Type</label>

@@ -26,6 +26,13 @@ async function seed(api: Api) {
 const row = (page: import('@playwright/test').Page, name: string) =>
   page.getByRole('row').filter({ has: page.getByRole('checkbox', { name: `Select ${name}` }) });
 
+const payeeOrder = (page: import('@playwright/test').Page) =>
+  page
+    .getByRole('checkbox', { name: /^Select (?!all payees$)/ })
+    .evaluateAll((boxes) =>
+      boxes.map((box) => box.getAttribute('aria-label')!.slice('Select '.length)),
+    );
+
 test.describe('payees', () => {
   test('lists payees with their transaction counts; a split counts once', async ({ page, api }) => {
     const checking = await seed(api);
@@ -95,6 +102,60 @@ test.describe('payees', () => {
     await expect
       .poll(async () => (await api.call<any[]>('GET', '/payees')).map((p) => p.name).sort())
       .toEqual(['Amazon', 'Amazon Marketplace']);
+  });
+
+  test('sorts by clicking the column headers and remembers the choice', async ({ page, api }) => {
+    const checking = await api.createAccount('Checking', 100_000);
+    const counts = { Bakery: 1, 'city power': 2, Zoo: 3 };
+    for (const [payeeName, count] of Object.entries(counts)) {
+      for (let i = 0; i < count; i++) {
+        await api.createTransaction({
+          accountId: checking.id,
+          date: isoDay(),
+          amount: -100,
+          payeeName,
+        });
+      }
+    }
+    const payees = await api.call<any[]>('GET', '/payees');
+    const idOf = (name: string) => payees.find((p) => p.name === name).id;
+    await api.call('PUT', `/payees/${idOf('Bakery')}`, {
+      defaultCategoryId: (await api.category('Groceries')).id,
+    });
+    await api.call('PUT', `/payees/${idOf('city power')}`, {
+      defaultCategoryId: (await api.category('Electric')).id,
+    });
+
+    await open(page, '/payees');
+    const header = (name: string) => page.getByRole('columnheader', { name, exact: true });
+    const sortBy = (name: string) => header(name).getByRole('button').click();
+
+    await expect.poll(() => payeeOrder(page)).toEqual(['Bakery', 'city power', 'Zoo']);
+    await expect(header('Name')).toHaveAttribute('aria-sort', 'ascending');
+    await expect(header('Transactions')).toHaveAttribute('aria-sort', 'none');
+
+    await sortBy('Name');
+    await expect.poll(() => payeeOrder(page)).toEqual(['Zoo', 'city power', 'Bakery']);
+    await expect(header('Name')).toHaveAttribute('aria-sort', 'descending');
+
+    await sortBy('Transactions');
+    await expect.poll(() => payeeOrder(page)).toEqual(['Zoo', 'city power', 'Bakery']);
+    await expect(header('Transactions')).toHaveAttribute('aria-sort', 'descending');
+    await expect(header('Name')).toHaveAttribute('aria-sort', 'none');
+
+    await sortBy('Transactions');
+    await expect.poll(() => payeeOrder(page)).toEqual(['Bakery', 'city power', 'Zoo']);
+
+    // Bills & Utilities → Electric, Food & Dining → Groceries, then no default category
+    await sortBy('Default category');
+    await expect.poll(() => payeeOrder(page)).toEqual(['city power', 'Bakery', 'Zoo']);
+    await sortBy('Default category');
+    await expect.poll(() => payeeOrder(page)).toEqual(['Bakery', 'city power', 'Zoo']);
+    await expect(header('Default category')).toHaveAttribute('aria-sort', 'descending');
+
+    await page.reload();
+    await expect(header('Default category')).toHaveAttribute('aria-sort', 'descending');
+    await expect.poll(() => payeeOrder(page)).toEqual(['Bakery', 'city power', 'Zoo']);
   });
 
   test('deletes a payee, keeping its transactions', async ({ page, api }) => {

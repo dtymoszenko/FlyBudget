@@ -93,6 +93,42 @@ export function useUpdateTransaction() {
   });
 }
 
+/** The parts a split has now, as they're sent back to the server */
+const partsOf = (tx: Transaction): txApi.SplitItem[] =>
+  (tx.children ?? []).map((c) => ({ categoryId: c.categoryId, amount: c.amount, notes: c.notes }));
+
+export function useSetTransactionSplits() {
+  const qc = useQueryClient();
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ['transactions'] });
+    qc.invalidateQueries({ queryKey: ['accounts'] });
+  };
+  return useMutation({
+    mutationFn: ({ id, splits }: { id: string; splits: txApi.SplitItem[] }) =>
+      txApi.setTransactionSplits(id, splits),
+    onMutate: async ({ id }) => ({ old: findTxInCache(qc, id) }),
+    onSuccess: (_, { id, splits }, ctx) => {
+      refresh();
+      if (!ctx?.old) return;
+      const snapshot = ctx.old;
+      useUndoStore.getState().push({
+        description: splits.length ? 'Split transaction' : 'Unsplit transaction',
+        undo: async () => {
+          await txApi.setTransactionSplits(id, snapshot.isParent === 1 ? partsOf(snapshot) : []);
+          if (snapshot.isParent !== 1 && snapshot.categoryId) {
+            await txApi.updateTransaction(id, { categoryId: snapshot.categoryId });
+          }
+          refresh();
+        },
+        redo: async () => {
+          await txApi.setTransactionSplits(id, splits);
+          refresh();
+        },
+      });
+    },
+  });
+}
+
 export function useDeleteTransaction() {
   const qc = useQueryClient();
   return useMutation({

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { IS_DEMO } from '../demo/isDemo';
+import { DEFAULT_PAYEE_SORT, type PayeeSort } from '../utils/payeeSort';
 
 export type Theme = 'light' | 'dark' | 'system';
 export type DateFormatOption =
@@ -46,6 +47,7 @@ interface PreferencesState {
   gettingStartedHidden: boolean;
   /** How the Accounts page orders each group: manual is the order from Settings → Accounts */
   accountSort: AccountSort;
+  payeeSort: PayeeSort;
   setTheme: (theme: Theme) => void;
   setCurrencySymbol: (symbol: string) => void;
   setAmountFormat: (format: AmountFormat | 'auto') => void;
@@ -63,6 +65,7 @@ interface PreferencesState {
   setSetupSkipped: (skipped: boolean) => void;
   setGettingStartedHidden: (hidden: boolean) => void;
   setAccountSort: (sort: AccountSort) => void;
+  setPayeeSort: (sort: PayeeSort) => void;
 }
 
 const PREFERENCES_KEY = 'budget-preferences';
@@ -103,6 +106,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       setupSkipped: false,
       gettingStartedHidden: false,
       accountSort: 'manual',
+      payeeSort: DEFAULT_PAYEE_SORT,
       setTheme: (theme) => set({ theme }),
       setCurrencySymbol: (currencySymbol) => set({ currencySymbol }),
       setAmountFormat: (amountFormat) => set({ amountFormat }),
@@ -125,6 +129,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       setSetupSkipped: (setupSkipped) => set({ setupSkipped }),
       setGettingStartedHidden: (gettingStartedHidden) => set({ gettingStartedHidden }),
       setAccountSort: (accountSort) => set({ accountSort }),
+      setPayeeSort: (payeeSort) => set({ payeeSort }),
     }),
     {
       name: PREFERENCES_KEY,
