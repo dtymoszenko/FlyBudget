@@ -110,6 +110,42 @@ test.describe('reports', () => {
     ).toBeVisible();
   });
 
+  test('categories and category groups can be unticked from "All selected"', async ({
+    page,
+    api,
+  }) => {
+    await seed(api);
+    await open(page, '/reports/custom');
+    await page.getByRole('button', { name: 'Table' }).click();
+    const table = page.getByRole('table');
+    await expect(table.getByRole('row', { name: 'Groceries $48.50' })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Food & Dining categories' }).click();
+    const groceries = page.getByRole('checkbox', { name: 'Groceries' });
+    await groceries.uncheck();
+    await expect(groceries).not.toBeChecked();
+    await expect(page.getByRole('checkbox', { name: 'Restaurants' })).toBeChecked();
+    // The other groups are still in the report, and their boxes say so
+    await expect(page.getByRole('checkbox', { name: 'Food & Dining' })).toBeChecked({
+      indeterminate: true,
+    });
+    await expect(page.getByRole('checkbox', { name: 'Income' })).toBeChecked();
+    await expect(page.getByRole('button', { name: 'Select all' })).toBeVisible();
+    await expect(table.getByRole('row', { name: /^Groceries/ })).toHaveCount(0);
+
+    await page.getByRole('button', { name: 'Select all' }).click();
+    await expect(groceries).toBeChecked();
+    await expect(table.getByRole('row', { name: 'Groceries $48.50' })).toBeVisible();
+
+    const foodAndDining = page.getByRole('checkbox', { name: 'Food & Dining' });
+    await foodAndDining.uncheck();
+    await expect(foodAndDining).not.toBeChecked();
+    await expect(page.getByRole('checkbox', { name: 'Income' })).toBeChecked();
+    await expect(table.getByRole('row', { name: /^Groceries/ })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Income categories' }).click();
+    await expect(page.getByRole('checkbox', { name: 'Paychecks' })).toBeChecked();
+  });
+
   test('a new dashboard can be added', async ({ page, api }) => {
     await seed(api);
     await open(page, '/reports');
