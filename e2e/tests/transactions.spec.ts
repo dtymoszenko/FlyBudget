@@ -652,3 +652,101 @@ test.describe('long histories', () => {
     await expect(page.getByText('Shop 249')).toBeVisible();
   });
 });
+
+test.describe('splitting', () => {
+  /** Picks a category from the searchable picker a split part's field opens */
+  async function pickCategory(page: Page, field: ReturnType<Page['getByRole']>, name: string) {
+    await field.click();
+    await page.getByPlaceholder('Search categories...').fill(name);
+    await page.getByRole('button', { name: new RegExp(name) }).click();
+  }
+
+  test('splits an imported transaction from its details, then unsplits it', async ({
+    page,
+    api,
+  }) => {
+    const { checking } = await setup(api);
+    const tx = await api.createTransaction({
+      accountId: checking.id,
+      date: isoDay(),
+      amount: -10_000,
+      payeeName: 'Big Box Store',
+      categoryId: (await api.category('Groceries')).id,
+    });
+    await open(page, `/accounts/${checking.id}`);
+    await row(page, 'Big Box Store').click();
+    const panel = page.getByRole('complementary', { name: 'Transaction details' });
+    await panel.getByRole('button', { name: 'Split' }).click();
+
+    const dialog = page.getByRole('dialog', { name: 'Split transaction' });
+    // It starts as the whole amount in its own category, plus an empty part
+    await expect(dialog.getByRole('button', { name: 'Split 1 category: Groceries' })).toBeVisible();
+    await typeAmount(dialog.getByRole('textbox', { name: 'Split 1 amount' }), '60');
+    await expect(dialog.getByText('$40 remaining')).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Save split' })).toBeDisabled();
+    await pickCategory(
+      page,
+      dialog.getByRole('button', { name: /^Split 2 category/ }),
+      'Home Goods',
+    );
+    // The rest is offered for the empty part, so nobody has to do the subtraction
+    await dialog.getByRole('button', { name: 'Set split 2 to $40' }).click();
+    await expect(dialog.getByRole('textbox', { name: 'Split 2 amount' })).toHaveValue('$40');
+    await expect(dialog.getByText('Balanced')).toBeVisible();
+    await dialog.getByRole('button', { name: 'Save split' }).click();
+    await expect(dialog).toBeHidden();
+
+    await expect(panel.getByText('Split (2)')).toBeVisible();
+    expect(await api.balance(checking.id)).toBe(90_000);
+    const [parent] = await api.transactions(`?account_id=${checking.id}`);
+    expect(parent).toMatchObject({ id: tx.id, isParent: 1, categoryId: null });
+    const parts = parent.children.map((c: { amount: number; categoryId: string }) => [
+      c.categoryId,
+      c.amount,
+    ]);
+    expect(parts).toEqual(
+      expect.arrayContaining([
+        [(await api.category('Groceries')).id, -6_000],
+        [(await api.category('Home Goods')).id, -4_000],
+      ]),
+    );
+
+    // Back to one transaction
+    await panel.getByRole('button', { name: 'Edit split' }).click();
+    await dialog.getByRole('button', { name: 'Unsplit' }).click();
+    await expect(dialog).toBeHidden();
+    await expect
+      .poll(async () => (await api.transactions(`?account_id=${checking.id}`))[0])
+      .toMatchObject({ id: tx.id, isParent: 0, categoryId: null, amount: -10_000 });
+    expect(await api.balance(checking.id)).toBe(90_000);
+  });
+
+  test('the Add transaction dialog splits a new transaction', async ({ page, api }) => {
+    const { checking } = await setup(api);
+    await open(page, '/transactions?add=1');
+    const dialog = page.getByRole('dialog', { name: 'Add transaction' });
+    await typeAmount(dialog.getByLabel('Amount', { exact: true }), '100');
+    await dialog.getByPlaceholder('Search merchants...').fill('Big Box Store');
+    await dialog.getByRole('button', { name: /Create new merchant/ }).click();
+    await dialog.getByRole('button', { name: /Select account/ }).click();
+    await dialog.getByRole('button', { name: /Everyday Checking/ }).click();
+
+    await dialog.getByRole('button', { name: 'Split', exact: true }).click();
+    await pickCategory(
+      page,
+      dialog.getByRole('button', { name: /^Split 1 category/ }),
+      'Groceries',
+    );
+    await typeAmount(dialog.getByRole('textbox', { name: 'Split 1 amount' }), '70');
+    await expect(dialog.getByRole('button', { name: 'Add transaction' })).toBeDisabled();
+    await typeAmount(dialog.getByRole('textbox', { name: 'Split 2 amount' }), '30');
+    await dialog.getByRole('button', { name: 'Add transaction' }).click();
+    await expect(dialog).toBeHidden();
+
+    expect(await api.balance(checking.id)).toBe(90_000);
+    const [parent] = await api.transactions(`?account_id=${checking.id}`);
+    expect(parent.isParent).toBe(1);
+    const parts = parent.children.map((c: { amount: number }) => c.amount);
+    expect(parts.sort((a: number, b: number) => a - b)).toEqual([-7_000, -3_000]);
+  });
+});
