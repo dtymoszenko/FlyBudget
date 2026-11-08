@@ -43,6 +43,8 @@ export default function CategoryTreePicker({
   const total = groups.reduce((n, g) => n + g.categories.length, 0);
 
   function emit(next: Set<string>) {
+    // An empty list means all categories, so the last one can't be unticked
+    if (!next.size) return;
     onChange(next.size === total ? [] : [...next], []);
   }
 
