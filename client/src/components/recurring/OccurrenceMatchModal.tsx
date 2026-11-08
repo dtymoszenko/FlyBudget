@@ -4,7 +4,8 @@ import { Modal } from '../ui/Modal';
 import { Input } from '../ui/Input';
 import { useTransactions } from '../../hooks/useTransactions';
 import { useMatchOccurrence } from '../../hooks/useSchedules';
-import { formatCurrency } from '../../utils/currency';
+import { formatMoney } from '../../utils/currency';
+import { useAccountCurrency } from '../../hooks/useCurrency';
 import type { ScheduleOccurrence } from '../../types';
 import { formatDay } from '../../utils/dates';
 
@@ -17,6 +18,7 @@ interface Props {
 export default function OccurrenceMatchModal({ isOpen, onClose, occurrence }: Props) {
   const [search, setSearch] = useState('');
   const matchOcc = useMatchOccurrence();
+  const accountCurrency = useAccountCurrency();
 
   const dateRange = useMemo(() => {
     if (!occurrence) return { from: '', to: '' };
@@ -69,7 +71,7 @@ export default function OccurrenceMatchModal({ isOpen, onClose, occurrence }: Pr
           <p className="text-sm font-medium text-text">{occurrence.scheduleName}</p>
           <p className="text-xs text-text-tertiary mt-0.5">
             Expected: {formatDay(occurrence.expectedDate)} ·{' '}
-            {formatCurrency(occurrence.expectedAmount)}
+            {formatMoney(occurrence.expectedAmount, occurrence.currency)}
           </p>
         </div>
 
@@ -99,7 +101,14 @@ export default function OccurrenceMatchModal({ isOpen, onClose, occurrence }: Pr
                   <span
                     className={`text-sm font-medium tabular-nums ${tx.amount > 0 ? 'text-positive' : 'text-text'}`}
                   >
-                    {formatCurrency(tx.amount)}
+                    {formatMoney(
+                      tx.amount,
+                      // The schedule's own account can be closed (not in the account list): the
+                      // occurrence brings its currency along
+                      tx.accountId === occurrence.scheduleAccountId
+                        ? occurrence.currency
+                        : accountCurrency(tx.accountId),
+                    )}
                   </span>
                   <button
                     onClick={() => handleMatch(tx.id)}

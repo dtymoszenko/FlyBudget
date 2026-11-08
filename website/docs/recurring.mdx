@@ -16,7 +16,8 @@ that paid it.
 Choose **Add recurring** and fill in:
 
 - **Name**, like "Rent" or "Riley's paycheck".
-- **Amount** and **Type**: **Expense** or **Income**.
+- **Amount** and **Type**: **Expense** or **Income**. The amount is in the currency of the
+  item's **Account**, if it has its own (see [Currencies](./currencies)).
 - **Amount Precision**: **Exact** (always the same), **Approx** (close to it, within about 7.5%)
   or **Variable** (it changes, like an electricity bill). This helps FlyBudget recognize the
   payment when it arrives.
@@ -71,7 +72,8 @@ Each item's status:
 ## The Monthly tab
 
 One month at a time, with how much income is still to come and how much of this month's bills is
-paid. **List** shows income and expenses in date order; **Calendar** shows each item on its day
+paid (in your budget's currency: an item in another currency counts at the day's exchange rate).
+**List** shows income and expenses in date order; **Calendar** shows each item on its day
 (click a day to jump to its rows).
 
 <Screenshot name="recurring-calendar" alt="The calendar view" />
