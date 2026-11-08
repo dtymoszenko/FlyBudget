@@ -7,7 +7,7 @@
 
 # ---- Build: compile the client and bundle the server (runs on the build machine's
 # own architecture; the output is plain JS/HTML, so it works on every platform) ----
-FROM --platform=$BUILDPLATFORM node:24-bookworm-slim@sha256:d6aa754f16b3197301076f047b5def2f02ea1dbbc2ca920407d46d7ec7f87b20 AS build
+FROM --platform=$BUILDPLATFORM node:24-bookworm-slim@sha256:01d566e8d94d8c619591d78652babfccd3c6992a3dffa9ed5ab39e11cf6c70e9 AS build
 
 WORKDIR /src
 
@@ -41,7 +41,7 @@ RUN mkdir -p dist/node_modules \
       -regex '.*/(darwin|win32|linuxmusl)-[^/]*' -delete
 
 # ---- Runtime ----
-FROM node:24-bookworm-slim@sha256:d6aa754f16b3197301076f047b5def2f02ea1dbbc2ca920407d46d7ec7f87b20
+FROM node:24-bookworm-slim@sha256:01d566e8d94d8c619591d78652babfccd3c6992a3dffa9ed5ab39e11cf6c70e9
 
 # tini runs as PID 1 so `docker stop` shuts the server down cleanly. The server
 # only needs `node`, so drop the package managers bundled with the base image
