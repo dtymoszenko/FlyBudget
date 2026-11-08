@@ -27,49 +27,51 @@ export default function CategoryTreePicker({
     setExpanded(next);
   }
 
+  // The categories the filters include (the server applies both lists); every click
+  // turns that into a list of categories, so a group is just a shortcut for its own
+  const selected = new Set(
+    groups.flatMap((g) =>
+      g.categories
+        .filter(
+          (c) =>
+            (!selectedCategoryIds.length || selectedCategoryIds.includes(c.id)) &&
+            (!selectedGroupIds.length || selectedGroupIds.includes(g.id)),
+        )
+        .map((c) => c.id),
+    ),
+  );
+  const total = groups.reduce((n, g) => n + g.categories.length, 0);
+
+  function emit(next: Set<string>) {
+    onChange(next.size === total ? [] : [...next], []);
+  }
+
   function selectAll() {
     onChange([], []);
   }
 
   function toggleGroup(groupId: string) {
-    if (allSelected) {
-      const allGroupIds = groups.filter((g) => g.id !== groupId).map((g) => g.id);
-      onChange([], allGroupIds);
-    } else if (selectedGroupIds.includes(groupId)) {
-      onChange(
-        selectedCategoryIds,
-        selectedGroupIds.filter((id) => id !== groupId),
-      );
-    } else {
-      onChange(selectedCategoryIds, [...selectedGroupIds, groupId]);
+    const ids = groups.find((g) => g.id === groupId)?.categories.map((c) => c.id) ?? [];
+    const next = new Set(selected);
+    const all = ids.every((id) => next.has(id));
+    for (const id of ids) {
+      if (all) next.delete(id);
+      else next.add(id);
     }
+    emit(next);
   }
 
   function toggleCategory(catId: string) {
-    if (allSelected) {
-      const allCatIds = groups
-        .flatMap((g) => g.categories)
-        .filter((c) => c.id !== catId)
-        .map((c) => c.id);
-      onChange(allCatIds, []);
-    } else if (selectedCategoryIds.includes(catId)) {
-      onChange(
-        selectedCategoryIds.filter((id) => id !== catId),
-        selectedGroupIds,
-      );
-    } else {
-      onChange([...selectedCategoryIds, catId], selectedGroupIds);
-    }
+    const next = new Set(selected);
+    if (next.has(catId)) next.delete(catId);
+    else next.add(catId);
+    emit(next);
   }
 
-  function isGroupChecked(groupId: string) {
-    if (allSelected) return true;
-    return selectedGroupIds.includes(groupId);
-  }
-
-  function isCatChecked(catId: string) {
-    if (allSelected) return true;
-    return selectedCategoryIds.includes(catId);
+  function groupState(groupId: string) {
+    const ids = groups.find((g) => g.id === groupId)?.categories.map((c) => c.id) ?? [];
+    const count = ids.filter((id) => selected.has(id)).length;
+    return { checked: count === ids.length, partly: count > 0 && count < ids.length };
   }
 
   return (
@@ -99,7 +101,10 @@ export default function CategoryTreePicker({
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
-                checked={isGroupChecked(g.id)}
+                checked={groupState(g.id).checked}
+                ref={(el) => {
+                  if (el) el.indeterminate = groupState(g.id).partly;
+                }}
                 onChange={() => toggleGroup(g.id)}
                 className="rounded border-border text-brand-600 focus:ring-brand-600"
               />
@@ -112,7 +117,7 @@ export default function CategoryTreePicker({
                 <label key={c.id} className="flex items-center gap-2 py-0.5 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={isCatChecked(c.id)}
+                    checked={selected.has(c.id)}
                     onChange={() => toggleCategory(c.id)}
                     className="rounded border-border text-brand-600 focus:ring-brand-600"
                   />

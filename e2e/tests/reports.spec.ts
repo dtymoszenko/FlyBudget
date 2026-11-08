@@ -125,6 +125,11 @@ test.describe('reports', () => {
     await groceries.uncheck();
     await expect(groceries).not.toBeChecked();
     await expect(page.getByRole('checkbox', { name: 'Restaurants' })).toBeChecked();
+    // The other groups are still in the report, and their boxes say so
+    await expect(page.getByRole('checkbox', { name: 'Food & Dining' })).toBeChecked({
+      indeterminate: true,
+    });
+    await expect(page.getByRole('checkbox', { name: 'Income' })).toBeChecked();
     await expect(page.getByRole('button', { name: 'Select all' })).toBeVisible();
     await expect(table.getByRole('row', { name: /^Groceries/ })).toHaveCount(0);
 
@@ -137,6 +142,8 @@ test.describe('reports', () => {
     await expect(foodAndDining).not.toBeChecked();
     await expect(page.getByRole('checkbox', { name: 'Income' })).toBeChecked();
     await expect(table.getByRole('row', { name: /^Groceries/ })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Income categories' }).click();
+    await expect(page.getByRole('checkbox', { name: 'Paychecks' })).toBeChecked();
   });
 
   test('a new dashboard can be added', async ({ page, api }) => {
