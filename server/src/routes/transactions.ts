@@ -518,7 +518,8 @@ transactionsRouter.post('/import/confirm', (req, res) => {
   if (!db.select({ id: accounts.id }).from(accounts).where(eq(accounts.id, accountId)).get()) {
     return res.status(404).json({ error: 'Account not found' });
   }
-  let imported = 0;
+  // The new rows' ids, so the client can undo the whole import
+  const ids: string[] = [];
   const ruleOpts = { rules: loadRules(), ctx: buildRuleContext(), currencies: currencyContext() };
 
   // One transaction: all rows or none, and far faster than a commit per row
@@ -533,7 +534,7 @@ transactionsRouter.post('/import/confirm', (req, res) => {
         .get();
       if (dup) continue;
 
-      insertNewTransaction(
+      const { transaction } = insertNewTransaction(
         {
           accountId,
           date: row.date,
@@ -547,11 +548,11 @@ transactionsRouter.post('/import/confirm', (req, res) => {
         },
         ruleOpts,
       );
-      imported++;
+      ids.push(transaction.id);
     }
   });
 
-  res.json({ imported, skipped: rows.length - imported });
+  res.json({ imported: ids.length, skipped: rows.length - ids.length, ids });
 });
 
 // PUT /transactions/:id

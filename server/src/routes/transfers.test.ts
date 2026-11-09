@@ -353,3 +353,16 @@ describe('when one side of a transfer changes on its own', () => {
     expect(row(otherId).date).toBe('2096-09-03');
   });
 });
+
+it('an import answers with the new ids, so the client can undo it (#177)', async () => {
+  const acct = await account('Undo import');
+  const rows = [
+    { date: '2097-01-02', amount: -1200, payeeName: 'Cafe', importedId: 'undo-1' },
+    { date: '2097-01-03', amount: -800, payeeName: 'Cafe', importedId: 'undo-2' },
+    { date: '2097-01-03', amount: -800, payeeName: 'Cafe', importedId: 'undo-2' }, // duplicate
+  ];
+  const { body } = await call('POST', '/transactions/import/confirm', { accountId: acct, rows });
+  expect(body).toMatchObject({ imported: 2, skipped: 1 });
+  expect(body.ids).toHaveLength(2);
+  for (const id of body.ids) expect(row(id).accountId).toBe(acct);
+});
