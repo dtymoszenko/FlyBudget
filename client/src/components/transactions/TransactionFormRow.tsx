@@ -50,7 +50,8 @@ export function TransactionFormRow({
   const sheet = layout === 'sheet';
   // Amounts are typed and shown in the account's currency (no decimals for yen)
   const style = useAmountStyle(useAccountCurrency()(initial?.accountId ?? accountId));
-  const parseCents = (text: string) => parseAmount(text, style);
+  // The column decides the direction, so 50-60 typed in Outflow, Inflow or a split is 10.00 that way
+  const parseCents = (text: string) => Math.abs(parseAmount(text, style));
   const centsToInput = (cents: number) => amountToInput(cents, style);
   const formatCurrency = (cents: number) => formatAmount(cents, style);
   const amountPlaceholder = () => placeholderIn(style);
@@ -81,9 +82,8 @@ export function TransactionFormRow({
   const isEditingParent = initial?.isParent === 1;
 
   function getTotalCents() {
-    // The column decides the direction, so 50-60 typed in either one is 10.00 that way
-    const inflowCents = Math.abs(parseCents(inflow));
-    return inflowCents > 0 ? inflowCents : -Math.abs(parseCents(outflow));
+    const inflowCents = parseCents(inflow);
+    return inflowCents > 0 ? inflowCents : -parseCents(outflow);
   }
 
   // The amount field being typed in: it isn't marked unreadable until it's left ("-" on the
