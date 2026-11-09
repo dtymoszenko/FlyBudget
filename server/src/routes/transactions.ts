@@ -614,7 +614,10 @@ transactionsRouter.put('/:id', (req, res) => {
   if (other?.reconciled === 1 && (changes('date') || changes('amount'))) {
     return res
       .status(403)
-      .json({ error: 'The other side of this transfer is reconciled. Unlock it first.' });
+      .json({
+        error:
+          'The other side of this transfer is reconciled, so its date and amount stay as they are.',
+      });
   }
   if (crossCurrency && data.amount !== undefined && data.amount < 0 !== existing.amount < 0) {
     return res.status(400).json({
