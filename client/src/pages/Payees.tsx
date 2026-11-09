@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import {
   Trash2,
+  Wand2,
   GitMerge,
   Search,
   Store,
@@ -15,6 +16,7 @@ import { Modal, useModalValue } from '../components/ui/Modal';
 import { Button, ButtonLink } from '../components/ui/Button';
 import { EmptyState } from '../components/ui/EmptyState';
 import { PayeeIcon } from '../components/payees/PayeeIcon';
+import { RuleEditorFlow } from '../components/rules/RuleEditorFlow';
 import RowMenu from '../components/ui/RowMenu';
 import { useIsPhone } from '../hooks/useIsPhone';
 import { usePreferencesStore } from '../store/preferencesStore';
@@ -25,7 +27,7 @@ import {
   type PayeeSortKey,
   type SortDir,
 } from '../utils/payeeSort';
-import type { PayeeWithCount } from '../types';
+import type { PayeeWithCount, RuleInput } from '../types';
 
 const PHONE_SORT_OPTIONS = [
   { value: 'name:asc', label: 'Name (A–Z)' },
@@ -147,6 +149,15 @@ export default function PayeesPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  // A new rule for one payee: matches it, and sets its default category if it has one
+  const [ruleFor, setRuleFor] = useState<PayeeWithCount | null>(null);
+  const ruleModal = useModalValue(ruleFor);
+  const ruleDraft = (p: PayeeWithCount): RuleInput => ({
+    conditionsOp: 'and',
+    conditions: [{ field: 'payee', op: 'is', value: p.id }],
+    actions: [{ type: 'set_category', value: p.defaultCategoryId ?? '' }],
+    enabled: true,
+  });
   const [showMerge, setShowMerge] = useState(false);
   const mergeModal = useModalValue(showMerge);
 
@@ -343,6 +354,7 @@ export default function PayeesPage() {
                     label={`Actions for ${p.name}`}
                     items={[
                       { label: 'Rename', onClick: () => startEditName(p) },
+                      { label: 'Create rule', onClick: () => setRuleFor(p) },
                       { label: 'Delete', danger: true, onClick: () => setDeleteId(p.id) },
                     ]}
                   />
@@ -464,7 +476,15 @@ export default function PayeesPage() {
                     <td className="px-4 py-2 text-right text-sm text-text-secondary">
                       {p.transactionCount}
                     </td>
-                    <td className="px-4 py-2">
+                    <td className="px-4 py-2 whitespace-nowrap">
+                      <button
+                        onClick={() => setRuleFor(p)}
+                        aria-label={`Create rule for ${p.name}`}
+                        title="Create rule"
+                        className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 p-1 text-text-tertiary hover:text-brand-600 transition-all"
+                      >
+                        <Wand2 size={14} />
+                      </button>
                       <button
                         onClick={() => setDeleteId(p.id)}
                         aria-label={`Delete ${p.name}`}
@@ -488,6 +508,15 @@ export default function PayeesPage() {
           payees={payees}
           onMerge={handleMerge}
           onClose={() => setShowMerge(false)}
+        />
+      )}
+
+      {ruleModal.value && (
+        <RuleEditorFlow
+          isOpen={ruleModal.isOpen}
+          onClose={() => setRuleFor(null)}
+          initial={ruleDraft(ruleModal.value)}
+          title={`New rule for ${ruleModal.value.name}`}
         />
       )}
 
