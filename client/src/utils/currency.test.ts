@@ -175,7 +175,17 @@ describe('currency helpers (property-based)', () => {
     expect(parseAmount('0.01/2', US)).toBe(1);
     expect(parseAmount('-0.01/2', US)).toBe(-1);
     expect(parseAmount('10/3*3', US)).toBe(1000);
-    for (const bad of ['12/0', '12*', '12+*3', '12+abc', '10*(2)', '0.005*2'])
+    for (const bad of [
+      '12/0',
+      '12*',
+      '12+*3',
+      '12+abc',
+      '10*(2)',
+      '0.005*2',
+      '12* -3',
+      '12 - -3',
+      '12+$*3',
+    ])
       expect(isUnreadableAmount(bad, US)).toBe(true);
   });
 

@@ -757,4 +757,9 @@ test('works out arithmetic typed into an amount (#189)', async ({ page, api }) =
   await fillNewTransaction(page, { payee: 'Three Coffees', outflow: '3*4.25+1.5' });
   await newForm(page).getByRole('button', { name: 'Save' }).click();
   await expect.poll(async () => api.balance(checking.id)).toBe(100_000 - 1_425);
+
+  // The column decides the direction, whatever sign the sum comes out with
+  await fillNewTransaction(page, { payee: 'Refund', inflow: '50-60' });
+  await newForm(page).getByRole('button', { name: 'Save' }).click();
+  await expect.poll(async () => api.balance(checking.id)).toBe(100_000 - 1_425 + 1_000);
 });

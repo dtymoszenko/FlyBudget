@@ -81,8 +81,9 @@ export function TransactionFormRow({
   const isEditingParent = initial?.isParent === 1;
 
   function getTotalCents() {
-    const inflowCents = parseCents(inflow);
-    return inflowCents > 0 ? inflowCents : -parseCents(outflow);
+    // The column decides the direction, so 50-60 typed in either one is 10.00 that way
+    const inflowCents = Math.abs(parseCents(inflow));
+    return inflowCents > 0 ? inflowCents : -Math.abs(parseCents(outflow));
   }
 
   // The amount field being typed in: it isn't marked unreadable until it's left ("-" on the

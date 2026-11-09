@@ -316,7 +316,8 @@ function evaluateTypedAmount(s: string, style: AmountStyle): number | null {
       op = token;
       continue;
     }
-    if (/^[+*/-]$/.test(token) || /[()]/.test(token)) return null;
+    // A blank operand (12* -3, 12+$*3) would read as 0
+    if (token.trim() === '' || /^[+*/-]$/.test(token) || /[()]/.test(token)) return null;
     // Exact operands too: 0.005*2 would otherwise round 0.005 to a cent first
     const cents = readPlainAmount(token, style, true);
     if (cents === null) return null;
