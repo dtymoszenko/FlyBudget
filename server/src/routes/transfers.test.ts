@@ -257,6 +257,29 @@ describe('review fixes', () => {
   });
 });
 
+describe('a reconciled side of a transfer', () => {
+  it('stays put: the other side keeps its date and amount', async () => {
+    const from = await account('Locked pair from');
+    const to = await account('Locked pair to');
+    const { body } = await call('POST', '/transactions/transfer', {
+      fromAccountId: from,
+      toAccountId: to,
+      date: '2097-03-01',
+      amount: 1000,
+    });
+    const [out, into] = body as { id: string }[];
+    db.update(transactions).set({ reconciled: 1 }).where(eq(transactions.id, into.id)).run();
+    expect((await call('PUT', `/transactions/${out.id}`, { amount: -2000 })).status).toBe(403);
+    expect((await call('PUT', `/transactions/${out.id}`, { date: '2097-03-02' })).status).toBe(403);
+    expect(row(into.id)).toMatchObject({ amount: 1000, date: '2097-03-01' });
+    // Notes are its own, and the date it already had (an undo resends it) moves nothing
+    db.update(transactions).set({ date: '2097-03-03' }).where(eq(transactions.id, into.id)).run();
+    const same = { notes: 'rent', date: '2097-03-01', amount: -1000 };
+    expect((await call('PUT', `/transactions/${out.id}`, same)).status).toBe(200);
+    expect(row(into.id)).toMatchObject({ amount: 1000, date: '2097-03-03' });
+  });
+});
+
 describe('when one side of a transfer changes on its own', () => {
   async function linkedPair(name: string, date: string, amount: number) {
     const checking = await account(`Checking ${name}`);

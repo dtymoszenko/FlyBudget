@@ -197,6 +197,13 @@ describe('multiple currencies', () => {
     // …and what left is the value of both
     await call('PUT', `/transactions/${out.id}`, { amount: -49_000 });
     expect(row(into.id)).toMatchObject({ amount: 54_000, mainAmount: 49_000 });
+    // Money that left euros can't arrive as money leaving dollars
+    expect((await call('PUT', `/transactions/${out.id}`, { amount: 49_000 })).status).toBe(400);
+    expect((await call('PUT', `/transactions/${into.id}`, { amount: -54_000 })).status).toBe(400);
+    // A reconciled side doesn't move, not even its value in euros
+    db.update(transactions).set({ reconciled: 1 }).where(eq(transactions.id, into.id)).run();
+    expect((await call('PUT', `/transactions/${out.id}`, { amount: -48_000 })).status).toBe(403);
+    expect(row(into.id)).toMatchObject({ amount: 54_000, mainAmount: 49_000 });
   });
 
   it('turns an existing transaction into a cross-currency transfer at the day rate', async () => {
