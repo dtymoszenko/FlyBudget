@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import * as txApi from '../api/transactions';
 import { useUndoStore } from '../store/undoStore';
+import { settleEach } from '../utils/batch';
 import type { Transaction, TransactionQueryParams } from '../types';
 
 function findTxInCache(qc: QueryClient, id: string): Transaction | undefined {
@@ -220,4 +221,77 @@ export function useImportConfirm() {
       qc.invalidateQueries({ queryKey: ['accounts'] });
     },
   });
+}
+
+/** What a transaction had before a bulk change, so one undo puts every row back */
+const restoreFields = (t: Transaction) => ({
+  categoryId: t.categoryId,
+  payeeId: t.payeeId,
+  payeeName: t.payeeName,
+});
+
+/**
+ * The same change to several transactions at once (the register's selection). Rows are
+ * changed one by one through the ordinary routes, so every rule a single edit follows (splits,
+ * transfers, reconciled rows) still applies. Edits get one undo for the whole batch; deleting
+ * asks first and can't be undone, since recreating a row loses its splits, transfer link and
+ * bank import id.
+ */
+export function useBulkTransactions() {
+  const qc = useQueryClient();
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ['transactions'] });
+    qc.invalidateQueries({ queryKey: ['accounts'] });
+  };
+  const failure = (failed: number, total: number) =>
+    new Error(`${failed} of ${total} couldn't be changed. The rest were saved.`);
+
+  const update = useMutation({
+    mutationFn: async ({
+      ids,
+      data,
+    }: {
+      ids: string[];
+      data: Parameters<typeof txApi.updateTransaction>[1];
+    }) => {
+      const before = new Map(ids.map((id) => [id, findTxInCache(qc, id)]));
+      const { done, errors } = await settleEach(ids, (id) => txApi.updateTransaction(id, data));
+      refresh();
+      const changed = done.map((id) => before.get(id)).filter((t): t is Transaction => !!t);
+      if (changed.length) {
+        useUndoStore.getState().push({
+          description: `Edit ${changed.length} transactions`,
+          undo: async () => {
+            const { errors } = await settleEach(
+              changed.map((t) => t.id),
+              (id) => txApi.updateTransaction(id, restoreFields(before.get(id)!)),
+            );
+            refresh();
+            // Kept where it is to be tried again: each row is set to a value, so twice is harmless
+            if (errors.length) throw failure(errors.length, changed.length);
+          },
+          redo: async () => {
+            const { errors } = await settleEach(
+              changed.map((t) => t.id),
+              (id) => txApi.updateTransaction(id, data),
+            );
+            refresh();
+            // Kept where it is to be tried again: each row is set to a value, so twice is harmless
+            if (errors.length) throw failure(errors.length, changed.length);
+          },
+        });
+      }
+      if (errors.length) throw failure(errors.length, ids.length);
+    },
+  });
+
+  const remove = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { errors } = await settleEach(ids, (id) => txApi.deleteTransaction(id));
+      refresh();
+      if (errors.length) throw failure(errors.length, ids.length);
+    },
+  });
+
+  return { update, remove };
 }

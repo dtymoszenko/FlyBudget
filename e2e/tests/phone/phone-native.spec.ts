@@ -91,6 +91,30 @@ test.describe('register', () => {
     await expect(card).toContainText('Streaming Services');
   });
 
+  test('a Select button turns the cards into a multi-select (#176)', async ({ page, api }) => {
+    const { checking, groceries } = await seedAccount(api);
+    await open(page, `/accounts/${checking.id}`);
+    const select = page.getByRole('button', { name: 'Select', exact: true });
+    await expectTouchSize(select);
+    await select.click();
+    await page.getByTestId('transaction-card').filter({ hasText: 'Streamflix' }).click();
+    // In select mode a tap ticks the card instead of opening it
+    await expect(page.getByRole('complementary', { name: 'Transaction details' })).toBeHidden();
+    await expect(page.getByText('1 selected')).toBeVisible();
+    await page.getByRole('button', { name: 'Select all 2' }).click();
+    await expect(page.getByText('2 selected')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Set category' }).click();
+    await page.getByPlaceholder('Search categories...').fill('groc');
+    await page.getByRole('button', { name: '🛒 Groceries', exact: true }).click();
+    await expect
+      .poll(async () =>
+        (await api.transactions(`?account_id=${checking.id}`)).map((t) => t.categoryId),
+      )
+      .toEqual([groceries.id, groceries.id]);
+    await expect(select).toBeVisible();
+  });
+
   test('adds a split transaction from a bottom sheet', async ({ page, api }) => {
     const { checking } = await seedAccount(api);
     await open(page, `/accounts/${checking.id}`);
