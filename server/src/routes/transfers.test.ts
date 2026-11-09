@@ -276,6 +276,7 @@ describe('a reconciled side of a transfer', () => {
     db.update(transactions).set({ date: '2097-03-03' }).where(eq(transactions.id, into.id)).run();
     const same = { notes: 'rent', date: '2097-03-01', amount: -1000 };
     expect((await call('PUT', `/transactions/${out.id}`, same)).status).toBe(200);
+    expect(row(out.id).notes).toBe('rent');
     expect(row(into.id)).toMatchObject({ amount: 1000, date: '2097-03-03' });
   });
 });

@@ -200,10 +200,28 @@ describe('multiple currencies', () => {
     // Money that left euros can't arrive as money leaving dollars
     expect((await call('PUT', `/transactions/${out.id}`, { amount: 49_000 })).status).toBe(400);
     expect((await call('PUT', `/transactions/${into.id}`, { amount: -54_000 })).status).toBe(400);
+    expect((await call('PUT', `/transactions/${into.id}`, { amount: 0 })).status).toBe(400);
     // A reconciled side doesn't move, not even its value in euros
     db.update(transactions).set({ reconciled: 1 }).where(eq(transactions.id, into.id)).run();
     expect((await call('PUT', `/transactions/${out.id}`, { amount: -48_000 })).status).toBe(403);
     expect(row(into.id)).toMatchObject({ amount: 54_000, mainAmount: 49_000 });
+  });
+
+  it("keeps a reconciled side's value when the other side's value is typed in", async () => {
+    // Both sides outside euros: a value typed into one side is the other's too
+    const more = (await account('More dollars', 'USD')).id;
+    const { body } = await call('POST', '/transactions/transfer', {
+      fromAccountId: dollars,
+      toAccountId: more,
+      date: '2025-03-20',
+      amount: 1_000,
+    });
+    const [out, into] = body as { id: string }[];
+    const before = row(into.id).mainAmount;
+    db.update(transactions).set({ reconciled: 1 }).where(eq(transactions.id, into.id)).run();
+    expect((await call('PUT', `/transactions/${out.id}`, { mainAmount: -900 })).status).toBe(403);
+    expect(row(into.id).mainAmount).toBe(before);
+    expect((await call('PUT', `/transactions/${out.id}`, { notes: 'ok' })).status).toBe(200);
   });
 
   it('turns an existing transaction into a cross-currency transfer at the day rate', async () => {
