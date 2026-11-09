@@ -158,12 +158,18 @@ function ResizeHandle({ width }: { width: number }) {
         className="group absolute inset-y-0 -right-1.5 z-20 w-3 cursor-col-resize touch-none outline-none"
       >
         <div
-          className={`mx-auto h-full w-0.5 transition-colors ${
-            dragging
-              ? 'bg-brand-500'
-              : 'group-hover:bg-brand-500/60 group-focus-visible:bg-brand-500'
+          className={`mx-auto h-full w-0.5 transition-colors group-focus-visible:w-1 group-focus-visible:bg-brand-500 ${
+            dragging ? 'bg-brand-500' : 'group-hover:bg-brand-500/60'
           }`}
         />
+        <div
+          aria-hidden
+          className="absolute top-1/2 left-1/2 hidden h-8 w-2 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center gap-1 rounded-full bg-brand-500 ring-2 ring-sidebar-bg group-focus-visible:flex"
+        >
+          <span className="size-0.5 rounded-full bg-white" />
+          <span className="size-0.5 rounded-full bg-white" />
+          <span className="size-0.5 rounded-full bg-white" />
+        </div>
       </div>
       {/* Keeps the resize cursor and stops text selection while the pointer is over the page */}
       {dragging && <div aria-hidden className="fixed inset-0 z-50 cursor-col-resize" />}
