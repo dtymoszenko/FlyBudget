@@ -538,6 +538,26 @@ test.describe('transfers between existing transactions (#89)', () => {
   });
 });
 
+test('unlocks a reconciled transaction from the detail panel (#190)', async ({ page, api }) => {
+  const { checking } = await setup(api);
+  const tx = await api.createTransaction({
+    accountId: checking.id,
+    date: isoDay(),
+    amount: -2_500,
+    payeeName: 'Locked Shop',
+  });
+  await api.call('PUT', `/accounts/${checking.id}/reconcile`, { transactionIds: [tx.id] });
+  await open(page, `/accounts/${checking.id}`);
+  await row(page, 'Locked Shop').click();
+  const panel = page.getByRole('complementary', { name: 'Transaction details' });
+  await expect(panel.getByRole('textbox', { name: 'Notes' })).toBeDisabled();
+  await panel.getByRole('button', { name: 'Unlock' }).click();
+  await expect(panel.getByRole('textbox', { name: 'Notes' })).toBeEnabled();
+  await expect
+    .poll(async () => (await api.transactions(`?account_id=${checking.id}`))[0].reconciled)
+    .toBe(0);
+});
+
 test('sending a new transaction twice (offline retry) saves it once', async ({ api }) => {
   const checking = await api.createAccount('Everyday Checking', 100_000);
   const savings = await api.createAccount('Savings', 0, 'savings');

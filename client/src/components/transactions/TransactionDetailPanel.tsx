@@ -1,6 +1,10 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { X, Lock, Trash2, Repeat, Unlink, Wand2, Split } from 'lucide-react';
-import { useUpdateTransaction, useDeleteTransaction } from '../../hooks/useTransactions';
+import {
+  useUpdateTransaction,
+  useDeleteTransaction,
+  useReconcileAccount,
+} from '../../hooks/useTransactions';
 import { useTransferToAccount, useUnlinkTransfer } from '../../hooks/useTransfers';
 import { useCanSave } from '../../hooks/useConnection';
 import { useSchedules, useUnmatchByTransaction } from '../../hooks/useSchedules';
@@ -57,6 +61,7 @@ export function TransactionDetailPanel({
   const currency = useAccountCurrency()(tx.accountId);
   const updatePayee = useUpdatePayee();
   const deleteTx = useDeleteTransaction();
+  const reconcile = useReconcileAccount();
   const transferTo = useTransferToAccount();
   const unlinkTransfer = useUnlinkTransfer();
   const showCategoryIcons = usePreferencesStore((s) => s.showCategoryIcons);
@@ -262,7 +267,21 @@ export function TransactionDetailPanel({
         {isReconciled && (
           <div className="flex items-center gap-2 px-3 py-2 bg-surface-alt rounded-lg text-text-tertiary text-xs">
             <Lock size={12} />
-            <span>This transaction is reconciled and cannot be edited.</span>
+            <span className="flex-1">This transaction is reconciled and cannot be edited.</span>
+            <button
+              onClick={() =>
+                reconcile.mutate({
+                  accountId: tx.accountId,
+                  transactionIds: [tx.id],
+                  reconciled: false,
+                })
+              }
+              disabled={!canSave || reconcile.isPending}
+              className="font-medium text-brand-600 hover:text-brand-700 disabled:opacity-60 max-md:min-h-11 max-md:px-2"
+              title="Make it editable again (it will count as unreconciled)"
+            >
+              Unlock
+            </button>
           </div>
         )}
 

@@ -88,10 +88,11 @@ export const setTransactionSplits = (id: string, splits: SplitItem[]) =>
 export const deleteTransaction = (id: string) =>
   apiFetch<void>(`/transactions/${id}`, { method: 'DELETE' });
 
-export const reconcileAccount = (accountId: string, transactionIds: string[]) =>
+/** Locks these transactions as reconciled, or with `reconciled: false` unlocks them again */
+export const reconcileAccount = (accountId: string, transactionIds: string[], reconciled = true) =>
   apiFetch<{ reconciled: number }>(`/accounts/${accountId}/reconcile`, {
     method: 'PUT',
-    body: JSON.stringify({ transactionIds }),
+    body: JSON.stringify({ transactionIds, reconciled }),
   });
 
 export const createTransfer = (data: CreateTransferData) =>
