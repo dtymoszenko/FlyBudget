@@ -283,6 +283,65 @@ export function amountToInput(cents: number, style: AmountStyle): string {
  * formatCurrency's output too.
  */
 export function readTypedAmount(s: string, style: AmountStyle): number | null {
+  // Stripped of the symbol so a currency written with a slash (S/) isn't a division
+  const expression = style.symbol ? s.split(style.symbol).join(' ') : s;
+  if (/[+*/]|\d\s*-/.test(expression.replace(/^\s*[+-]/, ''))) {
+    return evaluateTypedAmount(expression, style);
+  }
+  return readPlainAmount(s, style);
+}
+
+/**
+ * An amount with arithmetic typed into it: 12.50+3*2, 120/3, 45-12.50. The operands are
+ * amounts (in the format's separators), * and / go before + and -, left to right. A sign at
+ * the start belongs to the first amount. Exact: fractions of BigInts, rounded once at the end
+ * (halves away from zero). Null when any part isn't an amount, or on dividing by zero. Every
+ * operand is an amount in the currency's decimals, so 1000*1.5 can't be read in yen, nor
+ * 0.005*2 in dollars.
+ * shortcut: no parentheses (rejected, not read as accounting negatives), add them if asked
+ */
+function evaluateTypedAmount(s: string, style: AmountStyle): number | null {
+  const unit = BigInt(10 ** decimalsOf(style));
+  // "12.50 - 3": a minus after a digit subtracts; at the start (or after another operator) it
+  // is the next amount's sign
+  const tokens = s.trim().match(/^[+-]?[^+*/-]+|[+*/-]|[^+*/-]+/g) ?? [];
+  if (tokens.length % 2 === 0) return null; // an operator at the end
+  // Running value as a fraction of cents: n / d, d > 0
+  const sums: { n: bigint; d: bigint }[] = [];
+  let op = '+';
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i]!;
+    if (i % 2 === 1) {
+      if (!/^[+*/-]$/.test(token)) return null;
+      op = token;
+      continue;
+    }
+    if (/^[+*/-]$/.test(token) || /[()]/.test(token)) return null;
+    // Exact operands too: 0.005*2 would otherwise round 0.005 to a cent first
+    const cents = readPlainAmount(token, style, true);
+    if (cents === null) return null;
+    const c = BigInt(cents);
+    const last = sums[sums.length - 1]!;
+    if (op === '*') sums[sums.length - 1] = { n: last.n * c, d: last.d * unit };
+    else if (op === '/') {
+      if (c === 0n) return null;
+      const sign = c < 0n ? -1n : 1n;
+      sums[sums.length - 1] = { n: last.n * unit * sign, d: last.d * c * sign };
+    } else sums.push({ n: op === '-' ? -c : c, d: 1n });
+  }
+  const total = sums.reduce((a, b) => ({ n: a.n * b.d + b.n * a.d, d: a.d * b.d }));
+  const abs = total.n < 0n ? -total.n : total.n;
+  const rounded = abs / total.d + (2n * (abs % total.d) >= total.d ? 1n : 0n);
+  if (rounded > 10_000_000_000_000n) return null; // the server's limit
+  return Number(total.n < 0n ? -rounded : rounded);
+}
+
+/** `exact`: refuse more decimals than the currency has, instead of rounding them */
+function readPlainAmount(
+  s: string,
+  style: AmountStyle,
+  exact = decimalsOf(style) === 0,
+): number | null {
   let text = s;
   // Symbols with letters (kr, Fr, CHF, S/) are left to amountChars, which removes them with
   // a dot written after them (kr.): removing "kr" here would leave that dot behind
@@ -318,7 +377,7 @@ export function readTypedAmount(s: string, style: AmountStyle): number | null {
   return readImportAmount(text, decimal === ',' ? 'comma' : 'dot', {
     directionWords: false,
     minor,
-    exact: minor === 0,
+    exact,
   });
 }
 

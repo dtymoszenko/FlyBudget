@@ -16,6 +16,8 @@ import type { AmountFormat } from '../store/preferencesStore';
 
 // Up to ±$10 billion, far beyond any real balance but still exact in a double
 const arbCents = fc.integer({ min: -10_000_000_000_00, max: 10_000_000_000_00 });
+// An empty field is 0, so an operand of 0 would leave the operator dangling ("12+")
+const arbNonZero = arbCents.filter((c) => c !== 0);
 
 const FORMATS: AmountFormat[] = ['dot', 'comma', 'space', 'apostrophe'];
 const US: AmountStyle = { format: 'dot', position: 'before', symbol: '$' };
@@ -143,6 +145,38 @@ describe('currency helpers (property-based)', () => {
     for (const bad of ['abc', '-', '.', '12.5.0', '1,2,3.4.5', '1.2.3,4,5']) {
       expect(isUnreadableAmount(bad, US)).toBe(true);
     }
+  });
+
+  it('works out arithmetic typed into an amount, in every format', () => {
+    fc.assert(
+      fc.property(arbNonZero, arbNonZero, arbStyle, (a, b, style) => {
+        const [x, y] = [Math.abs(a), Math.abs(b)];
+        const [sx, sy] = [amountToInput(x, style), amountToInput(y, style)];
+        expect(parseAmount(`${sx}+${sy}`, style)).toBe(x + y);
+        expect(parseAmount(`${sx} - ${sy}`, style)).toBe(x - y);
+        expect(parseAmount(`-${sx}-${sy}`, style)).toBe(-x - y);
+      }),
+    );
+    expect(parseAmount('12.50*3', US)).toBe(3750);
+    expect(parseAmount('100/3', US)).toBe(3333);
+    expect(parseAmount('2+3*4', US)).toBe(1400);
+    expect(parseAmount('10-2/4', US)).toBe(950);
+    expect(parseAmount('$1,234.56+1', US)).toBe(123_556);
+    expect(parseAmount('1.234,56+1', { ...US, format: 'comma' })).toBe(123_556);
+    expect(parseAmount('12,50 S/ + 1', { format: 'comma', position: 'after', symbol: 'S/' })).toBe(
+      1350,
+    );
+    // Every operand is an amount, so a currency without decimals multiplies by whole numbers
+    const yen = { ...US, symbol: '¥', minor: 0 };
+    expect(parseAmount('1000*3', yen)).toBe(3000);
+    expect(isUnreadableAmount('1000*1.5', yen)).toBe(true);
+    // Exact, never through floats, and halves round away from zero either way
+    expect(parseAmount('0.57/100*50', US)).toBe(29);
+    expect(parseAmount('0.01/2', US)).toBe(1);
+    expect(parseAmount('-0.01/2', US)).toBe(-1);
+    expect(parseAmount('10/3*3', US)).toBe(1000);
+    for (const bad of ['12/0', '12*', '12+*3', '12+abc', '10*(2)', '0.005*2'])
+      expect(isUnreadableAmount(bad, US)).toBe(true);
   });
 
   it('takes amounts up to the server limit of 100 billion', () => {
