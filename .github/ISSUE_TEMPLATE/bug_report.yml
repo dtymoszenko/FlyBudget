@@ -6,37 +6,17 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to report this.
-
-        **Found a security problem?** Don't post it here: report it privately as [SECURITY.md](https://github.com/dtymoszenko/FlyBudget/blob/main/SECURITY.md) explains.
-
-        **Don't paste anything private**: bank credentials, access URLs, API keys, the setup code, or real account numbers and transactions. Replace them with placeholders like `<bank>` or `••1234`.
-
-  - type: checkboxes
-    id: searched
-    attributes:
-      label: Existing issues
-      options:
-        - label: I searched the existing issues and this hasn't been reported yet.
-          required: true
+        Thanks for reporting this! Security problems go [privately](https://github.com/dtymoszenko/FlyBudget/blob/main/SECURITY.md), not here. Please don't paste credentials, setup codes or real transactions.
 
   - type: textarea
     id: what-happened
     attributes:
       label: What happened?
-      description: What went wrong, and what did you expect to happen instead?
-    validations:
-      required: true
-
-  - type: textarea
-    id: steps
-    attributes:
-      label: Steps to reproduce
-      description: The shortest way to make it happen again, starting from a page in the app.
       placeholder: |
-        1. Go to Transactions
-        2. Click …
-        3. See …
+        What you did, what you expected, and what happened instead. For example:
+        1. Go to Transactions and import a CSV
+        2. Expected the amounts to be negative
+        3. They were all positive
     validations:
       required: true
 
@@ -58,52 +38,11 @@ body:
     id: version
     attributes:
       label: Version
-      description: Click the status at the bottom of the sidebar ("On this computer" or your server's address) to see it.
+      description: Click the status at the bottom of the sidebar to see it.
       placeholder: 0.3.0
-    validations:
-      required: true
-
-  - type: input
-    id: environment
-    attributes:
-      label: Browser or device
-      description: For the self-hosted server or the demo, the browser you use. Mention it if it only happens on a phone.
-      placeholder: Firefox 133 on Android
-
-  - type: dropdown
-    id: area
-    attributes:
-      label: Area
-      description: Where in the app it happens (pick any that apply).
-      multiple: true
-      options:
-        - Budget
-        - Transactions
-        - Accounts or reconciling
-        - Importing files (CSV, Excel, CAMT)
-        - Bank sync (Plaid)
-        - Bank sync (SimpleFIN)
-        - Bank sync (Enable Banking)
-        - Currencies and exchange rates
-        - Recurring
-        - Rules
-        - Reports or dashboard
-        - Goals
-        - Payees
-        - Settings, backups or export
-        - Sign-in or server setup
-        - Offline or reconnecting
-        - Something else
-
-  - type: textarea
-    id: logs
-    attributes:
-      label: Error messages or logs
-      description: 'The error shown in the app, or the server log around it (Docker: `docker logs <container>`).'
-      render: text
 
   - type: textarea
     id: details
     attributes:
-      label: Screenshots and other details
-      description: Screenshots, or for imports and bank sync a few anonymized rows of the file and your bank's name.
+      label: Anything else?
+      description: Error messages, logs (Docker `docker logs <container>`), screenshots, your browser or phone, or for imports and bank sync a few anonymized rows and your bank's name.
