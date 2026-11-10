@@ -35,7 +35,6 @@ interface PreferencesState {
   dateFormat: DateFormatOption;
   savingsGoal: number;
   sidebarMode: SidebarMode;
-  /** The desktop sidebar's width in pixels, dragged by its edge (utils/sidebarWidth.ts) */
   sidebarWidth: number;
   showMerchantIcons: boolean;
   showCategoryIcons: boolean;

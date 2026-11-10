@@ -101,7 +101,6 @@ export function Sidebar() {
   );
 }
 
-/** The pinned sidebar's right edge: drag it (or use the arrow keys) to change the width; double-click resets it. */
 function ResizeHandle({ width }: { width: number }) {
   const setWidth = usePreferencesStore((s) => s.setSidebarWidth);
   const drag = useRef<{ startX: number; startWidth: number } | null>(null);
@@ -195,7 +194,7 @@ function SidebarContent({
   return (
     // Phones scroll the whole drawer, so the account list keeps its height on short screens
     <div style={{ width }} className="h-full flex flex-col bg-sidebar-bg max-md:overflow-y-auto">
-      {/* Logo. Stays in view while the phone drawer scrolls, so "Close menu" can always be reached */}
+      {/* Logo. Sticky on phones so "Close menu" stays reachable */}
       <div className="flex items-center gap-2.5 px-4 py-3 border-b border-sidebar-border max-md:sticky max-md:top-0 max-md:z-10 max-md:bg-sidebar-bg">
         <img src={logoUrl} alt="" className="w-7 h-7 shrink-0" />
         {/* The sidebar is dark in both themes, so "Budget" is always light here */}
@@ -317,8 +316,7 @@ function SidebarContent({
         />
       </nav>
 
-      {/* Where the data lives and whether the server is reachable. Stays in view while the
-          phone drawer scrolls, like the logo */}
+      {/* Where the data lives and whether the server is reachable */}
       <div className="py-1.5 px-3 border-t border-sidebar-border max-md:sticky max-md:bottom-0 max-md:z-10 max-md:bg-sidebar-bg">
         <ServerStatus collapsed={!isExpanded} />
       </div>
@@ -348,8 +346,7 @@ export function SidebarDrawer({ open, onClose }: { open: boolean; onClose: () =>
       id="app-sidebar"
       inert={!open}
       // Hidden once closed (so nothing inside can be reached), but only after sliding out;
-      // visible straight away when opening, so focus can move in. Full screen: it's only
-      // open while choosing where to go
+      // visible straight away when opening, so focus can move in
       className={`fixed inset-0 z-50 overflow-hidden duration-200 ${
         open
           ? 'visible translate-x-0 shadow-xl transition-[translate]'

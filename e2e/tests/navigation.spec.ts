@@ -81,7 +81,6 @@ test('the sidebar is resized by dragging its edge or with the keyboard', async (
   await page.mouse.up();
   expect(await width()).toBe(268);
 
-  // Never wider than 320 or narrower than 200
   await edge.press('End');
   await expect(edge).toHaveAttribute('aria-valuenow', '320');
   await edge.press('ArrowLeft');
@@ -89,7 +88,6 @@ test('the sidebar is resized by dragging its edge or with the keyboard', async (
   await edge.press('Home');
   await expect(edge).toHaveAttribute('aria-valuenow', '200');
 
-  // Remembered on this device; double-click goes back to the default
   await edge.press('End');
   await page.reload();
   expect(await width()).toBe(320);
