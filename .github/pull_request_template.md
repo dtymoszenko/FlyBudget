@@ -16,7 +16,15 @@ Fixes #
 
 ### Testing
 
-<!-- Tests you added or changed, and what you checked by hand. For UI changes, add a screenshot (and one on a phone if the layout changed). -->
+<!-- Tests you added or changed, and what you checked by hand. -->
+
+### Demo
+
+<!--
+For changes you can see in the app, show them working: before/after screenshots, or a short video or GIF of the flow (drag it into this box).
+Include a phone-width screenshot if the layout changed. Use sample data, never your real accounts.
+Delete this section if nothing visible changed.
+-->
 
 ### Checklist
 
