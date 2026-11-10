@@ -231,9 +231,14 @@ export function useImportConfirm() {
         undo: async () => {
           const { errors } = await settleEach(ids, (id) => txApi.deleteTransaction(id));
           refresh();
-          // Deleted by hand meanwhile: already gone. Anything else fails the undo, which can
-          // then be tried again (the rows already deleted answer 404 the second time)
-          if (errors.some((e) => !(e instanceof ApiError && e.status === 404))) {
+          // Deleted by hand meanwhile: already gone. Reconciled meanwhile: locked, so it stays
+          // (else the undo would fail for good and block every undo before it). Anything else
+          // fails the undo, which can then be tried again (deleted rows answer 404 next time)
+          const settled = (e: unknown) =>
+            e instanceof ApiError &&
+            (e.status === 404 ||
+              (e.status === 403 && e.message === 'Cannot modify a reconciled transaction'));
+          if (!errors.every(settled)) {
             throw new Error("Some imported transactions couldn't be deleted");
           }
         },

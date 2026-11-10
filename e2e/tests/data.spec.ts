@@ -668,4 +668,14 @@ test('an import can be taken back from the dialog (#177)', async ({ page, api })
   await expect
     .poll(async () => (await api.transactions(`?account_id=${checking.id}&from=2025-01-01`)).length)
     .toBe(4);
+  await expect(page.getByText('Redid: Import 4 transactions')).toBeVisible();
+  // A row reconciled since stays; undo still removes the rest
+  const [first] = await api.transactions(`?account_id=${checking.id}&from=2025-01-01`);
+  await api.call('PUT', `/accounts/${checking.id}/reconcile`, { transactionIds: [first.id] });
+  await page.keyboard.press('ControlOrMeta+z');
+  // …and counts as done, instead of staying stuck on top of the undo stack
+  await expect(page.getByText('Undid: Import 4 transactions')).toBeVisible();
+  await expect
+    .poll(async () => (await api.transactions(`?account_id=${checking.id}&from=2025-01-01`)).length)
+    .toBe(1);
 });

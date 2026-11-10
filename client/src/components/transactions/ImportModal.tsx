@@ -936,9 +936,13 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
             {canUndoImport && (
               <Button
                 variant="secondary"
-                onClick={() => {
-                  void useUndoStore.getState().undo();
-                  handleClose();
+                onClick={async () => {
+                  setError(null);
+                  await useUndoStore.getState().undo();
+                  // A failed undo stays on top of the stack: say so, and keep the dialog open
+                  if (useUndoStore.getState().undoStack.at(-1) === importUndo) {
+                    setError("Couldn't undo the import. Try again.");
+                  } else handleClose();
                 }}
               >
                 Undo import
