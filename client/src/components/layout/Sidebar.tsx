@@ -184,7 +184,7 @@ function SidebarContent({
 }: {
   isExpanded: boolean;
   onClose?: () => void;
-  width?: number;
+  width?: number | string;
 }) {
   const sidebarMode = usePreferencesStore((s) => s.sidebarMode);
   const setSidebarMode = usePreferencesStore((s) => s.setSidebarMode);
@@ -193,9 +193,10 @@ function SidebarContent({
     'relative p-1.5 max-md:min-w-11 max-md:min-h-11 flex items-center justify-center rounded-md text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-text-hi';
 
   return (
-    <div style={{ width }} className="h-full flex flex-col bg-sidebar-bg">
-      {/* Logo */}
-      <div className="flex items-center gap-2.5 px-4 py-3 border-b border-sidebar-border">
+    // Phones scroll the whole drawer, so the account list keeps its height on short screens
+    <div style={{ width }} className="h-full flex flex-col bg-sidebar-bg max-md:overflow-y-auto">
+      {/* Logo. Stays in view while the phone drawer scrolls, so "Close menu" can always be reached */}
+      <div className="flex items-center gap-2.5 px-4 py-3 border-b border-sidebar-border max-md:sticky max-md:top-0 max-md:z-10 max-md:bg-sidebar-bg">
         <img src={logoUrl} alt="" className="w-7 h-7 shrink-0" />
         {/* The sidebar is dark in both themes, so "Budget" is always light here */}
         <BrandName
@@ -297,7 +298,7 @@ function SidebarContent({
       {/* Account list */}
       <div
         data-escape-to="/accounts"
-        className={`flex-1 flex flex-col min-h-0 overflow-hidden transition-opacity duration-200 ${
+        className={`flex-1 max-md:flex-[1_0_auto] flex flex-col min-h-0 overflow-hidden transition-opacity duration-200 ${
           isExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
       >
@@ -316,8 +317,9 @@ function SidebarContent({
         />
       </nav>
 
-      {/* Where the data lives and whether the server is reachable */}
-      <div className="py-1.5 px-3 border-t border-sidebar-border">
+      {/* Where the data lives and whether the server is reachable. Stays in view while the
+          phone drawer scrolls, like the logo */}
+      <div className="py-1.5 px-3 border-t border-sidebar-border max-md:sticky max-md:bottom-0 max-md:z-10 max-md:bg-sidebar-bg">
         <ServerStatus collapsed={!isExpanded} />
       </div>
     </div>
@@ -337,32 +339,24 @@ function HeaderTooltip({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Phones: the sidebar slides in over the page from a menu button (see AppShell). It's
+ * Phones: the sidebar slides in over the whole page from a menu button (see AppShell). It's
  * inert while closed, so its links can't be reached by Tab or screen readers.
  */
 export function SidebarDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
-    <>
-      {open && (
-        <div
-          aria-hidden
-          onClick={onClose}
-          className="fixed inset-0 z-40 bg-black/40 animate-fade-in"
-        />
-      )}
-      <aside
-        id="app-sidebar"
-        inert={!open}
-        // Hidden once closed (so nothing inside can be reached), but only after sliding out;
-        // visible straight away when opening, so focus can move in
-        className={`fixed inset-y-0 left-0 z-50 w-[208px] max-w-[85vw] overflow-hidden duration-200 ${
-          open
-            ? 'visible translate-x-0 shadow-xl transition-[translate]'
-            : 'invisible -translate-x-full transition-[translate,visibility]'
-        }`}
-      >
-        <SidebarContent isExpanded onClose={onClose} />
-      </aside>
-    </>
+    <aside
+      id="app-sidebar"
+      inert={!open}
+      // Hidden once closed (so nothing inside can be reached), but only after sliding out;
+      // visible straight away when opening, so focus can move in. Full screen: it's only
+      // open while choosing where to go
+      className={`fixed inset-0 z-50 overflow-hidden duration-200 ${
+        open
+          ? 'visible translate-x-0 shadow-xl transition-[translate]'
+          : 'invisible -translate-x-full transition-[translate,visibility]'
+      }`}
+    >
+      <SidebarContent isExpanded onClose={onClose} width="100%" />
+    </aside>
   );
 }
