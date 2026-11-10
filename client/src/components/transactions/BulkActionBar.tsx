@@ -6,6 +6,7 @@ import { CategoryPicker } from './CategoryPicker';
 import { PayeePicker } from './PayeePicker';
 import { Button } from '../ui/Button';
 import { ConfirmModal } from '../ui/ConfirmModal';
+import { SavingPausedHint } from '../connection/SavingPausedHint';
 import type { CategoryGroup, PayeeWithCount, Transaction } from '../../types';
 
 interface Props {
@@ -37,6 +38,7 @@ export function BulkActionBar({ txs, total, groups, payees, onSelectAll, onDone 
 
   const unlocked = txs.filter((t) => !t.reconciled);
   const deletable = unlocked.map((t) => t.id);
+  const deleting = `${deletable.length} transaction${deletable.length === 1 ? '' : 's'}`;
   const payeeable = unlocked.filter((t) => !t.transferTransactionId).map((t) => t.id);
   const categorizable = unlocked
     .filter((t) => !t.transferTransactionId && t.isParent !== 1)
@@ -76,6 +78,7 @@ export function BulkActionBar({ txs, total, groups, payees, onSelectAll, onDone 
           {failure.message}
         </span>
       )}
+      <SavingPausedHint />
       <div className="flex items-center gap-2 ml-auto">
         <div className="relative">
           {pickerButton('category', 'Set category', categorizable.length > 0)}
@@ -86,6 +89,7 @@ export function BulkActionBar({ txs, total, groups, payees, onSelectAll, onDone 
               onClose={() => setPicker(null)}
               onChange={(categoryId) => {
                 setPicker(null);
+                remove.reset(); // only the latest action's failure is shown
                 update.mutate({ ids: categorizable, data: { categoryId } }, { onSuccess: onDone });
               }}
             />
@@ -101,6 +105,7 @@ export function BulkActionBar({ txs, total, groups, payees, onSelectAll, onDone 
               onClose={() => setPicker(null)}
               onChange={(payeeId, payeeName) => {
                 setPicker(null);
+                remove.reset(); // only the latest action's failure is shown
                 update.mutate(
                   { ids: payeeable, data: { payeeId, payeeName } },
                   { onSuccess: onDone },
@@ -130,10 +135,11 @@ export function BulkActionBar({ txs, total, groups, payees, onSelectAll, onDone 
         onClose={() => setConfirmDelete(false)}
         onConfirm={() => {
           setConfirmDelete(false);
+          update.reset();
           remove.mutate(deletable, { onSuccess: onDone });
         }}
-        title={`Delete ${deletable.length} transactions`}
-        message={`Delete ${deletable.length} transaction${deletable.length === 1 ? '' : 's'}? This can't be undone.`}
+        title={`Delete ${deleting}`}
+        message={`Delete ${deleting}? This can't be undone.`}
         confirmLabel="Delete"
         danger
       />

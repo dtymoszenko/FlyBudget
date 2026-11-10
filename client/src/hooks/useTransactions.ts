@@ -260,7 +260,7 @@ export function useBulkTransactions() {
       const changed = done.map((id) => before.get(id)).filter((t): t is Transaction => !!t);
       if (changed.length) {
         useUndoStore.getState().push({
-          description: `Edit ${changed.length} transactions`,
+          description: `Edit ${changed.length} transaction${changed.length === 1 ? '' : 's'}`,
           undo: async () => {
             const { errors } = await settleEach(
               changed.map((t) => t.id),
