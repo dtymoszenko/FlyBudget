@@ -513,6 +513,8 @@ export default function PayeesPage() {
 
       {ruleModal.value && (
         <RuleEditorFlow
+          // A fresh editor per payee, even one opened while the last is still closing
+          key={ruleModal.value.id}
           isOpen={ruleModal.isOpen}
           onClose={() => setRuleFor(null)}
           initial={ruleDraft(ruleModal.value)}

@@ -195,6 +195,13 @@ test('starts a rule from a payee, with its default category filled in (#175)', a
   await expect(dialog).toContainText('Groceries');
   await dialog.getByRole('button', { name: 'Save rule' }).click();
   await expect
-    .poll(async () => (await api.call<any[]>('GET', '/rules')).map((r) => r.conditions))
-    .toEqual([[{ field: 'payee', op: 'is', value: payee.id }]]);
+    .poll(async () =>
+      (await api.call<any[]>('GET', '/rules')).map((r) => [r.conditions, r.actions]),
+    )
+    .toEqual([
+      [
+        [{ field: 'payee', op: 'is', value: payee.id }],
+        [{ type: 'set_category', value: groceries.id }],
+      ],
+    ]);
 });
