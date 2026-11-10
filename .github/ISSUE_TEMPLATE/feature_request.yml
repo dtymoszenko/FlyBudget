@@ -1,0 +1,69 @@
+name: Feature request
+description: Suggest something FlyBudget could do, or do better
+title: '[Feature Request] '
+labels: ['enhancement']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea. One request per issue makes each easier to discuss and track: if you have several, open one for each.
+
+  - type: checkboxes
+    id: searched
+    attributes:
+      label: Existing issues
+      options:
+        - label: I searched the existing issues and this hasn't been requested yet.
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The problem or situation behind the request, in your own budget. "I import from two banks and …" helps more than the solution alone.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: What would you like FlyBudget to do?
+      description: How you imagine it working. Screenshots or sketches are welcome.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: How do you handle it today?
+      description: Workarounds you use, or how another app (Actual, YNAB, a spreadsheet …) does it.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Where in the app it belongs (pick any that apply).
+      multiple: true
+      options:
+        - Budget
+        - Transactions
+        - Accounts or reconciling
+        - Importing files (CSV, Excel, CAMT)
+        - Bank sync
+        - Currencies and exchange rates
+        - Recurring
+        - Rules
+        - Reports or dashboard
+        - Goals
+        - Payees
+        - Settings, backups or export
+        - Self-hosting
+        - Phones
+        - Something else
+
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contributing
+      options:
+        - label: I'd like to build this myself (please agree on the approach in this issue before starting).
