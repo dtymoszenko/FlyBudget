@@ -396,6 +396,28 @@ test.describe('account register', () => {
   });
 });
 
+test('edits the amount from the detail panel (#190)', async ({ page, api }) => {
+  const { checking } = await setup(api);
+  const tx = await api.createTransaction({
+    accountId: checking.id,
+    date: isoDay(),
+    amount: -2_500,
+    payeeName: 'Typo Shop',
+  });
+  await open(page, `/accounts/${checking.id}`);
+  await row(page, 'Typo Shop').click();
+  const panel = page.getByRole('complementary', { name: 'Transaction details' });
+  await typeAmount(panel.getByRole('textbox', { name: 'Outflow' }), '30');
+  await expect
+    .poll(async () => (await api.transactions(`?account_id=${checking.id}`))[0])
+    .toMatchObject({ id: tx.id, amount: -3_000 });
+  // The other direction takes over
+  await typeAmount(panel.getByRole('textbox', { name: 'Inflow' }), '12');
+  await expect
+    .poll(async () => (await api.transactions(`?account_id=${checking.id}`))[0].amount)
+    .toBe(1_200);
+});
+
 test('the Add transaction dialog makes transfers too', async ({ page, api }) => {
   const { checking, savings } = await setup(api);
   await open(page, '/transactions?add=1');
