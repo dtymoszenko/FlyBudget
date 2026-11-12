@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -22,6 +22,12 @@ import { ServerStatus } from './ServerStatus';
 import { useAutoHideExpansion } from './useAutoHideExpansion';
 import { DOCS_URL } from '../../utils/project';
 import { BrandName } from '../ui/BrandName';
+import {
+  SIDEBAR_DEFAULT_WIDTH,
+  SIDEBAR_MAX_WIDTH,
+  SIDEBAR_MIN_WIDTH,
+  SIDEBAR_WIDTH_STEP,
+} from '../../utils/sidebarWidth';
 import logoUrl from '/logo.png';
 
 interface NavItemProps {
@@ -60,6 +66,7 @@ function NavItem({ to, icon, label, collapsed }: NavItemProps) {
 
 export function Sidebar() {
   const sidebarMode = usePreferencesStore((s) => s.sidebarMode);
+  const width = usePreferencesStore((s) => s.sidebarWidth);
   const asideRef = useRef<HTMLElement>(null);
   const isAutoHide = sidebarMode === 'auto-hide';
   const { isExpanded, ...expansionHandlers } = useAutoHideExpansion(asideRef, isAutoHide);
@@ -68,31 +75,117 @@ export function Sidebar() {
     <aside
       ref={asideRef}
       {...expansionHandlers}
+      style={isAutoHide ? undefined : { width }}
       className={
         isAutoHide
           ? 'w-16 shrink-0 h-screen relative z-30'
-          : 'w-[208px] shrink-0 h-screen overflow-clip border-r border-sidebar-border'
+          : 'shrink-0 h-screen relative border-r border-sidebar-border'
       }
     >
       {/* overflow-clip, not hidden: a hidden box can still be scrolled, and focusing something
           past its edge would slide the content sideways */}
       <div
+        style={isAutoHide && isExpanded ? { width } : undefined}
         className={
           isAutoHide
             ? `absolute left-0 top-0 h-full overflow-clip border-r border-sidebar-border transition-[width,box-shadow] duration-200 motion-reduce:transition-none ${
-                isExpanded ? 'w-[208px] shadow-xl' : 'w-16'
+                isExpanded ? 'shadow-xl' : 'w-16'
               }`
-            : 'w-full h-full'
+            : 'w-full h-full overflow-clip'
         }
       >
-        <SidebarContent isExpanded={isExpanded} />
+        <SidebarContent isExpanded={isExpanded} width={width} />
       </div>
+      {!isAutoHide && <ResizeHandle width={width} />}
     </aside>
   );
 }
 
+function ResizeHandle({ width }: { width: number }) {
+  const setWidth = usePreferencesStore((s) => s.setSidebarWidth);
+  const drag = useRef<{ startX: number; startWidth: number } | null>(null);
+  const [dragging, setDragging] = useState(false);
+
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    drag.current = { startX: e.clientX, startWidth: width };
+    setDragging(true);
+  };
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!drag.current) return;
+    setWidth(drag.current.startWidth + e.clientX - drag.current.startX);
+  };
+  const endDrag = () => {
+    drag.current = null;
+    setDragging(false);
+  };
+  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const next =
+      e.key === 'ArrowLeft'
+        ? width - SIDEBAR_WIDTH_STEP
+        : e.key === 'ArrowRight'
+          ? width + SIDEBAR_WIDTH_STEP
+          : e.key === 'Home'
+            ? SIDEBAR_MIN_WIDTH
+            : e.key === 'End'
+              ? SIDEBAR_MAX_WIDTH
+              : null;
+    if (next === null) return;
+    e.preventDefault();
+    setWidth(next);
+  };
+
+  return (
+    <>
+      <div
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize sidebar"
+        aria-valuenow={width}
+        aria-valuemin={SIDEBAR_MIN_WIDTH}
+        aria-valuemax={SIDEBAR_MAX_WIDTH}
+        tabIndex={0}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        onLostPointerCapture={endDrag}
+        onDoubleClick={() => setWidth(SIDEBAR_DEFAULT_WIDTH)}
+        onKeyDown={onKeyDown}
+        className="group absolute inset-y-0 -right-1.5 z-20 w-3 cursor-col-resize touch-none outline-none"
+      >
+        <div
+          className={`mx-auto h-full w-0.5 transition-colors group-focus-visible:w-1 group-focus-visible:bg-brand-500 ${
+            dragging ? 'bg-brand-500' : 'group-hover:bg-brand-500/60'
+          }`}
+        />
+        <div
+          aria-hidden
+          className="absolute top-1/2 left-1/2 hidden h-8 w-2 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center gap-1 rounded-full bg-brand-500 ring-2 ring-sidebar-bg group-focus-visible:flex"
+        >
+          <span className="size-0.5 rounded-full bg-white" />
+          <span className="size-0.5 rounded-full bg-white" />
+          <span className="size-0.5 rounded-full bg-white" />
+        </div>
+      </div>
+      {/* Keeps the resize cursor and stops text selection while the pointer is over the page */}
+      {dragging && <div aria-hidden className="fixed inset-0 z-50 cursor-col-resize" />}
+    </>
+  );
+}
+
 /** The sidebar's links, account list and footer, shared by the desktop sidebar and the phone drawer. */
-function SidebarContent({ isExpanded, onClose }: { isExpanded: boolean; onClose?: () => void }) {
+function SidebarContent({
+  isExpanded,
+  onClose,
+  width = SIDEBAR_DEFAULT_WIDTH,
+}: {
+  isExpanded: boolean;
+  onClose?: () => void;
+  width?: number | string;
+}) {
   const sidebarMode = usePreferencesStore((s) => s.sidebarMode);
   const setSidebarMode = usePreferencesStore((s) => s.setSidebarMode);
   const pinned = sidebarMode === 'persistent';
@@ -100,9 +193,10 @@ function SidebarContent({ isExpanded, onClose }: { isExpanded: boolean; onClose?
     'relative p-1.5 max-md:min-w-11 max-md:min-h-11 flex items-center justify-center rounded-md text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-text-hi';
 
   return (
-    <div className="w-[208px] h-full flex flex-col bg-sidebar-bg">
-      {/* Logo */}
-      <div className="flex items-center gap-2.5 px-4 py-3 border-b border-sidebar-border">
+    // Phones scroll the whole drawer, so the account list keeps its height on short screens
+    <div style={{ width }} className="h-full flex flex-col bg-sidebar-bg max-md:overflow-y-auto">
+      {/* Logo. Sticky on phones so "Close menu" stays reachable */}
+      <div className="flex items-center gap-2.5 px-4 py-3 border-b border-sidebar-border max-md:sticky max-md:top-0 max-md:z-10 max-md:bg-sidebar-bg">
         <img src={logoUrl} alt="" className="w-7 h-7 shrink-0" />
         {/* The sidebar is dark in both themes, so "Budget" is always light here */}
         <BrandName
@@ -204,7 +298,7 @@ function SidebarContent({ isExpanded, onClose }: { isExpanded: boolean; onClose?
       {/* Account list */}
       <div
         data-escape-to="/accounts"
-        className={`flex-1 flex flex-col min-h-0 overflow-hidden transition-opacity duration-200 ${
+        className={`flex-1 max-md:flex-[1_0_auto] flex flex-col min-h-0 overflow-hidden transition-opacity duration-200 ${
           isExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
       >
@@ -224,7 +318,7 @@ function SidebarContent({ isExpanded, onClose }: { isExpanded: boolean; onClose?
       </nav>
 
       {/* Where the data lives and whether the server is reachable */}
-      <div className="py-1.5 px-3 border-t border-sidebar-border">
+      <div className="py-1.5 px-3 border-t border-sidebar-border max-md:sticky max-md:bottom-0 max-md:z-10 max-md:bg-sidebar-bg">
         <ServerStatus collapsed={!isExpanded} />
       </div>
     </div>
@@ -244,32 +338,23 @@ function HeaderTooltip({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Phones: the sidebar slides in over the page from a menu button (see AppShell). It's
+ * Phones: the sidebar slides in over the whole page from a menu button (see AppShell). It's
  * inert while closed, so its links can't be reached by Tab or screen readers.
  */
 export function SidebarDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
-    <>
-      {open && (
-        <div
-          aria-hidden
-          onClick={onClose}
-          className="fixed inset-0 z-40 bg-black/40 animate-fade-in"
-        />
-      )}
-      <aside
-        id="app-sidebar"
-        inert={!open}
-        // Hidden once closed (so nothing inside can be reached), but only after sliding out;
-        // visible straight away when opening, so focus can move in
-        className={`fixed inset-y-0 left-0 z-50 w-[208px] max-w-[85vw] overflow-hidden duration-200 ${
-          open
-            ? 'visible translate-x-0 shadow-xl transition-[translate]'
-            : 'invisible -translate-x-full transition-[translate,visibility]'
-        }`}
-      >
-        <SidebarContent isExpanded onClose={onClose} />
-      </aside>
-    </>
+    <aside
+      id="app-sidebar"
+      inert={!open}
+      // Hidden once closed (so nothing inside can be reached), but only after sliding out;
+      // visible straight away when opening, so focus can move in
+      className={`fixed inset-0 z-50 overflow-hidden duration-200 ${
+        open
+          ? 'visible translate-x-0 shadow-xl transition-[translate]'
+          : 'invisible -translate-x-full transition-[translate,visibility]'
+      }`}
+    >
+      <SidebarContent isExpanded onClose={onClose} width="100%" />
+    </aside>
   );
 }
