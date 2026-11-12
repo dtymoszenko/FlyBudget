@@ -151,6 +151,7 @@ function ResizeHandle({ width }: { width: number }) {
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
+        onLostPointerCapture={endDrag}
         onDoubleClick={() => setWidth(SIDEBAR_DEFAULT_WIDTH)}
         onKeyDown={onKeyDown}
         className="group absolute inset-y-0 -right-1.5 z-20 w-3 cursor-col-resize touch-none outline-none"
