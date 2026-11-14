@@ -211,22 +211,32 @@ describe('searching transactions', () => {
     );
   });
 
-  it('finds a split by the notes on one of its parts, with its parts', async () => {
-    const accountId = await newAccount();
-    const split = await send('POST', '/transactions', {
-      accountId,
-      date: '2025-06-02',
-      amount: -3000,
-      payeeName: 'Department Store',
-      splits: [
-        { categoryId: null, amount: -2000, notes: 'Birthday present' },
-        { categoryId: null, amount: -1000, notes: 'Socks' },
-      ],
-    });
-    expect(split.status).toBe(201);
-    const found = await list(`account_id=${accountId}&search=birthday`);
-    expect(found.map((t) => t.payeeName)).toEqual(['Department Store']);
-    expect(found[0].children).toHaveLength(2);
-    expect(await list(`account_id=${accountId}&search=groceries`)).toEqual([]);
+  it('finds a split when one of its parts has the text in its notes, with every part', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.array(fc.option(text), { minLength: 2, maxLength: 5 }),
+        text.filter((s) => s.length > 0),
+        async (partNotes, needle) => {
+          const accountId = await newAccount();
+          const split = await send('POST', '/transactions', {
+            accountId,
+            date: '2025-06-02',
+            amount: -100 * partNotes.length,
+            // No letter of the search alphabet, so only the parts can match
+            payeeName: 'Xyz',
+            splits: partNotes.map((notes) => ({ categoryId: null, amount: -100, notes })),
+          });
+          expect(split.status).toBe(201);
+          const hit = partNotes.some(
+            (n) => n !== null && n.toLowerCase().includes(needle.toLowerCase()),
+          );
+          const found = await list(`account_id=${accountId}&search=${encodeURIComponent(needle)}`);
+          // The split itself, never its parts on their own
+          expect(found.map((t) => t.id)).toEqual(hit ? [split.body.id] : []);
+          if (hit) expect(found[0].children).toHaveLength(partNotes.length);
+        },
+      ),
+      { numRuns: 30 },
+    );
   });
 });
