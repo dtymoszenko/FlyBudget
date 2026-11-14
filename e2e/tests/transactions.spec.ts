@@ -750,3 +750,16 @@ test.describe('splitting', () => {
     expect(parts.sort((a: number, b: number) => a - b)).toEqual([-7_000, -3_000]);
   });
 });
+
+test('works out arithmetic typed into an amount (#189)', async ({ page, api }) => {
+  const { checking } = await setup(api);
+  await open(page, `/accounts/${checking.id}`);
+  await fillNewTransaction(page, { payee: 'Three Coffees', outflow: '3*4.25+1.5' });
+  await newForm(page).getByRole('button', { name: 'Save' }).click();
+  await expect.poll(async () => api.balance(checking.id)).toBe(100_000 - 1_425);
+
+  // The column decides the direction, whatever sign the sum comes out with
+  await fillNewTransaction(page, { payee: 'Refund', inflow: '50-60' });
+  await newForm(page).getByRole('button', { name: 'Save' }).click();
+  await expect.poll(async () => api.balance(checking.id)).toBe(100_000 - 1_425 + 1_000);
+});
