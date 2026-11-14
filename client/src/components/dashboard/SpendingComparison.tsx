@@ -10,7 +10,7 @@ import {
   Legend,
 } from 'recharts';
 import { useSpendingComparison } from '../../hooks/useReports';
-import { formatCurrency } from '../../utils/currency';
+import { formatCentsAxis, formatCurrency } from '../../utils/currency';
 import { TrendingDown } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { EmptyState } from '../ui/EmptyState';
@@ -32,14 +32,8 @@ const MODES: { value: Mode; label: string }[] = [
   { value: 'year_vs_last_year', label: 'This year vs. last year' },
 ];
 
-function formatYAxis(value: number): string {
-  const dollars = Math.abs(value) / 100;
-  if (dollars >= 1000) {
-    const k = dollars / 1000;
-    return `$${k % 1 === 0 ? k.toFixed(0) : k.toFixed(1)}K`;
-  }
-  return `$${dollars.toFixed(0)}`;
-}
+/** Room for axis labels in a currency written with letters, like "999 CHF" (the report charts use 60 too) */
+const Y_AXIS_WIDTH = 60;
 
 function ComparisonTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
@@ -93,13 +87,13 @@ export default function SpendingComparison() {
       data.comparison.some((p) => p.cumulative !== 0));
 
   const labels = useMemo(() => chartData.map((d) => d.label), [chartData]);
-  // Inset: y-axis width (50) on the left, chart margin (8) on the right
+  // Inset: y-axis width on the left, chart margin (8) on the right
   const xAxis = useXAxisLayout({
     labels,
     kind: 'point',
     ordered: true,
     fontSize: 11,
-    inset: { left: 50, right: 8 },
+    inset: { left: Y_AXIS_WIDTH, right: 8 },
   });
 
   if (isLoading || !data) {
@@ -154,8 +148,8 @@ export default function SpendingComparison() {
                 tick={{ fontSize: 11, fill: chartColors.axis }}
                 axisLine={false}
                 tickLine={false}
-                tickFormatter={formatYAxis}
-                width={50}
+                tickFormatter={formatCentsAxis}
+                width={Y_AXIS_WIDTH}
               />
               <Tooltip content={<ComparisonTooltip />} />
               <Legend iconSize={8} wrapperStyle={{ fontSize: 11, color: chartColors.axis }} />

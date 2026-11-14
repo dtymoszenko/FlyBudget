@@ -7,6 +7,7 @@ import {
   amountToInput,
   formatAmount,
   formatAxisAmount,
+  formatBarAmount,
   localeAmountStyle,
   isUnreadableAmount,
   parseAmount,
@@ -256,6 +257,38 @@ describe('formatCentsAxis (property-based)', () => {
     const ticks = [0, 35_000, 70_000, 100_000, 135_000, 250_000, 1_000_000, 1_500_000];
     const labels = ticks.map((d) => formatAxisAmount(d * 100, US));
     expect(new Set(labels).size).toBe(ticks.length);
+  });
+});
+
+describe('formatBarAmount (property-based)', () => {
+  // Any style, in currencies with 0, 2 or 3 decimals
+  const arbAnyStyle = fc
+    .record({ style: arbStyle, minor: fc.constantFrom(0, 2, 3) })
+    .map(({ style, minor }): AmountStyle => ({ ...style, minor }));
+  const unit = (style: AmountStyle) => 10 ** (style.minor ?? 2);
+
+  it('never labels an amount that is there as nothing', () => {
+    fc.assert(
+      fc.property(fc.integer({ min: -100_000, max: 100_000 }), arbAnyStyle, (cents, style) => {
+        fc.pre(cents !== 0);
+        expect(formatBarAmount(cents, style)).not.toBe(formatBarAmount(0, style));
+      }),
+    );
+  });
+
+  it('is the axis label from half a unit up', () => {
+    fc.assert(
+      fc.property(arbCents, arbAnyStyle, (cents, style) => {
+        fc.pre(Math.abs(cents) >= unit(style) / 2);
+        expect(formatBarAmount(cents, style)).toBe(formatAxisAmount(cents, style));
+      }),
+    );
+  });
+
+  it('is exact below half a unit', () => {
+    expect(formatBarAmount(49, US)).toBe('$0.49');
+    expect(formatBarAmount(0, US)).toBe('$0');
+    expect(formatBarAmount(150_000, US)).toBe('$1.5k');
   });
 });
 

@@ -367,6 +367,16 @@ export function formatAxisAmount(cents: number, style: AmountStyle): string {
   return withSymbol(number, cents < 0, style);
 }
 
+/**
+ * The amount above a bar: as short as the axis ("$1.5k", "12 €"), but exact where that would
+ * round to 0 ("$0.49"), so a bar that's there is never labelled as nothing.
+ */
+export function formatBarAmount(cents: number, style: AmountStyle): string {
+  return cents !== 0 && Math.abs(cents) < 10 ** decimalsOf(style) / 2
+    ? formatAmount(cents, style)
+    : formatAxisAmount(cents, style);
+}
+
 // The same, in this device's style and the budget's currency. One argument each, so they can
 // be passed as callbacks (Recharts' tickFormatter, Array.map) without a second argument being
 // taken for a style. Amounts of one account use formatMoney with its currency.
@@ -374,6 +384,7 @@ export const centsToInput = (cents: number) => amountToInput(cents, amountStyle(
 export const parseCents = (s: string) => parseAmount(s, amountStyle());
 export const formatCurrency = (cents: number) => formatAmount(cents, amountStyle());
 export const formatCentsAxis = (cents: number) => formatAxisAmount(cents, amountStyle());
+export const formatCentsBar = (cents: number) => formatBarAmount(cents, amountStyle());
 
 /** An amount in a currency (an account's own): "12,50 zł", "¥1,500"; null = the budget's */
 export const formatMoney = (amount: number, currency: string | null | undefined) =>

@@ -16,7 +16,7 @@ import { useBudget, useCategoryHistory } from '../hooks/useBudget';
 import { useTransactions } from '../hooks/useTransactions';
 import { useAppStore } from '../store/appStore';
 import { usePreferencesStore } from '../store/preferencesStore';
-import { formatCurrency } from '../utils/currency';
+import { formatCentsAxis, formatCentsBar, formatCurrency } from '../utils/currency';
 import { chartColors } from '../utils/chartColors';
 import { TransactionTable } from '../components/transactions/TransactionTable';
 import type { Transaction } from '../types';
@@ -28,12 +28,13 @@ function ChartTooltip({ active, payload, label }: any) {
   return (
     <div className="bg-surface border border-border rounded-lg shadow-hover px-3 py-2">
       <p className="text-xs text-text-tertiary mb-1">{label}</p>
-      <p className="text-xs font-medium text-text">
-        {formatCurrency(Math.round(payload[0].value * 100))}
-      </p>
+      <p className="text-xs font-medium text-text">{formatCurrency(payload[0].value)}</p>
     </div>
   );
 }
+
+/** Room for axis labels in a currency written with letters, like "999 CHF", and the gap before the bars */
+const Y_AXIS_WIDTH = 56;
 
 interface HistoryChartProps {
   categoryId: string;
@@ -57,7 +58,7 @@ function HistoryChart({
       (data?.history ?? []).map((h) => ({
         label: format(parseISO(`${h.month}-01`), 'MMM'),
         rawMonth: h.month,
-        amount: h.amount / 100,
+        amount: h.amount,
       })),
     [data],
   );
@@ -65,11 +66,12 @@ function HistoryChart({
   const hasData = chartData.some((d) => d.amount > 0);
   const barColor = isIncome ? chartColors.positive : chartColors.negative;
   const monthLabels = useMemo(() => chartData.map((d) => d.label), [chartData]);
+  // Inset: y-axis width on the left, chart margin on the right
   const xAxis = useXAxisLayout({
     labels: monthLabels,
     kind: 'band',
     ordered: true,
-    inset: { left: 50, right: 8 },
+    inset: { left: Y_AXIS_WIDTH, right: 8 },
   });
 
   return (
@@ -87,9 +89,9 @@ function HistoryChart({
                 tick={{ fontSize: 10, fill: chartColors.axis }}
                 axisLine={false}
                 tickLine={false}
-                width={50}
+                width={Y_AXIS_WIDTH}
                 domain={[0, 'auto']}
-                tickFormatter={(v: number) => (v >= 1000 ? `$${(v / 1000).toFixed(1)}k` : `$${v}`)}
+                tickFormatter={formatCentsAxis}
               />
               <Tooltip content={<ChartTooltip />} cursor={false} />
               <Bar
@@ -115,7 +117,7 @@ function HistoryChart({
                 <LabelList
                   dataKey="amount"
                   position="top"
-                  formatter={(v: any) => `$${Math.round(Number(v))}`}
+                  formatter={(v) => formatCentsBar(Number(v))}
                   style={{ fontSize: 10, fontWeight: 600, fill: chartColors.label }}
                 />
               </Bar>
