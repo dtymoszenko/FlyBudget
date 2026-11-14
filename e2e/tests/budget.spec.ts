@@ -78,6 +78,25 @@ test.describe('budget', () => {
     await expect(restaurantsRow).toContainText('$70');
   });
 
+  test('a category saved without a budget type is listed under Flexible', async ({ page, api }) => {
+    // Settings → Categories → Create Category saves no budget type; the edit dialog shows
+    // such a category as Flexible
+    await api.createAccount('Checking', 0);
+    const giving = (await api.categoryGroups()).find((g) => g.name === 'Gifts & Donations')!;
+    await api.call('POST', '/categories', { groupId: giving.id, name: 'Pet Care' });
+
+    await open(page, '/budget');
+    await plan(page, 'Pet Care', '75');
+    const flexible = page
+      .getByRole('row')
+      .filter({ has: page.getByText('Flexible', { exact: true }) });
+    await expect(flexible).toContainText('$75');
+
+    // The dashboard's Budget card counts it too (Pet Care is the only planned category)
+    await open(page, '/dashboard');
+    await expect(page.getByText('$75 planned')).toBeVisible();
+  });
+
   test('income in an off-budget account is not money to budget', async ({ page, api }) => {
     const checking = await api.createAccount('Checking', 0);
     const brokerage = await api.createAccount('Brokerage', 0, 'investment');

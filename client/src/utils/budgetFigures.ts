@@ -1,4 +1,4 @@
-import type { BudgetCategory } from '../types';
+import type { BudgetCategory, BudgetType } from '../types';
 
 // How one budget category reads, shared by the desktop table and the phone cards.
 
@@ -11,6 +11,15 @@ export function categoryFigures(cat: BudgetCategory, isIncome: boolean) {
   const actual = isIncome ? cat.balance - cat.carryOver - cat.budgeted : cat.spent;
   const raw = cat.budgeted - actual;
   return { actual, remaining: isIncome ? Math.max(raw, 0) : raw };
+}
+
+/**
+ * An expense category's budget type. A category saved without one (Settings → Categories →
+ * Create Category doesn't set it) reads as Flexible, as the edit dialog shows it, so every
+ * expense category is in one of the budget's sections and its totals.
+ */
+export function budgetTypeOf(cat: { budgetType: BudgetType | null }): BudgetType {
+  return cat.budgetType ?? 'flexible';
 }
 
 /** A category with nothing planned and no activity is "inactive" and tucked away. */

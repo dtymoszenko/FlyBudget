@@ -8,6 +8,7 @@ import { Card } from '../ui/Card';
 import { EmptyState } from '../ui/EmptyState';
 import { ButtonLink } from '../ui/Button';
 import { docsUrl } from '../../utils/project';
+import { budgetTypeOf } from '../../utils/budgetFigures';
 import type { BudgetType } from '../../types';
 
 interface Props {
@@ -39,8 +40,10 @@ export default function BudgetProgress({ currentMonth }: Props) {
       .map((t) => ({
         id: t.key,
         name: t.name,
-        planned: allCats.filter((c) => c.budgetType === t.key).reduce((s, c) => s + c.budgeted, 0),
-        spent: allCats.filter((c) => c.budgetType === t.key).reduce((s, c) => s + c.spent, 0),
+        planned: allCats
+          .filter((c) => budgetTypeOf(c) === t.key)
+          .reduce((s, c) => s + c.budgeted, 0),
+        spent: allCats.filter((c) => budgetTypeOf(c) === t.key).reduce((s, c) => s + c.spent, 0),
       }))
       .filter((g) => g.planned > 0);
   }, [groups]);
