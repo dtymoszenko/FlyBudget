@@ -1,7 +1,8 @@
+import type { SQLiteColumn } from 'drizzle-orm/sqlite-core';
 import { Router, type Response } from 'express';
 import { db } from '../db/index.js';
 import { transactions, payees, accounts, categories } from '../db/schema.js';
-import { eq, and, or, like, gte, lte, sql, isNull, isNotNull, inArray } from 'drizzle-orm';
+import { eq, and, or, gte, lte, sql, isNull, isNotNull, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
 import {
@@ -110,6 +111,25 @@ function inCategories(ids: string[]) {
   return or(inArray(transactions.categoryId, ids), inArray(transactions.id, parentsWithPart))!;
 }
 
+/**
+ * Transactions whose payee or notes contain `text` (case-insensitive, like SQLite's LIKE for
+ * ASCII). `%` and `_` are matched as themselves. A split matches when one of its parts' notes
+ * does, since the list shows parents with their parts nested.
+ */
+function matchesSearch(text: string) {
+  const pattern = `%${text.replace(/[!%_]/g, (c) => `!${c}`)}%`;
+  const contains = (column: SQLiteColumn) => sql`${column} LIKE ${pattern} ESCAPE '!'`;
+  const parentsWithMatchingPart = db
+    .select({ id: transactions.parentTransactionId })
+    .from(transactions)
+    .where(and(isNotNull(transactions.parentTransactionId), contains(transactions.notes)));
+  return or(
+    contains(transactions.payeeName),
+    contains(transactions.notes),
+    inArray(transactions.id, parentsWithMatchingPart),
+  )!;
+}
+
 transactionsRouter.get('/', (req, res) => {
   const {
     account_id,
@@ -163,7 +183,7 @@ transactionsRouter.get('/', (req, res) => {
       .map((r) => r.id);
     if (catIds.length) conditions.push(inCategories(catIds));
   }
-  if (search) conditions.push(like(transactions.payeeName, `%${search}%`));
+  if (search) conditions.push(matchesSearch(search));
   if (reconciled === '0' || reconciled === '1')
     conditions.push(eq(transactions.reconciled, Number(reconciled)));
 
