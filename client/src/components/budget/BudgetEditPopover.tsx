@@ -2,9 +2,14 @@ import { useState, useEffect, useId, useRef } from 'react';
 import { format, parseISO } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, LabelList, ResponsiveContainer } from 'recharts';
 import { useCategoryHistory } from '../../hooks/useBudget';
-import { formatCentsAxis, formatCurrency } from '../../utils/currency';
+import { formatCentsAxis, formatCentsBar, formatCurrency } from '../../utils/currency';
 import { chartColors } from '../../utils/chartColors';
 import { useXAxisLayout } from '../../hooks/useXAxisLayout';
+
+/** Room for axis labels in a currency written with letters, like "999 CHF", and the gap before the bars */
+const Y_AXIS_WIDTH = 52;
+/** Room for the last bar's label, which can be wider than the bar ("1.2k CHF") */
+const RIGHT_MARGIN = 8;
 
 interface BudgetEditPopoverProps {
   categoryId: string;
@@ -44,12 +49,13 @@ export function BudgetEditPopover({
 
   const hasData = chartData.some((d) => d.amount > 0);
   const barColor = isIncome ? chartColors.positive : chartColors.negative;
+  // Inset: y-axis width on the left, chart margin on the right
   const xAxis = useXAxisLayout({
     labels: chartData.map((d) => d.month),
     kind: 'band',
     ordered: true,
     fontSize: 10,
-    inset: { left: 30, right: 2 },
+    inset: { left: Y_AXIS_WIDTH, right: RIGHT_MARGIN },
   });
 
   return (
@@ -83,13 +89,16 @@ export function BudgetEditPopover({
         {hasData ? (
           <div ref={xAxis.ref}>
             <ResponsiveContainer width="100%" height={90}>
-              <BarChart data={chartData} margin={{ top: 14, right: 2, left: -10, bottom: 0 }}>
+              <BarChart
+                data={chartData}
+                margin={{ top: 14, right: RIGHT_MARGIN, left: 0, bottom: 0 }}
+              >
                 <XAxis dataKey="month" axisLine={false} tickLine={false} {...xAxis.axisProps} />
                 <YAxis
                   tick={{ fontSize: 9, fill: chartColors.axis }}
                   axisLine={false}
                   tickLine={false}
-                  width={40}
+                  width={Y_AXIS_WIDTH}
                   domain={[0, 'auto']}
                   tickFormatter={formatCentsAxis}
                 />
@@ -97,7 +106,7 @@ export function BudgetEditPopover({
                   <LabelList
                     dataKey="amount"
                     position="top"
-                    formatter={(v) => formatCentsAxis(Number(v))}
+                    formatter={(v) => formatCentsBar(Number(v))}
                     style={{ fontSize: 9, fontWeight: 600, fill: chartColors.label }}
                   />
                 </Bar>

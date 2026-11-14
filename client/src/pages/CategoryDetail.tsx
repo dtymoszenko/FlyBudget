@@ -16,7 +16,7 @@ import { useBudget, useCategoryHistory } from '../hooks/useBudget';
 import { useTransactions } from '../hooks/useTransactions';
 import { useAppStore } from '../store/appStore';
 import { usePreferencesStore } from '../store/preferencesStore';
-import { formatCentsAxis, formatCurrency } from '../utils/currency';
+import { formatCentsAxis, formatCentsBar, formatCurrency } from '../utils/currency';
 import { chartColors } from '../utils/chartColors';
 import { TransactionTable } from '../components/transactions/TransactionTable';
 import type { Transaction } from '../types';
@@ -32,6 +32,9 @@ function ChartTooltip({ active, payload, label }: any) {
     </div>
   );
 }
+
+/** Room for axis labels in a currency written with letters, like "999 CHF", and the gap before the bars */
+const Y_AXIS_WIDTH = 56;
 
 interface HistoryChartProps {
   categoryId: string;
@@ -63,11 +66,12 @@ function HistoryChart({
   const hasData = chartData.some((d) => d.amount > 0);
   const barColor = isIncome ? chartColors.positive : chartColors.negative;
   const monthLabels = useMemo(() => chartData.map((d) => d.label), [chartData]);
+  // Inset: y-axis width on the left, chart margin on the right
   const xAxis = useXAxisLayout({
     labels: monthLabels,
     kind: 'band',
     ordered: true,
-    inset: { left: 50, right: 8 },
+    inset: { left: Y_AXIS_WIDTH, right: 8 },
   });
 
   return (
@@ -85,7 +89,7 @@ function HistoryChart({
                 tick={{ fontSize: 10, fill: chartColors.axis }}
                 axisLine={false}
                 tickLine={false}
-                width={50}
+                width={Y_AXIS_WIDTH}
                 domain={[0, 'auto']}
                 tickFormatter={formatCentsAxis}
               />
@@ -113,7 +117,7 @@ function HistoryChart({
                 <LabelList
                   dataKey="amount"
                   position="top"
-                  formatter={(v) => formatCentsAxis(Number(v))}
+                  formatter={(v) => formatCentsBar(Number(v))}
                   style={{ fontSize: 10, fontWeight: 600, fill: chartColors.label }}
                 />
               </Bar>

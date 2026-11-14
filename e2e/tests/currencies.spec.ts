@@ -212,10 +212,10 @@ test('charts write amounts in the budget currency', async ({ page, api }) => {
   await setCurrency(api, 'EUR');
   const konto = await api.createAccount('Girokonto', 500_000);
   const groceries = await api.category('Groceries');
-  // The last day of last month, and today
+  // The last day of last month, and a few cents today
   for (const [date, amount] of [
     [isoDay(-new Date().getDate()), -150_000],
-    [isoDay(), -3_000],
+    [isoDay(), -49],
   ] as const) {
     await api.createTransaction({
       accountId: konto.id,
@@ -232,13 +232,18 @@ test('charts write amounts in the budget currency', async ({ page, api }) => {
   await page.getByRole('button', { name: /^Planned for Groceries:/ }).click();
   const history = page.getByRole('group', { name: 'History' });
   await expect(history.getByText('1.5k €', { exact: true })).toBeVisible(); // last month's bar
-  await expect(history.getByText('30 €', { exact: true })).toBeVisible(); // this month's
-  // Nor anywhere else on the page, like the summary's "0 € remaining" of unplanned income
+  // This month's, exact rather than rounded to "0 €"
+  await expect(history.getByText('0.49 €', { exact: true })).toBeVisible();
+  // No dollars on the page either, like the summary's "0 € remaining" of unplanned income
   await expect(main).not.toContainText('$');
 
-  // The category's own page
+  // The category's own page, and the full amount when pointing at a bar
   await open(page, `/budget/category/${groceries.id}`);
-  await expect(main.getByText('1.5k €', { exact: true })).toBeVisible();
+  const lastMonthBar = main.getByText('1.5k €', { exact: true });
+  await expect(lastMonthBar).toBeVisible();
+  await expect(main.getByText('1,500 €', { exact: true })).toHaveCount(0);
+  await lastMonthBar.hover();
+  await expect(main.getByText('1,500 €', { exact: true })).toBeVisible();
   await expect(main).not.toContainText('$');
 
   // The dashboard's spending comparison, once its legend shows the chart is drawn
