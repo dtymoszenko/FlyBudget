@@ -10,7 +10,7 @@ import {
   Legend,
 } from 'recharts';
 import { useSpendingComparison } from '../../hooks/useReports';
-import { formatCurrency } from '../../utils/currency';
+import { formatCentsAxis, formatCurrency } from '../../utils/currency';
 import { TrendingDown } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { EmptyState } from '../ui/EmptyState';
@@ -31,15 +31,6 @@ const MODES: { value: Mode; label: string }[] = [
   { value: 'month_vs_average', label: 'This month vs. average month' },
   { value: 'year_vs_last_year', label: 'This year vs. last year' },
 ];
-
-function formatYAxis(value: number): string {
-  const dollars = Math.abs(value) / 100;
-  if (dollars >= 1000) {
-    const k = dollars / 1000;
-    return `$${k % 1 === 0 ? k.toFixed(0) : k.toFixed(1)}K`;
-  }
-  return `$${dollars.toFixed(0)}`;
-}
 
 function ComparisonTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
@@ -154,7 +145,7 @@ export default function SpendingComparison() {
                 tick={{ fontSize: 11, fill: chartColors.axis }}
                 axisLine={false}
                 tickLine={false}
-                tickFormatter={formatYAxis}
+                tickFormatter={formatCentsAxis}
                 width={50}
               />
               <Tooltip content={<ComparisonTooltip />} />

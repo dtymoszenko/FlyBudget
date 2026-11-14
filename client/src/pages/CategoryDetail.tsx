@@ -16,7 +16,7 @@ import { useBudget, useCategoryHistory } from '../hooks/useBudget';
 import { useTransactions } from '../hooks/useTransactions';
 import { useAppStore } from '../store/appStore';
 import { usePreferencesStore } from '../store/preferencesStore';
-import { formatCurrency } from '../utils/currency';
+import { formatCentsAxis, formatCurrency } from '../utils/currency';
 import { chartColors } from '../utils/chartColors';
 import { TransactionTable } from '../components/transactions/TransactionTable';
 import type { Transaction } from '../types';
@@ -28,9 +28,7 @@ function ChartTooltip({ active, payload, label }: any) {
   return (
     <div className="bg-surface border border-border rounded-lg shadow-hover px-3 py-2">
       <p className="text-xs text-text-tertiary mb-1">{label}</p>
-      <p className="text-xs font-medium text-text">
-        {formatCurrency(Math.round(payload[0].value * 100))}
-      </p>
+      <p className="text-xs font-medium text-text">{formatCurrency(payload[0].value)}</p>
     </div>
   );
 }
@@ -57,7 +55,7 @@ function HistoryChart({
       (data?.history ?? []).map((h) => ({
         label: format(parseISO(`${h.month}-01`), 'MMM'),
         rawMonth: h.month,
-        amount: h.amount / 100,
+        amount: h.amount,
       })),
     [data],
   );
@@ -89,7 +87,7 @@ function HistoryChart({
                 tickLine={false}
                 width={50}
                 domain={[0, 'auto']}
-                tickFormatter={(v: number) => (v >= 1000 ? `$${(v / 1000).toFixed(1)}k` : `$${v}`)}
+                tickFormatter={formatCentsAxis}
               />
               <Tooltip content={<ChartTooltip />} cursor={false} />
               <Bar
@@ -115,7 +113,7 @@ function HistoryChart({
                 <LabelList
                   dataKey="amount"
                   position="top"
-                  formatter={(v: any) => `$${Math.round(Number(v))}`}
+                  formatter={(v) => formatCentsAxis(Number(v))}
                   style={{ fontSize: 10, fontWeight: 600, fill: chartColors.label }}
                 />
               </Bar>

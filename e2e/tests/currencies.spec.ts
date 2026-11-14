@@ -208,6 +208,45 @@ test('a bill paid from an account in another currency shows what was paid there'
   await expect(main.getByText('Without GBP: no exchange rate yet.')).toBeVisible();
 });
 
+test('charts write amounts in the budget currency', async ({ page, api }) => {
+  await setCurrency(api, 'EUR');
+  const konto = await api.createAccount('Girokonto', 500_000);
+  const groceries = await api.category('Groceries');
+  // The last day of last month, and today
+  for (const [date, amount] of [
+    [isoDay(-new Date().getDate()), -150_000],
+    [isoDay(), -3_000],
+  ] as const) {
+    await api.createTransaction({
+      accountId: konto.id,
+      date,
+      amount,
+      payeeName: 'Supermarkt',
+      categoryId: groceries.id,
+    });
+  }
+  const main = page.getByRole('main');
+
+  // The History panel next to a planned amount
+  await open(page, '/budget');
+  await page.getByRole('button', { name: /^Planned for Groceries:/ }).click();
+  const history = page.getByRole('group', { name: 'History' });
+  await expect(history.getByText('1.5k €', { exact: true })).toBeVisible(); // last month's bar
+  await expect(history.getByText('30 €', { exact: true })).toBeVisible(); // this month's
+  // Nor anywhere else on the page, like the summary's "0 € remaining" of unplanned income
+  await expect(main).not.toContainText('$');
+
+  // The category's own page
+  await open(page, `/budget/category/${groceries.id}`);
+  await expect(main.getByText('1.5k €', { exact: true })).toBeVisible();
+  await expect(main).not.toContainText('$');
+
+  // The dashboard's spending comparison, once its legend shows the chart is drawn
+  await open(page, '/dashboard');
+  await expect(main.getByText('Last month', { exact: true })).toBeVisible();
+  await expect(main).not.toContainText('$');
+});
+
 test('ECB rates download only when turned on', async ({ page, api }) => {
   await setCurrency(api, 'EUR');
   const zloty = await api.createAccount('Konto', 0, 'checking', { currency: 'PLN' });
