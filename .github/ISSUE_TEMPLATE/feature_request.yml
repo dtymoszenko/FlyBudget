@@ -11,8 +11,8 @@ body:
   - type: textarea
     id: problem
     attributes:
-      label: What are you trying to do?
-      description: The situation behind the request, in your own budget.
+      label: What is missing or can be improved in FlyBudget?
+      description: The situation in your own budget that led to this idea and how it would help.
       placeholder: I import from two banks and …
     validations:
       required: true
@@ -27,7 +27,7 @@ body:
     id: details
     attributes:
       label: Anything else?
-      description: How you handle it today, or how another app (Actual, YNAB, a spreadsheet …) does it.
+      description: How you handle it today (workarounds?), how another app does it, optional demo of the problem if applicable.
 
   - type: checkboxes
     id: contribute

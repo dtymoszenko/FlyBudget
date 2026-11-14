@@ -18,7 +18,7 @@ Fixes #
 
 <!-- Tests you added or changed, and what you checked by hand. -->
 
-### Demo
+### Demo (Optional)
 
 <!--
 For changes you can see in the app, show them working: before/after screenshots, or a short video or GIF of the flow (drag it into this box).
