@@ -22,7 +22,7 @@ import { useIsPhone } from '../hooks/useIsPhone';
 import { useCanSave } from '../hooks/useConnection';
 import { ExternalLink } from '../components/ui/ExternalLink';
 import { docsUrl } from '../utils/project';
-import { splitCategories } from '../utils/budgetFigures';
+import { budgetTypeOf, splitCategories } from '../utils/budgetFigures';
 import type { BudgetCategory, BudgetGroup, BudgetType } from '../types';
 
 function AmountInput({
@@ -429,7 +429,7 @@ export default function BudgetPage() {
     () =>
       BUDGET_TYPES.map((t) => ({
         ...t,
-        categories: allExpenseCats.filter((c) => c.budgetType === t.key),
+        categories: allExpenseCats.filter((c) => budgetTypeOf(c) === t.key),
       })).filter((bt) => bt.categories.length > 0),
     [allExpenseCats],
   );
@@ -452,7 +452,7 @@ export default function BudgetPage() {
   );
 
   const savingsTotals = useMemo(() => {
-    const cats = allExpenseCats.filter((c) => c.budgetType === 'savings');
+    const cats = allExpenseCats.filter((c) => budgetTypeOf(c) === 'savings');
     return {
       budgeted: cats.reduce((s, c) => s + c.budgeted, 0),
       spent: cats.reduce((s, c) => s + c.spent, 0),
@@ -461,7 +461,7 @@ export default function BudgetPage() {
 
   const expensesByBudgetType = useMemo(() => {
     const calc = (type: string) => {
-      const cats = allExpenseCats.filter((c) => c.budgetType === type);
+      const cats = allExpenseCats.filter((c) => budgetTypeOf(c) === type);
       return {
         planned: cats.reduce((s, c) => s + c.budgeted, 0),
         spent: cats.reduce((s, c) => s + c.spent, 0),
