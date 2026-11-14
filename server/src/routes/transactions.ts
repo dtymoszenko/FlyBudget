@@ -608,6 +608,25 @@ transactionsRouter.put('/:id', (req, res) => {
   // A transfer between two currencies keeps each side's own amount: what left isn't what arrived
   const crossCurrency =
     !!other && accountCurrency(existing.accountId, ctx) !== accountCurrency(other.accountId, ctx);
+  // The other side moves with a new date, amount or typed-in value (its own, or its value in
+  // the budget's currency), so it can't be reconciled; and money that left one currency can't
+  // arrive as money leaving the other, or as nothing
+  if (other?.reconciled === 1 && (changes('date') || changes('amount') || changes('mainAmount'))) {
+    return res.status(403).json({
+      error:
+        'The other side of this transfer is reconciled, so its date, amount and value stay as they are.',
+    });
+  }
+  if (
+    crossCurrency &&
+    data.amount !== undefined &&
+    Math.sign(data.amount) !== Math.sign(existing.amount)
+  ) {
+    return res.status(400).json({
+      error:
+        'A transfer between two currencies keeps its direction. Delete both sides and add it again.',
+    });
+  }
   const { mainAmount, ...fields } = data;
 
   db.transaction((tx) => {
@@ -638,10 +657,12 @@ transactionsRouter.put('/:id', (req, res) => {
           .run();
       }
     }
-    const otherAmount = data.amount === undefined || crossCurrency ? undefined : -data.amount;
-    if (existing.transferTransactionId && (data.date !== undefined || otherAmount !== undefined)) {
+    // Only what changed moves the other side (an undo resends values that didn't change)
+    const otherDate = changes('date') ? data.date : undefined;
+    const otherAmount = !changes('amount') || crossCurrency ? undefined : -data.amount!;
+    if (existing.transferTransactionId && (otherDate !== undefined || otherAmount !== undefined)) {
       tx.update(transactions)
-        .set({ date: data.date, amount: otherAmount })
+        .set({ date: otherDate, amount: otherAmount })
         .where(eq(transactions.id, existing.transferTransactionId))
         .run();
     }
