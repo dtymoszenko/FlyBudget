@@ -4,6 +4,7 @@ import { categories, categoryGroups, transactions, budgetMonths } from '../db/sc
 import { eq, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
+import { hexColor } from '../utils/validation.js';
 
 export const categoriesRouter = Router();
 
@@ -17,6 +18,8 @@ const categorySchema = z.object({
   name: z.string().trim().min(1).max(200),
   icon: z.string().max(32).optional(),
   budgetType: z.enum(['fixed', 'flexible', 'non_monthly', 'savings']).nullable().optional(),
+  /** null = no color of its own (the client picks one) */
+  color: hexColor.nullable().optional(),
 });
 
 categoriesRouter.get('/', (_req, res) => {

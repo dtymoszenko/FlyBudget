@@ -53,6 +53,8 @@ export const categories = sqliteTable('categories', {
   name: text('name').notNull(),
   icon: text('icon'),
   budgetType: text('budget_type'),
+  /** `#RRGGBB` chosen by the user; null = the client picks one */
+  color: text('color'),
   sortOrder: integer('sort_order').notNull().default(0),
   createdAt: text('created_at')
     .notNull()

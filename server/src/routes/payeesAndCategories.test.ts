@@ -163,3 +163,63 @@ describe('budget types', () => {
     expect((await send('PUT', `/categories/${id}`, { budgetType: 'other' })).status).toBe(400);
   });
 });
+
+describe('category colors', () => {
+  const hex = fc
+    .array(fc.constantFrom(...'0123456789abcdefABCDEF'), { minLength: 6, maxLength: 6 })
+    .map((digits) => `#${digits.join('')}`);
+
+  it('starts without a color and keeps the one it was given, until cleared', async () => {
+    const id = await newCategory('Hobbies');
+    const list = async () => {
+      const groups = (await send('GET', '/categories')).body as {
+        categories: { id: string; color: string | null }[];
+      }[];
+      return groups.flatMap((g) => g.categories).find((c) => c.id === id)!.color;
+    };
+    expect(await list()).toBeNull();
+    await fc.assert(
+      fc.asyncProperty(hex, async (color) => {
+        const res = await send('PUT', `/categories/${id}`, { color });
+        expect(res.status).toBe(200);
+        expect(res.body.color).toBe(color);
+        // Changing something else keeps it
+        expect((await send('PUT', `/categories/${id}`, { name: 'Hobbies' })).body.color).toBe(
+          color,
+        );
+        expect(await list()).toBe(color);
+      }),
+      { numRuns: 25 },
+    );
+    expect((await send('PUT', `/categories/${id}`, { color: null })).body.color).toBeNull();
+  });
+
+  it('can be given one when created', async () => {
+    const group = await send('POST', '/categories/groups', { name: 'Colored', isIncome: 0 });
+    const res = await send('POST', '/categories', {
+      name: 'Garden',
+      groupId: group.body.id,
+      color: '#16A34A',
+    });
+    expect(res.status).toBe(201);
+    expect(res.body.color).toBe('#16A34A');
+  });
+
+  it('refuses anything that is not #RRGGBB', async () => {
+    const id = await newCategory('Pets');
+    await send('PUT', `/categories/${id}`, { color: '#123456' });
+    await fc.assert(
+      fc.asyncProperty(
+        fc.oneof(
+          fc.string().filter((s) => !/^#[0-9a-fA-F]{6}$/.test(s)),
+          fc.constantFrom('red', '#fff', '#1234567', '123456', 'url(x)', '#12345g'),
+        ),
+        async (color) => {
+          expect((await send('PUT', `/categories/${id}`, { color })).status).toBe(400);
+        },
+      ),
+      { numRuns: 50 },
+    );
+    expect((await send('PUT', `/categories/${id}`, {})).body.color).toBe('#123456');
+  });
+});
