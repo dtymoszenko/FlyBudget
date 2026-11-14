@@ -23,6 +23,9 @@ export const isoMonth = z.string().regex(MONTH_RE, 'Expected a month as YYYY-MM'
 export const isMonth = (value: unknown): value is string =>
   typeof value === 'string' && MONTH_RE.test(value);
 
+/** A `#RRGGBB` color. Clients put it in inline styles, so nothing else may get through. */
+export const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Expected a color as #RRGGBB');
+
 /** An ISO 4217 currency code FlyBudget knows (EUR, USD, PLN…) */
 export const currencySchema = z
   .string()
