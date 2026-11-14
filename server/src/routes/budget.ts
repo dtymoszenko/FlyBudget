@@ -8,6 +8,13 @@ import { monthBounds } from '../utils/date.js';
 import { mainAmount } from '../services/balances.js';
 import { isMonth } from '../utils/validation.js';
 import { getBudgetSettings, updateBudgetSettings } from '../services/mainAmountService.js';
+import {
+  BUDGET_METHODS,
+  carriesOver,
+  categoryCarryOver,
+  readBudgetMethod,
+  summaryCarryOver,
+} from '../services/budgetMethod.js';
 
 export const budgetRouter = Router();
 
@@ -22,26 +29,14 @@ const onBudgetAccountIds = db
   .where(eq(accounts.isOffBudget, 0));
 const onBudget = inArray(transactions.accountId, onBudgetAccountIds);
 
-// ─── How months add up ────────────────────────────────────────────────────────
-// `zero_based`: every category carries its balance into the next month and money not yet
-// assigned rolls into "To be budgeted". `category`: each month's plan stands on its own; a
-// category carries over only when it (or, if it has no setting, the budget) says so, and
-// "To be budgeted" is that month's income minus that month's plan. Income never carries over.
-
-const BUDGET_METHODS = ['zero_based', 'category'] as const;
-type BudgetMethod = (typeof BUDGET_METHODS)[number];
-
+// How months add up: zero-based or category budgeting (services/budgetMethod.ts)
 const settingsSchema = z.object({
   method: z.enum(BUDGET_METHODS),
   /** Category budgeting's default: true = carry over, false = start fresh each month */
   carryOver: z.boolean(),
 });
 
-function budgetMethodSettings() {
-  const s = getBudgetSettings();
-  const method: BudgetMethod = s.budgetMethod === 'category' ? 'category' : 'zero_based';
-  return { method, carryOver: s.carryOver === 1 };
-}
+const budgetMethodSettings = () => readBudgetMethod(getBudgetSettings());
 
 // Before the /:month routes, which only take months
 budgetRouter.get('/settings', (_req, res) => {
@@ -118,18 +113,20 @@ budgetRouter.get('/:month', (req, res) => {
         const bm = budgetMap[c.id];
         const budgetedAmt = bm?.budgeted ?? 0;
         const activity = spentMap[c.id] ?? 0;
-        const carriesOver =
-          settings.method === 'zero_based' ||
-          (g.isIncome !== 1 && (c.carryOver ?? (settings.carryOver ? 1 : 0)) === 1);
-        const carryOver = carriesOver
-          ? (priorBudgetMap[c.id] ?? 0) + (priorActivityMap[c.id] ?? 0)
-          : 0;
+        const carries = carriesOver(settings, {
+          isIncome: g.isIncome === 1,
+          carryOver: c.carryOver,
+        });
+        const carryOver = categoryCarryOver(carries, {
+          budgeted: priorBudgetMap[c.id] ?? 0,
+          activity: priorActivityMap[c.id] ?? 0,
+        });
         return {
           ...c,
           budgeted: budgetedAmt,
           spent: Math.abs(Math.min(activity, 0)),
           carryOver,
-          carriesOver,
+          carriesOver: carries,
           balance: carryOver + budgetedAmt + activity,
         };
       }),
@@ -349,8 +346,10 @@ budgetRouter.get('/:month/summary', (req, res) => {
   const { method } = budgetMethodSettings();
   const income = incomeRow?.total ?? 0;
   const totalBudgeted = budgetedRow?.total ?? 0;
-  const carryOver =
-    method === 'category' ? 0 : (priorIncomeRow?.total ?? 0) - (priorBudgetedRow?.total ?? 0);
+  const carryOver = summaryCarryOver(method, {
+    income: priorIncomeRow?.total ?? 0,
+    budgeted: priorBudgetedRow?.total ?? 0,
+  });
 
   res.json({
     month,
