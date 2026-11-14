@@ -206,6 +206,21 @@ describe('transfers between existing transactions', () => {
   });
 });
 
+it('reconciling locks a transaction, and reconciled: false unlocks it (#190)', async () => {
+  const acct = await account('Unlock');
+  const tx = await imported(acct, '2097-02-01', -500, 'Shop');
+  await call('PUT', `/accounts/${acct}/reconcile`, { transactionIds: [tx.id] });
+  expect(row(tx.id).reconciled).toBe(1);
+  expect((await call('PUT', `/transactions/${tx.id}`, { notes: 'x' })).status).toBe(403);
+  const unlock = await call('PUT', `/accounts/${acct}/reconcile`, {
+    transactionIds: [tx.id],
+    reconciled: false,
+  });
+  expect(unlock.body).toEqual({ reconciled: 1 });
+  expect(row(tx.id).reconciled).toBe(0);
+  expect((await call('PUT', `/transactions/${tx.id}`, { notes: 'x' })).status).toBe(200);
+});
+
 describe('review fixes', () => {
   it('a balance correction is never made a transfer', async () => {
     const checking = await account('Checking N');

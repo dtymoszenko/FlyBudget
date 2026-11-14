@@ -168,8 +168,16 @@ export function useDeleteTransaction() {
 export function useReconcileAccount() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ accountId, transactionIds }: { accountId: string; transactionIds: string[] }) =>
-      txApi.reconcileAccount(accountId, transactionIds),
+    mutationFn: ({
+      accountId,
+      transactionIds,
+      reconciled,
+    }: {
+      accountId: string;
+      transactionIds: string[];
+      /** false unlocks them again */
+      reconciled?: boolean;
+    }) => txApi.reconcileAccount(accountId, transactionIds, reconciled),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['transactions'] });
       qc.invalidateQueries({ queryKey: ['accounts'] });
