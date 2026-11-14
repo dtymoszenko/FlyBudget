@@ -650,3 +650,32 @@ test.describe('export, backup and restore', () => {
     );
   });
 });
+
+test('an import can be taken back from the dialog (#177)', async ({ page, api }) => {
+  const checking = await api.createAccount('Checking', 0);
+  await open(page, `/accounts/${checking.id}`);
+  const dialog = await importCsv(page, BANK_CSV);
+  await dialog.getByRole('button', { name: 'Preview' }).click();
+  await dialog.getByRole('button', { name: 'Import 4 Transactions' }).click();
+  await expect(dialog).toContainText('4 imported, 0 skipped');
+  await dialog.getByRole('button', { name: 'Undo import' }).click();
+  await expect(page.getByText('Undid: Import 4 transactions')).toBeVisible();
+  await expect
+    .poll(async () => (await api.transactions(`?account_id=${checking.id}&from=2025-01-01`)).length)
+    .toBe(0);
+  // Redo brings them back
+  await page.keyboard.press('ControlOrMeta+Shift+z');
+  await expect
+    .poll(async () => (await api.transactions(`?account_id=${checking.id}&from=2025-01-01`)).length)
+    .toBe(4);
+  await expect(page.getByText('Redid: Import 4 transactions')).toBeVisible();
+  // A row reconciled since stays; undo still removes the rest
+  const [first] = await api.transactions(`?account_id=${checking.id}&from=2025-01-01`);
+  await api.call('PUT', `/accounts/${checking.id}/reconcile`, { transactionIds: [first.id] });
+  await page.keyboard.press('ControlOrMeta+z');
+  // …and counts as done, instead of staying stuck on top of the undo stack
+  await expect(page.getByText('Undid: Import 4 transactions')).toBeVisible();
+  await expect
+    .poll(async () => (await api.transactions(`?account_id=${checking.id}&from=2025-01-01`)).length)
+    .toBe(1);
+});

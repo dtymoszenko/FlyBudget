@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import * as txApi from '../api/transactions';
+import { ApiError } from '../api/client';
 import { useUndoStore } from '../store/undoStore';
+import { settleEach } from '../utils/batch';
 import type { Transaction, TransactionQueryParams } from '../types';
 
 function findTxInCache(qc: QueryClient, id: string): Transaction | undefined {
@@ -212,12 +214,42 @@ export function useCreateTransfer() {
 
 export function useImportConfirm() {
   const qc = useQueryClient();
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ['transactions'] });
+    qc.invalidateQueries({ queryKey: ['accounts'] });
+  };
   return useMutation({
     mutationFn: ({ accountId, rows }: { accountId: string; rows: txApi.ImportRow[] }) =>
       txApi.importConfirm(accountId, rows),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['transactions'] });
-      qc.invalidateQueries({ queryKey: ['accounts'] });
+    onSuccess: (result, { accountId, rows }) => {
+      refresh();
+      if (!result.ids.length) return;
+      // The rows this import added (a redo adds them again, with new ids)
+      let ids = result.ids;
+      useUndoStore.getState().push({
+        description: `Import ${ids.length} transactions`,
+        undo: async () => {
+          const { errors } = await settleEach(ids, (id) => txApi.deleteTransaction(id));
+          refresh();
+          // Deleted by hand meanwhile: already gone. Reconciled meanwhile: locked, so it stays
+          // (else the undo would fail for good and block every undo before it). Anything else
+          // fails the undo, which can then be tried again (deleted rows answer 404 next time)
+          const settled = (e: unknown) =>
+            e instanceof ApiError &&
+            (e.status === 404 ||
+              (e.status === 403 && e.message === 'Cannot modify a reconciled transaction'));
+          if (!errors.every(settled)) {
+            throw new Error("Some imported transactions couldn't be deleted");
+          }
+        },
+        redo: async () => {
+          try {
+            ids = (await txApi.importConfirm(accountId, rows)).ids;
+          } finally {
+            refresh();
+          }
+        },
+      });
     },
   });
 }
