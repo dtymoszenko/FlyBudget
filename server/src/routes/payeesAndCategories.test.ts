@@ -194,6 +194,13 @@ describe('category colors', () => {
     expect((await send('PUT', `/categories/${id}`, { color: null })).body.color).toBeNull();
   });
 
+  it('comes back as null from create when none is given', async () => {
+    const group = await send('POST', '/categories/groups', { name: 'Plain', isIncome: 0 });
+    const res = await send('POST', '/categories', { name: 'Gifts', groupId: group.body.id });
+    expect(res.status).toBe(201);
+    expect(res.body).toMatchObject({ color: null, icon: null, budgetType: null });
+  });
+
   it('can be given one when created', async () => {
     const group = await send('POST', '/categories/groups', { name: 'Colored', isIncome: 0 });
     const res = await send('POST', '/categories', {

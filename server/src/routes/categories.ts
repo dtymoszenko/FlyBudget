@@ -100,7 +100,8 @@ categoriesRouter.post('/', (req, res) => {
     createdAt: new Date().toISOString(),
   };
   db.insert(categories).values(category).run();
-  res.status(201).json(category);
+  // The saved row, so fields left out (icon, budget type, color) come back as null like GET's
+  res.status(201).json(db.select().from(categories).where(eq(categories.id, category.id)).get());
 });
 
 categoriesRouter.put('/reorder', (req, res) => {
