@@ -653,6 +653,70 @@ test.describe('long histories', () => {
   });
 });
 
+test.describe('changing several transactions at once (#176)', () => {
+  test('selects several rows and gives them one category, then undoes it', async ({
+    page,
+    api,
+  }) => {
+    const { checking } = await setup(api);
+    for (const name of ['Cafe One', 'Cafe Two', 'Cafe Three']) {
+      await api.createTransaction({
+        accountId: checking.id,
+        date: isoDay(),
+        amount: -450,
+        payeeName: name,
+      });
+    }
+    await open(page, `/accounts/${checking.id}`);
+    await page.getByRole('checkbox', { name: 'Select Cafe One' }).click();
+    // Shift-click takes the range in between
+    await page.getByRole('checkbox', { name: 'Select Cafe Three' }).click({ modifiers: ['Shift'] });
+    await expect(page.getByText('3 selected')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Set category' }).click();
+    await page.getByPlaceholder('Search categories...').fill('coffee');
+    await page.getByRole('button', { name: /Coffee Shops/ }).click();
+
+    const coffee = (await api.category('Coffee Shops')).id;
+    await expect
+      .poll(async () =>
+        (await api.transactions(`?account_id=${checking.id}`)).map((t) => t.categoryId),
+      )
+      .toEqual([coffee, coffee, coffee]);
+    await expect(page.getByText('3 selected')).toBeHidden();
+
+    await page.keyboard.press('ControlOrMeta+z');
+    await expect(page.getByText('Undid: Edit 3 transactions')).toBeVisible();
+    await expect
+      .poll(async () =>
+        (await api.transactions(`?account_id=${checking.id}`)).map((t) => t.categoryId),
+      )
+      .toEqual([null, null, null]);
+  });
+
+  test('deletes the selected rows after confirming', async ({ page, api }) => {
+    const { checking } = await setup(api);
+    for (const name of ['Keep Me', 'Drop One', 'Drop Two']) {
+      await api.createTransaction({
+        accountId: checking.id,
+        date: isoDay(),
+        amount: -100,
+        payeeName: name,
+      });
+    }
+    await open(page, `/accounts/${checking.id}`);
+    await page.getByRole('checkbox', { name: 'Select Drop One' }).click();
+    await page.getByRole('checkbox', { name: 'Select Drop Two' }).click();
+    await page.getByRole('button', { name: 'Delete' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Delete' }).click();
+    await expect
+      .poll(async () =>
+        (await api.transactions(`?account_id=${checking.id}`)).map((t) => t.payeeName),
+      )
+      .toEqual(['Keep Me']);
+  });
+});
+
 test.describe('splitting', () => {
   /** Picks a category from the searchable picker a split part's field opens */
   async function pickCategory(page: Page, field: ReturnType<Page['getByRole']>, name: string) {

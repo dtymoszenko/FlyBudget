@@ -15,6 +15,10 @@ interface Props {
   accountName?: string;
   isSelected: boolean;
   onOpenDetail: (id: string) => void;
+  /** Select mode (the toolbar's Select button): a tap ticks the card instead of opening it */
+  selecting?: boolean;
+  checked?: boolean;
+  onToggle?: (id: string) => void;
 }
 
 /**
@@ -29,6 +33,9 @@ export function TransactionCard({
   accountName,
   isSelected,
   onOpenDetail,
+  selecting = false,
+  checked = false,
+  onToggle,
 }: Props) {
   const showCategoryIcons = usePreferencesStore((s) => s.showCategoryIcons);
   const currencyOf = useAccountCurrency();
@@ -60,13 +67,24 @@ export function TransactionCard({
   return (
     <button
       type="button"
-      onClick={() => onOpenDetail(tx.id)}
+      onClick={() => (selecting && onToggle ? onToggle(tx.id) : onOpenDetail(tx.id))}
       data-testid="transaction-card"
       aria-current={isSelected || undefined}
+      aria-pressed={selecting ? checked : undefined}
       className={`w-full min-h-14 flex items-center gap-3 px-4 py-2.5 text-left border-b border-border-light transition-colors ${
-        isSelected ? 'bg-brand-50' : 'bg-surface active:bg-hover'
+        isSelected || checked ? 'bg-brand-50' : 'bg-surface active:bg-hover'
       }`}
     >
+      {selecting && (
+        <input
+          type="checkbox"
+          checked={checked}
+          readOnly
+          tabIndex={-1}
+          aria-hidden
+          className="h-5 w-5 shrink-0 accent-brand-600 pointer-events-none"
+        />
+      )}
       <PayeeIcon name={payeeName} logo={payee?.logo} transfer={isTransfer} />
       <span className="flex-1 min-w-0 grid gap-0.5">
         <span className="flex items-baseline gap-2">
