@@ -12,6 +12,7 @@ import { Link } from 'react-router-dom';
 import { useCurrencySettings } from '../../hooks/useCurrency';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { IS_DEMO } from '../../demo/isDemo';
+import { SIDEBAR_DEFAULT_WIDTH } from '../../utils/sidebarWidth';
 
 const themeOptions: { value: Theme; label: string }[] = [
   { value: 'light', label: 'Light' },
@@ -68,6 +69,7 @@ export function PreferencesPanel() {
     setSymbolPosition,
     setDateFormat,
     setSidebarMode,
+    setSidebarWidth,
     setShowMerchantIcons,
     setShowCategoryIcons,
     setShowAccountIcons,
@@ -87,6 +89,7 @@ export function PreferencesPanel() {
   function handleReset() {
     setTheme('light');
     setSidebarMode('persistent');
+    setSidebarWidth(SIDEBAR_DEFAULT_WIDTH);
     setCurrencySymbol('$');
     setAmountFormat('auto');
     setSymbolPosition('auto');
