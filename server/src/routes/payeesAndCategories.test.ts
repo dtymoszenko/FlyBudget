@@ -163,3 +163,70 @@ describe('budget types', () => {
     expect((await send('PUT', `/categories/${id}`, { budgetType: 'other' })).status).toBe(400);
   });
 });
+
+describe('searching transactions', () => {
+  // A small alphabet, so needles often match, with the LIKE wildcards and escape character in it
+  const text = fc.string({ unit: fc.constantFrom(...'abAB %_!'), maxLength: 8 });
+
+  it('finds what contains the text in its payee or notes, ignoring case, and nothing else', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.array(fc.record({ payee: text, notes: fc.option(text) }), {
+          minLength: 1,
+          maxLength: 4,
+        }),
+        text.filter((s) => s.length > 0),
+        async (rows, needle) => {
+          const accountId = await newAccount();
+          for (const [i, row] of rows.entries()) {
+            await send('POST', '/transactions', {
+              accountId,
+              date: '2025-06-01',
+              amount: -(i + 1),
+              payeeName: `x${row.payee}`,
+              notes: row.notes,
+            });
+          }
+          const contains = (s: string | null) =>
+            s !== null && s.toLowerCase().includes(needle.toLowerCase());
+          const expected = rows
+            .map((row, i) => ({
+              amount: -(i + 1),
+              hit: contains(`x${row.payee}`) || contains(row.notes),
+            }))
+            .filter((r) => r.hit)
+            .map((r) => r.amount)
+            .sort();
+
+          const found = (
+            await send(
+              'GET',
+              `/transactions?account_id=${accountId}&search=${encodeURIComponent(needle)}`,
+            )
+          ).body as { amount: number }[];
+          expect(found.map((t) => t.amount).sort()).toEqual(expected);
+        },
+      ),
+      { numRuns: 40 },
+    );
+  });
+
+  it('finds a split by the notes on one of its parts, with its parts', async () => {
+    const accountId = await newAccount();
+    const split = await send('POST', '/transactions', {
+      accountId,
+      date: '2025-06-02',
+      amount: -3000,
+      payeeName: 'Department Store',
+      splits: [
+        { categoryId: null, amount: -2000, notes: 'Birthday present' },
+        { categoryId: null, amount: -1000, notes: 'Socks' },
+      ],
+    });
+    expect(split.status).toBe(201);
+    const found = await list(`account_id=${accountId}&search=birthday`);
+    expect(found.map((t) => t.payeeName)).toEqual(['Department Store']);
+    expect(found[0].children).toHaveLength(2);
+    expect(await list(`account_id=${accountId}&search=groceries`)).toEqual([]);
+  });
+});
