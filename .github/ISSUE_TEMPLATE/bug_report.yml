@@ -1,0 +1,48 @@
+name: Bug report
+description: Something in FlyBudget doesn't work as it should
+title: '[Bug] '
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting this! Security problems go [privately](https://github.com/dtymoszenko/FlyBudget/blob/main/SECURITY.md), not here. Please don't paste credentials, setup codes or real transactions.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      placeholder: |
+        What you did, what you expected, and what happened instead. For example:
+        1. Go to Transactions and import a CSV
+        2. Expected the amounts to be negative
+        3. They were all positive
+    validations:
+      required: true
+
+  - type: dropdown
+    id: setup
+    attributes:
+      label: How do you run FlyBudget?
+      options:
+        - Desktop app (Windows)
+        - Desktop app (macOS)
+        - Desktop app (Linux)
+        - Self-hosted server (Docker)
+        - In-browser demo (flybudget.org)
+        - From source (npm run dev)
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Click the status at the bottom of the sidebar to see it.
+      placeholder: 0.3.0
+
+  - type: textarea
+    id: details
+    attributes:
+      label: Anything else?
+      description: Error messages, logs (Docker `docker logs <container>`), screenshots, your browser or phone, or for imports and bank sync a few anonymized rows and your bank's name.

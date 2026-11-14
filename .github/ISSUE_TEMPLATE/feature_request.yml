@@ -1,0 +1,37 @@
+name: Feature request
+description: Suggest something FlyBudget could do, or do better
+title: '[Feature Request] '
+labels: ['enhancement']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea! If you have several, please open one issue for each.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The situation behind the request, in your own budget.
+      placeholder: I import from two banks and …
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: What would you like FlyBudget to do?
+      description: How you imagine it working, if you have an idea. Sketches are welcome.
+
+  - type: textarea
+    id: details
+    attributes:
+      label: Anything else?
+      description: How you handle it today, or how another app (Actual, YNAB, a spreadsheet …) does it.
+
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contributing
+      options:
+        - label: I'd like to build this myself (please agree on the approach in this issue first).
