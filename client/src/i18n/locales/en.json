@@ -823,6 +823,232 @@
     },
     "skipToContent": "Skip to main content"
   },
+  "recurring": {
+    "freq": {
+      "once": "One Time",
+      "weekly": "Weekly",
+      "biweekly": "Every 2 Weeks",
+      "semimonthly": "Twice a Month",
+      "monthly": "Monthly",
+      "quarterly": "Quarterly",
+      "semiannually": "Every 6 Months",
+      "yearly": "Yearly"
+    },
+    "status": {
+      "waiting": "Missed",
+      "due": "Due",
+      "upcoming": "Upcoming",
+      "paid": "Paid",
+      "skipped": "Skipped",
+      "cancelled": "Canceled",
+      "paused": "Paused",
+      "scheduled": "Scheduled"
+    },
+    "upcoming": {
+      "presets": {
+        "1": "1 day",
+        "7": "1 week",
+        "14": "2 weeks",
+        "oneMonth": "1 month",
+        "currentMonth": "End of the current month"
+      },
+      "length": {
+        "day_one": "{{count, number}} day",
+        "day_other": "{{count, number}} days",
+        "week_one": "{{count, number}} week",
+        "week_other": "{{count, number}} weeks",
+        "month_one": "{{count, number}} month",
+        "month_other": "{{count, number}} months",
+        "year_one": "{{count, number}} year",
+        "year_other": "{{count, number}} years"
+      },
+      "button": "Upcoming: {{length}}",
+      "buttonTitle": "Change upcoming length"
+    },
+    "lengthModal": {
+      "title": "Change upcoming length",
+      "intro": "Change how many days before its date a recurring item shows as <strong>Upcoming</strong>. Later items show as <strong>Scheduled</strong>.",
+      "note": "This only affects how recurring items are displayed. It can be changed at any time.",
+      "custom": "Custom length",
+      "units": {
+        "day": "Days",
+        "week": "Weeks",
+        "month": "Months",
+        "year": "Years"
+      },
+      "window_one": "Items due within the next <days>{{count, number}} day</days> will show as Upcoming.",
+      "window_other": "Items due within the next <days>{{count, number}} days</days> will show as Upcoming."
+    },
+    "all": {
+      "menu": {
+        "markNextPaid": "Mark next as paid",
+        "skipNext": "Skip next date",
+        "resume": "Resume",
+        "pause": "Pause",
+        "restart": "Restart",
+        "edit": "Edit",
+        "cancel": "Cancel recurring",
+        "deletePermanently": "Delete permanently"
+      },
+      "actionsFor": "Actions for {{name}}",
+      "next": "Next {{date}}",
+      "find": "Find recurring",
+      "add": "Add recurring",
+      "filterPlaceholder": "Filter recurring…",
+      "columns": {
+        "name": "Name",
+        "payee": "Payee",
+        "account": "Account",
+        "nextDate": "Next date",
+        "status": "Status",
+        "amount": "Amount",
+        "frequency": "Frequency"
+      },
+      "noMatch": "No matching recurring items",
+      "noActive": "No active recurring items",
+      "empty": {
+        "title": "No recurring items yet",
+        "description": "Add bills, subscriptions and paychecks to see what’s due and when, or let FlyBudget find them in the transactions you already have."
+      },
+      "showCanceled": "Show canceled recurring ({{count, number}})",
+      "confirm": {
+        "deleteTitle": "Delete recurring item?",
+        "cancelTitle": "Cancel recurring item?",
+        "deleteMessage": "\"{{name}}\" will be permanently deleted. This cannot be undone.",
+        "cancelMessage": "\"{{name}}\" will stop generating occurrences. You can restart it from the canceled list.",
+        "deleteConfirm": "Delete",
+        "cancelConfirm": "Cancel item"
+      }
+    },
+    "row": {
+      "overdue_one": "{{count, number}} day overdue",
+      "overdue_other": "{{count, number}} days overdue",
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "inDays_one": "in {{count, number}} day",
+      "inDays_other": "in {{count, number}} days",
+      "menu": {
+        "markPaid": "Mark as paid",
+        "match": "Match to transaction",
+        "skip": "Skip",
+        "unlink": "Unlink transaction",
+        "edit": "Edit recurring"
+      },
+      "actualPaid": "Actual paid amount",
+      "paidAmount": "Paid {{amount}}"
+    },
+    "calendar": {
+      "more_one": "+{{count, number}} more",
+      "more_other": "+{{count, number}} more"
+    },
+    "suggestions": {
+      "banner_one": "{{count, number}} transaction may match your recurring items",
+      "banner_other": "{{count, number}} transactions may match your recurring items",
+      "hide": "Hide",
+      "review": "Review now",
+      "match": "({{score}}% match)",
+      "accept": "Accept match",
+      "dismiss": "Dismiss"
+    },
+    "matchModal": {
+      "title": "Match to Transaction",
+      "expected": "Expected: {{date}} · {{amount}}",
+      "filterPlaceholder": "Filter by payee or notes…",
+      "none": "No matching transactions found.",
+      "match": "Match"
+    },
+    "discover": {
+      "title": "Search for recurring transactions",
+      "intro": "Your transaction history was scanned for payments from the same payee, for a similar amount, on a regular weekly, biweekly, or monthly schedule. Select any you'd like to track. Matching past transactions will be linked to each new recurring item.",
+      "hint": "Missing something? Transactions are only grouped when they share the same payee, so renaming payees to match may help. Payees you already track aren't listed.",
+      "selectAll": "Select all",
+      "columns": {
+        "payee": "Payee",
+        "account": "Account",
+        "when": "When",
+        "amount": "Amount"
+      },
+      "scanning": "Scanning your transactions…",
+      "none": "No recurring transactions found",
+      "track": "Track {{name}}",
+      "history_one": "{{count, number}} past · since {{date}}",
+      "history_other": "{{count, number}} past · since {{date}}",
+      "selected_one": "{{count, number}} selected",
+      "selected_other": "{{count, number}} selected",
+      "shiftHint": "Shift+click to select a range",
+      "creating": "Creating…",
+      "create_one": "Create {{count, number}} recurring",
+      "create_other": "Create {{count, number}} recurring",
+      "createEmpty": "Create recurring",
+      "describe": {
+        "weekly": "Every week on {{day}}",
+        "weeklyApprox": "Every week on {{day}} (approx.)",
+        "biweekly": "Every 2 weeks on {{day}}",
+        "biweeklyApprox": "Every 2 weeks on {{day}} (approx.)",
+        "monthlyLast": "Every month on the last day",
+        "monthlyLastApprox": "Every month on the last day (approx.)",
+        "monthlyDay_ordinal_one": "Every month on the {{count}}st",
+        "monthlyDay_ordinal_two": "Every month on the {{count}}nd",
+        "monthlyDay_ordinal_few": "Every month on the {{count}}rd",
+        "monthlyDay_ordinal_other": "Every month on the {{count}}th",
+        "monthlyDayApprox_ordinal_one": "Every month on the {{count}}st (approx.)",
+        "monthlyDayApprox_ordinal_two": "Every month on the {{count}}nd (approx.)",
+        "monthlyDayApprox_ordinal_few": "Every month on the {{count}}rd (approx.)",
+        "monthlyDayApprox_ordinal_other": "Every month on the {{count}}th (approx.)"
+      }
+    },
+    "form": {
+      "titleEdit": "Edit Recurring",
+      "titleAdd": "Add Recurring",
+      "name": "Name",
+      "namePlaceholder": "e.g. Netflix, Rent, Paycheck…",
+      "amount": "Amount",
+      "estimatedAmount": "Estimated Amount",
+      "type": "Type",
+      "expense": "Expense",
+      "income": "Income",
+      "precision": "Amount Precision",
+      "amountTypes": {
+        "exact": "Exact",
+        "approximate": "Approx",
+        "variable": "Variable"
+      },
+      "variableHint": "Amount is estimated — used for forecasting and matching, not an exact expectation.",
+      "frequency": "Frequency",
+      "account": "Account",
+      "noAccount": "No account",
+      "startDate": "Start Date",
+      "startDateLabel": "Start date",
+      "endDate": "End Date <optional>(optional)</optional>",
+      "endDateLabel": "End date",
+      "payee": "Payee <optional>(optional)</optional>",
+      "payeeLabel": "Payee",
+      "category": "Category",
+      "notes": "Notes <optional>(optional)</optional>",
+      "notesLabel": "Notes",
+      "notesPlaceholder": "Optional notes…",
+      "autoCreate": "Auto-create transactions",
+      "advancedOpen": "▾ Advanced",
+      "advancedClosed": "▸ Advanced",
+      "weekendAdjustment": "Weekend Adjustment",
+      "weekendAdjustmentLabel": "Weekend adjustment",
+      "weekendOptions": {
+        "none": "None",
+        "before": "Before weekend",
+        "after": "After weekend",
+        "closest": "Closest weekday"
+      },
+      "dateFlexibility": "Date Flexibility <hint>(± days for matching)</hint>",
+      "dateFlexibilityLabel": "Date flexibility",
+      "saveChanges": "Save Changes"
+    },
+    "undo": {
+      "create": "Create schedule \"{{name}}\"",
+      "edit": "Edit schedule",
+      "cancel": "Cancel schedule \"{{name}}\"",
+      "markPaid": "Mark as paid"
+    }
+  },
   "reports": {
     "builder": {
       "title": "Custom Report",

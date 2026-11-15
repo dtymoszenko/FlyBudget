@@ -11,6 +11,7 @@ import {
   parseISO,
 } from 'date-fns';
 import type { ScheduleOccurrence, OccurrenceDisplayStatus } from '../../types';
+import { useTranslation } from 'react-i18next';
 import { weekdayNames } from '../../utils/dates';
 
 const MAX_CHIPS = 3;
@@ -42,6 +43,7 @@ interface Props {
 
 /** Month grid; navigation lives in the parent card header. */
 export default function Calendar({ month, occurrences, onDateClick }: Props) {
+  const { t } = useTranslation();
   const monthDate = parseISO(`${month}-01`);
 
   const days = useMemo(() => {
@@ -114,7 +116,7 @@ export default function Calendar({ month, occurrences, onDateClick }: Props) {
             ))}
             {dayOccs.length > MAX_CHIPS && (
               <span className="max-md:hidden text-[11px] text-text-tertiary px-1">
-                +{dayOccs.length - MAX_CHIPS} more
+                {t('recurring.calendar.more', { count: dayOccs.length - MAX_CHIPS })}
               </span>
             )}
           </div>

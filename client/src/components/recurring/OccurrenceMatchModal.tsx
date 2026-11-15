@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { format, parseISO, subDays, addDays } from 'date-fns';
 import { Modal } from '../ui/Modal';
 import { Input } from '../ui/Input';
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export default function OccurrenceMatchModal({ isOpen, onClose, occurrence }: Props) {
+  const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const matchOcc = useMatchOccurrence();
   const accountCurrency = useAccountCurrency();
@@ -65,13 +67,15 @@ export default function OccurrenceMatchModal({ isOpen, onClose, occurrence }: Pr
   if (!occurrence) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Match to Transaction" size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('recurring.matchModal.title')} size="lg">
       <div className="space-y-4">
         <div className="bg-surface-alt rounded-lg px-4 py-3 border border-border-light">
           <p className="text-sm font-medium text-text">{occurrence.scheduleName}</p>
           <p className="text-xs text-text-tertiary mt-0.5">
-            Expected: {formatDay(occurrence.expectedDate)} ·{' '}
-            {formatMoney(occurrence.expectedAmount, occurrence.currency)}
+            {t('recurring.matchModal.expected', {
+              date: formatDay(occurrence.expectedDate),
+              amount: formatMoney(occurrence.expectedAmount, occurrence.currency),
+            })}
           </p>
         </div>
 
@@ -79,13 +83,13 @@ export default function OccurrenceMatchModal({ isOpen, onClose, occurrence }: Pr
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Filter by payee or notes…"
+          placeholder={t('recurring.matchModal.filterPlaceholder')}
         />
 
         <div className="max-h-80 overflow-y-auto">
           {filtered.length === 0 ? (
             <p className="text-sm text-text-tertiary text-center py-8">
-              No matching transactions found.
+              {t('recurring.matchModal.none')}
             </p>
           ) : (
             <div className="divide-y divide-border-light">
@@ -114,7 +118,7 @@ export default function OccurrenceMatchModal({ isOpen, onClose, occurrence }: Pr
                     onClick={() => handleMatch(tx.id)}
                     className="px-3 py-1 text-xs font-medium text-brand-600 bg-brand-50 rounded-md hover:bg-brand-100 transition-colors"
                   >
-                    Match
+                    {t('recurring.matchModal.match')}
                   </button>
                 </div>
               ))}

@@ -1,4 +1,5 @@
 import { formatMoney } from '../../utils/currency';
+import { t } from '../../i18n';
 import {
   addMonths,
   addYears,
@@ -7,10 +8,10 @@ import {
   parseISO,
   startOfMonth,
 } from 'date-fns';
-import { RECURRENCE_TYPE_LABELS, type AmountType, type ScheduleOccurrence } from '../../types';
+import type { AmountType, RecurrenceType, ScheduleOccurrence } from '../../types';
 import type { RecurringBadgeStatus } from './StatusBadge';
 
-export const FREQ_LABEL = new Map(RECURRENCE_TYPE_LABELS.map((f) => [f.value, f.label]));
+export const freqLabel = (type: RecurrenceType) => t(`recurring.freq.${type}`);
 
 /**
  * Actual-style amount: `~` prefix when not exact, `+` prefix for income. In the currency of
@@ -30,15 +31,13 @@ export function formatScheduleAmount(
 
 export const DEFAULT_UPCOMING_LENGTH = '7';
 
-export const UPCOMING_PRESETS: { value: string; label: string }[] = [
-  { value: '1', label: '1 day' },
-  { value: '7', label: '1 week' },
-  { value: '14', label: '2 weeks' },
-  { value: 'oneMonth', label: '1 month' },
-  { value: 'currentMonth', label: 'End of the current month' },
-];
+export const UPCOMING_PRESETS = ['1', '7', '14', 'oneMonth', 'currentMonth'] as const;
 
-export const isCustomUpcomingLength = (v: string) => !UPCOMING_PRESETS.some((p) => p.value === v);
+export const upcomingPresetLabel = (id: (typeof UPCOMING_PRESETS)[number]) =>
+  t(`recurring.upcoming.presets.${id}`);
+
+export const isCustomUpcomingLength = (v: string) =>
+  !(UPCOMING_PRESETS as readonly string[]).includes(v);
 
 /** Number of days after today that still count as "upcoming". */
 export function getUpcomingDays(
@@ -70,12 +69,16 @@ export function getUpcomingDays(
   }
 }
 
+const UNITS = ['day', 'week', 'month', 'year'] as const;
+
 export function describeUpcomingLength(length: string): string {
-  const preset = UPCOMING_PRESETS.find((p) => p.value === length);
-  if (preset) return preset.label;
+  const preset = UPCOMING_PRESETS.find((p) => p === length);
+  if (preset) return upcomingPresetLabel(preset);
   const [num, unit] = length.split('-');
-  const n = Math.max(1, parseInt(num, 10) || 1);
-  return `${n} ${unit}${n === 1 ? '' : 's'}`;
+  const count = Math.max(1, parseInt(num, 10) || 1);
+  // A unit this version doesn't know reads as days
+  const known = UNITS.find((u) => u === unit) ?? 'day';
+  return t(`recurring.upcoming.length.${known}`, { count });
 }
 
 /**
