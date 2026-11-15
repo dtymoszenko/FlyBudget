@@ -13,25 +13,11 @@ afterEach(() => {
   vi.resetModules();
 });
 
-// A second language (English texts under another code), so the device's languages matter
-const english = availableLanguages().find((l) => l.code === 'en')!;
-const LANGUAGES: readonly Language[] = [
-  ...availableLanguages(),
-  { ...english, code: 'nl', name: 'Nederlands' },
-];
+// The real languages: English and Dutch, so the device's languages matter
+const LANGUAGES = availableLanguages();
 
 /** The app's language module with a fresh preferences store, on a device in `languages` */
 async function load(languages: string[]) {
-  vi.doMock('./languages', async (importOriginal) => {
-    const real = await importOriginal<typeof import('./languages')>();
-    return {
-      ...real,
-      availableLanguages: () => LANGUAGES,
-      languageInfo: (code: string) => LANGUAGES.find((l) => l.code === code) ?? english,
-      resolveLanguage: (preference: LanguagePreference, device: readonly string[]) =>
-        real.resolveLanguage(preference, device, LANGUAGES),
-    };
-  });
   const items = new Map<string, string>();
   vi.stubGlobal('localStorage', {
     getItem: (key: string) => items.get(key) ?? null,

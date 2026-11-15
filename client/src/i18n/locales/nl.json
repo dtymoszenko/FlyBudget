@@ -1,0 +1,2753 @@
+{
+  "accounts": {
+    "title": "Rekeningen",
+    "add": "Rekening toevoegen",
+    "saving": "Opslaan…",
+    "empty": {
+      "title": "Voeg de rekeningen toe die je wilt bijhouden",
+      "description": "Betaalrekening, spaarrekening, creditcard, lening, beleggingen of je huis: elke rekening heeft een eigen saldo en eigen transacties, en samen vormen ze je nettovermogen.",
+      "addFirst": "Je eerste rekening toevoegen",
+      "connectBank": "Bank koppelen"
+    },
+    "sort": {
+      "label": "Rekeningen sorteren",
+      "current": "Sortering: {{sort}}",
+      "manual": "Handmatige volgorde",
+      "editManual": "Handmatige volgorde aanpassen…",
+      "balanceDesc": {
+        "label": "Saldo: hoog naar laag",
+        "short": "Hoogste saldo"
+      },
+      "balanceAsc": {
+        "label": "Saldo: laag naar hoog",
+        "short": "Laagste saldo"
+      },
+      "transactions": {
+        "label": "Meeste transacties",
+        "short": "Meeste transacties"
+      },
+      "name": {
+        "label": "Naam: A tot Z",
+        "short": "Naam"
+      }
+    },
+    "pastMonth": "afgelopen maand",
+    "groups": {
+      "cash": "Bank en contant",
+      "credit": "Krediet",
+      "investments": "Beleggingen",
+      "property": "Eigendommen",
+      "loans": "Leningen",
+      "other": "Overig"
+    },
+    "types": {
+      "checking": {
+        "label": "Betaalrekening",
+        "hint": "Rekening voor dagelijkse uitgaven"
+      },
+      "savings": {
+        "label": "Spaarrekening",
+        "hint": "Sparen, deposito's"
+      },
+      "cash": {
+        "label": "Contanten",
+        "hint": "Portemonnee"
+      },
+      "credit": {
+        "label": "Creditcard",
+        "hint": "Creditcard"
+      },
+      "line_of_credit": {
+        "label": "Doorlopend krediet",
+        "hint": "Persoonlijk doorlopend krediet"
+      },
+      "investment": {
+        "label": "Beleggingsrekening",
+        "hint": "Beleggen via een bank of broker"
+      },
+      "retirement": {
+        "label": "Pensioen",
+        "hint": "Pensioenrekening"
+      },
+      "crypto": {
+        "label": "Crypto",
+        "hint": "Account bij een cryptobeurs of wallet"
+      },
+      "real_estate": {
+        "label": "Vastgoed",
+        "hint": "Huis, verhuurpand of grond"
+      },
+      "vehicle": {
+        "label": "Voertuig",
+        "hint": "Auto, motor, boot, camper"
+      },
+      "valuables": {
+        "label": "Waardevolle spullen",
+        "hint": "Sieraden, kunst, verzamelobjecten, edelmetalen"
+      },
+      "mortgage": {
+        "label": "Hypotheek",
+        "hint": "Lening voor je huis"
+      },
+      "auto_loan": {
+        "label": "Autolening",
+        "hint": "Lening voor een auto of ander voertuig"
+      },
+      "student_loan": {
+        "label": "Studieschuld",
+        "hint": "Studieschuld"
+      },
+      "loan": {
+        "label": "Andere lening",
+        "hint": "Persoonlijke lening of lening van familie"
+      },
+      "other_asset": {
+        "label": "Andere bezitting",
+        "hint": "Al het andere dat je bezit"
+      },
+      "other_liability": {
+        "label": "Andere schuld",
+        "hint": "Al het andere dat je verschuldigd bent"
+      }
+    },
+    "summary": {
+      "assets": "Bezittingen",
+      "liabilities": "Schulden",
+      "noAssets": "Nog geen bankrekeningen, beleggingen of vastgoed.",
+      "noLiabilities": "Nog geen creditcards of leningen.",
+      "add": "Rekening toevoegen"
+    },
+    "form": {
+      "name": "Rekeningnaam",
+      "nameLabel": "Rekeningnaam",
+      "type": "Rekeningtype",
+      "typeLabel": "Rekeningtype",
+      "currency": "Valuta",
+      "currencyLocked": "Kan niet meer worden gewijzigd zodra de rekening transacties heeft."
+    },
+    "addModal": {
+      "title": "Rekening toevoegen",
+      "namePlaceholder": "bijv. ING Betaalrekening",
+      "namePlaceholderProperty": "bijv. Volkswagen Golf 2021",
+      "currencyBecomesBudget": "Dit wordt ook de valuta van je budget.",
+      "currencyForeign": "De bedragen blijven in {{currency}}; je budget telt ze mee in {{budget}} tegen de koers van elke dag.",
+      "chooseCurrency": "Kies een valuta",
+      "owed": "Verschuldigd bedrag",
+      "owedHint": "Wat je vandaag verschuldigd bent.",
+      "value": "Huidige waarde",
+      "valueHint": "Wat het vandaag waard is. Je kunt dit altijd bijwerken op de rekeningpagina.",
+      "balance": "Huidig saldo",
+      "balanceHint": "Vul je saldo van vandaag in.",
+      "offBudget": "Buiten het budget",
+      "offBudgetHint": "Telt mee voor je nettovermogen, maar niet voor je budget. Aanbevolen voor beleggingen, vastgoed en leningen.",
+      "adding": "Toevoegen…",
+      "submit": "Rekening toevoegen"
+    },
+    "editModal": {
+      "title": "Rekening bewerken",
+      "logo": "Logo",
+      "changeImage": "Afbeelding wijzigen",
+      "uploadImage": "Afbeelding uploaden",
+      "useInitials": "Initialen gebruiken",
+      "cropped": "Bijgesneden tot een vierkant.",
+      "showingInitials": "Initialen worden getoond. Upload een banklogo of een andere afbeelding.",
+      "imageError": "Deze afbeelding kan niet worden gebruikt.",
+      "iconsOff": "Rekeningpictogrammen staan uit in Instellingen → Voorkeuren.",
+      "currencyFixed": "De transacties staan in deze valuta, dus die blijft. Wil je een andere valuta? Voeg dan een nieuwe rekening toe en verplaats het geld met een overboeking.",
+      "startingBalance": "Beginsaldo",
+      "startingBalanceLabel": "Beginsaldo",
+      "offBudget": "Buiten het budget (niet meegeteld bij budgetteren)",
+      "close": "Rekening opheffen"
+    },
+    "closeConfirm": {
+      "title": "Rekening opheffen",
+      "message": "Weet je zeker dat je \"{{name}}\" wilt opheffen? De rekening verdwijnt uit je lijst met rekeningen.",
+      "confirm": "Rekening opheffen"
+    },
+    "updateValue": {
+      "balanceTitle": "Saldo bijwerken",
+      "valueTitle": "Waarde bijwerken",
+      "owedToday": "Verschuldigd bedrag vandaag",
+      "valueToday": "Waarde vandaag",
+      "current": "Nu {{amount}}.",
+      "adds": "Voegt een correctie van <change>{{amount}}</change> toe, met de datum van vandaag.",
+      "balanceNote": "Saldo bijgewerkt",
+      "valueNote": "Waarde bijgewerkt"
+    },
+    "detail": {
+      "edit": "Bewerken",
+      "updateBalance": "Saldo bijwerken",
+      "updateValue": "Waarde bijwerken",
+      "reconcile": "Afstemmen"
+    },
+    "notFound": {
+      "title": "Rekening niet gevonden",
+      "description": "Misschien is de rekening opgeheven of verwijderd, of de link is verouderd.",
+      "goToAccounts": "Naar rekeningen"
+    },
+    "reconcile": {
+      "title": "Afstemmen",
+      "heading": "Afstemmen: {{name}}",
+      "enterBalance": "Vul het eindsaldo van je bank in",
+      "enterBalanceHint": "Kijk in je bankapp of bij internetbankieren voor het actuele saldo.",
+      "statementBalance": "Saldo volgens bank",
+      "statementBalanceLabel": "Saldo volgens bank",
+      "currentSelected": "Huidig geselecteerd saldo in de app",
+      "start": "Afstemming starten",
+      "columns": {
+        "date": "Datum",
+        "payee": "Tegenpartij",
+        "amount": "Bedrag",
+        "cleared": "V"
+      },
+      "empty": "Geen transacties om af te stemmen.",
+      "selectedBalance": "Geselecteerd saldo",
+      "difference": "Verschil",
+      "ready": "Klaar om af te ronden!",
+      "saving": "Opslaan...",
+      "finish": "Afronden",
+      "createAdjustment": "Correctie aanmaken",
+      "adjustmentNote": "Correctie door afstemming"
+    },
+    "undo": {
+      "create": "Rekening \"{{name}}\" aanmaken",
+      "edit": "Rekening bewerken",
+      "close": "Rekening \"{{name}}\" opheffen",
+      "reorder": "Volgorde van rekeningen wijzigen"
+    }
+  },
+  "auth": {
+    "serverAddress": "Serveradres",
+    "insecure": "<strong>Geen beveiligde verbinding.</strong> Je wachtwoord zou onversleuteld worden verstuurd. Ga alleen verder op een netwerk dat je vertrouwt.",
+    "login": {
+      "title": "Inloggen bij FlyBudget",
+      "password": "Wachtwoord",
+      "submit": "Inloggen"
+    },
+    "setup": {
+      "title": "Je FlyBudget-server instellen",
+      "hint": "Maak het wachtwoord aan dat deze server beschermt. Iedereen die erbij kan, heeft dit wachtwoord nodig.",
+      "code": "Setupcode",
+      "codeHint": "Staat in het serverlogboek. Met Docker voer je <code>docker logs flybudget</code> uit.",
+      "password": "Nieuw wachtwoord",
+      "confirm": "Wachtwoord bevestigen",
+      "submit": "Wachtwoord aanmaken",
+      "tooShort_one": "Gebruik minimaal {{count, number}} teken.",
+      "tooShort_other": "Gebruik minimaal {{count, number}} tekens.",
+      "mismatch": "De wachtwoorden komen niet overeen."
+    }
+  },
+  "banks": {
+    "enableBanking": {
+      "connect": {
+        "title": "Europese bank koppelen",
+        "reconnectTitle": "{{bank}} opnieuw koppelen",
+        "setupIntro": "FlyBudget maakt via je eigen gratis Enable Banking-applicatie verbinding met Europese banken. Je stelt dit één keer in:",
+        "reconnectIntro": "Log opnieuw in bij {{bank}} om FlyBudget de komende maanden toegang te geven. Je rekeningen en hun geschiedenis blijven zoals ze zijn.",
+        "logIn": "Inloggen bij je bank",
+        "opening": "Je bank wordt geopend…",
+        "tryAgain": "Opnieuw proberen",
+        "syncing": "Je transacties worden opgehaald",
+        "syncingHint": "Bij de eerste synchronisatie vraagt FlyBudget de hele geschiedenis op bij je bank. Dat kan een minuut duren."
+      },
+      "bankPicker": {
+        "country": "Land",
+        "chooseCountry": "Kies…",
+        "bank": "Bank",
+        "search": "Banken zoeken",
+        "banks": "Banken",
+        "countryFirst": "Kies het land van je bank.",
+        "noBanks": "Geen banken om uit te kiezen",
+        "noBanksHint": "Gratis Enable Banking-applicaties tonen alleen de banken van rekeningen die je hebt gekoppeld. Open je applicatie in het Enable Banking Control Panel en koppel eerst je rekeningen.",
+        "noMatch": "Geen bank gevonden voor “{{search}}”.",
+        "beta": "beta"
+      },
+      "waiting": {
+        "title": "Log in bij je bank in je browser",
+        "hint": "De pagina van je bank is geopend in je webbrowser. Als je daar klaar bent, word je teruggestuurd en gaat FlyBudget vanzelf verder.",
+        "ownSite": "Je logt in op de website van je bank zelf, nooit in FlyBudget.",
+        "reopen": "Bank opnieuw openen",
+        "pasteLabel": "Kopieer na het inloggen het hele adres uit de adresbalk van je browser en plak het hier:",
+        "continue": "Doorgaan",
+        "notContinued": "Ingelogd, maar gaat FlyBudget niet verder?"
+      },
+      "mapping": {
+        "hint": "Kies waar de transacties van elke rekening naartoe gaan. Rekeningen waarin je al afschriften importeert, zijn al voor je gekozen.",
+        "noAccounts": "Je bank heeft geen rekeningen gedeeld. Gebruik je een gratis Enable Banking-applicatie? Koppel de rekeningen dan in het Control Panel en maak daarna opnieuw verbinding.",
+        "save": "Opslaan en synchroniseren",
+        "target": "Waar {{name}} naartoe gaat",
+        "create": "Nieuwe rekening",
+        "link": "Bestaande rekening",
+        "skip": "Niet synchroniseren",
+        "nameFor": "Naam voor {{name}}",
+        "accountName": "Rekeningnaam",
+        "typeOf": "Type van {{name}}",
+        "accountFor": "Rekening voor {{name}}",
+        "chooseAccount": "Kies een rekening…",
+        "suggested": "Je laatste bankafschrift voor deze rekening is hier terechtgekomen.",
+        "otherCurrency": "Deze bankrekening staat in {{bankCurrency}}, maar {{account}} staat in {{accountCurrency}}. Koppel deze aan een rekening in {{bankCurrency}} of maak een nieuwe aan.",
+        "fullHistory": "Haal ook oudere transacties op die de bank heeft. Zonder dit begint het synchroniseren een week vóór de laatste transactie van deze rekening. Transacties die je al uit bestanden hebt geïmporteerd, worden in beide gevallen herkend."
+      },
+      "done": {
+        "title": "Bank gekoppeld",
+        "problems": "Gekoppeld, maar met problemen",
+        "added_one": "{{count, number}} transactie opgehaald.",
+        "added_other": "{{count, number}} transacties opgehaald.",
+        "adopted_one": "{{count, number}} transactie die je al had (uit bestanden of zelf ingevoerd) wordt nu door de bank bijgehouden.",
+        "adopted_other": "{{count, number}} transacties die je al had (uit bestanden of zelf ingevoerd) worden nu door de bank bijgehouden.",
+        "skipped_one": "{{count, number}} transactie overgeslagen: de bank stuurde die zonder datum of leesbaar bedrag.",
+        "skipped_other": "{{count, number}} transacties overgeslagen: de bank stuurde die zonder datum of leesbaar bedrag.",
+        "skippedOrCurrency_one": "{{count, number}} transactie overgeslagen: de bank stuurde die zonder datum of leesbaar bedrag, of in een andere valuta.",
+        "skippedOrCurrency_other": "{{count, number}} transacties overgeslagen: de bank stuurde die zonder datum of leesbaar bedrag, of in een andere valuta.",
+        "howItSyncs": "FlyBudget synchroniseert bij het opstarten en wanneer je op Nu synchroniseren klikt. Banken staan maar een paar automatische updates per dag toe.",
+        "howSyncingWorks": "Hoe synchroniseren werkt"
+      },
+      "card": {
+        "lastSynced": "Laatst gesynchroniseerd {{ago}}",
+        "loginEnded": "De toegang van FlyBudget tot je bank is verlopen (banken vragen dit om de paar maanden opnieuw). Koppel opnieuw om te blijven synchroniseren; je rekeningen en geschiedenis blijven zoals ze zijn.",
+        "notLinked": "Niet gekoppeld",
+        "endsToday": "De toegang tot je bank loopt vandaag af. Koppel opnieuw om te blijven synchroniseren.",
+        "endsSoon_one": "De toegang tot je bank loopt af op {{date}} (over {{count, number}} dag). Koppel opnieuw om te blijven synchroniseren.",
+        "endsSoon_other": "De toegang tot je bank loopt af op {{date}} (over {{count, number}} dagen). Koppel opnieuw om te blijven synchroniseren.",
+        "endsOn_one": "De toegang tot je bank loopt af op {{date}} (over {{count, number}} dag)",
+        "endsOn_other": "De toegang tot je bank loopt af op {{date}} (over {{count, number}} dagen)",
+        "reconnect": "Opnieuw koppelen",
+        "syncing": "Synchroniseren…",
+        "syncNow": "Nu synchroniseren",
+        "disconnect": "Ontkoppelen",
+        "synced": "Gesynchroniseerd: {{added}}.",
+        "syncedSkipped": "Gesynchroniseerd: {{added}}, {{skipped}}.",
+        "newTransactions_one": "{{count, number}} nieuwe transactie",
+        "newTransactions_other": "{{count, number}} nieuwe transacties",
+        "leftOut_one": "{{count, number}} overgeslagen (geen datum of onleesbaar bedrag)",
+        "leftOut_other": "{{count, number}} overgeslagen (geen datum of onleesbaar bedrag)",
+        "disconnectTitle": "{{bank}} ontkoppelen",
+        "disconnectMessage": "FlyBudget beëindigt de toegang tot {{bank}} bij Enable Banking en stopt met synchroniseren. Je rekeningen en transacties blijven in FlyBudget staan."
+      },
+      "setup": {
+        "copyRedirectUrl": "De redirect-URL kopiëren",
+        "copy": "Kopiëren",
+        "copied": "Gekopieerd",
+        "sandbox": "Sandbox",
+        "production": "Production",
+        "yourApplication": "Jouw applicatie",
+        "sandboxHint": "Een Sandbox-applicatie heeft alleen toegang tot de testbanken van Enable Banking. Maak een Production-applicatie aan om je echte bank te koppelen (voor je eigen rekeningen is die gratis).",
+        "redirectMissing": "In je applicatie staat de redirect-URL hieronder nog niet. Voeg die toe in het Enable Banking Control Panel, anders kan je bank je niet terugsturen naar FlyBudget.",
+        "redirectUrl": "Redirect-URL",
+        "replace": "Applicatie vervangen",
+        "remove": "Verwijderen",
+        "signUp": "Meld je aan bij <controlPanel>Enable Banking <icon/></controlPanel> en maak een <strong>Production</strong>-applicatie aan. Voor je eigen rekeningen is die gratis.",
+        "addRedirect": "Voeg deze redirect-URL toe aan de applicatie:",
+        "insecureRedirect": "Deze server gebruikt gewoon HTTP. Enable Banking heeft een redirect-URL met https:// nodig: zet FlyBudget achter HTTPS (zie de gids voor zelf hosten), anders moet je na elke keer inloggen bij je bank het adres met de hand terugplakken.",
+        "saveKey": "Bewaar het <strong>.pem</strong>-bestand dat je browser downloadt: het is de privésleutel van de applicatie en Enable Banking kan die niet opnieuw tonen.",
+        "linkAccounts": "Klik op <strong>Activate by linking accounts</strong> en log daar in bij je bank. Gratis applicaties kunnen alleen de rekeningen gebruiken die je koppelt, dus koppel elke rekening die je in FlyBudget wilt hebben.",
+        "enterDetails": "Kopieer de applicatie-ID en kies hieronder het .pem-bestand.",
+        "applicationId": "Applicatie-ID",
+        "applicationIdExample": "bijv. 3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "privateKey": "Privésleutel (.pem-bestand)",
+        "chooseKey": "Kies het .pem-bestand…",
+        "keyHint": "De sleutel blijft versleuteld in FlyBudget en wordt alleen gebruikt om verzoeken aan Enable Banking te ondertekenen.",
+        "keyTooBig": "Dat bestand is te groot voor een privésleutel. Kies het .pem-bestand van Enable Banking.",
+        "notAKey": "Dat bestand is geen privésleutel. Kies het .pem-bestand dat Enable Banking heeft gedownload.",
+        "checking": "Controleren…",
+        "save": "Controleren en opslaan",
+        "guide": "Stapsgewijze handleiding"
+      },
+      "login": {
+        "expired": "Het inloggen bij de bank duurde te lang. Probeer het opnieuw."
+      }
+    },
+    "status": {
+      "good": "Gesynchroniseerd",
+      "syncing": "Synchroniseren...",
+      "error": "Fout",
+      "login_required": "Inloggen nodig"
+    },
+    "config": {
+      "title": "Banksynchronisatie instellen"
+    },
+    "mapping": {
+      "hint": "Kies hoe je elke gevonden rekening wilt instellen.",
+      "createNew": "Nieuw aanmaken",
+      "linkExisting": "Bestaande koppelen",
+      "skip": "Overslaan",
+      "selectAccount": "Kies een rekening...",
+      "accountName": "Rekeningnaam",
+      "saveAndSync": "Opslaan en synchroniseren"
+    },
+    "syncing": {
+      "title": "Transacties synchroniseren",
+      "hint": "Je transacties worden geïmporteerd. Dit kan even duren..."
+    },
+    "done": {
+      "title": "Koppeling voltooid",
+      "imported": "{{transactions}} geïmporteerd uit {{accounts}}.",
+      "transactions_one": "{{count, number}} transactie",
+      "transactions_other": "{{count, number}} transacties",
+      "accounts_one": "{{count, number}} rekening",
+      "accounts_other": "{{count, number}} rekeningen"
+    },
+    "card": {
+      "lastSynced": "Laatst gesynchroniseerd {{ago}}",
+      "notLinked": "Niet gekoppeld",
+      "syncing": "Synchroniseren...",
+      "syncNow": "Nu synchroniseren",
+      "disconnect": "Ontkoppelen"
+    },
+    "plaid": {
+      "connect": {
+        "title": "Bankrekening koppelen",
+        "heading": "Koppel je bank",
+        "hint": "Koppel je bankrekeningen veilig om transacties automatisch te importeren en je saldo actueel te houden.",
+        "preparing": "Voorbereiden...",
+        "button": "Bank koppelen"
+      },
+      "waiting": {
+        "title": "Rond het koppelen af in je browser",
+        "hint": "Plaid is geopend in je webbrowser. Log daar in bij je bank. FlyBudget gaat automatisch verder als je klaar bent.",
+        "secure": "Je bankgegevens voer je in op de beveiligde site van Plaid, nooit in FlyBudget.",
+        "reopen": "Plaid opnieuw openen"
+      },
+      "link": {
+        "cancelled": "Koppelen geannuleerd.",
+        "expired": "De Plaid-sessie is verlopen. Probeer het opnieuw."
+      },
+      "setup": {
+        "title": "Koppelen via Plaid",
+        "heading": "Koppelen met Plaid",
+        "intro": "Maak een gratis <accountLink>Plaid-ontwikkelaarsaccount</accountLink> aan voor je API-gegevens en vul die hieronder in.",
+        "configured": "Plaid is ingesteld",
+        "configuredHint": "Je gegevens zijn opgeslagen. Je kunt nu je bank koppelen."
+      },
+      "config": {
+        "hint": "Koppel je bankrekeningen om transacties automatisch te importeren via Plaid. Een ontwikkelaarsaccount is gratis en bevat altijd maximaal 10 bankkoppelingen.",
+        "getCredentials": "Plaid-gegevens ophalen"
+      },
+      "credentials": {
+        "clientId": "Client-ID",
+        "clientIdPlaceholder": "Vul je Plaid Client-ID in",
+        "secret": "Secret",
+        "secretPlaceholder": "Vul je Plaid Secret in",
+        "saving": "Opslaan...",
+        "save": "Gegevens opslaan",
+        "error": "Opslaan van de gegevens is mislukt. Controleer je invoer en probeer het opnieuw."
+      },
+      "environment": {
+        "label": "Omgeving",
+        "production": "Production — je echte bankrekeningen",
+        "sandbox": "Sandbox — alleen testgegevens (voor ontwikkelaars)",
+        "hint": "Gebruik de secret die bij deze omgeving hoort in je Plaid-dashboard."
+      },
+      "card": {
+        "loginRequired": "Je bank vraagt je opnieuw te verifiëren. Klik op \"Opnieuw koppelen\" om je gegevens bij te werken.",
+        "reconnect": "Opnieuw koppelen",
+        "synced": "Gesynchroniseerd: {{added, number}} toegevoegd, {{modified, number}} gewijzigd, {{removed, number}} verwijderd."
+      },
+      "disconnect": {
+        "title": "Bank ontkoppelen",
+        "message": "Weet je zeker dat je {{name}} wilt ontkoppelen? Hiermee trek je de toegang van FlyBudget tot deze bank bij Plaid in. Je bestaande rekeningen en transacties worden niet verwijderd."
+      }
+    },
+    "simplefin": {
+      "connect": {
+        "title": "Koppelen via SimpleFIN",
+        "heading": "Koppelen met SimpleFIN Bridge",
+        "intro": "Ga naar <bridgeLink>SimpleFIN Bridge</bridgeLink> om een setup-token aan te maken en plak dat hieronder. SimpleFIN kost $1,50 per maand, die je rechtstreeks aan SimpleFIN betaalt.",
+        "placeholder": "Plak je SimpleFIN-setup-token...",
+        "connecting": "Koppelen...",
+        "button": "Koppelen",
+        "error": "Koppelen is mislukt. Controleer je setup-token en probeer het opnieuw."
+      },
+      "config": {
+        "hint": "Koppel je bankrekeningen om transacties automatisch te importeren via SimpleFIN Bridge. De dienst kost $1,50 per maand, die je rechtstreeks aan SimpleFIN betaalt.",
+        "getToken": "SimpleFIN-token ophalen",
+        "token": "Setup-token",
+        "placeholder": "Plak je SimpleFIN-setup-token"
+      },
+      "card": {
+        "synced_one": "Gesynchroniseerd: {{count, number}} nieuwe transactie geïmporteerd.",
+        "synced_other": "Gesynchroniseerd: {{count, number}} nieuwe transacties geïmporteerd."
+      },
+      "disconnect": {
+        "title": "SimpleFIN ontkoppelen",
+        "message": "Weet je zeker dat je {{name}} wilt ontkoppelen? FlyBudget verwijdert de opgeslagen toegang. Om die helemaal in te trekken, verwijder je deze app ook uit je SimpleFIN Bridge-account op bridge.simplefin.org. Je bestaande rekeningen en transacties worden niet verwijderd."
+      }
+    }
+  },
+  "budget": {
+    "sheet": {
+      "title": "{{name}} plannen",
+      "titleFallback": "Plannen",
+      "planned": "Gepland",
+      "plannedFor": "Gepland voor {{name}}",
+      "earnedLastMonth": "Vorige maand verdiend",
+      "spentLastMonth": "Vorige maand uitgegeven",
+      "monthlyAverage": "Gemiddeld per maand",
+      "allYear": "Dit bedrag gebruiken voor de komende 12 maanden"
+    },
+    "phone": {
+      "progress": "{{actual}} van {{planned}}",
+      "showInactive_one": "{{count, number}} inactieve categorie tonen",
+      "showInactive_other": "{{count, number}} inactieve categorieën tonen",
+      "hideInactive_one": "{{count, number}} inactieve categorie verbergen",
+      "hideInactive_other": "{{count, number}} inactieve categorieën verbergen",
+      "remaining": "over",
+      "planned": "Gepland",
+      "plannedFor": "Gepland voor {{name}}: {{amount}}",
+      "received": "Ontvangen",
+      "spent": "Uitgegeven"
+    },
+    "undo": {
+      "set": "Budget instellen"
+    },
+    "unreadableAmount": "Dat is geen bedrag. Typ het als 12,50 of 12.50.",
+    "types": {
+      "fixed": {
+        "label": "Vast",
+        "description": "Vast, voorspelbaar bedrag per maand"
+      },
+      "flexible": {
+        "label": "Flexibel",
+        "description": "Wisselende uitgaven die elke maand verschillen"
+      },
+      "non_monthly": {
+        "label": "Niet maandelijks",
+        "description": "Periodieke of onregelmatige uitgaven"
+      },
+      "savings": {
+        "label": "Sparen/beleggen",
+        "description": "Spaardoelen en inleg voor beleggingen"
+      }
+    },
+    "page": {
+      "previousMonth": "Vorige maand",
+      "nextMonth": "Volgende maand",
+      "today": "Vandaag",
+      "nothingPlannedTap": "Voor {{month}} is nog niets gepland. Tik op een bedrag in de kolom <strong>Gepland</strong> om in te stellen wat je verwacht te verdienen en uit te geven in elke categorie. Categorieën die je leeg laat, worden verborgen zodra je iets hebt gepland.",
+      "nothingPlannedClick": "Voor {{month}} is nog niets gepland. Klik op een bedrag in de kolom <strong>Gepland</strong> om in te stellen wat je verwacht te verdienen en uit te geven in elke categorie. Categorieën die je leeg laat, worden verborgen zodra je iets hebt gepland.",
+      "howItWorks": "Zo werkt budgetteren",
+      "income": "Inkomsten",
+      "expenses": "Uitgaven",
+      "planned": "Gepland",
+      "actual": "Werkelijk",
+      "remaining": "Over",
+      "totalIncome": "Totale inkomsten",
+      "totalExpenses": "Totale uitgaven",
+      "noCategories": "Nog geen categorieën. <settingsLink>Voeg ze toe in de instellingen</settingsLink>",
+      "plannedFor": "Gepland voor {{name}}",
+      "plannedForAmount": "Gepland voor {{name}}: {{amount}}",
+      "savingPaused": "Opslaan is gepauzeerd tot FlyBudget weer verbinding heeft",
+      "showInactive_one": "{{count, number}} inactieve categorie tonen",
+      "showInactive_other": "{{count, number}} inactieve categorieën tonen",
+      "hideInactive_one": "{{count, number}} inactieve categorie verbergen",
+      "hideInactive_other": "{{count, number}} inactieve categorieën verbergen"
+    },
+    "popover": {
+      "title": "Geschiedenis",
+      "earnedLastMonth": "Vorige maand verdiend",
+      "spentLastMonth": "Vorige maand uitgegeven",
+      "monthlyAverage": "Gemiddeld per maand",
+      "noHistory": "Geen geschiedenis beschikbaar",
+      "applyToFuture": "{{amount}} toepassen op alle toekomstige maanden"
+    },
+    "summary": {
+      "toBeBudgeted": "Nog te budgetteren",
+      "overBudget": "Te veel gebudgetteerd",
+      "fullyBudgeted": "Volledig gebudgetteerd",
+      "almostBudgeted": "Bijna gebudgetteerd",
+      "leftToBudget": "Nog te budgetteren",
+      "planned": "{{amount}} gepland",
+      "remaining": "over",
+      "earned": "verdiend",
+      "spent": "uitgegeven",
+      "contributed": "gespaard",
+      "saveUp": "Sparen",
+      "tabs": {
+        "summary": "Overzicht",
+        "income": "Inkomsten",
+        "expenses": "Uitgaven"
+      },
+      "income": "Inkomsten",
+      "expenses": "Uitgaven"
+    },
+    "detail": {
+      "categoryFallback": "Categorie",
+      "breadcrumb": "Budget",
+      "spendingHistory": "Uitgavengeschiedenis",
+      "noHistory": "Geen geschiedenis beschikbaar",
+      "budget": "Budget",
+      "planned": "Gepland",
+      "actual": "Werkelijk",
+      "remaining": "Over",
+      "summary": "Overzicht",
+      "noData": "Geen gegevens",
+      "totalTransactions": "Totaal aantal transacties",
+      "largest": "Grootste transactie",
+      "average": "Gemiddelde transactie",
+      "totalIncome": "Totale inkomsten",
+      "totalSpending": "Totale uitgaven",
+      "first": "Eerste transactie",
+      "last": "Laatste transactie"
+    }
+  },
+  "cashFlow": {
+    "title": "Geldstromen",
+    "presets": {
+      "thisMonth": "1M",
+      "last3Months": "3M",
+      "last6Months": "6M",
+      "thisYear": "Dit jaar",
+      "lastYear": "Vorig jaar",
+      "custom": "Aangepast"
+    },
+    "exportCsv": "CSV exporteren",
+    "stats": {
+      "totalIncome": "Totale inkomsten",
+      "totalExpenses": "Totale uitgaven",
+      "netIncome": "Resultaat",
+      "savingsRate": "Spaarquote"
+    },
+    "node": {
+      "income": "Inkomsten",
+      "totalIncome": "Totale inkomsten",
+      "savings": "Sparen",
+      "uncategorized": "Zonder categorie"
+    },
+    "diagram": {
+      "showTransactions": "Transacties tonen: {{name}}",
+      "negativeFlows": "Sommige stromen zijn uitgesloten — Sankey-diagrammen kunnen geen negatieve waarden weergeven (bijv. terugbetalingen). De totalen kunnen daardoor iets afwijken."
+    },
+    "tooltip": {
+      "ofIncome": "{{percent}}% van de totale inkomsten",
+      "savingsRate": "{{percent}}% spaarquote",
+      "ofSpending": "{{percent}}% van de totale uitgaven",
+      "ofGroup": "{{percent}}% van {{group}}"
+    },
+    "list": {
+      "moneyIn": "Binnengekomen",
+      "whereItWent": "Waar het naartoe ging",
+      "saved": "Gespaard",
+      "shareOfIncome": "{{share}}<srOnly> van de inkomsten</srOnly>",
+      "hideTransactions": "Transacties verbergen",
+      "allTransactions": "Alle transacties van {{group}}"
+    },
+    "view": {
+      "label": "Weergeven als",
+      "list": "Lijst",
+      "diagram": "Diagram",
+      "swipe": "Veeg om alles te zien"
+    },
+    "transactions": {
+      "title": "Transacties: {{name}}",
+      "clear": "Wissen"
+    }
+  },
+  "common": {
+    "actions": {
+      "cancel": "Annuleren",
+      "close": "Sluiten",
+      "confirm": "Bevestigen",
+      "done": "Klaar",
+      "learnMore": "Meer informatie",
+      "delete": "Verwijderen",
+      "save": "Opslaan"
+    },
+    "actionsMenu": "Acties",
+    "badge": {
+      "credit": "Creditcard",
+      "positive": "Positief",
+      "negative": "Negatief"
+    },
+    "emojiSearch": "Emoji zoeken...",
+    "monthRange": {
+      "choose": "Kies maanden",
+      "from": "Van",
+      "to": "Tot",
+      "previousYear": "Vorig jaar",
+      "nextYear": "Volgend jaar"
+    },
+    "opensInNewTab": "(opent in een nieuw tabblad)",
+    "dragToReorder": "Sleep om te verplaatsen",
+    "loading": "Laden...",
+    "errors": {
+      "generic": "Er ging iets mis.",
+      "tryAgain": "Er ging iets mis. Probeer het opnieuw.",
+      "invalidValues": "Sommige ingevoerde waarden zijn ongeldig"
+    }
+  },
+  "connection": {
+    "savingPaused": "Opslaan is gepauzeerd totdat FlyBudget weer verbinding heeft.",
+    "savedOnDevice": "FlyBudget is niet bereikbaar. Dit is op dit apparaat opgeslagen en wordt verstuurd zodra de verbinding terug is.",
+    "banner": {
+      "label": "Verbinding",
+      "cantReach": "FlyBudget is niet bereikbaar.",
+      "dataAsOf": "Je ziet je gegevens van {{ago}}.",
+      "lookAround": "Je kunt nog steeds rondkijken.",
+      "savedOnDevice": "Nieuwe transacties worden op dit apparaat opgeslagen; andere wijzigingen wachten tot de verbinding terug is.",
+      "savingPaused": "Opslaan is gepauzeerd.",
+      "waiting_one": "{{count, number}} transactie wacht om verstuurd te worden",
+      "waiting_other": "{{count, number}} transacties wachten om verstuurd te worden",
+      "retryNow": "Nu opnieuw proberen",
+      "reconnected": "Verbinding hersteld. Alles is up-to-date."
+    },
+    "retry": {
+      "checking": "Controleren…",
+      "paused": "Gepauzeerd terwijl dit tabblad op de achtergrond staat",
+      "tryingAgain": "Opnieuw proberen…",
+      "tryingAgainIn": "Opnieuw proberen over {{seconds}}s",
+      "retrying": "Opnieuw proberen…",
+      "retryingIn": "Opnieuw proberen over {{seconds}}s",
+      "progress": "Tijd tot de volgende poging"
+    },
+    "reconnect": {
+      "title": {
+        "desktop": "FlyBudget start opnieuw op",
+        "server": "Opnieuw verbinden met je server",
+        "dev": "Opnieuw verbinden met FlyBudget"
+      },
+      "desktopHint": "Dit duurt meestal een paar seconden.",
+      "serverError": "De server van FlyBudget antwoordde met een fout.",
+      "cantReach": "Op dit moment niet bereikbaar. {{retry}}",
+      "tryNow": "Nu proberen",
+      "desktopHelp": "Als dit niet overgaat, sluit je FlyBudget af en open je het opnieuw. Je gegevens staan veilig op deze computer.",
+      "devHelp": "De ontwikkelserver wordt misschien opnieuw gestart. Als die is gestopt, voer je <code>npm run dev</code> opnieuw uit.",
+      "troubleshooting": "Problemen oplossen",
+      "serverSafe": "Je budget staat veilig op de server; deze pagina kan er alleen niet bij.",
+      "checkRunning": "Controleer of de container draait:",
+      "checkLog": "Bekijk wat er is gelogd:",
+      "checkProxy": "Als je er via een reverse proxy of vpn bij komt, controleer dan of die ook draait en of dit apparaat met het juiste netwerk is verbonden."
+    },
+    "device": {
+      "browserOn": "{{browser}} op {{os}}",
+      "unknown": "Onbekende browser"
+    },
+    "networkError": "FlyBudget is op dit moment niet bereikbaar. Er is niets opgeslagen; probeer het opnieuw zodra de verbinding terug is.",
+    "notSaved": "Kon niet worden opgeslagen"
+  },
+  "currency": {
+    "addRate": "Koers toevoegen",
+    "missingRates_one": "{{count, number}} transactie in {{currencies}} heeft nog geen waarde in {{budget}}: er is geen wisselkoers voor die dag.",
+    "missingRates_other": "{{count, number}} transacties in {{currencies}} hebben nog geen waarde in {{budget}}: er is geen wisselkoers voor die dagen.",
+    "unconverted": "Zonder {{currencies}}: nog geen wisselkoers.",
+    "select": {
+      "label": "Valuta",
+      "common": "Veelgebruikt",
+      "all": "Alle valuta's"
+    },
+    "foreign": {
+      "noRate": "Geen koers",
+      "noRateHint": "Nog geen wisselkoers voor deze dag: het budget telt dit pas mee als die er is"
+    },
+    "mainAmount": {
+      "label": "Waarde in {{currency}}",
+      "noRate": "Nog geen koers",
+      "useRate": "Koers van die dag gebruiken",
+      "source": {
+        "rate": "Tegen de wisselkoers van die dag.",
+        "manual": "Zoals je het hebt ingevoerd.",
+        "transfer": "Wat de andere kant van de overboeking waard is.",
+        "missing": "Nog geen wisselkoers voor deze dag, dus het budget telt dit nog niet mee. Vul in wat het heeft gekost, of voeg een koers toe via Instellingen → Valuta's."
+      }
+    },
+    "difference": {
+      "why": "Wat de verandering in de wisselkoers heeft gedaan met de waarde van deze rekening",
+      "fromRate": "{{amount}} door de koers",
+      "title": "Valutaverschil",
+      "gain": "Tegen de koers van vandaag is {{name}} <strong>{{amount}} meer</strong> waard dan je budget meetelde toen het geld binnenkwam. Leg het vast om je budget gelijk te trekken: er komt een correctie van dat bedrag bij als inkomsten.",
+      "loss": "Tegen de koers van vandaag is {{name}} <strong>{{amount}} minder</strong> waard dan je budget meetelde toen het geld binnenkwam. Leg het vast om je budget gelijk te trekken: er komt een correctie van dat bedrag bij als uitgaven.",
+      "category": "Categorie",
+      "noCategory": "Geen categorie (alleen nettovermogen)",
+      "noCategoryHint": "Zonder categorie telt het niet mee bij inkomsten en uitgaven, net als andere saldocorrecties.",
+      "record": "Verschil vastleggen"
+    }
+  },
+  "dashboard": {
+    "viewAll": "Alles bekijken",
+    "gettingStarted": {
+      "title": "Aan de slag met FlyBudget",
+      "progress": "{{done}} van {{total}} klaar. Elke stap maakt je dashboard completer.",
+      "hide": "Aan de slag verbergen",
+      "progressLabel": "Voortgang van aan de slag",
+      "done": "Klaar",
+      "help": "Weet je niet waar je moet beginnen?",
+      "guide": "Lees de startgids",
+      "steps": {
+        "account": {
+          "title": "Voeg je eerste rekening toe",
+          "description": "Een betaalrekening, creditcard of contant geld: alles waar geld op staat."
+        },
+        "transactions": {
+          "title": "Haal je transacties binnen",
+          "description": "Importeer een csv-bestand van je bank, koppel een bank, of voeg ze met de hand toe."
+        },
+        "recurring": {
+          "title": "Voeg je vaste lasten en salaris toe",
+          "description": "Bekijk wat je binnenkort moet betalen en mis nooit meer een betaling."
+        },
+        "budget": {
+          "title": "Plan het budget van deze maand",
+          "description": "Nu je salaris en vaste lasten erin staan, geef je de rest van je geld een bestemming."
+        },
+        "rules": {
+          "title": "Automatisch categoriseren",
+          "description": "Regels sorteren nieuwe transacties voor je, op tegenpartij, bedrag en meer."
+        }
+      },
+      "actions": {
+        "account": "Rekening toevoegen",
+        "import": "Importeren of toevoegen",
+        "connect": "Bank koppelen",
+        "recurring": "Vaste lasten toevoegen",
+        "budget": "Budget openen",
+        "rules": "Regel aanmaken"
+      }
+    },
+    "cashFlow": {
+      "title": "Geldstromen",
+      "netThisMonth": "Resultaat deze maand: <net>{{amount}}</net>",
+      "income": "Inkomsten",
+      "expenses": "Uitgaven",
+      "emptyTitle": "Nog geen geld erbij of eraf",
+      "emptyDescription": "Voeg transacties toe om te vergelijken wat er binnenkomt met wat er uitgaat, maand voor maand.",
+      "add": "Transactie toevoegen"
+    },
+    "netWorth": {
+      "title": "Nettovermogen",
+      "description": "Wat je bezit min wat je schuldig bent, van al je rekeningen samen.",
+      "add": "Rekening toevoegen",
+      "presets": {
+        "1m": "1 maand",
+        "3m": "3 maanden",
+        "6m": "6 maanden",
+        "ytd": "Dit jaar tot nu",
+        "1y": "1 jaar",
+        "all": "Alles"
+      }
+    },
+    "recent": {
+      "title": "Recente transacties",
+      "emptyTitle": "Nog geen transacties",
+      "emptyDescription": "Importeer een csv-bestand van je bank, koppel een bank, of voeg transacties met de hand toe.",
+      "import": "CSV importeren",
+      "add": "Transactie toevoegen"
+    },
+    "spending": {
+      "title": "Uitgaven per categorie",
+      "emptyTitle": "Geen uitgaven deze maand",
+      "emptyDescription": "Naarmate je uitgeeft, verschijnen hier je grootste categorieën.",
+      "uncategorized": "Zonder categorie"
+    },
+    "summary": {
+      "leftToSpend": "Nog uit te geven",
+      "noBudget": "Geen budget ingesteld voor deze maand",
+      "avgIncome": "Gem. inkomsten per maand",
+      "avgExpenses": "Gem. uitgaven per maand",
+      "savingsRate": "Spaarquote",
+      "goal": "{{percent}}% doel",
+      "incomeHint": "Zichtbaar zodra je inkomsten hebt"
+    },
+    "upcoming": {
+      "title": "Komende vaste lasten",
+      "emptyTitle": "Houd je vaste lasten en salaris bij",
+      "emptyDescription": "Voeg huur, abonnementen en inkomsten toe die terugkeren, of laat FlyBudget ze in je transacties vinden.",
+      "add": "Toevoegen",
+      "none": "Niets te betalen in de komende 30 dagen.",
+      "when": {
+        "overdue": "{{date}} · {{days}} d te laat",
+        "today": "{{date}} · Vandaag",
+        "tomorrow": "{{date}} · Morgen",
+        "inDays": "{{date}} · over {{days}} d"
+      }
+    },
+    "budget": {
+      "title": "Budget",
+      "emptyTitle": "Nog geen budget voor {{month}}",
+      "emptyDescription": "Stel in hoeveel je van plan bent uit te geven in elke categorie en volg hier je voortgang.",
+      "plan": "Je budget plannen",
+      "planned": "{{amount}} gepland",
+      "spent": "{{amount}} uitgegeven",
+      "remaining": "{{amount}} over"
+    },
+    "comparison": {
+      "spendingWeek": "Uitgaven <amount>{{amount}} deze week</amount>",
+      "spendingMonth": "Uitgaven <amount>{{amount}} deze maand</amount>",
+      "spendingYear": "Uitgaven <amount>{{amount}} dit jaar</amount>",
+      "modes": {
+        "week_vs_last_week": "Deze week vs. vorige week",
+        "month_vs_last_month": "Deze maand vs. vorige maand",
+        "month_vs_last_year": "Deze maand vs. vorig jaar",
+        "month_vs_average": "Deze maand vs. gemiddelde maand",
+        "year_vs_last_year": "Dit jaar vs. vorig jaar"
+      },
+      "thisWeek": "Deze week",
+      "thisMonth": "Deze maand",
+      "thisYear": "Dit jaar",
+      "lastWeek": "Vorige week",
+      "lastMonth": "Vorige maand",
+      "lastYear": "Vorig jaar",
+      "averageMonth": "Gemiddelde maand (laatste 12 maanden)",
+      "day": "Dag {{day}}",
+      "emptyTitle": "Nog niets om te vergelijken",
+      "emptyDescription": "Zodra je uitgaven hebt, zie je hier hoe deze periode zich verhoudt tot de vorige."
+    }
+  },
+  "dateRange": {
+    "presets": {
+      "thisMonth": {
+        "label": "1M",
+        "long": "Deze maand"
+      },
+      "last3Months": {
+        "label": "3M",
+        "long": "Laatste 3 maanden"
+      },
+      "last6Months": {
+        "label": "6M",
+        "long": "Laatste 6 maanden"
+      },
+      "last12Months": {
+        "label": "12M",
+        "long": "Laatste 12 maanden"
+      },
+      "yearToDate": {
+        "label": "Jaar",
+        "long": "Dit jaar tot nu"
+      },
+      "lastYear": {
+        "label": "Vorig jaar",
+        "long": "Vorig jaar"
+      },
+      "allTime": {
+        "label": "Alles",
+        "long": "Alles"
+      },
+      "custom": {
+        "label": "Aangepast",
+        "long": "Aangepaste periode"
+      }
+    },
+    "fromTo": "{{from}} – {{to}}",
+    "frozen": "Vastgezet",
+    "frozenHint": "Houd deze datums vast in plaats van mee te bewegen met de huidige maand"
+  },
+  "demo": {
+    "download": "FlyBudget downloaden",
+    "banner": {
+      "label": "Demo",
+      "short": "<strong>Dit is een demobudget.</strong><muted> Er wordt niets opgeslagen.</muted>",
+      "long": "<strong>Dit is een demobudget</strong><muted>. Wijzig wat je wilt. Er wordt niets opgeslagen en als je het tabblad sluit, begint het weer opnieuw.</muted>",
+      "home": "Terug naar home",
+      "homeHint": "Terug naar de homepage van FlyBudget",
+      "startOver": "Opnieuw beginnen",
+      "startOverHint": "Opnieuw beginnen met het originele demobudget",
+      "download": "<wide>FlyBudget </wide>downloaden"
+    },
+    "notAvailable": {
+      "title": "Niet beschikbaar in de demo",
+      "connectBank": "Bank koppelen",
+      "banks": "Bankkoppelingen werken alleen in de FlyBudget-app, dus in de demo kun je geen bank koppelen of inloggegevens invoeren. In de app haalt Plaid, SimpleFIN of Enable Banking (Europese banken) je transacties automatisch binnen, en je kunt ook csv-bestanden van je bank importeren."
+    },
+    "error": "Er ging iets mis"
+  },
+  "goals": {
+    "title": "Doelen",
+    "add": "Doel toevoegen",
+    "empty": {
+      "title": "Spaar voor wat ertoe doet",
+      "description": "Stel een doelbedrag in, zoals een noodbuffer, een reis of een nieuwe auto. Je ziet dan hoe dichtbij je bent en hoeveel je elke maand opzij moet zetten."
+    },
+    "stats": {
+      "saved": "Gespaard",
+      "ofTarget": "{{pct}}% van het doel",
+      "target": "Doelbedrag",
+      "left": "Nog te sparen",
+      "reached": "Doelen bereikt",
+      "reachedValue": "{{reached}} van {{total}}"
+    },
+    "group": {
+      "inProgress": "Bezig",
+      "completed": "Voltooid",
+      "count_one": "{{count, number}} doel",
+      "count_other": "{{count, number}} doelen"
+    },
+    "row": {
+      "target": "Doeldatum {{date}}",
+      "of": "van {{amount}}",
+      "edit": "Doel bewerken",
+      "delete": "Doel verwijderen",
+      "reached": "Doel bereikt",
+      "overdue": "Doeldatum verstreken · nog {{amount}}",
+      "toGo": "nog {{amount}}",
+      "perMonth": "· {{amount}}/mnd om het op tijd te halen"
+    },
+    "delete": {
+      "title": "Doel verwijderen",
+      "message": "\"{{name}}\" verwijderen? Dit kan niet ongedaan worden gemaakt."
+    },
+    "form": {
+      "editTitle": "Doel bewerken",
+      "name": "Naam",
+      "namePlaceholder": "bijv. Noodbuffer",
+      "target": "Doelbedrag",
+      "saved": "Tot nu toe gespaard",
+      "targetDate": "Doeldatum",
+      "targetDateOptional": "Doeldatum (optioneel)",
+      "account": "Gekoppelde rekening",
+      "accountOptional": "Gekoppelde rekening (optioneel)",
+      "noAccount": "Geen",
+      "icon": "Pictogram",
+      "color": "Kleur",
+      "colorOption": "Kleur {{color}}",
+      "addTitle": "Doel toevoegen",
+      "add": "Doel toevoegen"
+    },
+    "undo": {
+      "create": "Doel \"{{name}}\" aanmaken",
+      "edit": "Doel bewerken",
+      "delete": "Doel \"{{name}}\" verwijderen"
+    }
+  },
+  "images": {
+    "notAnImage": "Kies een afbeeldingsbestand.",
+    "processFailed": "De afbeelding kon niet worden verwerkt.",
+    "readFailed": "Die afbeelding kon niet worden gelezen."
+  },
+  "import": {
+    "skipped": {
+      "count_one": "{{count, number}} rij overgeslagen",
+      "count_other": "{{count, number}} rijen overgeslagen",
+      "fields": {
+        "date": "datum",
+        "amount": "bedrag",
+        "direction": "richting"
+      },
+      "row": "rij {{row}}, {{field}} {{value}}",
+      "quoted": "\"{{value}}\"",
+      "empty": "(leeg)",
+      "more": "en nog {{count, number}}",
+      "summary": "{{total}}: {{rows}}."
+    },
+    "title": "Transacties importeren",
+    "dismiss": "Sluiten",
+    "back": "Terug",
+    "checking": "Controleren...",
+    "upload": {
+      "drop": "Sleep een bestand van je bank hierheen, of klik om te bladeren",
+      "formats": "CSV, of een CAMT.053-bankafschrift (XML)",
+      "checking": "Controleren…",
+      "demo": "Demo: je bestand blijft in dit browsertabblad en wordt niet opgeslagen.",
+      "bankFile": "Bankbestand"
+    },
+    "statement": {
+      "intro_one": "Dit bestand bevat afschriften voor {{count, number}} rekening. Welke hoort bij deze rekening?",
+      "intro_other": "Dit bestand bevat afschriften voor {{count, number}} rekeningen. Welke hoort bij deze rekening?",
+      "label": "Afschrift",
+      "noNumber": "Rekening zonder nummer",
+      "option_one": "{{account}} ({{count, number}} transactie)",
+      "option_other": "{{account}} ({{count, number}} transacties)",
+      "optionKnown_one": "{{account}} ({{count, number}} transactie), eerder hier geïmporteerd",
+      "optionKnown_other": "{{account}} ({{count, number}} transacties), eerder hier geïmporteerd"
+    },
+    "map": {
+      "intro_one": "Koppel elke kolom aan een veld. {{count, number}} rij gevonden.",
+      "intro_other": "Koppel elke kolom aan een veld. {{count, number}} rijen gevonden.",
+      "usingSaved": "We gebruiken de instellingen van je vorige import in deze rekening.",
+      "separator": "Scheidingsteken",
+      "encoding": "Tekenset",
+      "skipRows": "Rijen boven de kopregel",
+      "dates": "Datums",
+      "amounts": "Bedragen",
+      "choose": "Kies…",
+      "outWord": "Woord voor geld eraf",
+      "outWordPlaceholder": "Optioneel, bijv. Af",
+      "column": "Kolom {{name}}",
+      "warn": {
+        "dateSample": "Dit bestand laat niet zien in welke volgorde {{sample}} is geschreven.",
+        "dateMixed": "In dit bestand staan datums in verschillende volgordes.",
+        "amountSample": "Dit bestand laat niet zien of {{sample}} een decimale punt of een decimale komma gebruikt.",
+        "amountMixed": "In dit bestand staan bedragen in verschillende notaties.",
+        "chooseFormat": "Kies de notatie die je bank gebruikt.",
+        "outWord": "FlyBudget weet niet wat {{words}} betekent in de richtingkolom. Vul het woord in dat je bank gebruikt voor geld dat eraf gaat; andere onbekende woorden tellen als geld dat erbij komt."
+      },
+      "fromLastTime": {
+        "dates": "Dit bestand laat niet zien hoe datums zijn geschreven: we gebruiken {{format}}, zoals bij je vorige import in deze rekening.",
+        "amounts": "Dit bestand laat niet zien hoe bedragen zijn geschreven: we gebruiken {{format}}, zoals bij je vorige import in deze rekening.",
+        "both": "Dit bestand laat niet zien hoe datums en bedragen zijn geschreven: we gebruiken {{dateFormat}} en {{numberFormat}}, zoals bij je vorige import in deze rekening."
+      }
+    },
+    "delimiters": {
+      "comma": "Komma",
+      "semicolon": "Puntkomma",
+      "tab": "Tab"
+    },
+    "encodings": {
+      "auto": "Automatisch",
+      "windows1252": "West-Europees (Windows-1252)",
+      "windows1250": "Centraal-Europees (Windows-1250)",
+      "iso88592": "Centraal-Europees (ISO-8859-2)"
+    },
+    "roles": {
+      "date": "Datum",
+      "payee": "Tegenpartij",
+      "amount": "Bedrag",
+      "inflow": "Bij",
+      "outflow": "Af",
+      "direction": "Richting (af/bij)",
+      "notes": "Notities",
+      "skip": "Overslaan"
+    },
+    "preview": {
+      "button": "Voorbeeld",
+      "found_one": "{{count, number}} transactie gevonden.",
+      "found_other": "{{count, number}} transacties gevonden.",
+      "duplicates_one": "{{count, number}} duplicaat gevonden.",
+      "duplicates_other": "{{count, number}} duplicaten gevonden.",
+      "willImport_one": "{{count, number}} wordt geïmporteerd.",
+      "willImport_other": "{{count, number}} worden geïmporteerd.",
+      "entriesLeftOut_one": "{{count, number}} boeking is nog niet verwerkt of kon niet worden gelezen, en is weggelaten.",
+      "entriesLeftOut_other": "{{count, number}} boekingen zijn nog niet verwerkt of konden niet worden gelezen, en zijn weggelaten.",
+      "otherCurrency": "Dit afschrift is in {{statementCurrency}}, maar deze rekening is in {{currency}}. Importeer het in plaats daarvan in een rekening in {{statementCurrency}} (je kunt er een toevoegen met die valuta).",
+      "otherAccount": "Dit afschrift is voor rekening {{statementAccount}}, maar het laatste afschrift dat in deze rekening is geïmporteerd was voor {{knownAccount}}. Controleer of je het in de juiste rekening importeert.",
+      "fixFile": "Herstel het bestand en importeer het opnieuw om ze mee te nemen.",
+      "columns": {
+        "date": "Datum",
+        "payee": "Tegenpartij",
+        "amount": "Bedrag"
+      },
+      "rowLabel": "{{payee}} van {{date}} importeren",
+      "rowLabelNoPayee": "Rij van {{date}} importeren",
+      "duplicate": "duplicaat",
+      "importing": "Importeren...",
+      "import_one": "{{count, number}} transactie importeren",
+      "import_other": "{{count, number}} transacties importeren"
+    },
+    "done": {
+      "title": "Import voltooid",
+      "summary": "{{imported}}, {{skipped}}",
+      "imported_one": "{{count, number}} geïmporteerd",
+      "imported_other": "{{count, number}} geïmporteerd",
+      "skipped_one": "{{count, number}} overgeslagen",
+      "skipped_other": "{{count, number}} overgeslagen"
+    },
+    "errors": {
+      "parse": "Kon het csv-bestand niet verwerken",
+      "tooManyRows_one": "Dit bestand bevat {{count, number}} transactie. FlyBudget importeert er maximaal {{max}} per keer: splits het op in kleinere bestanden.",
+      "tooManyRows_other": "Dit bestand bevat {{count, number}} transacties. FlyBudget importeert er maximaal {{max}} per keer: splits het op in kleinere bestanden.",
+      "previewFailed": "Voorbeeld mislukt",
+      "noBooked": "Dit afschrift bevat geen geboekte transacties",
+      "unreadable": "Kon dit bestand niet lezen",
+      "notStatement": "Dit bestand is geen bankafschrift dat FlyBudget kan lezen (CAMT.053)",
+      "chooseDates": "Kies hoe dit bestand datums schrijft",
+      "chooseAmounts": "Kies hoe dit bestand bedragen schrijft",
+      "needOutWord": "Vul het woord in dat je bank gebruikt voor geld dat eraf gaat",
+      "noneImported": "Er kon geen enkele rij worden geïmporteerd. {{skipped}}",
+      "noValidRows": "Geen geldige rijen gevonden",
+      "noneSelected": "Geen rijen geselecteerd",
+      "importFailed": "Importeren mislukt"
+    }
+  },
+  "layout": {
+    "accounts": {
+      "all": "Alle rekeningen",
+      "forBudget": "In budget",
+      "offBudget": "Buiten budget",
+      "none": "Nog geen rekeningen",
+      "withoutRate": "Zonder {{currencies}}: nog geen wisselkoers",
+      "add": "Rekening toevoegen",
+      "addManual": "Rekening handmatig toevoegen",
+      "connectPlaid": "Koppelen via Plaid",
+      "connectSimplefin": "Koppelen via SimpleFIN",
+      "connectEnableBanking": "Koppelen via Enable Banking"
+    },
+    "helpFooter": {
+      "newHere": "Nieuw bij FlyBudget?",
+      "guide": "Lees de gids",
+      "source": "Broncode op GitHub",
+      "report": "Meld een probleem of doe een suggestie"
+    },
+    "nav": {
+      "main": "Hoofdmenu",
+      "manage": "Beheren",
+      "dashboard": "Dashboard",
+      "accounts": "Rekeningen",
+      "transactions": "Transacties",
+      "budget": "Budget",
+      "recurring": "Terugkerend",
+      "reports": "Rapporten",
+      "cashFlow": "Geldstromen",
+      "goals": "Doelen",
+      "payees": "Tegenpartijen",
+      "rules": "Regels",
+      "settings": "Instellingen"
+    },
+    "openMenu": "Menu openen",
+    "server": {
+      "statusOnline": "Serverstatus: online, {{place}}",
+      "statusReconnecting": "Serverstatus: opnieuw verbinden, {{place}}",
+      "reconnecting": "Opnieuw verbinden…",
+      "placeDemo": "Demo in deze browser",
+      "placeComputer": "Op deze computer",
+      "addressDemo": "Deze browser",
+      "addressComputer": "Deze computer",
+      "menu": "Server",
+      "online": "Server online",
+      "reconnectingToServer": "Opnieuw verbinden met de server",
+      "address": "Adres",
+      "connection": "Verbinding",
+      "version": "Versie",
+      "retryNow": "Nu opnieuw proberen",
+      "settings": "Serverinstellingen",
+      "signOut": "Uitloggen",
+      "security": {
+        "encrypted": "Versleuteld (HTTPS)",
+        "local": "Blijft op deze computer",
+        "unencrypted": "Niet versleuteld (HTTP)"
+      }
+    },
+    "sidebar": {
+      "resize": "Formaat van zijbalk wijzigen",
+      "help": "Help en documentatie",
+      "helpLink": "Help en documentatie (opent in een nieuw tabblad)",
+      "closeMenu": "Menu sluiten",
+      "pin": "Zijbalk vastzetten",
+      "unpin": "Zijbalk losmaken"
+    },
+    "skipToContent": "Naar hoofdinhoud springen"
+  },
+  "payees": {
+    "icon": {
+      "change": "Afbeelding van {{name}} wijzigen",
+      "upload": "Afbeelding voor {{name}} uploaden",
+      "useInitial": "Initialen gebruiken",
+      "remove": "Afbeelding van {{name}} verwijderen",
+      "failed": "Deze afbeelding kan niet worden gebruikt."
+    },
+    "undo": {
+      "create": "Tegenpartij \"{{name}}\" aanmaken",
+      "edit": "Tegenpartij bewerken",
+      "delete": "Tegenpartij \"{{name}}\" verwijderen"
+    },
+    "title": "Tegenpartijen",
+    "search": "Tegenpartijen zoeken…",
+    "mergeSelected_one": "{{count, number}} tegenpartijen samenvoegen",
+    "mergeSelected_other": "{{count, number}} tegenpartijen samenvoegen",
+    "noMatch": "Geen tegenpartijen gevonden voor je zoekopdracht.",
+    "empty": {
+      "title": "Nog geen tegenpartijen",
+      "description": "Tegenpartijen zijn de mensen en bedrijven aan wie je betaalt of van wie je geld krijgt. Ze worden automatisch toegevoegd als je transacties invoert of importeert, en je kunt elk een standaardcategorie geven.",
+      "add": "Transactie toevoegen"
+    },
+    "listLabel": "Tegenpartijen",
+    "selectAllLabel": "Alle tegenpartijen selecteren",
+    "selectAll": "Alles selecteren",
+    "sortLabel": "Tegenpartijen sorteren",
+    "sort": {
+      "nameAsc": "Naam (A–Z)",
+      "nameDesc": "Naam (Z–A)",
+      "mostTransactions": "Meeste transacties",
+      "fewestTransactions": "Minste transacties",
+      "categoryAsc": "Categorie (A–Z)",
+      "categoryDesc": "Categorie (Z–A)"
+    },
+    "select": "{{name}} selecteren",
+    "rename": "{{name}} hernoemen",
+    "transactionCount_one": "{{count, number}} transactie",
+    "transactionCount_other": "{{count, number}} transacties",
+    "actionsFor": "Acties voor {{name}}",
+    "menu": {
+      "rename": "Hernoemen",
+      "delete": "Verwijderen"
+    },
+    "defaultCategoryFor": "Standaardcategorie voor {{name}}",
+    "noDefaultCategory": "Geen standaardcategorie",
+    "noDefault": "Geen standaard",
+    "columns": {
+      "name": "Naam",
+      "category": "Standaardcategorie",
+      "transactions": "Transacties"
+    },
+    "doubleClickRename": "Dubbelklik om te hernoemen",
+    "deleteLabel": "{{name}} verwijderen",
+    "merge": {
+      "title": "Tegenpartijen samenvoegen",
+      "intro": "Kies welke naam je wilt behouden. Alle transacties worden verplaatst naar de gekozen tegenpartij.",
+      "confirm": "Samenvoegen"
+    },
+    "delete": {
+      "title": "Tegenpartij verwijderen",
+      "message": "\"{{name}}\" verwijderen? Alle transacties met deze tegenpartij staan daarna zonder tegenpartij.",
+      "confirm": "Verwijderen"
+    }
+  },
+  "recurring": {
+    "freq": {
+      "once": "Eenmalig",
+      "weekly": "Wekelijks",
+      "biweekly": "Om de 2 weken",
+      "semimonthly": "Twee keer per maand",
+      "monthly": "Maandelijks",
+      "quarterly": "Per kwartaal",
+      "semiannually": "Om de 6 maanden",
+      "yearly": "Jaarlijks"
+    },
+    "status": {
+      "waiting": "Gemist",
+      "due": "Vandaag",
+      "upcoming": "Binnenkort",
+      "paid": "Betaald",
+      "skipped": "Overgeslagen",
+      "cancelled": "Stopgezet",
+      "paused": "Gepauzeerd",
+      "scheduled": "Gepland"
+    },
+    "upcoming": {
+      "presets": {
+        "1": "1 dag",
+        "7": "1 week",
+        "14": "2 weken",
+        "oneMonth": "1 maand",
+        "currentMonth": "Einde van de huidige maand"
+      },
+      "length": {
+        "day_one": "{{count, number}} dag",
+        "day_other": "{{count, number}} dagen",
+        "week_one": "{{count, number}} week",
+        "week_other": "{{count, number}} weken",
+        "month_one": "{{count, number}} maand",
+        "month_other": "{{count, number}} maanden",
+        "year_one": "{{count, number}} jaar",
+        "year_other": "{{count, number}} jaar"
+      },
+      "button": "Binnenkort: {{length}}",
+      "buttonTitle": "Periode voor binnenkort wijzigen"
+    },
+    "lengthModal": {
+      "title": "Periode voor binnenkort wijzigen",
+      "intro": "Wijzig hoeveel dagen vóór de datum een terugkerende transactie als <strong>Binnenkort</strong> wordt getoond. Latere transacties worden getoond als <strong>Gepland</strong>.",
+      "note": "Dit verandert alleen hoe terugkerende transacties worden weergegeven. Je kunt het op elk moment aanpassen.",
+      "custom": "Aangepaste periode",
+      "units": {
+        "day": "Dagen",
+        "week": "Weken",
+        "month": "Maanden",
+        "year": "Jaren"
+      },
+      "window_one": "Transacties die binnen <days>{{count, number}} dag</days> aan de beurt zijn, worden getoond als Binnenkort.",
+      "window_other": "Transacties die binnen <days>{{count, number}} dagen</days> aan de beurt zijn, worden getoond als Binnenkort."
+    },
+    "all": {
+      "menu": {
+        "markNextPaid": "Volgende als betaald markeren",
+        "skipNext": "Volgende datum overslaan",
+        "resume": "Hervatten",
+        "pause": "Pauzeren",
+        "restart": "Opnieuw starten",
+        "edit": "Bewerken",
+        "cancel": "Stopzetten",
+        "deletePermanently": "Definitief verwijderen"
+      },
+      "actionsFor": "Acties voor {{name}}",
+      "next": "Volgende {{date}}",
+      "find": "Automatisch zoeken",
+      "add": "Toevoegen",
+      "filterPlaceholder": "Terugkerende transacties filteren…",
+      "columns": {
+        "name": "Naam",
+        "payee": "Tegenpartij",
+        "account": "Rekening",
+        "nextDate": "Volgende datum",
+        "status": "Status",
+        "amount": "Bedrag",
+        "frequency": "Frequentie"
+      },
+      "noMatch": "Geen overeenkomende terugkerende transacties",
+      "noActive": "Geen actieve terugkerende transacties",
+      "empty": {
+        "title": "Nog geen terugkerende transacties",
+        "description": "Voeg vaste lasten, abonnementen en salaris toe om te zien wat er wanneer moet worden betaald, of laat FlyBudget ze zoeken in de transacties die je al hebt."
+      },
+      "showCanceled": "Stopgezette terugkerende transacties tonen ({{count, number}})",
+      "confirm": {
+        "deleteTitle": "Terugkerende transactie verwijderen?",
+        "cancelTitle": "Terugkerende transactie stopzetten?",
+        "deleteMessage": "\"{{name}}\" wordt definitief verwijderd. Dit kan niet ongedaan worden gemaakt.",
+        "cancelMessage": "Van \"{{name}}\" worden geen nieuwe transacties meer aangemaakt. Je kunt hem opnieuw starten vanuit de lijst met stopgezette transacties.",
+        "deleteConfirm": "Verwijderen",
+        "cancelConfirm": "Stopzetten"
+      }
+    },
+    "row": {
+      "overdue_one": "{{count, number}} dag te laat",
+      "overdue_other": "{{count, number}} dagen te laat",
+      "today": "Vandaag",
+      "tomorrow": "Morgen",
+      "inDays_one": "over {{count, number}} dag",
+      "inDays_other": "over {{count, number}} dagen",
+      "menu": {
+        "markPaid": "Als betaald markeren",
+        "match": "Aan transactie koppelen",
+        "skip": "Overslaan",
+        "unlink": "Transactie ontkoppelen",
+        "edit": "Terugkerende transactie bewerken"
+      },
+      "actualPaid": "Werkelijk betaald bedrag",
+      "paidAmount": "Betaald: {{amount}}"
+    },
+    "calendar": {
+      "more_one": "nog {{count, number}}",
+      "more_other": "nog {{count, number}}"
+    },
+    "suggestions": {
+      "banner_one": "{{count, number}} transactie komt mogelijk overeen met je terugkerende transacties",
+      "banner_other": "{{count, number}} transacties komen mogelijk overeen met je terugkerende transacties",
+      "hide": "Verbergen",
+      "review": "Nu bekijken",
+      "match": "({{score}}% overeenkomst)",
+      "accept": "Koppeling accepteren",
+      "dismiss": "Negeren"
+    },
+    "matchModal": {
+      "title": "Aan transactie koppelen",
+      "expected": "Verwacht: {{date}} · {{amount}}",
+      "filterPlaceholder": "Filteren op tegenpartij of notities…",
+      "none": "Geen overeenkomende transacties gevonden.",
+      "match": "Koppelen"
+    },
+    "discover": {
+      "title": "Terugkerende transacties zoeken",
+      "intro": "Je transactiegeschiedenis is doorzocht op betalingen aan dezelfde tegenpartij, voor een vergelijkbaar bedrag, volgens een vast wekelijks, tweewekelijks of maandelijks patroon. Selecteer de transacties die je wilt bijhouden. Overeenkomende eerdere transacties worden gekoppeld aan elke nieuwe terugkerende transactie.",
+      "hint": "Mis je iets? Transacties worden alleen gegroepeerd als ze dezelfde tegenpartij hebben, dus het kan helpen om tegenpartijen een gelijke naam te geven. Tegenpartijen die je al bijhoudt, staan niet in de lijst.",
+      "selectAll": "Alles selecteren",
+      "columns": {
+        "payee": "Tegenpartij",
+        "account": "Rekening",
+        "when": "Wanneer",
+        "amount": "Bedrag"
+      },
+      "scanning": "Je transacties worden doorzocht…",
+      "none": "Geen terugkerende transacties gevonden",
+      "track": "{{name}} bijhouden",
+      "history_one": "{{count, number}} keer · sinds {{date}}",
+      "history_other": "{{count, number}} keer · sinds {{date}}",
+      "selected_one": "{{count, number}} geselecteerd",
+      "selected_other": "{{count, number}} geselecteerd",
+      "shiftHint": "Shift+klik om een reeks te selecteren",
+      "creating": "Aanmaken…",
+      "create_one": "{{count, number}} terugkerende transactie aanmaken",
+      "create_other": "{{count, number}} terugkerende transacties aanmaken",
+      "createEmpty": "Terugkerende transacties aanmaken",
+      "describe": {
+        "weekly": "Elke week op {{day}}",
+        "weeklyApprox": "Elke week op {{day}} (circa)",
+        "biweekly": "Om de 2 weken op {{day}}",
+        "biweeklyApprox": "Om de 2 weken op {{day}} (circa)",
+        "monthlyLast": "Elke maand op de laatste dag",
+        "monthlyLastApprox": "Elke maand op de laatste dag (circa)",
+        "monthlyDay_ordinal_other": "Elke maand op de {{count}}e",
+        "monthlyDayApprox_ordinal_other": "Elke maand op de {{count}}e (circa)"
+      }
+    },
+    "form": {
+      "titleEdit": "Terugkerende transactie bewerken",
+      "titleAdd": "Terugkerende transactie toevoegen",
+      "name": "Naam",
+      "namePlaceholder": "bijv. Netflix, Huur, Salaris…",
+      "amount": "Bedrag",
+      "estimatedAmount": "Geschat bedrag",
+      "type": "Type",
+      "expense": "Uitgave",
+      "income": "Inkomsten",
+      "precision": "Nauwkeurigheid van het bedrag",
+      "amountTypes": {
+        "exact": "Exact",
+        "approximate": "Circa",
+        "variable": "Wisselend"
+      },
+      "variableHint": "Het bedrag is een schatting: het wordt gebruikt voor prognoses en het koppelen van transacties, niet als exacte verwachting.",
+      "frequency": "Frequentie",
+      "account": "Rekening",
+      "noAccount": "Geen rekening",
+      "startDate": "Startdatum",
+      "startDateLabel": "Startdatum",
+      "endDate": "Einddatum <optional>(optioneel)</optional>",
+      "endDateLabel": "Einddatum",
+      "payee": "Tegenpartij <optional>(optioneel)</optional>",
+      "payeeLabel": "Tegenpartij",
+      "category": "Categorie",
+      "notes": "Notities <optional>(optioneel)</optional>",
+      "notesLabel": "Notities",
+      "notesPlaceholder": "Optionele notities…",
+      "autoCreate": "Transacties automatisch aanmaken",
+      "advancedOpen": "▾ Geavanceerd",
+      "advancedClosed": "▸ Geavanceerd",
+      "weekendAdjustment": "Weekendcorrectie",
+      "weekendAdjustmentLabel": "Weekendcorrectie",
+      "weekendOptions": {
+        "none": "Geen",
+        "before": "Vóór het weekend",
+        "after": "Na het weekend",
+        "closest": "Dichtstbijzijnde werkdag"
+      },
+      "dateFlexibility": "Datumspeling <hint>(± dagen voor het koppelen)</hint>",
+      "dateFlexibilityLabel": "Datumspeling",
+      "saveChanges": "Wijzigingen opslaan",
+      "add": "Terugkerende transactie toevoegen"
+    },
+    "undo": {
+      "create": "Terugkerende transactie \"{{name}}\" aanmaken",
+      "edit": "Terugkerende transactie bewerken",
+      "cancel": "Terugkerende transactie \"{{name}}\" stopzetten",
+      "markPaid": "Als betaald markeren"
+    },
+    "page": {
+      "title": "Terugkerend",
+      "tabs": {
+        "monthly": "Per maand",
+        "all": "Alle"
+      }
+    },
+    "monthly": {
+      "income": "Inkomsten",
+      "expenses": "Uitgaven",
+      "remaining": "over",
+      "incomeSummary": "{{paid}} ontvangen van {{total}}",
+      "expensesSummary": "{{paid}} betaald van {{total}}",
+      "none": "Geen deze maand",
+      "columns": {
+        "date": "Datum",
+        "account": "Rekening",
+        "status": "Status",
+        "amount": "Bedrag"
+      },
+      "previousMonth": "Vorige maand",
+      "nextMonth": "Volgende maand",
+      "today": "Vandaag",
+      "views": {
+        "list": "Lijst",
+        "calendar": "Kalender"
+      },
+      "empty": {
+        "title": "Houd je vaste lasten, abonnementen en salaris bij",
+        "description": "Bekijk per maand wat je nog moet betalen en wat al betaald is. Voeg ze een voor een toe, of laat FlyBudget ze zoeken in de transacties die je al hebt."
+      },
+      "emptyMonth": {
+        "title": "Geen terugkerende transacties deze maand",
+        "description": "Voor deze maand staat niets gepland."
+      }
+    }
+  },
+  "reports": {
+    "builder": {
+      "title": "Eigen rapport",
+      "export": "Exporteren",
+      "update": "Bijwerken",
+      "sections": {
+        "chartType": "Grafiektype",
+        "mode": "Weergave",
+        "groupBy": "Groeperen op",
+        "balanceType": "Bedragen",
+        "dateRange": "Periode",
+        "accounts": "Rekeningen",
+        "categories": "Categorieën"
+      },
+      "modes": {
+        "total": "Totaal",
+        "time": "Verloop"
+      },
+      "groupByLabel": "Groeperen op",
+      "groupBy": {
+        "category": "Categorie",
+        "categoryGroup": "Categoriegroep",
+        "payee": "Tegenpartij",
+        "account": "Rekening",
+        "month": "Maand"
+      },
+      "balanceTypes": {
+        "expense": "Uitgaven",
+        "income": "Inkomsten",
+        "net": "Resultaat"
+      },
+      "frozen": "Vastgezet: deze datums blijven staan.",
+      "live": "Meebewegend: schuift mee met de huidige maand."
+    },
+    "chartType": {
+      "types": {
+        "bar": "Staaf",
+        "stackedBar": "Gestapeld",
+        "line": "Lijn",
+        "area": "Vlak",
+        "donut": "Donut",
+        "table": "Tabel"
+      },
+      "onlyIn": {
+        "total": "{{chart}} is alleen beschikbaar in de weergave 'Totaal'",
+        "time": "{{chart}} is alleen beschikbaar in de weergave 'Verloop'"
+      }
+    },
+    "detail": {
+      "noData": "Geen gegevens voor deze periode.",
+      "showAll": "Alle {{count, number}} tonen",
+      "exportCsv": "CSV exporteren",
+      "columns": {
+        "month": "Maand",
+        "income": "Inkomsten",
+        "expenses": "Uitgaven",
+        "net": "Resultaat",
+        "transactions": "Transacties",
+        "assets": "Bezittingen",
+        "liabilities": "Schulden",
+        "netWorth": "Nettovermogen",
+        "change": "Verschil",
+        "savingsRate": "Spaarquote",
+        "category": "Categorie",
+        "group": "Groep",
+        "spent": "Uitgegeven",
+        "monthlyAverage": "Gemiddeld per maand",
+        "share": "Aandeel",
+        "highestMonth": "Hoogste maand",
+        "shareOfAll": "Aandeel in alle uitgaven",
+        "payee": "Tegenpartij",
+        "account": "Rekening",
+        "amount": "Bedrag",
+        "date": "Datum",
+        "moneyIn": "Geld erbij",
+        "moneyOut": "Geld eraf"
+      },
+      "footer": {
+        "total": "Totaal",
+        "monthlyAverage": "Gemiddeld per maand"
+      },
+      "stats": {
+        "netWorth": "Nettovermogen",
+        "change": "Verschil",
+        "assets": "Bezittingen",
+        "liabilities": "Schulden",
+        "income": "Inkomsten",
+        "expenses": "Uitgaven",
+        "netSavings": "Gespaard",
+        "savingsRate": "Spaarquote",
+        "totalSpent": "Totaal uitgegeven",
+        "monthlyAverage": "Gemiddeld per maand",
+        "biggestCategory": "Grootste categorie",
+        "categories": "Categorieën",
+        "shareOfAll": "Aandeel in alle uitgaven",
+        "moneyIn": "Geld erbij",
+        "moneyOut": "Geld eraf",
+        "net": "Resultaat",
+        "dailyAverageOut": "Gemiddeld eraf per dag",
+        "overDays_one": "Periode van {{count, number}} dag",
+        "overDays_other": "Periode van {{count, number}} dagen"
+      },
+      "summary": {
+        "chartTitle": "Uitgaven per maand",
+        "chartSubtitle": "Uitgaven na aftrek van terugbetalingen, afgezet tegen het maandgemiddelde",
+        "tableTitle": "Overzicht per maand"
+      },
+      "netWorth": {
+        "chartTitle": "Nettovermogen in de tijd",
+        "chartSubtitle": "Bezittingen min schulden",
+        "tableTitle": "Saldo's aan het eind van de maand"
+      },
+      "incomeExpenses": {
+        "chartTitle": "Inkomsten en uitgaven",
+        "chartSubtitle": "Geld erbij en eraf per maand",
+        "tableTitle": "Overzicht per maand"
+      },
+      "spending": {
+        "chartTitle": "Uitgaven per categorie",
+        "chartTitleTop": "Top 10 categorieën",
+        "chartSubtitleTop": "Alle categorieën staan in de tabel hieronder",
+        "tableTitle": "Alle categorieën"
+      },
+      "trends": {
+        "chartTitle": "Uitgaven in de tijd",
+        "biggest_one": "Je grootste uitgavencategorie in deze periode",
+        "biggest_other": "Je {{count, number}} grootste uitgavencategorieën in deze periode",
+        "chosen_one": "{{count, number}} gekozen categorie",
+        "chosen_other": "{{count, number}} gekozen categorieën",
+        "tableTitle": "Per categorie",
+        "deletedCategory": "Verwijderde categorie",
+        "picker": "Categorieën ({{count, number}})",
+        "pickBiggest": "Grootste categorieën",
+        "pickBiggestHint": "De {{count, number}} met de meeste uitgaven in de gekozen periode",
+        "pickUpTo": "Of kies er maximaal {{count, number}}"
+      },
+      "calendar": {
+        "chartTitle": "Transactiekalender",
+        "chartSubtitleNet": "Elke dag is gekleurd naar het nettobedrag: groen als er meer bij kwam, rood als er meer af ging. Klik op een dag om de transacties te zien.",
+        "chartSubtitle": "Groen is geld erbij, rood is geld eraf. Klik op een dag om de transacties te zien.",
+        "tableTitle": "Dagen met transacties"
+      },
+      "day": {
+        "count_one": "{{count, number}} transactie",
+        "count_other": "{{count, number}} transacties",
+        "moneyIn": "· {{amount}} erbij",
+        "moneyOut": "· {{amount}} eraf",
+        "noPayee": "Geen tegenpartij",
+        "split": "Gesplitst ({{count, number}})",
+        "uncategorized": "Zonder categorie"
+      }
+    },
+    "pickers": {
+      "allSelected": "Alles geselecteerd",
+      "selectAll": "Alles selecteren",
+      "groupCategories": "Categorieën in {{name}}"
+    },
+    "saved": {
+      "list": "Opgeslagen rapporten",
+      "modal": {
+        "save": "Rapport opslaan",
+        "update": "Rapport bijwerken",
+        "name": "Rapportnaam",
+        "nameLabel": "Rapportnaam",
+        "placeholder": "bijv. Maandelijkse uitgaven per tegenpartij",
+        "updateButton": "Bijwerken"
+      },
+      "undo": {
+        "create": "Rapport \"{{name}}\" aanmaken",
+        "edit": "Rapport bewerken",
+        "delete": "Rapport \"{{name}}\" verwijderen"
+      }
+    },
+    "table": {
+      "name": "Naam",
+      "amount": "Bedrag",
+      "total": "Totaal",
+      "month": "Maand"
+    },
+    "page": {
+      "title": "Rapporten",
+      "editLayout": "Indeling aanpassen",
+      "customReport": "Eigen rapport",
+      "dateRange": "Periode",
+      "ownRange_one": "{{count, number}} widget houdt zijn eigen periode aan",
+      "ownRange_other": "{{count, number}} widgets houden hun eigen periode aan",
+      "empty": {
+        "title": "Dit dashboard is leeg",
+        "description": "Voeg grafieken toe, zoals nettovermogen, uitgaventrends of een transactiekalender, of maak je eigen rapport en zet het hier vast."
+      }
+    },
+    "dashboard": {
+      "new": "Nieuw dashboard",
+      "name": "Naam van het dashboard",
+      "namePlaceholder": "bijv. Jaaroverzicht",
+      "create": "Aanmaken",
+      "renameMenu": "Dashboard hernoemen…",
+      "renameTitle": "Dashboard hernoemen",
+      "rename": "Hernoemen",
+      "delete": "Dashboard verwijderen",
+      "deleteMessage": "\"{{name}}\" en de bijbehorende widgets verwijderen? Opgeslagen eigen rapporten blijven bewaard.",
+      "addWidget": "Widget toevoegen",
+      "builtinReports": "Rapporten",
+      "customReports": "Eigen rapporten",
+      "newCustomReport": "Nieuw eigen rapport…"
+    },
+    "widget": {
+      "open": "Openen",
+      "editReport": "Rapport bewerken",
+      "renameMenu": "Hernoemen…",
+      "dateRangeMenu": "Periode…",
+      "freeze": "Datums vastzetten",
+      "unfreeze": "Losmaken",
+      "useDashboardRange": "Periode van dashboard gebruiken",
+      "moveTo": "Verplaatsen naar {{name}}",
+      "remove": "Van dashboard verwijderen",
+      "frozen": "Vastgezet",
+      "ownRange": "Eigen periode",
+      "renameTitle": "Widget hernoemen",
+      "name": "Naam",
+      "rename": "Hernoemen",
+      "rangeModal": {
+        "title": "Periode",
+        "follow": "Dashboard volgen",
+        "ownHint": "Negeert de periode van het dashboard",
+        "frozenNote": "Vastgezet: deze widget blijft deze maanden tonen.",
+        "liveNote": "Meebewegend: deze widget schuift mee met de huidige maand."
+      },
+      "view": {
+        "dashboard": "Dashboard",
+        "saveHint": "Deze instellingen tonen in de widget op het dashboard",
+        "save": "Opslaan in widget",
+        "notSaved": "Niet opgeslagen: de widget op het dashboard is ongewijzigd",
+        "following": "Volgt het dashboard ({{range}})",
+        "keepsDates": "Deze widget houdt deze datums aan",
+        "ownRange": "Deze widget heeft een eigen periode"
+      },
+      "undo": {
+        "edit": "Rapportwidget bewerken",
+        "remove": "Rapportwidget verwijderen"
+      }
+    },
+    "builtin": {
+      "summary": {
+        "label": "Samenvatting",
+        "description": "Inkomsten, uitgaven en maandgemiddelden",
+        "totalIncome": "Totale inkomsten",
+        "totalExpenses": "Totale uitgaven",
+        "avgMonthly": "Gem. uitgaven per maand",
+        "avgPerTransaction": "Gem. per transactie"
+      },
+      "netWorth": {
+        "label": "Nettovermogen",
+        "description": "Bezittingen, schulden en nettovermogen in de tijd"
+      },
+      "incomeExpenses": {
+        "label": "Inkomsten en uitgaven",
+        "description": "Geld erbij en geld eraf per maand"
+      },
+      "spending": {
+        "label": "Uitgaven per categorie",
+        "description": "Waar je geld naartoe ging, per categorie"
+      },
+      "spendingTrends": {
+        "label": "Uitgaventrends",
+        "description": "Hoe de uitgaven in je grootste categorieën zich in de tijd ontwikkelen",
+        "biggest_one": "Grootste uitgavencategorie",
+        "biggest_other": "{{count, number}} grootste uitgavencategorieën"
+      },
+      "calendar": {
+        "label": "Transactiekalender",
+        "description": "Geld erbij en eraf per dag"
+      }
+    },
+    "charts": {
+      "netWorth": {
+        "netWorth": "Nettovermogen",
+        "assets": "Bezittingen",
+        "liabilities": "Schulden",
+        "netWorthValue": "Nettovermogen: {{amount}}",
+        "assetsValue": "Bezittingen: {{amount}}",
+        "liabilitiesValue": "Schulden: {{amount}}"
+      },
+      "income": "Inkomsten",
+      "expenses": "Uitgaven",
+      "net": "Resultaat",
+      "spent": "Uitgegeven",
+      "total": "Totaal",
+      "monthlyAverage": "Gemiddeld per maand",
+      "average": "Gem. {{amount}}",
+      "uncategorized": "Zonder categorie",
+      "deletedCategory": "Verwijderde categorie",
+      "runningTotal": "Lopend totaal deze maand",
+      "captionRunningTotal": "{{caption}} · lopend totaal",
+      "seriesValue": "{{name}}: {{amount}}",
+      "shareOf": "{{percent}}% van {{total}}",
+      "empty": {
+        "message": "Geen gegevens voor deze periode",
+        "hint": "Voeg transacties toe of kies een langere periode."
+      }
+    },
+    "calendar": {
+      "dayLabel": "{{day}}: {{income}} erbij, {{expenses}} eraf",
+      "moreOut": "Meer eraf",
+      "moreIn": "Meer erbij",
+      "in": "Erbij: {{amount}}",
+      "out": "Eraf: {{amount}}",
+      "net": "Resultaat: {{amount}}",
+      "transactions_one": "{{count, number}} transactie",
+      "transactions_other": "{{count, number}} transacties",
+      "noTransactions": "Geen transacties"
+    }
+  },
+  "rules": {
+    "title": "Regels",
+    "hint": "Regels worden van boven naar beneden uitgevoerd op nieuwe en geïmporteerde transacties. Elke regel die overeenkomt, wordt toegepast, en een regel hoger in de lijst wint als twee regels hetzelfde instellen.",
+    "search": "Regels zoeken…",
+    "run": "Regels uitvoeren",
+    "add": "Regel toevoegen",
+    "noMatches": "Geen regels gevonden voor je zoekopdracht.",
+    "empty": {
+      "title": "Laat regels het sorteerwerk doen",
+      "description": "Regels categoriseren, hernoemen en splitsen transacties voor je zodra ze binnenkomen, bijvoorbeeld “tegenpartij bevat Netflix → Streaming”. Je kunt ook een regel maken vanuit een transactie.",
+      "add": "Je eerste regel toevoegen"
+    },
+    "count": {
+      "filtered_one": "{{shown, number}} van {{count, number}} regel",
+      "filtered_other": "{{shown, number}} van {{count, number}} regels",
+      "summary": "{{rules}} · {{enabled}}",
+      "rules_one": "{{count, number}} regel",
+      "rules_other": "{{count, number}} regels",
+      "enabled_one": "{{count, number}} ingeschakeld",
+      "enabled_other": "{{count, number}} ingeschakeld"
+    },
+    "row": {
+      "enable": "Regel inschakelen",
+      "disable": "Regel uitschakelen",
+      "enabled": "Ingeschakeld",
+      "disabled": "Uitgeschakeld",
+      "if": "Als",
+      "then": "Dan",
+      "and": "en",
+      "or": "of",
+      "everyTransaction": "Elke transactie",
+      "actions": "Regelacties",
+      "edit": "Bewerken",
+      "duplicate": "Dupliceren",
+      "apply": "Toepassen op bestaande transacties",
+      "moveUp": "Omhoog",
+      "moveDown": "Omlaag"
+    },
+    "delete": {
+      "title": "Regel verwijderen",
+      "message": "Deze regel verwijderen? Transacties die hij al heeft gewijzigd, blijven zoals ze zijn."
+    },
+    "editor": {
+      "newTitle": "Nieuwe regel",
+      "editTitle": "Regel bewerken",
+      "duplicateTitle": "Regel dupliceren",
+      "match": "<strong>Als</strong> aan <choice></choice> voorwaarden is voldaan",
+      "matchLabel": "Hoe voorwaarden worden gecombineerd",
+      "matchAll": "alle",
+      "matchAny": "een van de",
+      "noConditions": "Geen voorwaarden: deze regel geldt voor elke transactie.",
+      "addCondition": "Voorwaarde toevoegen",
+      "then": "Dan",
+      "addAction": "Actie toevoegen",
+      "applyAfterSave": "Na opslaan toepassen op bestaande transacties",
+      "saving": "Opslaan…",
+      "save": "Regel opslaan",
+      "field": "Veld",
+      "operator": "Operator",
+      "removeCondition": "Voorwaarde verwijderen",
+      "rangeAnd": "en",
+      "chooseMany": "Kies een of meer…",
+      "chooseOne": "Kies…",
+      "regexExample": "bijv. ^(ah|albert heijn)",
+      "text": "Tekst…",
+      "removeValue": "{{value}} verwijderen",
+      "addValue": "Typ en druk op Enter…",
+      "action": "Actie",
+      "chooseCategory": "Kies een categorie…",
+      "choosePayee": "Kies of maak een tegenpartij…",
+      "clearNotesHint": "Laat leeg om de notities te wissen",
+      "notesExample": "bijv. #zakelijk",
+      "splitHint": "Splitst de transactie in delen, elk met een eigen categorie.",
+      "removeAction": "Actie verwijderen"
+    },
+    "split": {
+      "kind": "Type splitsingsbedrag",
+      "kinds": {
+        "fixed": "Bedrag",
+        "percent": "Percentage",
+        "remainder": "Restant"
+      },
+      "whatsLeft": "Wat overblijft",
+      "category": "Categorie…",
+      "notes": "Notities",
+      "remove": "Splitsing verwijderen",
+      "add": "Splitsing toevoegen",
+      "over100": "De percentages tellen op tot meer dan 100%.",
+      "leftover": "Wat overblijft, blijft zonder categorie."
+    },
+    "preview": {
+      "incomplete": "Vul elke voorwaarde in om overeenkomende transacties te zien",
+      "checking": "Controleren…",
+      "none": "Nog geen transacties die overeenkomen",
+      "matches_one": "Komt overeen met {{count, number}} transactie",
+      "matches_other": "Komt overeen met {{count, number}} transacties",
+      "latest_one": "{{matches}} · de laatste {{count, number}} getoond",
+      "latest_other": "{{matches}} · de laatste {{count, number}} getoond",
+      "updating": "bijwerken…"
+    },
+    "apply": {
+      "runTitle": "Regels uitvoeren",
+      "ruleTitle": "Regel toepassen op bestaande transacties",
+      "updated_one": "<strong>{{count, number}}</strong> transactie bijgewerkt.",
+      "updated_other": "<strong>{{count, number}}</strong> transacties bijgewerkt.",
+      "scope": "Welke transacties",
+      "scopes": {
+        "uncategorized": "Alleen zonder categorie",
+        "all": "Alle transacties"
+      },
+      "neverChanged": "Afgestemde transacties, overboekingen en gesplitste transacties worden nooit gewijzigd.",
+      "checking": "Transacties controleren…",
+      "nothing": {
+        "uncategorized": "Niets te wijzigen: er zou geen transactie zonder categorie worden bijgewerkt.",
+        "all": "Niets te wijzigen: er zou geen transactie worden bijgewerkt."
+      },
+      "selectAll": "Alles selecteren",
+      "columns": {
+        "date": "Datum",
+        "payee": "Tegenpartij",
+        "amount": "Bedrag",
+        "changes": "Wijzigingen"
+      },
+      "include": "Deze transactie meenemen",
+      "applying": "Toepassen…",
+      "apply_one": "Toepassen op {{count, number}} transactie",
+      "apply_other": "Toepassen op {{count, number}} transacties",
+      "changes": {
+        "payee": "Tegenpartij",
+        "category": "Categorie",
+        "notes": "Notities",
+        "split": "Splitsing",
+        "empty": "(leeg)"
+      }
+    },
+    "picker": {
+      "select": "Selecteren…",
+      "search": "Zoeken…",
+      "noMatches": "Geen resultaten"
+    },
+    "names": {
+      "deleted": "(verwijderd)",
+      "uncategorized": "Zonder categorie"
+    },
+    "fields": {
+      "payee": "Tegenpartij",
+      "payee_name": "Naam tegenpartij",
+      "imported_payee": "Geïmporteerde omschrijving",
+      "notes": "Notities",
+      "amount": "Bedrag",
+      "direction": "Bij / af",
+      "category": "Categorie",
+      "account": "Rekening",
+      "date": "Datum"
+    },
+    "fieldHints": {
+      "payee_name": "De naam van de tegenpartij zoals die op de transactie staat",
+      "imported_payee": "De oorspronkelijke tekst van je bank of csv, vóór eventuele hernoeming",
+      "amount": "Vergelijkt het bedrag zonder plus- of mintekens; voeg \"{{direction}}\" toe om ze te onderscheiden"
+    },
+    "direction": {
+      "inflow": "Is een bijschrijving",
+      "outflow": "Is een afschrijving"
+    },
+    "ops": {
+      "is": "is",
+      "is_not": "is niet",
+      "contains": "bevat",
+      "not_contains": "bevat niet",
+      "starts_with": "begint met",
+      "ends_with": "eindigt op",
+      "regex": "komt overeen met regex",
+      "one_of": "is een van",
+      "not_one_of": "is geen van",
+      "is_empty": "is leeg",
+      "is_not_empty": "is niet leeg",
+      "gt": "is meer dan",
+      "gte": "is minstens",
+      "lt": "is minder dan",
+      "lte": "is hoogstens",
+      "between": "ligt tussen",
+      "approx": "is ongeveer",
+      "before": "is vóór",
+      "after": "is na",
+      "isOn": "valt op",
+      "isUncategorized": "heeft geen categorie",
+      "isCategorized": "heeft een categorie"
+    },
+    "actionTypes": {
+      "set_category": "Categorie instellen",
+      "set_payee": "Tegenpartij hernoemen",
+      "set_notes": "Notities instellen",
+      "prepend_notes": "Tekst vóór de notities toevoegen",
+      "append_notes": "Tekst na de notities toevoegen",
+      "split": "Transactie splitsen"
+    },
+    "summary": {
+      "quoted": "\"{{text}}\"",
+      "condition": {
+        "is": "{{field}} is {{value}}",
+        "is_not": "{{field}} is niet {{value}}",
+        "contains": "{{field}} bevat {{value}}",
+        "not_contains": "{{field}} bevat niet {{value}}",
+        "starts_with": "{{field}} begint met {{value}}",
+        "ends_with": "{{field}} eindigt op {{value}}",
+        "regex": "{{field}} komt overeen met regex {{value}}",
+        "one_of": "{{field}} is een van {{value}}",
+        "not_one_of": "{{field}} is geen van {{value}}",
+        "is_empty": "{{field}} is leeg",
+        "is_not_empty": "{{field}} is niet leeg",
+        "gt": "{{field}} is meer dan {{value}}",
+        "gte": "{{field}} is minstens {{value}}",
+        "lt": "{{field}} is minder dan {{value}}",
+        "lte": "{{field}} is hoogstens {{value}}",
+        "between": "{{field}} ligt tussen {{from}} en {{to}}",
+        "approx": "{{field}} is ongeveer {{value}}",
+        "before": "{{field}} is vóór {{value}}",
+        "after": "{{field}} is na {{value}}",
+        "isOn": "{{field}} valt op {{value}}",
+        "isUncategorized": "{{field}} heeft geen categorie",
+        "isCategorized": "{{field}} heeft een categorie"
+      },
+      "action": {
+        "setCategory": "Categorie instellen op {{category}}",
+        "setPayee": "Tegenpartij hernoemen naar {{payee}}",
+        "setNotes": "Notities instellen op \"{{text}}\"",
+        "clearNotes": "Notities wissen",
+        "prependNotes": "\"{{text}}\" vóór de notities toevoegen",
+        "appendNotes": "\"{{text}}\" na de notities toevoegen",
+        "split": "Splitsen: {{parts}}",
+        "splitPart": "{{amount}} naar {{category}}",
+        "splitRest": "de rest naar {{category}}",
+        "uncategorized": "zonder categorie"
+      }
+    },
+    "undo": {
+      "create": "Regel aanmaken",
+      "edit": "Regel bewerken",
+      "enable": "Regel inschakelen",
+      "disable": "Regel uitschakelen",
+      "delete": "Regel verwijderen",
+      "reorder": "Volgorde van regels wijzigen"
+    }
+  },
+  "settings": {
+    "title": "Instellingen",
+    "tabs": {
+      "categories": "Categorieën",
+      "accounts": "Rekeningen",
+      "connections": "Gekoppelde banken",
+      "currencies": "Valuta's",
+      "data": "Gegevens",
+      "preferences": "Voorkeuren",
+      "server": "Server"
+    },
+    "footer": "FlyBudget is vrije software onder de <license>GNU AGPL v3</license>. <repo>Broncode</repo>",
+    "data": {
+      "title": "Gegevens exporteren",
+      "hint": "Download je gegevens voor een back-up of voor analyse.",
+      "export": {
+        "title": "Transacties exporteren",
+        "hint": "Download alle transacties als csv-bestand. Filter eventueel op periode.",
+        "formatComma": "Bedragen worden geschreven als -12,50, met puntkomma's tussen de kolommen, volgens je getalnotatie bij <preferences>Voorkeuren</preferences>. Rapportexports gebruiken hetzelfde scheidingsteken.",
+        "formatDot": "Bedragen worden geschreven als -12.50, met komma's tussen de kolommen, volgens je getalnotatie bij <preferences>Voorkeuren</preferences>. Rapportexports gebruiken hetzelfde scheidingsteken.",
+        "from": "Van",
+        "to": "Tot",
+        "download": "CSV downloaden"
+      },
+      "backup": {
+        "title": "Volledige back-up",
+        "hint": "Download een complete JSON-back-up van al je gegevens: rekeningen, transacties, budgetten, categorieën, tegenpartijen, regels, terugkerende transacties, doelen, rapporten en dashboards. Inloggegevens van bankkoppelingen zijn niet inbegrepen.",
+        "download": "Back-up downloaden"
+      },
+      "restore": {
+        "title": "Back-up terugzetten",
+        "hint": "Vervang al je gegevens door een back-upbestand. Eerst wordt een kopie van je huidige gegevens bewaard.",
+        "file": "Back-upbestand",
+        "choose": "Back-up terugzetten…",
+        "restoring": "Terugzetten…",
+        "notBackup": "{{name}} is geen FlyBudget-back-upbestand.",
+        "failed": "Terugzetten mislukt",
+        "restored_one": "{{name}} teruggezet ({{count, number}} transactie).",
+        "restored_other": "{{name}} teruggezet ({{count, number}} transacties).",
+        "safetyCopy": "Je vorige gegevens zijn bewaard als {{file}}, naast de database.",
+        "confirmTitle": "Deze back-up terugzetten?",
+        "confirmMessage": "Al je huidige gegevens worden vervangen door de inhoud van {{name}}. Bankkoppelingen blijven gekoppeld.",
+        "confirm": "Mijn gegevens vervangen"
+      }
+    },
+    "preferences": {
+      "title": "Voorkeuren",
+      "saved": "Instellingen worden automatisch in je browser opgeslagen.",
+      "savedDemo": "Instellingen blijven in dit tabblad bewaard zolang je de demo uitprobeert.",
+      "reset": {
+        "button": "Standaardwaarden herstellen",
+        "title": "Voorkeuren herstellen",
+        "message": "Weet je zeker dat je alle voorkeuren wilt terugzetten naar de standaardwaarden?",
+        "confirm": "Herstellen"
+      },
+      "language": {
+        "title": "Taal",
+        "automatic": "Automatisch ({{language}})",
+        "hint": "Automatisch gebruikt de taal van je apparaat als FlyBudget die heeft, anders Engels."
+      },
+      "theme": {
+        "title": "Thema",
+        "light": "Licht",
+        "dark": "Donker",
+        "system": "Systeem"
+      },
+      "sidebar": {
+        "title": "Zijbalk",
+        "pinned": "Vastgezet",
+        "pinnedHint": "Altijd open",
+        "autoHide": "Automatisch verbergen",
+        "autoHideHint": "Ingeklapt, opent bij aanwijzen"
+      },
+      "icons": {
+        "title": "Pictogrammen",
+        "merchant": "Tegenpartij",
+        "merchantHint": "Logo's van tegenpartijen (of gekleurde initialen) naast hun namen",
+        "category": "Categorie",
+        "categoryHint": "Emoji-pictogrammen naast categorienamen",
+        "account": "Rekening",
+        "accountHint": "Logo's van rekeningen (of gekleurde initialen) naast rekeningnamen",
+        "show": "Tonen",
+        "hide": "Verbergen"
+      },
+      "amounts": {
+        "title": "Bedragen",
+        "hint": "Hoe bedragen worden getoond en ingetypt op dit apparaat. Automatisch volgt de taal van je apparaat. Je kunt altijd 12,50 of 12.50 typen.",
+        "numberFormat": "Getalnotatie",
+        "automatic": "Automatisch",
+        "symbolPosition": "Positie van het valutasymbool",
+        "currencySymbol": "Valutasymbool",
+        "currencySymbolFor": "Symbool voor {{currency}}",
+        "position": {
+          "auto": "Automatisch",
+          "before": "Ervoor",
+          "after": "Erachter"
+        },
+        "automaticHint": "Automatisch schrijft het bedrag zoals gebruikelijk is voor {{currency}}. Symbolen van andere valuta's staan bij <currencies>Valuta's</currencies>.",
+        "symbolHint": "Maximaal 3 tekens (bijv. $, €, EUR, kr). Of kies de valuta van je budget bij <currencies>Valuta's</currencies>.",
+        "example": "Voorbeeld:"
+      },
+      "dateFormat": {
+        "title": "Datumnotatie"
+      }
+    },
+    "accounts": {
+      "title": "Volgorde van rekeningen",
+      "hint": "Sleep om rekeningen in de zijbalk te ordenen.",
+      "empty": "Nog geen rekeningen. Voeg er een toe via de pagina Rekeningen.",
+      "onBudget": "In budget",
+      "offBudget": "Buiten budget"
+    },
+    "connections": {
+      "title": "Gekoppelde banken",
+      "hint": "Importeer transacties automatisch van je bank.",
+      "europeanBanks": "Europese banken",
+      "synced_one": "Synchronisatie met {{provider}} voltooid: {{count, number}} nieuwe transactie geïmporteerd.",
+      "synced_other": "Synchronisatie met {{provider}} voltooid: {{count, number}} nieuwe transacties geïmporteerd.",
+      "syncing": "Synchroniseren...",
+      "syncAll": "Alles synchroniseren",
+      "addAnotherBank": "Nog een bank toevoegen",
+      "addAnotherConnection": "Nog een koppeling toevoegen",
+      "noBanks": "Nog geen banken gekoppeld via {{provider}}.",
+      "connectBank": "Bank koppelen",
+      "configuration": "Configuratie van {{provider}}",
+      "plaidHint": "Voer je Plaid API-gegevens in om bankkoppelingen in te schakelen.",
+      "simplefinHint": "Voer je SimpleFIN-setup-token in om bankkoppelingen in te schakelen.",
+      "enableBankingHint": "Europese banken (EER), via PSD2. Gratis met je eigen Enable Banking-applicatie, voor je eigen rekeningen.",
+      "enableBankingApp": "Enable Banking-applicatie"
+    },
+    "server": {
+      "version": "Versie {{version}}",
+      "local": {
+        "title": "Waar je gegevens staan",
+        "demo": "In deze browser (demo)",
+        "demoHint": "Deze demo draait volledig in je browser: wat je wijzigt wordt nergens naartoe gestuurd of opgeslagen. In de app is je budget een bestand op je computer of op een server die je zelf beheert.",
+        "computer": "Op deze computer",
+        "computerHint": "Je budget is een bestand op deze computer en FlyBudget praat er alleen mee via de eigen lokale server. Er wordt niets naar FlyBudget of anderen gestuurd; bij het synchroniseren van banken wordt alleen contact gemaakt met Plaid, SimpleFIN of Enable Banking als je een bank koppelt."
+      },
+      "selfHost": {
+        "title": "Gebruik FlyBudget op je telefoon en andere apparaten",
+        "hint": "Draai FlyBudget op een server die je zelf beheert, zoals een thuisserver of een kleine cloudserver, en log in vanuit elke browser. Je gegevens verhuizen naar die server; niemand anders host ze.",
+        "guide": "Lees de gids voor zelf hosten",
+        "backup": "Maak eerst een back-up"
+      },
+      "offline": {
+        "title": "Offline kopie",
+        "keep": "Bewaar een kopie van mijn budget op dit apparaat",
+        "hint": "Als FlyBudget de server niet kan bereiken, opent het met wat deze browser het laatst heeft geladen. Je kunt alles bekijken en nieuwe transacties toevoegen; die worden verstuurd zodra de verbinding terug is. De kopie wordt verwijderd als je uitlogt. Zet dit uit op een gedeelde computer.",
+        "waiting_one": "{{count, number}} transactie die op dit apparaat is opgeslagen, wacht om verstuurd te worden.",
+        "waiting_other": "{{count, number}} transacties die op dit apparaat zijn opgeslagen, wachten om verstuurd te worden."
+      },
+      "security": {
+        "title": "Beveiligingscontrole",
+        "checking": "Je server wordt gecontroleerd…",
+        "allGood": "Alles ziet er goed uit voor de manier waarop je zojuist verbonden bent.",
+        "warnings_one": "{{count, number}} punt om naar te kijken. Elk punt los je op met een instelling in je docker-compose.yml.",
+        "warnings_other": "{{count, number}} punten om naar te kijken. Elk punt los je op met een instelling in je docker-compose.yml.",
+        "version": "Versie {{version}}.",
+        "passed": "In orde",
+        "warning": "Waarschuwing"
+      },
+      "checks": {
+        "httpsSecure": "Verbinding is versleuteld (HTTPS)",
+        "httpsLocal": "Verbonden vanaf dezelfde computer als de server",
+        "httpsMissing": "Geen HTTPS: wachtwoorden en gegevens worden onversleuteld verstuurd",
+        "httpsMissingFix": "Zet FlyBudget achter een reverse proxy met HTTPS (Caddy, Nginx, Traefik) of een vpn, en stel <env>FLYBUDGET_TRUST_PROXY</env> in.",
+        "trustProxyOk": "Reverse proxy-instellingen komen overeen met hoe je verbindt",
+        "trustProxyUntrusted": "Er staat een reverse proxy voor FlyBudget, maar die wordt niet vertrouwd",
+        "trustProxyUntrustedFix": "Stel <env>FLYBUDGET_TRUST_PROXY=1</env> in (het aantal proxy's voor FlyBudget) zodat HTTPS en clientadressen worden herkend.",
+        "trustProxyUnneeded": "FLYBUDGET_TRUST_PROXY is ingesteld, maar dit verzoek kwam zonder proxy",
+        "trustProxyUnneededFix": "Als je rechtstreeks verbindt, verwijder dan <env>FLYBUDGET_TRUST_PROXY</env>: anders kunnen clients hun adres vervalsen en de limiet op inlogpogingen omzeilen.",
+        "allowedHostsOk": "Antwoordt alleen op de adressen die je hebt toegestaan",
+        "allowedHostsMissing": "Antwoordt op elke hostnaam",
+        "allowedHostsMissingFix": "Stel <env>FLYBUDGET_ALLOWED_HOSTS</env> in op het adres dat je gebruikt, bijv. <env>FLYBUDGET_ALLOWED_HOSTS=budget.example.com</env>.",
+        "encryptionKeyOk": "Gegevens van bankkoppelingen worden versleuteld opgeslagen",
+        "encryptionKeyMissing": "Gegevens van bankkoppelingen worden niet versleuteld",
+        "encryptionKeyMissingFix": "Stel <env>FLYBUDGET_DATA_KEY_FILE</env> in op een bestand met een willekeurige sleutel (zie de gids voor zelf hosten).",
+        "passwordOk": "Een wachtwoord beschermt deze server",
+        "passwordMissing": "Er is nog geen wachtwoord ingesteld"
+      },
+      "devices": {
+        "title": "Ingelogde apparaten",
+        "hint": "Browsers die op deze server zijn ingelogd. Log uit op apparaten die je niet herkent en wijzig daarna het wachtwoord.",
+        "loadFailed": "De apparaten konden niet worden geladen.",
+        "thisDevice": "Dit apparaat",
+        "active": "Actief {{active}} · ingelogd {{signedIn}}",
+        "signedIn": "Ingelogd {{signedIn}}",
+        "signOut": "Uitloggen",
+        "signOutDevice": "{{name}} uitloggen",
+        "signOutOthers": "Alle andere apparaten uitloggen"
+      },
+      "password": {
+        "title": "Wachtwoord wijzigen",
+        "hint": "Dit wachtwoord beschermt je FlyBudget-server. Als je het wijzigt, worden alle andere apparaten uitgelogd.",
+        "current": "Huidig wachtwoord",
+        "new": "Nieuw wachtwoord",
+        "confirm": "Nieuw wachtwoord bevestigen",
+        "submit": "Wachtwoord wijzigen",
+        "tooShort_one": "Gebruik minimaal {{count, number}} teken.",
+        "tooShort_other": "Gebruik minimaal {{count, number}} tekens.",
+        "mismatch": "De nieuwe wachtwoorden komen niet overeen.",
+        "changed": "Wachtwoord gewijzigd. Andere apparaten zijn uitgelogd."
+      },
+      "signOut": {
+        "title": "Uitloggen",
+        "hint": "Log uit bij FlyBudget in deze browser.",
+        "button": "Uitloggen"
+      }
+    },
+    "currencies": {
+      "title": "Valuta's",
+      "hint": "Je budget heeft één valuta. Rekeningen kunnen elk een eigen valuta hebben: hun bedragen blijven in die valuta, en het budget en de rapporten rekenen ze om naar die van jou tegen de wisselkoers van de dag.",
+      "learnMore": "Hoe valuta's werken",
+      "budget": {
+        "title": "Budgetvaluta",
+        "hint": "De valuta waarin je budget, rapporten en nettovermogen worden berekend. Je kunt die corrigeren zolang geen enkele rekening in een andere valuta transacties heeft.",
+        "chooseHint": "Kies de valuta van je bedragen. Er wordt niets omgerekend: je legt alleen vast welke valuta het is, zodat je rekeningen in andere valuta's kunt toevoegen.",
+        "change": "Wijzigen",
+        "use": "Deze valuta gebruiken"
+      },
+      "values": {
+        "title": "Waarden in {{currency}}",
+        "missing_one": "Voor {{count, number}} transactie in {{currencies}} is er nog geen wisselkoers voor die dag, dus het budget telt die nog niet mee. Voeg hieronder een koers toe, of schakel downloaden in.",
+        "missing_other": "Voor {{count, number}} transacties in {{currencies}} is er nog geen wisselkoers voor die dagen, dus het budget telt ze nog niet mee. Voeg hieronder een koers toe, of schakel downloaden in.",
+        "hint": "Elke transactie in een andere valuta heeft een waarde in {{currency}}. Waarden blijven zoals ze waren als een koers verandert; bereken ze opnieuw na het corrigeren van een koers.",
+        "recalculate": "Opnieuw berekenen op basis van koersen",
+        "updated_one": "{{count, number}} waarde bijgewerkt.",
+        "updated_other": "{{count, number}} waarden bijgewerkt.",
+        "nothingToUpdate": "Niets bij te werken.",
+        "typedInStay": "Waarden die je zelf hebt ingevoerd blijven staan."
+      },
+      "rates": {
+        "title": "Wisselkoersen",
+        "hint": "Een dag zonder koers gebruikt de dichtstbijzijnde eerdere koers, tot een maand terug. Een koers die je zelf invoert gaat voor een gedownloade koers van die dag.",
+        "typedIn": "zelf ingevoerd",
+        "noRecentRate": "Geen koers in de afgelopen maand",
+        "currency": "Valuta",
+        "day": "Dag",
+        "rate": "1 {{currency}} in {{budget}}",
+        "add": "Koers toevoegen",
+        "invalid": "Voer de koers in als een positief getal, zoals 1,0812.",
+        "typedInTitle": "Koersen die je zelf hebt ingevoerd",
+        "delete": "De koers voor {{currency}} op {{date}} verwijderen"
+      },
+      "download": {
+        "title": "Koersen downloaden",
+        "hint": "De dagelijkse referentiekoersen van de Europese Centrale Bank, van {{host}} (Frankfurter, open source). Er worden alleen valutacodes en datums verstuurd, nooit iets over je budget. Staat uit totdat je het inschakelt; daarna wordt om de paar uur gecontroleerd.",
+        "notInDemo": "Niet beschikbaar in de demo: koersen kun je hierboven zelf invoeren.",
+        "enable": "ECB-referentiekoersen downloaden",
+        "downloading": "Downloaden…",
+        "now": "Nu downloaden",
+        "last": "Laatst gedownload {{date}}",
+        "never": "Nog niet gedownload",
+        "unsupported": "{{status}}. De ECB heeft geen koersen voor {{currencies}}: voer die zelf in.",
+        "server": "Server (optioneel, voor je eigen Frankfurter)",
+        "saveServer": "Server opslaan",
+        "hintNoServer": "De dagelijkse referentiekoersen van de Europese Centrale Bank, van de koersenserver (Frankfurter, open source). Er worden alleen valutacodes en datums verstuurd, nooit iets over je budget. Staat uit totdat je het inschakelt; daarna wordt om de paar uur gecontroleerd."
+      },
+      "display": {
+        "title": "Hoe bedragen worden geschreven",
+        "hint": "Op dit apparaat. Automatisch schrijft elke valuta zoals daar gebruikelijk is: 1 234,56 zł, $1,234.56, CHF 1'234.56 (de getalnotatie staat bij Voorkeuren). De positie van {{budget}} is die bij Voorkeuren.",
+        "symbol": "Symbool voor {{currency}}",
+        "position": "Positie van symbool voor {{currency}}",
+        "autoBefore": "Automatisch (ervoor)",
+        "autoAfter": "Automatisch (erachter)",
+        "before": "Ervoor",
+        "after": "Erachter"
+      }
+    },
+    "categories": {
+      "sections": {
+        "income": "Inkomsten",
+        "expense": "Uitgaven"
+      },
+      "createGroup": "Groep aanmaken",
+      "groupNamePlaceholder": "Groepsnaam...",
+      "addGroup": "Groep toevoegen",
+      "noGroups": "Nog geen groepen.",
+      "reorderGroup": "Sleep om de groep te verplaatsen",
+      "reorderCategory": "Sleep om {{name}} te verplaatsen",
+      "editCategory": "{{name}} bewerken",
+      "editGroup": "Bewerken",
+      "noCategories": "Nog geen categorieën.",
+      "pickIcon": "Pictogram kiezen",
+      "categoryNamePlaceholder": "Categorienaam...",
+      "addCategory": "Categorie toevoegen",
+      "createCategory": "Categorie aanmaken",
+      "deleteGroup": {
+        "title": "Groep verwijderen",
+        "message": "\"{{name}}\" en alle bijbehorende categorieën verwijderen? Dit kan niet ongedaan worden gemaakt."
+      },
+      "deleteEmpty": {
+        "title": "Categorie verwijderen",
+        "message": "\"{{name}}\" verwijderen? Dit kan niet ongedaan worden gemaakt."
+      },
+      "deleteModal": {
+        "title": "Categorie verwijderen",
+        "summary_one": "<name>{{name}}</name> heeft <count>{{count, number}}</count> transactie. Kies eerst naar welke categorie die moet.",
+        "summary_other": "<name>{{name}}</name> heeft <count>{{count, number}}</count> transacties. Kies eerst naar welke categorie die moeten.",
+        "allocations": "De gebudgetteerde bedragen van deze categorie worden verwijderd.",
+        "moveTo": "Transacties verplaatsen naar",
+        "select": "Kies een categorie...",
+        "confirm": "Verplaatsen en verwijderen"
+      },
+      "undo": {
+        "createGroup": "Groep \"{{name}}\" aanmaken",
+        "renameGroup": "Groep hernoemen",
+        "deleteGroup": "Groep \"{{name}}\" verwijderen",
+        "reorderGroups": "Volgorde van groepen wijzigen",
+        "createCategory": "Categorie \"{{name}}\" aanmaken",
+        "editCategory": "Categorie bewerken",
+        "reorderCategories": "Volgorde van categorieën wijzigen"
+      },
+      "edit": {
+        "title": "Categorie bewerken",
+        "iconAndName": "Pictogram en naam",
+        "changeIcon": "Pictogram wijzigen",
+        "categoryName": "Categorienaam",
+        "group": "Groep",
+        "budgetType": "Budgettype",
+        "saving": "Opslaan..."
+      }
+    }
+  },
+  "transactions": {
+    "page": {
+      "title": "Alle transacties",
+      "add": "Toevoegen"
+    },
+    "add": {
+      "title": "Transactie toevoegen",
+      "debit": "Af",
+      "credit": "Bij",
+      "amount": "Bedrag *",
+      "amountAria": "Bedrag",
+      "otherAccount": "de andere rekening",
+      "otherAmount": {
+        "received": "Bedrag bijgeschreven op {{name}} ({{currency}}) *",
+        "sent": "Bedrag afgeschreven van {{name}} ({{currency}}) *",
+        "aria": "Bedrag in {{currency}}"
+      },
+      "rateHint": {
+        "typed": "Zoals je bank het toont.",
+        "rate": "Tegen de koers van {{date}} ({{rate}}). Pas het aan naar wat je bank toont.",
+        "noRateReceived": "Geen koers voor deze dag: vul in wat er is bijgeschreven.",
+        "noRateSent": "Geen koers voor deze dag: vul in wat er is afgeschreven."
+      },
+      "merchant": "Tegenpartij *",
+      "date": "Datum *",
+      "account": {
+        "plain": "Rekening *",
+        "from": "Van rekening *",
+        "to": "Naar rekening *",
+        "select": "Kies een rekening...",
+        "onBudget": "In budget",
+        "offBudget": "Buiten budget"
+      },
+      "category": "Categorie",
+      "splitBetween": "Splitsen over categorieën",
+      "split": "Splitsen",
+      "notes": "Notities",
+      "notesPlaceholder": "Voeg een notitie toe...",
+      "adding": "Toevoegen...",
+      "saveOnDevice": "Op apparaat opslaan",
+      "submit": "Transactie toevoegen"
+    },
+    "categoryPicker": {
+      "search": "Categorieën zoeken...",
+      "searchAria": "Categorieën zoeken",
+      "uncategorized": "Zonder categorie",
+      "transfer": "Overboeking",
+      "transferTo": "Overboeking: {{name}}",
+      "none": "Geen categorieën gevonden",
+      "budgetTypes": {
+        "fixed": "Vast",
+        "flexible": "Flexibel",
+        "nonMonthly": "Niet maandelijks"
+      },
+      "newName": "Categorienaam",
+      "newNameAria": "Naam van nieuwe categorie",
+      "creating": "Aanmaken...",
+      "create": "Aanmaken",
+      "createNew": "Nieuwe categorie aanmaken"
+    },
+    "categorySelect": {
+      "label": "Categorie",
+      "uncategorized": "Zonder categorie",
+      "transfer": "Overboeking",
+      "transferTo": "Overboeking: {{name}}"
+    },
+    "categoryButton": {
+      "label": "Categorie",
+      "placeholder": "Categorieën zoeken...",
+      "transferTo": "Overboeking: {{name}}",
+      "aria": "{{label}}: {{value}}"
+    },
+    "merchantSelect": {
+      "placeholder": "Tegenpartijen zoeken...",
+      "label": "Tegenpartij",
+      "offline": "Nieuwe tegenpartijen kun je toevoegen zodra FlyBudget weer verbinding heeft.",
+      "create": "Nieuwe tegenpartij aanmaken: “{{name}}”"
+    },
+    "payeeCombobox": {
+      "label": "Tegenpartij",
+      "newPayee": "Nieuwe tegenpartij: \"{{name}}\""
+    },
+    "payeePicker": {
+      "search": "Tegenpartijen zoeken...",
+      "yours": "Jouw tegenpartijen",
+      "none": "Geen tegenpartijen gevonden",
+      "create": "Nieuwe tegenpartij \"{{name}}\" aanmaken"
+    },
+    "splitParts": {
+      "category": "Categorie van splitsing {{n}}",
+      "amount": "Bedrag van splitsing {{n}}",
+      "remove": "Splitsing {{n}} verwijderen",
+      "notes": "Notities",
+      "notesAria": "Notities van splitsing {{n}}",
+      "add": "Splitsing toevoegen",
+      "balanced": "Sluitend",
+      "remaining": "{{amount}} over",
+      "setTo": "Splitsing {{n}} instellen op {{amount}}"
+    },
+    "splitModal": {
+      "title": "Transactie splitsen",
+      "thisTransaction": "Deze transactie",
+      "intro": "{{payee}}: <amount>{{amount}}</amount>. Elk deel telt mee voor de eigen categorie; het saldo van de rekening verandert niet.",
+      "saveFailed": "Kon de splitsing niet opslaan. Probeer het opnieuw.",
+      "unsplit": "Splitsing opheffen",
+      "unsplitHint": "Maak er weer één transactie zonder categorie van",
+      "saving": "Opslaan...",
+      "save": "Splitsing opslaan"
+    },
+    "filters": {
+      "search": "Zoek op tegenpartij of notities…",
+      "category": "Categorie",
+      "clearCategory": "Categoriefilter wissen",
+      "presets": {
+        "thisMonth": "Deze maand",
+        "last3": "Laatste 3 maanden",
+        "thisYear": "Dit jaar",
+        "all": "Alles"
+      }
+    },
+    "form": {
+      "editTitle": "Transactie bewerken",
+      "newTitle": "Nieuwe transactie",
+      "date": "Datum",
+      "payee": "Tegenpartij",
+      "category": "Categorie",
+      "split": "Splitsen",
+      "notes": "Notities",
+      "outflow": "Af",
+      "inflow": "Bij",
+      "save": "Opslaan",
+      "savePaused": "Opslaan (gepauzeerd tot FlyBudget weer verbinding heeft)",
+      "saveOnThisDevice": "Op dit apparaat opslaan (wordt verstuurd zodra FlyBudget weer verbinding heeft)",
+      "saveOnDevice": "Op apparaat opslaan",
+      "splitTransaction": "Transactie splitsen",
+      "cancel": "Annuleren",
+      "delete": "Verwijderen",
+      "splitCategory": "Categorie van splitsing {{n}}",
+      "splitNotes": "Notities van splitsing {{n}}",
+      "splitAmount": "Bedrag van splitsing {{n}}",
+      "removeSplit": "Splitsing {{n}} verwijderen",
+      "addSplit": "Splitsing toevoegen",
+      "balanced": "Sluitend",
+      "remaining": "{{amount}} over"
+    },
+    "suggestions": {
+      "section": "Mogelijke overboekingen",
+      "heading_one": "{{count, number}} mogelijke overboeking tussen je rekeningen.",
+      "heading_other": "{{count, number}} mogelijke overboekingen tussen je rekeningen.",
+      "explain": "Hetzelfde bedrag ging binnen een paar dagen van de ene rekening af en kwam op een andere binnen.",
+      "review": "Bekijken",
+      "dismiss": "Negeren",
+      "title": "Mogelijke overboekingen",
+      "intro": "Gekoppelde overboekingen verplaatsen geld tussen je rekeningen, dus ze tellen niet mee als uitgaven of inkomsten. Vink af wat geen overboeking is, of kies <emphasis>Geen overboeking</emphasis> zodat ze niet opnieuw worden voorgesteld.",
+      "linkFailed": "Kon de overboekingen niet koppelen. Probeer het opnieuw.",
+      "dismissFailed": "Kon “Geen overboeking” niet opslaan. Probeer het opnieuw.",
+      "cancel": "Annuleren",
+      "linking": "Koppelen…",
+      "link_one": "{{count, number}} overboeking koppelen",
+      "link_other": "{{count, number}} overboekingen koppelen",
+      "notice": {
+        "linked_one": "{{count, number}} overboeking gekoppeld.",
+        "linked_other": "{{count, number}} overboekingen gekoppeld.",
+        "failed_one": "{{count, number}} was gewijzigd en is overgeslagen.",
+        "failed_other": "{{count, number}} waren gewijzigd en zijn overgeslagen.",
+        "interrupted": "De verbinding viel weg voordat de rest klaar was; bekijk ze later opnieuw."
+      },
+      "row": {
+        "anotherAccountFrom": "Andere rekening",
+        "anotherAccountTo": "andere rekening",
+        "noPayee": "Geen tegenpartij",
+        "side": "{{date}} · {{payee}}",
+        "amountChange": "{{sent}} → {{received}}",
+        "linkAria": "{{amount}} van {{from}} naar {{to}} koppelen",
+        "notTransfer": "Geen overboeking",
+        "notTransferAria": "Geen overboeking: {{amount}} van {{from}} naar {{to}}"
+      }
+    },
+    "waiting": {
+      "title": "Opgeslagen op dit apparaat",
+      "sending": "Versturen…",
+      "offline": "Wordt verstuurd zodra FlyBudget weer verbinding heeft. Nog niet in saldo's of budget.",
+      "transferTo": "Overboeking: {{name}}",
+      "anotherAccount": "andere rekening",
+      "noPayee": "Geen tegenpartij",
+      "transfer": "Overboeking",
+      "split": "Gesplitst ({{n}})",
+      "uncategorized": "Zonder categorie",
+      "withAccount": "{{detail}} · {{account}}",
+      "notSaved": "Niet opgeslagen: {{error}}",
+      "tryAgain": "Opnieuw proberen",
+      "tryAgainAria": "Opnieuw proberen: {{name}}",
+      "discard": "Weggooien",
+      "discardAria": "{{name}} weggooien",
+      "discardTitle": "Deze transactie weggooien?",
+      "discardMessage": "Deze transactie staat alleen op dit apparaat en is nog niet naar FlyBudget verstuurd. Ze is dan definitief weg."
+    },
+    "undo": {
+      "makeTransfer": "Overboeking maken",
+      "link_one": "{{count, number}} overboeking koppelen",
+      "link_other": "{{count, number}} overboekingen koppelen",
+      "notTransfer": "Geen overboeking",
+      "create": "Transactie aanmaken",
+      "edit": "Transactie bewerken",
+      "split": "Transactie splitsen",
+      "unsplit": "Splitsing opheffen",
+      "delete": "Transactie verwijderen",
+      "createTransfer": "Overboeking aanmaken"
+    },
+    "csv": {
+      "dateRequired": "Een datumkolom is verplicht",
+      "amountRequired": "Minstens één bedragkolom is verplicht"
+    },
+    "table": {
+      "count_one": "{{count, number}} transactie",
+      "count_other": "{{count, number}} transacties",
+      "importCsv": "CSV importeren",
+      "add": "Transactie toevoegen",
+      "savingPaused": "Opslaan is gepauzeerd tot FlyBudget weer verbinding heeft",
+      "savedOnDevice": "Opgeslagen op dit apparaat en verstuurd zodra FlyBudget weer verbinding heeft",
+      "newTitle": "Nieuwe transactie",
+      "dayTotalHint": "In {{currency}}, tegen de koers van elke dag",
+      "showing_one": "{{shown, number}} van {{count, number}} transactie getoond",
+      "showing_other": "{{shown, number}} van {{count, number}} transacties getoond",
+      "showMore_one": "Nog {{count, number}} tonen",
+      "showMore_other": "Nog {{count, number}} tonen",
+      "empty": {
+        "title": "Nog geen transacties",
+        "accountHint": "Importeer een csv-bestand van je bank, of voeg transacties met de hand toe terwijl je geld uitgeeft.",
+        "allHint": "Voeg transacties met de hand toe, importeer een csv-bestand vanaf een rekeningpagina, of koppel een bank om ze automatisch binnen te halen.",
+        "import": "CSV importeren",
+        "add": "Transactie toevoegen",
+        "connect": "Bank koppelen"
+      },
+      "notFound": {
+        "title": "Geen transacties gevonden",
+        "filtered": "Niets komt overeen met je zoekopdracht en filters.",
+        "here": "Er zijn hier geen transacties.",
+        "range": "Er zijn geen transacties in deze periode.",
+        "clearFilters": "Filters wissen",
+        "showAllDates": "Alle datums tonen"
+      }
+    },
+    "row": {
+      "transfer": "Overboeking",
+      "showPayee": "Alle transacties van \"{{name}}\" tonen",
+      "showCategory": "Alle transacties in \"{{name}}\" tonen",
+      "split": "Gesplitst ({{n}})",
+      "goToAccount": "Naar {{name}}"
+    },
+    "card": {
+      "transfer": "Overboeking",
+      "split": "Gesplitst ({{n}})",
+      "uncategorized": "Zonder categorie",
+      "reconciled": "Afgestemd"
+    },
+    "detail": {
+      "aria": "Transactiedetails",
+      "title": "Transactiedetails",
+      "close": "Details sluiten",
+      "transfer": "Overboeking",
+      "splitHint": "Verdeel deze transactie over categorieën",
+      "editSplit": "Splitsing bewerken",
+      "split": "Splitsen",
+      "splitCount": "Gesplitst ({{n}})",
+      "reconciled": "Deze transactie is afgestemd en kan niet worden bewerkt.",
+      "date": "Datum",
+      "category": "Categorie",
+      "uncategorized": "Zonder categorie",
+      "notTransfer": "Geen overboeking",
+      "notTransferHint": "Maak van beide kanten weer gewone transacties",
+      "payee": "Tegenpartij",
+      "notes": "Notities",
+      "notesPlaceholder": "Voeg notities aan deze transactie toe...",
+      "recurring": "Terugkerend",
+      "unlinkRecurring": "Loskoppelen van terugkerende transactie",
+      "createRule": "Regel aanmaken",
+      "delete": "Transactie verwijderen",
+      "newRule": "Nieuwe regel op basis van transactie",
+      "deleteMessage": "Weet je zeker dat je deze transactie wilt verwijderen? Dit kan niet ongedaan worden gemaakt.",
+      "notSaved": "Kon deze wijziging niet opslaan.",
+      "retryCategory": "Kies opnieuw om het nog eens te proberen.",
+      "retryField": "Klik buiten het veld om het opnieuw te proberen."
+    }
+  },
+  "undo": {
+    "toast": {
+      "undid": "Ongedaan gemaakt: {{action}}",
+      "redid": "Opnieuw gedaan: {{action}}",
+      "undo": "Ongedaan maken",
+      "redo": "Opnieuw"
+    }
+  },
+  "welcome": {
+    "title": "Welkom bij <brand/>!",
+    "intro": "Een budget dat laat zien waar je geld naartoe gaat en elke euro een bestemming geeft. Begin met het toevoegen van de rekeningen die je wilt bijhouden.",
+    "setupTime": "Insteltijd:",
+    "options": {
+      "plaid": {
+        "title": "Koppelen met Plaid",
+        "tag": "Gratis",
+        "time": "~10 min + goedkeuring",
+        "description": "Stel het één keer in en nieuwe transacties komen vanzelf binnen. Maak een gratis Plaid-ontwikkelaarsaccount aan; Plaid keurt daarna de toegang tot je echte banken goed.",
+        "action": "Plaid koppelen"
+      },
+      "simplefin": {
+        "title": "Koppelen met SimpleFIN",
+        "tag": "$1,50/maand",
+        "time": "~5 min",
+        "description": "Stel het één keer in en nieuwe transacties komen vanzelf binnen, via SimpleFIN Bridge (duizenden banken). Je betaalt rechtstreeks aan SimpleFIN.",
+        "action": "SimpleFIN koppelen"
+      },
+      "europe": {
+        "title": "Europese bank koppelen",
+        "tag": "Gratis",
+        "time": "~15 min",
+        "description": "Stel het één keer in en nieuwe transacties komen vanzelf binnen, van banken in heel Europa (PSD2), via je eigen gratis Enable Banking-applicatie. Log om de paar maanden opnieuw in bij je bank.",
+        "action": "Koppelen met Enable Banking"
+      },
+      "manual": {
+        "title": "Rekeningen handmatig toevoegen",
+        "tag": "Geen bankkoppeling",
+        "time": "~1 min per rekening",
+        "description": "Je voegt elke rekening en het saldo zelf toe. Ook transacties doe je handmatig: download csv-bestanden van je bank en importeer ze zelf, of voer ze stuk voor stuk in. Er wordt niets vanzelf bijgewerkt.",
+        "action": "Handmatig toevoegen"
+      }
+    },
+    "privacyServer": "Je budget staat op je eigen server. Geen FlyBudget-account, geen tracking.",
+    "privacyLocal": "Je budget blijft op deze computer. Geen FlyBudget-account, geen tracking.",
+    "compare": "Bankopties vergelijken",
+    "skip": "Nu overslaan en rondkijken"
+  }
+}

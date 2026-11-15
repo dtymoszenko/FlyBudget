@@ -1,7 +1,9 @@
 // The languages FlyBudget can be shown in, and which one a device gets.
 import type { Locale } from 'date-fns';
 import { enUS } from 'date-fns/locale/en-US';
+import { nl as nlDates } from 'date-fns/locale/nl';
 import en from './locales/en.json';
+import nl from './locales/nl.json';
 import { PSEUDO_CODE, pseudoDateLocale, pseudoResources } from './pseudo';
 
 export interface Language {
@@ -22,6 +24,8 @@ export const FALLBACK_LANGUAGE = 'en';
 export const LANGUAGES = [
   // i18n-ignore
   { code: 'en', name: 'English', dateLocale: enUS, resources: en, listed: true },
+  // i18n-ignore
+  { code: 'nl', name: 'Nederlands', dateLocale: nlDates, resources: nl, listed: true },
 ] as const satisfies readonly Language[];
 
 export type LanguageCode = (typeof LANGUAGES)[number]['code'];

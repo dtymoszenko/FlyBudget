@@ -264,13 +264,17 @@ test('settings link to the license and the source code', async ({ page, api }) =
 test.describe('language on a German device', () => {
   test.use({ locale: 'de-DE' });
 
-  test('a new install is in English, the only language so far', async ({ page, api }) => {
+  test('a new install is in English: FlyBudget has no German', async ({ page, api }) => {
     await api.createAccount('Girokonto');
     await open(page, '/settings?tab=preferences');
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     const language = page.getByRole('combobox', { name: 'Language' });
     await expect(language).toHaveValue('auto');
-    await expect(language.getByRole('option')).toHaveText(['Automatic (English)', 'English']);
+    await expect(language.getByRole('option')).toHaveText([
+      'Automatic (English)',
+      'English',
+      'Nederlands',
+    ]);
   });
 });
 
