@@ -1,5 +1,6 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { format, parseISO } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import { useDailyFlow } from '../../hooks/useReports';
 import { formatCentsAxis, formatCurrency } from '../../utils/currency';
@@ -62,6 +63,7 @@ interface Hover {
 }
 
 export function TransactionCalendar({ from, to, fit, selected, onSelect }: Props) {
+  const { t } = useTranslation();
   const { data = [], isLoading } = useDailyFlow(from, to);
   const { ref, width, height } = useSize<HTMLDivElement>();
   const [hover, setHover] = useState<Hover | null>(null);
@@ -91,7 +93,11 @@ export function TransactionCalendar({ from, to, fit, selected, onSelect }: Props
   const dayProps = (day: string) => {
     const flow = byDay.get(day) ?? EMPTY;
     // With the year: an All time heatmap has the same day in several years
-    const label = `${formatWeekday(day, { long: true })}: ${formatCurrency(flow.income)} in, ${formatCurrency(flow.expenses)} out`;
+    const label = t('reports.calendar.dayLabel', {
+      day: formatWeekday(day, { long: true }),
+      income: formatCurrency(flow.income),
+      expenses: formatCurrency(flow.expenses),
+    });
     return {
       onMouseEnter: (e: React.MouseEvent<HTMLElement>) => showTooltip(day, e.currentTarget),
       onMouseLeave: () => setHover(null),
@@ -486,16 +492,17 @@ function HeatCell({
 }
 
 function HeatmapLegend() {
+  const { t } = useTranslation();
   const swatch = (background?: string) => (
     <span className="w-2.5 h-2.5 rounded-[2px] bg-surface-alt" style={{ background }} />
   );
   return (
     <span className="inline-flex items-center gap-1 text-[10px] text-text-tertiary">
-      More out
+      {t('reports.calendar.moreOut')}
       {[4, 3, 2, 1].map((l) => swatch(mix('negative', LEVEL_MIX[l])))}
       {swatch()}
       {[1, 2, 3, 4].map((l) => swatch(mix('positive', LEVEL_MIX[l])))}
-      More in
+      {t('reports.calendar.moreIn')}
     </span>
   );
 }
@@ -513,6 +520,7 @@ function DayTooltip({
   width: number;
   height: number;
 }) {
+  const { t } = useTranslation();
   const w = 190;
   const gap = 6;
   const box = useRef<HTMLDivElement>(null);
@@ -537,17 +545,21 @@ function DayTooltip({
       <p className="text-xs text-text-tertiary mb-1">{formatWeekday(hover.day)}</p>
       {flow && flow.count > 0 ? (
         <>
-          <p className="text-xs font-medium text-positive">In: {formatCurrency(flow.income)}</p>
-          <p className="text-xs font-medium text-negative">Out: {formatCurrency(flow.expenses)}</p>
+          <p className="text-xs font-medium text-positive">
+            {t('reports.calendar.in', { amount: formatCurrency(flow.income) })}
+          </p>
+          <p className="text-xs font-medium text-negative">
+            {t('reports.calendar.out', { amount: formatCurrency(flow.expenses) })}
+          </p>
           <p className="text-xs font-semibold text-text mt-1 pt-1 border-t border-border-light">
-            Net: {formatCurrency(net)}
+            {t('reports.calendar.net', { amount: formatCurrency(net) })}
           </p>
           <p className="text-[11px] text-text-tertiary mt-0.5">
-            {flow.count} {flow.count === 1 ? 'transaction' : 'transactions'}
+            {t('reports.calendar.transactions', { count: flow.count })}
           </p>
         </>
       ) : (
-        <p className="text-xs text-text-secondary">No transactions</p>
+        <p className="text-xs text-text-secondary">{t('reports.calendar.noTransactions')}</p>
       )}
     </div>
   );

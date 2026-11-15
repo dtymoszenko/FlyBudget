@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Pin, Save, Snowflake } from 'lucide-react';
 import { NetworkError } from '../api/client';
 import { Button } from '../components/ui/Button';
@@ -65,6 +66,7 @@ function BuiltinView({
   page: DashboardPage | undefined;
   dashboardRange: ReportDateRange;
 }) {
+  const { t } = useTranslation();
   const updateWidget = useUpdateWidget();
   const saved = widgetDateRange(widget.meta.dateRange, dashboardRange);
   // Exploring here changes nothing on the dashboard until "Save to widget"
@@ -101,20 +103,20 @@ function BuiltinView({
   return (
     <div className="flex flex-col h-full">
       <PageHeader
-        title={widget.meta.name || report.label}
-        subtitle={report.description}
+        title={widget.meta.name || t(`reports.builtin.${report}.label`)}
+        subtitle={t(`reports.builtin.${report}.description`)}
         breadcrumbs={[
-          { label: 'Reports', to: '/reports' },
-          { label: page?.name ?? 'Dashboard', to: dashboardPath },
+          { label: t('reports.page.title'), to: '/reports' },
+          { label: page?.name ?? t('reports.widget.view.dashboard'), to: dashboardPath },
         ]}
         actions={
           <Button
             size="sm"
             disabled={!changed || updateWidget.isPending}
-            title="Show these settings on the dashboard widget"
+            title={t('reports.widget.view.saveHint')}
             onClick={save}
           >
-            <Save size={13} /> Save to widget
+            <Save size={13} /> {t('reports.widget.view.save')}
           </Button>
         }
       />
@@ -122,7 +124,9 @@ function BuiltinView({
       <div className="flex-1 overflow-y-auto bg-page">
         <div className="max-w-[1400px] mx-auto px-6 py-6 space-y-4">
           <div className="flex items-center gap-x-3 gap-y-1 flex-wrap">
-            <span className="text-xs font-medium text-text-secondary">Date range</span>
+            <span className="text-xs font-medium text-text-secondary">
+              {t('reports.page.dateRange')}
+            </span>
             <DateRangeControl value={range} onChange={setRange} />
             <RangeNote
               source={saved.source}
@@ -160,26 +164,25 @@ function RangeNote({
   changed: boolean;
   onFollowDashboard?: () => void;
 }) {
+  const { t } = useTranslation();
   if (changed) {
-    return (
-      <span className="text-xs text-caution">Not saved: the dashboard widget is unchanged</span>
-    );
+    return <span className="text-xs text-caution">{t('reports.widget.view.notSaved')}</span>;
   }
   return (
     <span className="flex items-center gap-1.5 text-xs text-text-tertiary">
       {source === 'frozen' && <Snowflake size={11} className="text-brand-500" />}
       {source === 'own' && <Pin size={11} className="text-brand-500" />}
       {source === 'dashboard'
-        ? `Following the dashboard (${formatDateRange(dashboardRange)})`
-        : source === 'frozen'
-          ? 'This widget keeps these dates'
-          : 'This widget has its own date range'}
+        ? t('reports.widget.view.following', { range: formatDateRange(dashboardRange) })
+        : t(
+            source === 'frozen' ? 'reports.widget.view.keepsDates' : 'reports.widget.view.ownRange',
+          )}
       {onFollowDashboard && (
         <button
           onClick={onFollowDashboard}
           className="text-brand-600 hover:text-brand-700 font-medium cursor-pointer"
         >
-          Use dashboard range
+          {t('reports.widget.useDashboardRange')}
         </button>
       )}
     </span>

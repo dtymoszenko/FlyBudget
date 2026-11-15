@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Pin, Snowflake } from 'lucide-react';
 import RowMenu from '../../ui/RowMenu';
 import type { RowMenuItem } from '../../ui/RowMenu';
@@ -41,6 +42,7 @@ interface Props {
 }
 
 export default function WidgetCard({ widget, report, pages, dashboardRange, editing }: Props) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const updateWidget = useUpdateWidget();
   const deleteWidget = useDeleteWidget();
@@ -56,7 +58,7 @@ export default function WidgetCard({ widget, report, pages, dashboardRange, edit
   const rangeModal = useModalValue(rangeOpen);
   const renameModal = useModalValue(renameOpen && !isCustom);
   const { range, source } = widgetDateRange(widget.meta.dateRange, dashboardRange);
-  const defaultTitle = isCustom ? '' : BUILTIN_REPORTS[widget.type].label;
+  const defaultTitle = isCustom ? '' : t(`reports.builtin.${BUILTIN_REPORTS[widget.type]}.label`);
   const title = isCustom ? (report?.name ?? '') : widget.meta.name || defaultTitle;
 
   const openPath = isCustom
@@ -70,27 +72,38 @@ export default function WidgetCard({ widget, report, pages, dashboardRange, edit
   }
 
   const menu: RowMenuItem[] = [
-    { label: isCustom ? 'Edit report' : 'Open', onClick: () => navigate(openPath) },
-    { label: 'Rename…', onClick: () => setRenameOpen(true), hidden: isCustom },
-    { label: 'Date range…', onClick: () => setRangeOpen(true) },
     {
-      label: 'Freeze dates',
+      label: t(isCustom ? 'reports.widget.editReport' : 'reports.widget.open'),
+      onClick: () => navigate(openPath),
+    },
+    { label: t('reports.widget.renameMenu'), onClick: () => setRenameOpen(true), hidden: isCustom },
+    { label: t('reports.widget.dateRangeMenu'), onClick: () => setRangeOpen(true) },
+    {
+      label: t('reports.widget.freeze'),
       onClick: () => setOwnRange(freezeDateRange(range)),
       hidden: source === 'frozen',
     },
-    { label: 'Unfreeze', onClick: () => setOwnRange(undefined), hidden: source !== 'frozen' },
     {
-      label: 'Use dashboard range',
+      label: t('reports.widget.unfreeze'),
+      onClick: () => setOwnRange(undefined),
+      hidden: source !== 'frozen',
+    },
+    {
+      label: t('reports.widget.useDashboardRange'),
       onClick: () => setOwnRange(undefined),
       hidden: source !== 'own',
     },
     ...pages
       .filter((p) => p.id !== widget.pageId)
       .map((p) => ({
-        label: `Move to ${p.name}`,
+        label: t('reports.widget.moveTo', { name: p.name }),
         onClick: () => updateWidget.mutate({ widget, data: { pageId: p.id } }),
       })),
-    { label: 'Remove from dashboard', danger: true, onClick: () => deleteWidget.mutate(widget) },
+    {
+      label: t('reports.widget.remove'),
+      danger: true,
+      onClick: () => deleteWidget.mutate(widget),
+    },
   ];
 
   return (
@@ -114,10 +127,18 @@ export default function WidgetCard({ widget, report, pages, dashboardRange, edit
             </p>
             <p className="flex items-center gap-1 text-[11px] text-text-tertiary">
               {source === 'frozen' && (
-                <Snowflake size={10} className="text-brand-500" aria-label="Frozen" />
+                <Snowflake
+                  size={10}
+                  className="text-brand-500"
+                  aria-label={t('reports.widget.frozen')}
+                />
               )}
               {source === 'own' && (
-                <Pin size={10} className="text-brand-500" aria-label="Own date range" />
+                <Pin
+                  size={10}
+                  className="text-brand-500"
+                  aria-label={t('reports.widget.ownRange')}
+                />
               )}
               {formatDateRange(range)}
             </p>
@@ -167,10 +188,10 @@ export default function WidgetCard({ widget, report, pages, dashboardRange, edit
         {renameModal.value && (
           <NameModal
             isOpen={renameModal.isOpen}
-            title="Rename widget"
-            label="Name"
+            title={t('reports.widget.renameTitle')}
+            label={t('reports.widget.name')}
             initialName={title}
-            submitLabel="Rename"
+            submitLabel={t('reports.widget.rename')}
             onClose={() => setRenameOpen(false)}
             onSave={(name) => {
               // The default title isn't saved as a name, so it keeps following the language
@@ -229,6 +250,7 @@ function DateRangeModal({
   onClose: () => void;
   onSave: (range: ReportDateRange | undefined) => void;
 }) {
+  const { t } = useTranslation();
   const [follow, setFollow] = useState(!own);
   const [value, setValue] = useState(() => widgetDateRange(own, dashboardRange).range);
   const option = (active: boolean) =>
@@ -239,32 +261,36 @@ function DateRangeModal({
     }`;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Date range" size="md">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('reports.widget.rangeModal.title')} size="md">
       <div className="flex gap-2 mb-4">
         <button className={option(follow)} onClick={() => setFollow(true)}>
-          <p className="font-medium">Follow dashboard</p>
+          <p className="font-medium">{t('reports.widget.rangeModal.follow')}</p>
           <p className="text-xs text-text-tertiary">{formatDateRange(dashboardRange)}</p>
         </button>
         <button className={option(!follow)} onClick={() => setFollow(false)}>
-          <p className="font-medium">Own date range</p>
-          <p className="text-xs text-text-tertiary">Ignores the dashboard's range</p>
+          <p className="font-medium">{t('reports.widget.ownRange')}</p>
+          <p className="text-xs text-text-tertiary">{t('reports.widget.rangeModal.ownHint')}</p>
         </button>
       </div>
       {!follow && (
         <>
           <DateRangeControl value={value} onChange={setValue} />
           <p className="text-xs text-text-tertiary mt-3">
-            {isFrozen(value)
-              ? 'Frozen: this widget keeps showing these months.'
-              : 'Live: this widget moves forward with the current month.'}
+            {t(
+              isFrozen(value)
+                ? 'reports.widget.rangeModal.frozenNote'
+                : 'reports.widget.rangeModal.liveNote',
+            )}
           </p>
         </>
       )}
       <div className="flex justify-end gap-2 mt-4">
         <Button variant="secondary" onClick={onClose}>
-          Cancel
+          {t('common.actions.cancel')}
         </Button>
-        <Button onClick={() => onSave(follow ? undefined : value)}>Save</Button>
+        <Button onClick={() => onSave(follow ? undefined : value)}>
+          {t('common.actions.save')}
+        </Button>
       </div>
     </Modal>
   );

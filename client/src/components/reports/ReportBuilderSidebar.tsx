@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { computeDateRange, DATE_PRESETS } from '../../utils/dateRange';
+import { computeDateRange, DATE_PRESETS, datePresetLabel } from '../../utils/dateRange';
 import { MonthRangePicker } from '../ui/MonthRangePicker';
 import ChartTypeSelector from './ChartTypeSelector';
 import AccountMultiSelect from './AccountMultiSelect';
@@ -141,7 +141,7 @@ export default function ReportBuilderSidebar({ config, onChange }: Props) {
                   : 'text-text-secondary hover:bg-hover border border-transparent'
               }`}
             >
-              {p.label}
+              {datePresetLabel(p)}
             </button>
           ))}
         </div>

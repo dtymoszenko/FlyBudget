@@ -474,6 +474,58 @@
       }
     }
   },
+  "cashFlow": {
+    "title": "Cash Flow",
+    "presets": {
+      "thisMonth": "1M",
+      "last3Months": "3M",
+      "last6Months": "6M",
+      "thisYear": "This Year",
+      "lastYear": "Last Year",
+      "custom": "Custom"
+    },
+    "exportCsv": "Export CSV",
+    "stats": {
+      "totalIncome": "Total income",
+      "totalExpenses": "Total expenses",
+      "netIncome": "Total net income",
+      "savingsRate": "Savings rate"
+    },
+    "node": {
+      "income": "Income",
+      "totalIncome": "Total Income",
+      "savings": "Savings",
+      "uncategorized": "Uncategorized"
+    },
+    "diagram": {
+      "showTransactions": "Show transactions: {{name}}",
+      "negativeFlows": "Some flows excluded — Sankey diagrams cannot represent negative values (e.g. refunds). Summary totals may differ slightly."
+    },
+    "tooltip": {
+      "ofIncome": "{{percent}}% of total income",
+      "savingsRate": "{{percent}}% savings rate",
+      "ofSpending": "{{percent}}% of total spending",
+      "ofGroup": "{{percent}}% of {{group}}"
+    },
+    "list": {
+      "moneyIn": "Money in",
+      "whereItWent": "Where it went",
+      "saved": "Saved",
+      "shareOfIncome": "{{share}}<srOnly> of income</srOnly>",
+      "hideTransactions": "Hide transactions",
+      "allTransactions": "All {{group}} transactions"
+    },
+    "view": {
+      "label": "Show as",
+      "list": "List",
+      "diagram": "Diagram",
+      "swipe": "Swipe to see it all"
+    },
+    "transactions": {
+      "title": "Transactions: {{name}}",
+      "clear": "Clear"
+    }
+  },
   "common": {
     "actions": {
       "cancel": "Cancel",
@@ -589,6 +641,45 @@
       "noCategoryHint": "Without a category it stays out of income and spending, like other balance corrections.",
       "record": "Record difference"
     }
+  },
+  "dateRange": {
+    "presets": {
+      "thisMonth": {
+        "label": "1M",
+        "long": "This month"
+      },
+      "last3Months": {
+        "label": "3M",
+        "long": "Last 3 months"
+      },
+      "last6Months": {
+        "label": "6M",
+        "long": "Last 6 months"
+      },
+      "last12Months": {
+        "label": "12M",
+        "long": "Last 12 months"
+      },
+      "yearToDate": {
+        "label": "YTD",
+        "long": "Year to date"
+      },
+      "lastYear": {
+        "label": "Last Year",
+        "long": "Last year"
+      },
+      "allTime": {
+        "label": "All",
+        "long": "All time"
+      },
+      "custom": {
+        "label": "Custom",
+        "long": "Custom"
+      }
+    },
+    "fromTo": "{{from}} – {{to}}",
+    "frozen": "Frozen",
+    "frozenHint": "Keep these dates fixed instead of moving with the current month"
   },
   "demo": {
     "download": "Download FlyBudget",
@@ -910,6 +1001,139 @@
       "amount": "Amount",
       "total": "Total",
       "month": "Month"
+    },
+    "page": {
+      "title": "Reports",
+      "editLayout": "Edit layout",
+      "customReport": "Custom Report",
+      "dateRange": "Date range",
+      "ownRange_one": "{{count, number}} widget keeps its own dates",
+      "ownRange_other": "{{count, number}} widgets keep their own dates",
+      "empty": {
+        "title": "This dashboard is empty",
+        "description": "Add charts like net worth, spending trends or a transaction calendar, or build your own report and pin it here."
+      }
+    },
+    "dashboard": {
+      "new": "New dashboard",
+      "name": "Dashboard name",
+      "namePlaceholder": "e.g. Yearly review",
+      "create": "Create",
+      "renameMenu": "Rename dashboard…",
+      "renameTitle": "Rename dashboard",
+      "rename": "Rename",
+      "delete": "Delete dashboard",
+      "deleteMessage": "Delete \"{{name}}\" and its widgets? Saved custom reports are kept.",
+      "addWidget": "Add widget",
+      "builtinReports": "Reports",
+      "customReports": "Custom reports",
+      "newCustomReport": "New custom report…"
+    },
+    "widget": {
+      "open": "Open",
+      "editReport": "Edit report",
+      "renameMenu": "Rename…",
+      "dateRangeMenu": "Date range…",
+      "freeze": "Freeze dates",
+      "unfreeze": "Unfreeze",
+      "useDashboardRange": "Use dashboard range",
+      "moveTo": "Move to {{name}}",
+      "remove": "Remove from dashboard",
+      "frozen": "Frozen",
+      "ownRange": "Own date range",
+      "renameTitle": "Rename widget",
+      "name": "Name",
+      "rename": "Rename",
+      "rangeModal": {
+        "title": "Date range",
+        "follow": "Follow dashboard",
+        "ownHint": "Ignores the dashboard's range",
+        "frozenNote": "Frozen: this widget keeps showing these months.",
+        "liveNote": "Live: this widget moves forward with the current month."
+      },
+      "view": {
+        "dashboard": "Dashboard",
+        "saveHint": "Show these settings on the dashboard widget",
+        "save": "Save to widget",
+        "notSaved": "Not saved: the dashboard widget is unchanged",
+        "following": "Following the dashboard ({{range}})",
+        "keepsDates": "This widget keeps these dates",
+        "ownRange": "This widget has its own date range"
+      },
+      "undo": {
+        "edit": "Edit report widget",
+        "remove": "Remove report widget"
+      }
+    },
+    "builtin": {
+      "summary": {
+        "label": "Summary",
+        "description": "Income, expenses and monthly averages",
+        "totalIncome": "Total Income",
+        "totalExpenses": "Total Expenses",
+        "avgMonthly": "Avg Monthly Expenses",
+        "avgPerTransaction": "Avg Per Transaction"
+      },
+      "netWorth": {
+        "label": "Net Worth",
+        "description": "Assets, liabilities and net worth over time"
+      },
+      "incomeExpenses": {
+        "label": "Income & Expenses",
+        "description": "Money in vs. money out each month"
+      },
+      "spending": {
+        "label": "Spending by Category",
+        "description": "Where your money went, by category"
+      },
+      "spendingTrends": {
+        "label": "Spending Trends",
+        "description": "How spending in your biggest categories changes over time",
+        "biggest_one": "Biggest spending category",
+        "biggest_other": "{{count, number}} biggest spending categories"
+      },
+      "calendar": {
+        "label": "Transaction Calendar",
+        "description": "Money in and out on each day"
+      }
+    },
+    "charts": {
+      "netWorth": {
+        "netWorth": "Net worth",
+        "assets": "Assets",
+        "liabilities": "Liabilities",
+        "netWorthValue": "Net worth: {{amount}}",
+        "assetsValue": "Assets: {{amount}}",
+        "liabilitiesValue": "Liabilities: {{amount}}"
+      },
+      "income": "Income",
+      "expenses": "Expenses",
+      "net": "Net",
+      "spent": "Spent",
+      "total": "Total",
+      "monthlyAverage": "Monthly average",
+      "average": "Avg {{amount}}",
+      "uncategorized": "Uncategorized",
+      "deletedCategory": "Deleted category",
+      "runningTotal": "Running total this month",
+      "captionRunningTotal": "{{caption}} · running total",
+      "seriesValue": "{{name}}: {{amount}}",
+      "shareOf": "{{percent}}% of {{total}}",
+      "empty": {
+        "message": "No data for this period",
+        "hint": "Add transactions, or pick a longer date range."
+      }
+    },
+    "calendar": {
+      "dayLabel": "{{day}}: {{income}} in, {{expenses}} out",
+      "moreOut": "More out",
+      "moreIn": "More in",
+      "in": "In: {{amount}}",
+      "out": "Out: {{amount}}",
+      "net": "Net: {{amount}}",
+      "transactions_one": "{{count, number}} transaction",
+      "transactions_other": "{{count, number}} transactions",
+      "noTransactions": "No transactions"
     }
   },
   "rules": {

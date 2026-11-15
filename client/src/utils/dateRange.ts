@@ -8,19 +8,31 @@ import {
   subMonths,
   subYears,
 } from 'date-fns';
+import { t } from '../i18n';
 import type { DatePresetCustom, ReportDateRange } from '../types';
 
-/** Live presets roll forward with today; 'custom' is a frozen range with fixed dates. */
-export const DATE_PRESETS: { id: DatePresetCustom; label: string; long: string }[] = [
-  { id: '1m', label: '1M', long: 'This month' },
-  { id: '3m', label: '3M', long: 'Last 3 months' },
-  { id: '6m', label: '6M', long: 'Last 6 months' },
-  { id: '12m', label: '12M', long: 'Last 12 months' },
-  { id: 'ytd', label: 'YTD', long: 'Year to date' },
-  { id: 'last-year', label: 'Last Year', long: 'Last year' },
-  { id: 'all', label: 'All', long: 'All time' },
-  { id: 'custom', label: 'Custom', long: 'Custom' },
-];
+/**
+ * Live presets roll forward with today; 'custom' is a frozen range with fixed dates. `key` is
+ * where a preset's texts are in en.json (dateRange.presets).
+ */
+export const DATE_PRESETS = [
+  { id: '1m', key: 'thisMonth' },
+  { id: '3m', key: 'last3Months' },
+  { id: '6m', key: 'last6Months' },
+  { id: '12m', key: 'last12Months' },
+  { id: 'ytd', key: 'yearToDate' },
+  { id: 'last-year', key: 'lastYear' },
+  { id: 'all', key: 'allTime' },
+  { id: 'custom', key: 'custom' },
+] as const satisfies readonly { id: DatePresetCustom; key: string }[];
+
+type DatePreset = (typeof DATE_PRESETS)[number];
+
+/** A preset's button label: "6M" */
+export const datePresetLabel = (preset: DatePreset) => t(`dateRange.presets.${preset.key}.label`);
+
+/** A preset written out: "Last 6 months" */
+export const datePresetName = (preset: DatePreset) => t(`dateRange.presets.${preset.key}.long`);
 
 export function computeDateRange(
   preset: DatePresetCustom,
@@ -117,10 +129,13 @@ export const formatMonth = (m: string) =>
   isMonth(m) ? format(parseISO(`${m}-01`), 'MMM yyyy') : m;
 
 export function formatDateRange(range: ReportDateRange): string {
-  if (!isFrozen(range)) return DATE_PRESETS.find((p) => p.id === range.preset)?.long ?? '';
+  if (!isFrozen(range)) {
+    const preset = DATE_PRESETS.find((p) => p.id === range.preset);
+    return preset ? datePresetName(preset) : '';
+  }
   return range.from === range.to
     ? formatMonth(range.from)
-    : `${formatMonth(range.from)} – ${formatMonth(range.to)}`;
+    : t('dateRange.fromTo', { from: formatMonth(range.from), to: formatMonth(range.to) });
 }
 
 /** Month ranges up to this long plot a point per day instead of per month. */
