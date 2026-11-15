@@ -499,6 +499,95 @@
     },
     "undo": {
       "set": "Set budget"
+    },
+    "unreadableAmount": "That isn't an amount. Type it like 12.50 or 12,50.",
+    "types": {
+      "fixed": {
+        "label": "Fixed",
+        "description": "Consistent, predictable monthly amount"
+      },
+      "flexible": {
+        "label": "Flexible",
+        "description": "Variable spending that changes each month"
+      },
+      "non_monthly": {
+        "label": "Non-Monthly",
+        "description": "Periodic or irregular expenses"
+      },
+      "savings": {
+        "label": "Savings/Investments",
+        "description": "Savings goals and investment contributions"
+      }
+    },
+    "page": {
+      "previousMonth": "Previous month",
+      "nextMonth": "Next month",
+      "today": "Today",
+      "nothingPlannedTap": "Nothing is planned for {{month}} yet. Tap an amount in the <strong>Planned</strong> column to set what you expect to earn and spend in each category. Categories you leave empty are tucked away once you've planned something.",
+      "nothingPlannedClick": "Nothing is planned for {{month}} yet. Click an amount in the <strong>Planned</strong> column to set what you expect to earn and spend in each category. Categories you leave empty are tucked away once you've planned something.",
+      "howItWorks": "How budgeting works",
+      "income": "Income",
+      "expenses": "Expenses",
+      "planned": "Planned",
+      "actual": "Actual",
+      "remaining": "Remaining",
+      "totalIncome": "Total Income",
+      "totalExpenses": "Total Expenses",
+      "noCategories": "No categories yet. <settingsLink>Add some in Settings</settingsLink>",
+      "plannedFor": "Planned for {{name}}",
+      "plannedForAmount": "Planned for {{name}}: {{amount}}",
+      "savingPaused": "Saving is paused until FlyBudget reconnects",
+      "showInactive_one": "Show {{count, number}} inactive category",
+      "showInactive_other": "Show {{count, number}} inactive categories",
+      "hideInactive_one": "Hide {{count, number}} inactive category",
+      "hideInactive_other": "Hide {{count, number}} inactive categories"
+    },
+    "popover": {
+      "title": "History",
+      "earnedLastMonth": "Earned last month",
+      "spentLastMonth": "Spent last month",
+      "monthlyAverage": "Monthly average",
+      "noHistory": "No history available",
+      "applyToFuture": "Apply {{amount}} to all future months"
+    },
+    "summary": {
+      "toBeBudgeted": "To be budgeted",
+      "overBudget": "Over budget",
+      "fullyBudgeted": "Fully budgeted",
+      "almostBudgeted": "Almost budgeted",
+      "leftToBudget": "Left to budget",
+      "planned": "{{amount}} planned",
+      "remaining": "remaining",
+      "earned": "earned",
+      "spent": "spent",
+      "contributed": "contributed",
+      "saveUp": "Save up",
+      "tabs": {
+        "summary": "Summary",
+        "income": "Income",
+        "expenses": "Expenses"
+      },
+      "income": "Income",
+      "expenses": "Expenses"
+    },
+    "detail": {
+      "categoryFallback": "Category",
+      "breadcrumb": "Budget",
+      "spendingHistory": "Spending History",
+      "noHistory": "No history available",
+      "budget": "Budget",
+      "planned": "Planned",
+      "actual": "Actual",
+      "remaining": "Remaining",
+      "summary": "Summary",
+      "noData": "No data",
+      "totalTransactions": "Total transactions",
+      "largest": "Largest transaction",
+      "average": "Average transaction",
+      "totalIncome": "Total income",
+      "totalSpending": "Total spending",
+      "first": "First transaction",
+      "last": "Last transaction"
     }
   },
   "cashFlow": {
@@ -766,6 +855,37 @@
         "tomorrow": "{{date}} · Tomorrow",
         "inDays": "{{date}} · in {{days}}d"
       }
+    },
+    "budget": {
+      "title": "Budget",
+      "emptyTitle": "No budget for {{month}} yet",
+      "emptyDescription": "Set how much you plan to spend in each category, then watch your progress here.",
+      "plan": "Plan your budget",
+      "planned": "{{amount}} planned",
+      "spent": "{{amount}} spent",
+      "remaining": "{{amount}} remaining"
+    },
+    "comparison": {
+      "spendingWeek": "Spending <amount>{{amount}} this week</amount>",
+      "spendingMonth": "Spending <amount>{{amount}} this month</amount>",
+      "spendingYear": "Spending <amount>{{amount}} this year</amount>",
+      "modes": {
+        "week_vs_last_week": "This week vs. last week",
+        "month_vs_last_month": "This month vs. last month",
+        "month_vs_last_year": "This month vs. last year",
+        "month_vs_average": "This month vs. average month",
+        "year_vs_last_year": "This year vs. last year"
+      },
+      "thisWeek": "This week",
+      "thisMonth": "This month",
+      "thisYear": "This year",
+      "lastWeek": "Last week",
+      "lastMonth": "Last month",
+      "lastYear": "Last year",
+      "averageMonth": "Average month (last 12 months)",
+      "day": "Day {{day}}",
+      "emptyTitle": "Nothing to compare yet",
+      "emptyDescription": "Once you have some spending, this shows how this period compares with the last one."
     }
   },
   "dateRange": {
@@ -2285,6 +2405,15 @@
         "createCategory": "Create category \"{{name}}\"",
         "editCategory": "Edit category",
         "reorderCategories": "Reorder categories"
+      },
+      "edit": {
+        "title": "Edit Category",
+        "iconAndName": "Icon & Name",
+        "changeIcon": "Change icon",
+        "categoryName": "Category name",
+        "group": "Group",
+        "budgetType": "Budget Type",
+        "saving": "Saving..."
       }
     }
   },

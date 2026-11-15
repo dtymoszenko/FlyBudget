@@ -13,7 +13,7 @@ import {
   amountPlaceholder as placeholderIn,
   readTypedAmount,
   useAmountStyle,
-  UNREADABLE_AMOUNT,
+  unreadableAmount,
 } from '../../utils/currency';
 import { useAccountCurrency } from '../../hooks/useCurrency';
 import { useTranslation } from 'react-i18next';
@@ -351,7 +351,7 @@ export function TransactionFormRow({
       </div>
       {shownUnreadable && (
         <p id={amountHintId} role="alert" className="mt-1 text-xs text-negative">
-          {UNREADABLE_AMOUNT}
+          {unreadableAmount()}
         </p>
       )}
 

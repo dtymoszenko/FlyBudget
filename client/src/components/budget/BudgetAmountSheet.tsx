@@ -12,7 +12,7 @@ import {
   parseCents,
   amountPlaceholder,
   isUnreadableAmount,
-  UNREADABLE_AMOUNT,
+  unreadableAmount,
 } from '../../utils/currency';
 import type { BudgetCategory } from '../../types';
 
@@ -129,7 +129,7 @@ function SheetBody({
         />
         {invalid && (
           <span id="planned-amount-hint" role="alert" className="text-xs text-negative">
-            {UNREADABLE_AMOUNT}
+            {unreadableAmount()}
           </span>
         )}
       </label>

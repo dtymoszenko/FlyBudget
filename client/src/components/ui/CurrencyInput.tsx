@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import {
-  UNREADABLE_AMOUNT,
+  unreadableAmount,
   amountPlaceholder,
   amountToInput,
   formatAmount,
@@ -61,7 +61,7 @@ export function CurrencyInput({
     const ok = readTypedAmount(text, style) !== null;
     setReadable(ok);
     // The browser then refuses to submit a form holding this field, and says why
-    e.target.setCustomValidity(ok ? '' : UNREADABLE_AMOUNT);
+    e.target.setCustomValidity(ok ? '' : unreadableAmount());
   }
 
   function handleFocus(e: React.FocusEvent<HTMLInputElement>) {
@@ -110,7 +110,7 @@ export function CurrencyInput({
       />
       {invalid && (
         <p id={hintId} role="alert" className="mt-1 basis-full text-xs text-negative">
-          {UNREADABLE_AMOUNT}
+          {unreadableAmount()}
         </p>
       )}
     </>

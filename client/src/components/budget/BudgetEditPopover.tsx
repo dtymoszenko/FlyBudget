@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { format, parseISO } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 import { BarChart, Bar, XAxis, YAxis, LabelList, ResponsiveContainer } from 'recharts';
 import { useCategoryHistory } from '../../hooks/useBudget';
 import { formatCurrency } from '../../utils/currency';
@@ -21,6 +22,7 @@ export function BudgetEditPopover({
   month,
   onApplyBulk,
 }: BudgetEditPopoverProps) {
+  const { t } = useTranslation();
   const ref = useRef<HTMLDivElement>(null);
   const [checked, setChecked] = useState(true);
   const { data } = useCategoryHistory(categoryId, month);
@@ -57,20 +59,22 @@ export function BudgetEditPopover({
       className="absolute right-0 top-full mt-1 z-50 w-72 rounded-lg shadow-card border border-border-light bg-surface p-4 origin-top-right animate-menu-in"
       onMouseDown={(e) => e.preventDefault()}
     >
-      <p className="text-sm font-semibold text-text mb-2">History</p>
+      <p className="text-sm font-semibold text-text mb-2">{t('budget.popover.title')}</p>
 
       <div className="grid grid-cols-2 gap-2 mb-3">
         <div className="bg-surface-alt rounded-lg p-2.5">
           <p className="text-sm font-semibold tabular-nums text-text">
             {formatCurrency(data?.lastMonth ?? 0)}
           </p>
-          <p className="text-xs text-text-tertiary">{isIncome ? 'Earned' : 'Spent'} last month</p>
+          <p className="text-xs text-text-tertiary">
+            {isIncome ? t('budget.popover.earnedLastMonth') : t('budget.popover.spentLastMonth')}
+          </p>
         </div>
         <div className="bg-surface-alt rounded-lg p-2.5">
           <p className="text-sm font-semibold tabular-nums text-text">
             {formatCurrency(data?.average ?? 0)}
           </p>
-          <p className="text-xs text-text-tertiary">Monthly average</p>
+          <p className="text-xs text-text-tertiary">{t('budget.popover.monthlyAverage')}</p>
         </div>
       </div>
 
@@ -102,7 +106,9 @@ export function BudgetEditPopover({
             </ResponsiveContainer>
           </div>
         ) : (
-          <p className="text-xs text-text-disabled text-center py-6">No history available</p>
+          <p className="text-xs text-text-disabled text-center py-6">
+            {t('budget.popover.noHistory')}
+          </p>
         )}
       </div>
 
@@ -130,7 +136,7 @@ export function BudgetEditPopover({
             </svg>
           )}
         </span>
-        Apply {formatCurrency(currentAmount)} to all future months
+        {t('budget.popover.applyToFuture', { amount: formatCurrency(currentAmount) })}
       </button>
     </div>
   );
