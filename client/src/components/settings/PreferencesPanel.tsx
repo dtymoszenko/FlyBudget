@@ -58,13 +58,12 @@ const choiceClass = (selected: boolean) =>
 // new element: this puts the focus back on it
 let refocusLanguage = false;
 
-/** Only when there's more than one language to choose from */
+/** Automatic (the device's language when FlyBudget has it), or one of FlyBudget's languages */
 function LanguageSetting() {
   const { t } = useTranslation();
   const language = usePreferencesStore((s) => s.language);
   const setLanguage = usePreferencesStore((s) => s.setLanguage);
   const languages = availableLanguages();
-  if (languages.length < 2) return null;
   const automatic = languageInfo(resolveLanguage('auto', deviceLanguages())).name;
 
   return (
