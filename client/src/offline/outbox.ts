@@ -4,6 +4,7 @@ import { ApiError, NetworkError } from '../api/client';
 import * as txApi from '../api/transactions';
 import { sendable, type OutboxItem } from '../utils/offline';
 import { deleteValue, readValue, storageWorks, updateValue } from './storage';
+import { t } from '../i18n';
 
 // New transactions saved while FlyBudget can't reach its server wait here, on this device,
 // and are sent in order once it's back. Each carries the id it will have on the server, so
@@ -101,7 +102,7 @@ async function sendAll(qc: QueryClient) {
       } catch (err) {
         if (temporary(err)) break;
         // Refused (say its account was deleted meanwhile): keep it for the user to fix or discard
-        const error = err instanceof Error ? err.message : "Couldn't be saved";
+        const error = err instanceof Error ? err.message : t('connection.notSaved');
         await change((items) => items.map((i) => (i.id === item.id ? { ...i, error } : i)));
       }
     }

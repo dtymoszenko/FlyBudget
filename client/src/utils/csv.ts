@@ -1,4 +1,5 @@
 import type { ImportRow } from '../api/transactions';
+import { t } from '../i18n';
 
 export type Delimiter = ',' | ';' | '\t';
 
@@ -127,17 +128,19 @@ export function detectSkipRows(records: string[][]): number {
   return 0;
 }
 
+/** The encodings a file can be read as; their names are in ImportModal */
+/** The encodings a file can be read as; their names are in ImportModal */
 export const CSV_ENCODINGS = [
-  { value: 'auto', label: 'Detect' },
-  { value: 'utf-8', label: 'UTF-8' },
-  { value: 'utf-16le', label: 'UTF-16 LE' },
-  { value: 'utf-16be', label: 'UTF-16 BE' },
-  { value: 'windows-1252', label: 'Western European (Windows-1252)' },
-  { value: 'windows-1250', label: 'Central European (Windows-1250)' },
-  { value: 'iso-8859-2', label: 'Central European (ISO-8859-2)' },
+  'auto',
+  'utf-8',
+  'utf-16le',
+  'utf-16be',
+  'windows-1252',
+  'windows-1250',
+  'iso-8859-2',
 ] as const;
 
-export type CsvEncoding = (typeof CSV_ENCODINGS)[number]['value'];
+export type CsvEncoding = (typeof CSV_ENCODINGS)[number];
 
 /**
  * The text of a file. `auto` follows a byte order mark (UTF-16 from Excel's "Unicode text"),
@@ -390,6 +393,7 @@ const COLUMN_HINTS: Record<string, ColumnRole> = {
   'transaction date': 'date',
   'posted date': 'date',
   'post date': 'date',
+  // i18n-ignore
   description: 'payee',
   payee: 'payee',
   name: 'payee',
@@ -583,9 +587,9 @@ export function buildImportRows(
   const notesIdx = roles.indexOf('notes');
   const directionIdx = roles.indexOf('direction');
 
-  if (dateIdx === -1) return 'Date column is required';
+  if (dateIdx === -1) return t('transactions.csv.dateRequired');
   if (amountIdx === -1 && inflowIdx === -1 && outflowIdx === -1) {
-    return 'At least one amount column is required';
+    return t('transactions.csv.amountRequired');
   }
 
   /** Cents, 0 for an empty cell, or null if the cell holds something that isn't a number */
@@ -649,10 +653,18 @@ export function buildImportRows(
 
 /** "2 rows skipped: row 3, amount "N/A"; row 7, date "13/45/2024"." (the first `max` named) */
 export function describeSkippedRows(skipped: SkippedRow[], max = 5): string {
-  const listed = skipped
-    .slice(0, max)
-    .map((s) => `row ${s.row}, ${s.field} ${s.value ? `"${s.value}"` : '(empty)'}`);
-  if (skipped.length > max) listed.push(`and ${skipped.length - max} more`);
-  const count = `${skipped.length} ${skipped.length === 1 ? 'row' : 'rows'} skipped`;
-  return `${count}: ${listed.join('; ')}.`;
+  const listed = skipped.slice(0, max).map((s) =>
+    t('import.skipped.row', {
+      row: s.row,
+      field: t(`import.skipped.fields.${s.field}`),
+      value: s.value ? t('import.skipped.quoted', { value: s.value }) : t('import.skipped.empty'),
+    }),
+  );
+  if (skipped.length > max) {
+    listed.push(t('import.skipped.more', { count: skipped.length - max }));
+  }
+  return t('import.skipped.summary', {
+    total: t('import.skipped.count', { count: skipped.length }),
+    rows: listed.join('; '),
+  });
 }

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { Check, MoreVertical } from 'lucide-react';
 import { PHONE_MAX_WIDTH } from '../../hooks/useIsPhone';
 import { buttonClass } from './Button';
@@ -20,7 +21,7 @@ const MENU_W = 200;
 /** ⋮ button that opens a portal popover of actions. Closes on outside click, scroll, or ESC. */
 export default function RowMenu({
   items,
-  label = 'Actions',
+  label,
   trigger,
 }: {
   items: RowMenuItem[];
@@ -29,6 +30,7 @@ export default function RowMenu({
   /** What the button shows instead of ⋮, drawn as a bordered button */
   trigger?: ReactNode;
 }) {
+  const { t } = useTranslation();
   const btnRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
@@ -75,7 +77,7 @@ export default function RowMenu({
       <button
         ref={btnRef}
         onClick={toggle}
-        aria-label={label}
+        aria-label={label ?? t('common.actionsMenu')}
         aria-haspopup="menu"
         aria-expanded={pos !== null}
         className={
@@ -97,16 +99,16 @@ export default function RowMenu({
             className="fixed z-50 bg-surface border border-border rounded-md shadow-hover py-1 animate-menu-in"
             style={{ top: pos.top, left: pos.left, width: MENU_W }}
           >
-            {visible.flatMap((item) => [
+            {visible.flatMap((item, i) => [
               item.divider && (
                 <div
-                  key={`${item.label}-divider`}
+                  key={`${i}-divider`}
                   role="separator"
                   className="my-1 border-t border-border-light"
                 />
               ),
               <button
-                key={item.label}
+                key={i}
                 role={item.checked === undefined ? 'menuitem' : 'menuitemradio'}
                 aria-checked={item.checked}
                 onClick={() => {

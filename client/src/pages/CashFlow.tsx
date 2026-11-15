@@ -1,5 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { format, subMonths, startOfYear, endOfYear, subYears } from 'date-fns';
+import { Trans, useTranslation } from 'react-i18next';
+import { t } from '../i18n';
 import { useSpendingByCategory, useIncomeByCategory } from '../hooks/useReports';
 import { formatCurrency } from '../utils/currency';
 import { cashFlowSelection } from '../utils/cashFlowSelection';
@@ -25,14 +27,15 @@ import type { SpendingByCategory as SpendingByCat, IncomeByCategoryItem } from '
 type Preset = '1m' | '3m' | '6m' | 'ytd' | 'last-year' | 'custom';
 type NodeType = 'income' | 'hub' | 'expense-group' | 'subcategory' | 'savings';
 
-const PRESETS: { id: Preset; label: string }[] = [
-  { id: '1m', label: '1M' },
-  { id: '3m', label: '3M' },
-  { id: '6m', label: '6M' },
-  { id: 'ytd', label: 'This Year' },
-  { id: 'last-year', label: 'Last Year' },
-  { id: 'custom', label: 'Custom' },
-];
+/** `key` is where a preset's button label is in en.json (cashFlow.presets) */
+const PRESETS = [
+  { id: '1m', key: 'thisMonth' },
+  { id: '3m', key: 'last3Months' },
+  { id: '6m', key: 'last6Months' },
+  { id: 'ytd', key: 'thisYear' },
+  { id: 'last-year', key: 'lastYear' },
+  { id: 'custom', key: 'custom' },
+] as const satisfies readonly { id: Preset; key: string }[];
 
 const MIN_SAVINGS_CENTS = 500;
 const NODE_W = 12;
@@ -228,7 +231,7 @@ function buildSankeyGraph(
   const incomeNodes: SankeyNode[] = validIncome
     .sort((a, b) => b.totalReceived - a.totalReceived)
     .map((c) => ({
-      name: `${icon(c)}${c.categoryName ?? 'Income'}`,
+      name: `${icon(c)}${c.categoryName ?? t('cashFlow.node.income')}`,
       nodeType: 'income',
       amount: c.totalReceived,
       color: chartColors.positive,
@@ -238,7 +241,7 @@ function buildSankeyGraph(
 
   // Layer 1: Hub
   const hubNode: SankeyNode = {
-    name: 'Total Income',
+    name: t('cashFlow.node.totalIncome'),
     nodeType: 'hub',
     amount: totalIncome,
     color: chartColors.brand,
@@ -251,7 +254,7 @@ function buildSankeyGraph(
     { total: number; groupId: string | null; items: SpendingByCat[] }
   >();
   for (const item of validSpending) {
-    const key = item.groupName ?? 'Uncategorized';
+    const key = item.groupName ?? t('cashFlow.node.uncategorized');
     const ex = groupMap.get(key);
     if (ex) {
       ex.total += item.totalSpent;
@@ -262,10 +265,10 @@ function buildSankeyGraph(
 
   // Assign group colors
   const gColorMap = new Map<string, string>();
-  sortedGroups.forEach(([name], i) => {
+  sortedGroups.forEach(([name, { groupId }], i) => {
     gColorMap.set(
       name,
-      name === 'Uncategorized' ? chartColors.axis : EXPENSE_COLORS[i % EXPENSE_COLORS.length],
+      groupId === null ? chartColors.axis : EXPENSE_COLORS[i % EXPENSE_COLORS.length],
     );
   });
 
@@ -287,7 +290,7 @@ function buildSankeyGraph(
     savings > MIN_SAVINGS_CENTS
       ? [
           {
-            name: 'Savings',
+            name: t('cashFlow.node.savings'),
             nodeType: 'savings',
             amount: savings,
             color: chartColors.positive,
@@ -307,7 +310,7 @@ function buildSankeyGraph(
     const sorted = [...items].sort((a, b) => b.totalSpent - a.totalSpent);
 
     const subs: SankeyNode[] = sorted.map((item, ci) => ({
-      name: `${icon(item)}${item.categoryName ?? 'Uncategorized'}`,
+      name: `${icon(item)}${item.categoryName ?? t('cashFlow.node.uncategorized')}`,
       nodeType: 'subcategory' as NodeType,
       amount: item.totalSpent,
       color: lighten(gColor, sorted.length > 1 ? Math.min(ci * 0.12, 0.4) : 0),
@@ -510,6 +513,7 @@ function useContainerSize(ref: React.RefObject<HTMLDivElement | null>) {
 }
 
 function SankeyDiagram({ from, to, selectedNode, onNodeClick }: SankeyDiagramProps) {
+  const { t } = useTranslation();
   const showIcons = usePreferencesStore((s) => s.showCategoryIcons);
   const { data: incomeData = [], isLoading: il } = useIncomeByCategory(from, to);
   const { data: spendingData = [], isLoading: sl } = useSpendingByCategory(from, to);
@@ -746,7 +750,9 @@ function SankeyDiagram({ from, to, selectedNode, onNodeClick }: SankeyDiagramPro
                   onMouseMove={(e) => handleNodeMove(e, n)}
                   onMouseLeave={handleLeave}
                   role={clickable ? 'button' : undefined}
-                  aria-label={clickable ? `Show transactions: ${n.name}` : undefined}
+                  aria-label={
+                    clickable ? t('cashFlow.diagram.showTransactions', { name: n.name }) : undefined
+                  }
                   tabIndex={clickable ? 0 : undefined}
                   onKeyDown={(e) => {
                     if (clickable && (e.key === 'Enter' || e.key === ' ')) {
@@ -813,10 +819,7 @@ function SankeyDiagram({ from, to, selectedNode, onNodeClick }: SankeyDiagramPro
       {graph.hasNegativeFlows && (
         <div className="mt-1 px-4 flex items-center gap-1.5 text-xs text-text-tertiary">
           <Info size={12} className="shrink-0" />
-          <span>
-            Some flows excluded — Sankey diagrams cannot represent negative values (e.g. refunds).
-            Summary totals may differ slightly.
-          </span>
+          <span>{t('cashFlow.diagram.negativeFlows')}</span>
         </div>
       )}
     </div>
@@ -834,6 +837,7 @@ function SankeyTooltip({
   totalIncome: number;
   totalExpenses: number;
 }) {
+  const { t } = useTranslation();
   const n = node;
   const amt = formatCurrency(n.amount);
 
@@ -852,7 +856,9 @@ function SankeyTooltip({
         <p className="text-xs font-medium text-text">{n.name}</p>
         <p className="text-xs text-positive font-semibold">{amt}</p>
         {n.pctOfIncome != null && (
-          <p className="text-xs text-text-tertiary">{n.pctOfIncome.toFixed(1)}% of total income</p>
+          <p className="text-xs text-text-tertiary">
+            {t('cashFlow.tooltip.ofIncome', { percent: n.pctOfIncome.toFixed(1) })}
+          </p>
         )}
       </>
     );
@@ -864,7 +870,9 @@ function SankeyTooltip({
         <p className="text-xs font-medium text-text">{n.name}</p>
         <p className="text-xs text-positive font-semibold">{amt}</p>
         {n.savingsRate != null && (
-          <p className="text-xs text-text-tertiary">{n.savingsRate.toFixed(1)}% savings rate</p>
+          <p className="text-xs text-text-tertiary">
+            {t('cashFlow.tooltip.savingsRate', { percent: n.savingsRate.toFixed(1) })}
+          </p>
         )}
       </>
     );
@@ -878,11 +886,13 @@ function SankeyTooltip({
           {amt}
         </p>
         {n.pctOfIncome != null && (
-          <p className="text-xs text-text-tertiary">{n.pctOfIncome.toFixed(1)}% of total income</p>
+          <p className="text-xs text-text-tertiary">
+            {t('cashFlow.tooltip.ofIncome', { percent: n.pctOfIncome.toFixed(1) })}
+          </p>
         )}
         {n.pctOfSpending != null && (
           <p className="text-xs text-text-tertiary">
-            {n.pctOfSpending.toFixed(1)}% of total spending
+            {t('cashFlow.tooltip.ofSpending', { percent: n.pctOfSpending.toFixed(1) })}
           </p>
         )}
       </>
@@ -899,12 +909,15 @@ function SankeyTooltip({
       </p>
       {n.pctOfGroup != null && n.groupName && (
         <p className="text-xs text-text-tertiary">
-          {n.pctOfGroup.toFixed(1)}% of {n.groupName}
+          {t('cashFlow.tooltip.ofGroup', {
+            percent: n.pctOfGroup.toFixed(1),
+            group: n.groupName,
+          })}
         </p>
       )}
       {n.pctOfSpending != null && (
         <p className="text-xs text-text-tertiary">
-          {n.pctOfSpending.toFixed(1)}% of total spending
+          {t('cashFlow.tooltip.ofSpending', { percent: n.pctOfSpending.toFixed(1) })}
         </p>
       )}
     </>
@@ -922,6 +935,7 @@ const pct = (n: number | undefined) =>
  * and a category (or "All of …") to list its transactions below.
  */
 function CashFlowList({ from, to, selectedNode, onNodeClick }: SankeyDiagramProps) {
+  const { t } = useTranslation();
   const showIcons = usePreferencesStore((s) => s.showCategoryIcons);
   const { data: incomeData = [], isLoading: il } = useIncomeByCategory(from, to);
   const { data: spendingData = [], isLoading: sl } = useSpendingByCategory(from, to);
@@ -980,7 +994,9 @@ function CashFlowList({ from, to, selectedNode, onNodeClick }: SankeyDiagramProp
   return (
     <div className="space-y-4">
       <section className="bg-surface rounded-lg shadow-card border border-border-light">
-        <h3 className="px-4 pt-3 pb-1 text-xs font-semibold text-text-secondary">Money in</h3>
+        <h3 className="px-4 pt-3 pb-1 text-xs font-semibold text-text-secondary">
+          {t('cashFlow.list.moneyIn')}
+        </h3>
         {income.map((n) => (
           <div
             key={n.name}
@@ -998,11 +1014,13 @@ function CashFlowList({ from, to, selectedNode, onNodeClick }: SankeyDiagramProp
       </section>
 
       <section className="bg-surface rounded-lg shadow-card border border-border-light overflow-hidden">
-        <h3 className="px-4 pt-3 pb-1 text-xs font-semibold text-text-secondary">Where it went</h3>
+        <h3 className="px-4 pt-3 pb-1 text-xs font-semibold text-text-secondary">
+          {t('cashFlow.list.whereItWent')}
+        </h3>
         {savings && (
           <div className="px-4 py-2.5">
             <div className="flex items-baseline justify-between gap-3 text-sm">
-              <span className="text-text font-medium">Saved</span>
+              <span className="text-text font-medium">{t('cashFlow.list.saved')}</span>
               <span className="tabular-nums font-medium text-positive">
                 {formatCurrency(savings.amount)}
                 <span className="ml-1.5 text-xs font-normal text-text-tertiary">
@@ -1040,8 +1058,11 @@ function CashFlowList({ from, to, selectedNode, onNodeClick }: SankeyDiagramProp
                     {formatCurrency(g.amount)}
                     <span className="ml-1.5 text-xs text-text-tertiary">
                       {' '}
-                      {pct(g.pctOfIncome)}
-                      <span className="sr-only"> of income</span>
+                      <Trans
+                        i18nKey="cashFlow.list.shareOfIncome"
+                        values={{ share: pct(g.pctOfIncome) }}
+                        components={{ srOnly: <span className="sr-only" /> }}
+                      />
                     </span>
                   </span>
                 </div>
@@ -1071,7 +1092,9 @@ function CashFlowList({ from, to, selectedNode, onNodeClick }: SankeyDiagramProp
                       onClick={() => select(g)}
                       className="w-full min-h-11 pl-9 pr-4 text-left text-sm font-medium text-brand-600 cursor-pointer"
                     >
-                      {isSelected(g) ? 'Hide transactions' : `All ${g.name} transactions`}
+                      {isSelected(g)
+                        ? t('cashFlow.list.hideTransactions')
+                        : t('cashFlow.list.allTransactions', { group: g.name })}
                     </button>
                   </li>
                 </ul>
@@ -1087,6 +1110,7 @@ function CashFlowList({ from, to, selectedNode, onNodeClick }: SankeyDiagramProp
 // ─── Page Component ──────────────────────────────────────────────────────────
 
 export default function CashFlowPage() {
+  const { t } = useTranslation();
   const showIcons = usePreferencesStore((s) => s.showCategoryIcons);
   const today = new Date();
   const [preset, setPreset] = useState<Preset>('6m');
@@ -1130,20 +1154,28 @@ export default function CashFlowPage() {
     const net = totalIncome - totalExpenses;
     const savingsRate = totalIncome > 0 ? (net / totalIncome) * 100 : 0;
     return [
-      { label: 'Total income', value: formatCurrency(totalIncome), tone: 'positive' },
-      { label: 'Total expenses', value: formatCurrency(totalExpenses), tone: 'negative' },
       {
-        label: 'Total net income',
+        label: t('cashFlow.stats.totalIncome'),
+        value: formatCurrency(totalIncome),
+        tone: 'positive',
+      },
+      {
+        label: t('cashFlow.stats.totalExpenses'),
+        value: formatCurrency(totalExpenses),
+        tone: 'negative',
+      },
+      {
+        label: t('cashFlow.stats.netIncome'),
         value: formatCurrency(net),
         tone: net < 0 ? 'negative' : undefined,
       },
       {
-        label: 'Savings rate',
+        label: t('cashFlow.stats.savingsRate'),
         value: `${savingsRate.toFixed(1)}%`,
         tone: savingsRate < 0 ? 'negative' : undefined,
       },
     ];
-  }, [incData, spData]);
+  }, [incData, spData, t]);
 
   const handleNodeClick = useCallback((node: SelectedNode | null) => {
     setSelectedNode(node);
@@ -1158,7 +1190,7 @@ export default function CashFlowPage() {
     downloadCsv(
       `cash-flow-${from}-${to}.csv`,
       spData.map((d) => ({
-        category: `${showIcons && d.categoryIcon ? d.categoryIcon + ' ' : ''}${d.categoryName ?? 'Uncategorized'}`,
+        category: `${showIcons && d.categoryIcon ? d.categoryIcon + ' ' : ''}${d.categoryName ?? t('cashFlow.node.uncategorized')}`,
         group: d.groupName ?? '',
         total_cents: d.totalSpent,
       })),
@@ -1169,7 +1201,7 @@ export default function CashFlowPage() {
     <div className="flex flex-col h-full bg-surface">
       <div className="px-6 py-4 border-b border-border shrink-0">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <h1 className="text-lg font-semibold text-text shrink-0">Cash Flow</h1>
+          <h1 className="text-lg font-semibold text-text shrink-0">{t('cashFlow.title')}</h1>
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex flex-wrap gap-0">
               {PRESETS.map((p) => (
@@ -1182,7 +1214,7 @@ export default function CashFlowPage() {
                       : 'border-transparent text-text-tertiary hover:text-text-secondary'
                   }`}
                 >
-                  {p.label}
+                  {t(`cashFlow.presets.${p.key}`)}
                 </button>
               ))}
             </div>
@@ -1198,7 +1230,7 @@ export default function CashFlowPage() {
               />
             )}
             <Button variant="secondary" size="sm" onClick={handleExport}>
-              <Download size={13} /> Export CSV
+              <Download size={13} /> {t('cashFlow.exportCsv')}
             </Button>
           </div>
         </div>
@@ -1210,15 +1242,10 @@ export default function CashFlowPage() {
           <div className="flex items-center justify-between gap-3 mt-5 mb-3">
             <div
               role="group"
-              aria-label="Show as"
+              aria-label={t('cashFlow.view.label')}
               className="flex border border-border rounded-md overflow-hidden"
             >
-              {(
-                [
-                  ['list', 'List'],
-                  ['diagram', 'Diagram'],
-                ] as const
-              ).map(([id, label]) => (
+              {(['list', 'diagram'] as const).map((id) => (
                 <button
                   key={id}
                   type="button"
@@ -1228,12 +1255,12 @@ export default function CashFlowPage() {
                     phoneView === id ? 'bg-surface-alt text-text' : 'text-text-tertiary'
                   } ${id === 'diagram' ? 'border-l border-border' : ''}`}
                 >
-                  {label}
+                  {t(`cashFlow.view.${id}`)}
                 </button>
               ))}
             </div>
             {!showList && (
-              <p className="text-xs text-text-tertiary text-right">Swipe to see it all</p>
+              <p className="text-xs text-text-tertiary text-right">{t('cashFlow.view.swipe')}</p>
             )}
           </div>
         )}
@@ -1264,13 +1291,13 @@ export default function CashFlowPage() {
           >
             <div className="flex items-center justify-between mb-3">
               <h2 id="cash-flow-transactions-heading" className="text-sm font-semibold text-text">
-                Transactions: {selectedNode.name}
+                {t('cashFlow.transactions.title', { name: selectedNode.name })}
               </h2>
               <button
                 onClick={() => setSelectedNode(null)}
                 className="flex items-center gap-1 text-xs text-text-tertiary hover:text-text-secondary cursor-pointer transition-colors"
               >
-                <X size={14} /> Clear
+                <X size={14} /> {t('cashFlow.transactions.clear')}
               </button>
             </div>
             <div className="bg-surface rounded-lg shadow-card border border-border-light overflow-hidden">

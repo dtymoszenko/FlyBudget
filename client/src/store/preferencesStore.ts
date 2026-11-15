@@ -3,6 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { IS_DEMO } from '../demo/isDemo';
 import { DEFAULT_PAYEE_SORT, type PayeeSort } from '../utils/payeeSort';
 import { SIDEBAR_DEFAULT_WIDTH, clampSidebarWidth } from '../utils/sidebarWidth';
+import type { LanguagePreference } from '../i18n/languages';
 
 export type Theme = 'light' | 'dark' | 'system';
 export type DateFormatOption =
@@ -33,6 +34,8 @@ interface PreferencesState {
   /** Per currency (ISO code): its symbol or position on this device */
   currencyStyles: Record<string, CurrencyDisplay>;
   dateFormat: DateFormatOption;
+  /** 'auto' = the device's language, if FlyBudget has it */
+  language: LanguagePreference;
   savingsGoal: number;
   sidebarMode: SidebarMode;
   sidebarWidth: number;
@@ -57,6 +60,7 @@ interface PreferencesState {
   /** Null goes back to the currency's own convention */
   setCurrencyStyle: (currency: string, style: CurrencyDisplay | null) => void;
   setDateFormat: (format: DateFormatOption) => void;
+  setLanguage: (language: LanguagePreference) => void;
   setSavingsGoal: (goal: number) => void;
   setSidebarMode: (mode: SidebarMode) => void;
   setSidebarWidth: (width: number) => void;
@@ -73,19 +77,26 @@ interface PreferencesState {
 
 const PREFERENCES_KEY = 'budget-preferences';
 
-/** 1: amount format and symbol position (Automatic for new installs) */
-export const PREFERENCES_VERSION = 1;
+/**
+ * 1: amount format and symbol position (Automatic for new installs)
+ * 2: language (Automatic for new installs)
+ */
+export const PREFERENCES_VERSION = 2;
 
 /**
  * Preferences saved by an older version, brought up to date. Installs from before the amount
  * format existed keep 1,234.56 with the symbol first, as they had: switching them to their
  * device's language (Automatic, the default for new installs) would change every amount on
- * screen and the CSV files their spreadsheets expect, without them asking.
+ * screen and the CSV files their spreadsheets expect, without them asking. Installs from
+ * before the language setting stay in English for the same reason.
  */
 export function migratePreferences(persisted: unknown, version: number): unknown {
   const state = persisted && typeof persisted === 'object' ? { ...persisted } : {};
   if (version < 1) {
     Object.assign(state, { amountFormat: 'dot', symbolPosition: 'before' });
+  }
+  if (version < 2) {
+    Object.assign(state, { language: 'en' });
   }
   return state;
 }
@@ -99,6 +110,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       symbolPosition: 'auto',
       currencyStyles: {},
       dateFormat: 'MMM d, yyyy',
+      language: 'auto',
       savingsGoal: 20,
       sidebarMode: 'persistent',
       sidebarWidth: SIDEBAR_DEFAULT_WIDTH,
@@ -123,6 +135,7 @@ export const usePreferencesStore = create<PreferencesState>()(
           return { currencyStyles: next };
         }),
       setDateFormat: (dateFormat) => set({ dateFormat }),
+      setLanguage: (language) => set({ language }),
       setSavingsGoal: (savingsGoal) => set({ savingsGoal }),
       setSidebarMode: (sidebarMode) => set({ sidebarMode }),
       setSidebarWidth: (width) => set({ sidebarWidth: clampSidebarWidth(width) }),

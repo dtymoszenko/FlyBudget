@@ -3,10 +3,14 @@ import { ArrowLeftRight, Pencil, X } from 'lucide-react';
 import { usePreferencesStore } from '../../store/preferencesStore';
 import { payeeColor } from '../../utils/transactionColors';
 import { fileToSquareDataUrl } from '../../utils/imageResize';
+import { useTranslation } from 'react-i18next';
 
 const SIZES = {
+  // i18n-ignore
   sm: { box: 'w-6 h-6', text: 'text-[10px]', icon: 12, edit: 10 },
+  // i18n-ignore
   md: { box: 'w-8 h-8', text: 'text-xs', icon: 14, edit: 12 },
+  // i18n-ignore
   lg: { box: 'w-12 h-12', text: 'text-lg', icon: 20, edit: 16 },
 } as const;
 
@@ -34,6 +38,7 @@ export function PayeeIcon({
   force = false,
   onLogoChange,
 }: Props) {
+  const { t } = useTranslation();
   const show = usePreferencesStore((s) => s.showMerchantIcons);
   const fileRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -66,9 +71,11 @@ export function PayeeIcon({
       onLogoChange!(await fileToSquareDataUrl(file));
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not use that image.');
+      setError(err instanceof Error ? err.message : t('payees.icon.failed'));
     }
   }
+
+  const imageLabel = logo ? t('payees.icon.change', { name }) : t('payees.icon.upload', { name });
 
   return (
     <div className="group/logo relative shrink-0" onClick={(e) => e.stopPropagation()}>
@@ -76,8 +83,8 @@ export function PayeeIcon({
         type="button"
         onClick={() => fileRef.current?.click()}
         onMouseLeave={() => setError(null)}
-        title={error ?? (logo ? `Change image for ${name}` : `Upload an image for ${name}`)}
-        aria-label={logo ? `Change image for ${name}` : `Upload an image for ${name}`}
+        title={error ?? imageLabel}
+        aria-label={imageLabel}
         className={`relative block rounded-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${error ? 'ring-2 ring-negative' : ''}`}
       >
         {face}
@@ -89,8 +96,8 @@ export function PayeeIcon({
         <button
           type="button"
           onClick={() => onLogoChange(null)}
-          title="Use initial instead"
-          aria-label={`Remove image for ${name}`}
+          title={t('payees.icon.useInitial')}
+          aria-label={t('payees.icon.remove', { name })}
           className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center bg-surface border border-border text-text-tertiary hover:text-negative opacity-0 group-hover/logo:opacity-100 group-focus-within/logo:opacity-100 transition-opacity cursor-pointer"
         >
           <X size={10} />

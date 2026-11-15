@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../utils/currency';
 
 interface ExpenseBreakdown {
@@ -21,13 +22,14 @@ interface BudgetSummaryWidgetProps {
 }
 
 function getHeroStyle(tbb: number, incomePlanned: number) {
-  if (tbb < 0) return { bg: 'bg-negative-subtle', text: 'text-negative', label: 'Over budget' };
+  if (tbb < 0)
+    return { bg: 'bg-negative-subtle', color: 'text-negative', label: 'overBudget' as const };
   if (tbb === 0)
-    return { bg: 'bg-positive-subtle', text: 'text-positive', label: 'Fully budgeted' };
+    return { bg: 'bg-positive-subtle', color: 'text-positive', label: 'fullyBudgeted' as const };
   const threshold = Math.max(incomePlanned * 0.02, 500);
   if (tbb <= threshold)
-    return { bg: 'bg-caution-subtle', text: 'text-caution', label: 'Almost budgeted' };
-  return { bg: 'bg-positive-subtle', text: 'text-positive', label: 'Left to budget' };
+    return { bg: 'bg-caution-subtle', color: 'text-caution', label: 'almostBudgeted' as const };
+  return { bg: 'bg-positive-subtle', color: 'text-positive', label: 'leftToBudget' as const };
 }
 
 function getBarColor(actual: number, planned: number, type: 'income' | 'expenses' | 'savings') {
@@ -45,6 +47,7 @@ interface SummarySectionProps {
 }
 
 function SummarySection({ label, planned, actual, actualLabel, type }: SummarySectionProps) {
+  const { t } = useTranslation();
   const rawRemaining = planned - actual;
   const displayRemaining = type === 'income' ? Math.max(rawRemaining, 0) : rawRemaining;
   const ratio =
@@ -64,7 +67,7 @@ function SummarySection({ label, planned, actual, actualLabel, type }: SummarySe
       <div className="flex items-baseline justify-between">
         <span className="text-sm font-semibold text-text">{label}</span>
         <span className="text-sm tabular-nums text-text-tertiary">
-          {formatCurrency(planned)} planned
+          {t('budget.summary.planned', { amount: formatCurrency(planned) })}
         </span>
       </div>
 
@@ -86,7 +89,7 @@ function SummarySection({ label, planned, actual, actualLabel, type }: SummarySe
           <span className={`text-sm font-medium tabular-nums ${remainingColor}`}>
             {displayRemaining === 0 ? '$0' : formatCurrency(displayRemaining)}
           </span>
-          <span className="text-xs text-text-tertiary">remaining</span>
+          <span className="text-xs text-text-tertiary">{t('budget.summary.remaining')}</span>
         </div>
       </div>
     </div>
@@ -95,11 +98,7 @@ function SummarySection({ label, planned, actual, actualLabel, type }: SummarySe
 
 type Tab = 'summary' | 'income' | 'expenses';
 
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'summary', label: 'Summary' },
-  { key: 'income', label: 'Income' },
-  { key: 'expenses', label: 'Expenses' },
-];
+const TABS: Tab[] = ['summary', 'income', 'expenses'];
 
 export function BudgetSummaryWidget({
   toBeBudgeted,
@@ -114,6 +113,7 @@ export function BudgetSummaryWidget({
   flexibleExpenses,
   nonMonthlyExpenses,
 }: BudgetSummaryWidgetProps) {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<Tab>('summary');
   const hero = getHeroStyle(toBeBudgeted, incomePlanned);
 
@@ -122,28 +122,30 @@ export function BudgetSummaryWidget({
       <div className="p-3">
         <div
           role="status"
-          aria-label="To be budgeted"
+          aria-label={t('budget.summary.toBeBudgeted')}
           className={`${hero.bg} rounded-lg px-4 py-3 text-center`}
         >
-          <p className={`text-lg font-semibold tabular-nums ${hero.text}`}>
+          <p className={`text-lg font-semibold tabular-nums ${hero.color}`}>
             {formatCurrency(toBeBudgeted)}
           </p>
-          <p className={`text-xs ${hero.text} mt-0.5 opacity-75`}>{hero.label}</p>
+          <p className={`text-xs ${hero.color} mt-0.5 opacity-75`}>
+            {t(`budget.summary.${hero.label}`)}
+          </p>
         </div>
       </div>
 
       <div className="flex justify-center gap-4 px-4 pb-2">
         {TABS.map((tab) => (
           <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
+            key={tab}
+            onClick={() => setActiveTab(tab)}
             className={`pb-1.5 text-xs transition-colors border-b-2 ${
-              activeTab === tab.key
+              activeTab === tab
                 ? 'border-text text-text font-semibold'
                 : 'border-transparent text-text-tertiary hover:text-text-secondary'
             }`}
           >
-            {tab.label}
+            {t(`budget.summary.tabs.${tab}`)}
           </button>
         ))}
       </div>
@@ -152,28 +154,28 @@ export function BudgetSummaryWidget({
         {activeTab === 'summary' && (
           <div>
             <SummarySection
-              label="Income"
+              label={t('budget.summary.income')}
               planned={incomePlanned}
               actual={incomeEarned}
-              actualLabel="earned"
+              actualLabel={t('budget.summary.earned')}
               type="income"
             />
             <div className="border-t border-border-light" />
             <SummarySection
-              label="Expenses"
+              label={t('budget.summary.expenses')}
               planned={expensesPlanned}
               actual={expensesSpent}
-              actualLabel="spent"
+              actualLabel={t('budget.summary.spent')}
               type="expenses"
             />
             {savingsPlanned > 0 && (
               <>
                 <div className="border-t border-border-light" />
                 <SummarySection
-                  label="Save up"
+                  label={t('budget.summary.saveUp')}
                   planned={savingsPlanned}
                   actual={savingsContributed}
-                  actualLabel="contributed"
+                  actualLabel={t('budget.summary.contributed')}
                   type="savings"
                 />
               </>
@@ -182,10 +184,10 @@ export function BudgetSummaryWidget({
         )}
         {activeTab === 'income' && (
           <SummarySection
-            label="Income"
+            label={t('budget.summary.income')}
             planned={incomePlanned}
             actual={incomeEarned}
-            actualLabel="earned"
+            actualLabel={t('budget.summary.earned')}
             type="income"
           />
         )}
@@ -193,10 +195,10 @@ export function BudgetSummaryWidget({
           <div>
             {fixedExpenses && (fixedExpenses.planned > 0 || fixedExpenses.spent > 0) && (
               <SummarySection
-                label="Fixed"
+                label={t('budget.types.fixed.label')}
                 planned={fixedExpenses.planned}
                 actual={fixedExpenses.spent}
-                actualLabel="spent"
+                actualLabel={t('budget.summary.spent')}
                 type="expenses"
               />
             )}
@@ -206,10 +208,10 @@ export function BudgetSummaryWidget({
                   <div className="border-t border-border-light" />
                 )}
                 <SummarySection
-                  label="Flexible"
+                  label={t('budget.types.flexible.label')}
                   planned={flexibleExpenses.planned}
                   actual={flexibleExpenses.spent}
-                  actualLabel="spent"
+                  actualLabel={t('budget.summary.spent')}
                   type="expenses"
                 />
               </>
@@ -219,10 +221,10 @@ export function BudgetSummaryWidget({
                 <>
                   <div className="border-t border-border-light" />
                   <SummarySection
-                    label="Non-Monthly"
+                    label={t('budget.types.non_monthly.label')}
                     planned={nonMonthlyExpenses.planned}
                     actual={nonMonthlyExpenses.spent}
-                    actualLabel="spent"
+                    actualLabel={t('budget.summary.spent')}
                     type="expenses"
                   />
                 </>

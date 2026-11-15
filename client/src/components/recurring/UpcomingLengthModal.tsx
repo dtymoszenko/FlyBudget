@@ -1,20 +1,17 @@
 import { useEffect, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { usePreferencesStore } from '../../store/preferencesStore';
 import {
   DEFAULT_UPCOMING_LENGTH,
   UPCOMING_PRESETS,
+  upcomingPresetLabel,
   getUpcomingDays,
   isCustomUpcomingLength,
 } from './scheduleFormat';
 
-const UNITS = [
-  { value: 'day', label: 'Days' },
-  { value: 'week', label: 'Weeks' },
-  { value: 'month', label: 'Months' },
-  { value: 'year', label: 'Years' },
-];
+const UNITS = ['day', 'week', 'month', 'year'] as const;
 
 const selectCls =
   'text-sm border border-border rounded-md px-2 py-1.5 bg-surface text-text focus:outline-none focus:ring-1 focus:ring-brand-600 focus:border-brand-600 cursor-pointer';
@@ -26,6 +23,7 @@ interface Props {
 
 /** Port of Actual Budget's "Change upcoming length" dialog (presets + custom n-unit). */
 export default function UpcomingLengthModal({ isOpen, onClose }: Props) {
+  const { t } = useTranslation();
   const saved = usePreferencesStore((s) => s.upcomingLength) || DEFAULT_UPCOMING_LENGTH;
   const setUpcomingLength = usePreferencesStore((s) => s.setUpcomingLength);
   const [temp, setTemp] = useState(saved);
@@ -42,15 +40,12 @@ export default function UpcomingLengthModal({ isOpen, onClose }: Props) {
   const days = getUpcomingDays(temp);
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Change upcoming length" size="md">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('recurring.lengthModal.title')} size="md">
       <div className="space-y-3 text-sm text-text-secondary">
         <p>
-          Change how many days before its date a recurring item shows as <strong>Upcoming</strong>.
-          Later items show as <strong>Scheduled</strong>.
+          <Trans i18nKey="recurring.lengthModal.intro" components={{ strong: <strong /> }} />
         </p>
-        <p className="text-xs text-text-tertiary">
-          This only affects how recurring items are displayed. It can be changed at any time.
-        </p>
+        <p className="text-xs text-text-tertiary">{t('recurring.lengthModal.note')}</p>
       </div>
 
       <div className="mt-4 space-y-3">
@@ -69,11 +64,11 @@ export default function UpcomingLengthModal({ isOpen, onClose }: Props) {
           className={`${selectCls} w-full`}
         >
           {UPCOMING_PRESETS.map((p) => (
-            <option key={p.value} value={p.value}>
-              {p.label}
+            <option key={p} value={p}>
+              {upcomingPresetLabel(p)}
             </option>
           ))}
-          <option value="custom">Custom length</option>
+          <option value="custom">{t('recurring.lengthModal.custom')}</option>
         </select>
 
         {custom && (
@@ -91,8 +86,8 @@ export default function UpcomingLengthModal({ isOpen, onClose }: Props) {
               className={`${selectCls} flex-1`}
             >
               {UNITS.map((u) => (
-                <option key={u.value} value={u.value}>
-                  {u.label}
+                <option key={u} value={u}>
+                  {t(`recurring.lengthModal.units.${u}`)}
                 </option>
               ))}
             </select>
@@ -100,17 +95,17 @@ export default function UpcomingLengthModal({ isOpen, onClose }: Props) {
         )}
 
         <p className="text-xs text-text-tertiary">
-          Items due within the next{' '}
-          <span className="font-medium text-text-secondary">
-            {days} {days === 1 ? 'day' : 'days'}
-          </span>{' '}
-          will show as Upcoming.
+          <Trans
+            i18nKey="recurring.lengthModal.window"
+            count={days}
+            components={{ days: <span className="font-medium text-text-secondary" /> }}
+          />
         </p>
       </div>
 
       <div className="flex justify-end gap-2 mt-5">
         <Button variant="secondary" size="sm" onClick={onClose}>
-          Cancel
+          {t('common.actions.cancel')}
         </Button>
         <Button
           size="sm"
@@ -120,7 +115,7 @@ export default function UpcomingLengthModal({ isOpen, onClose }: Props) {
             onClose();
           }}
         >
-          Save
+          {t('common.actions.save')}
         </Button>
       </div>
     </Modal>

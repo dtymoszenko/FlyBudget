@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { useCategoryHistory } from '../../hooks/useBudget';
@@ -11,7 +12,7 @@ import {
   parseCents,
   amountPlaceholder,
   isUnreadableAmount,
-  UNREADABLE_AMOUNT,
+  unreadableAmount,
 } from '../../utils/currency';
 import type { BudgetCategory } from '../../types';
 
@@ -37,11 +38,16 @@ export function BudgetAmountSheet({
   onSave,
   onApplyBulk,
 }: Props) {
+  const { t } = useTranslation();
   return (
     <Modal
       isOpen={category !== null}
       onClose={onClose}
-      title={category ? `Plan ${category.name}` : 'Plan'}
+      title={
+        category
+          ? t('budget.sheet.title', { name: category.name })
+          : t('budget.sheet.titleFallback')
+      }
       size="sm"
     >
       {category && (
@@ -68,6 +74,7 @@ function SheetBody({
   onSave,
   onApplyBulk,
 }: Omit<Props, 'category'> & { category: BudgetCategory }) {
+  const { t } = useTranslation();
   const [raw, setRaw] = useState(category.budgeted ? centsToInput(category.budgeted) : '');
   const [allYear, setAllYear] = useState(false);
   // Shown after Save with text that isn't an amount, until the text changes
@@ -89,20 +96,23 @@ function SheetBody({
   }
 
   const suggestions = [
-    { label: isIncome ? 'Earned last month' : 'Spent last month', cents: history?.lastMonth },
-    { label: 'Monthly average', cents: history?.average },
+    {
+      label: isIncome ? t('budget.sheet.earnedLastMonth') : t('budget.sheet.spentLastMonth'),
+      cents: history?.lastMonth,
+    },
+    { label: t('budget.sheet.monthlyAverage'), cents: history?.average },
   ].filter((s): s is { label: string; cents: number } => !!s.cents);
 
   return (
     <form onSubmit={save} className="grid gap-4">
       <p className="text-sm text-text-secondary">{format(parseISO(`${month}-01`), 'MMMM yyyy')}</p>
       <label className="grid gap-1">
-        <span className="text-sm font-medium text-text-secondary">Planned</span>
+        <span className="text-sm font-medium text-text-secondary">{t('budget.sheet.planned')}</span>
         <input
           autoFocus
           type="text"
           inputMode="decimal"
-          aria-label={`Planned for ${category.name}`}
+          aria-label={t('budget.sheet.plannedFor', { name: category.name })}
           value={raw}
           onChange={(e) => {
             setRaw(e.target.value);
@@ -119,16 +129,16 @@ function SheetBody({
         />
         {invalid && (
           <span id="planned-amount-hint" role="alert" className="text-xs text-negative">
-            {UNREADABLE_AMOUNT}
+            {unreadableAmount()}
           </span>
         )}
       </label>
 
       {suggestions.length > 0 && (
         <div className="grid grid-cols-2 gap-2">
-          {suggestions.map((s) => (
+          {suggestions.map((s, i) => (
             <button
-              key={s.label}
+              key={i}
               type="button"
               onClick={() => setRaw(centsToInput(s.cents))}
               className="min-h-11 rounded-lg bg-surface-alt px-3 py-2 text-left"
@@ -149,16 +159,16 @@ function SheetBody({
           onChange={(e) => setAllYear(e.target.checked)}
           className="h-5 w-5 accent-brand-600"
         />
-        Use this amount for the next 12 months
+        {t('budget.sheet.allYear')}
       </label>
 
       <SavingPausedHint />
       <div className="flex gap-2">
         <Button type="button" variant="secondary" className="min-h-11 flex-1" onClick={onClose}>
-          Cancel
+          {t('common.actions.cancel')}
         </Button>
         <Button type="submit" className="min-h-11 flex-1" disabled={!canSave}>
-          Save
+          {t('common.actions.save')}
         </Button>
       </div>
     </form>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { ArrowLeftRight, ArrowRight } from 'lucide-react';
 import {
   useDismissTransferSuggestion,
@@ -29,6 +30,7 @@ const shortDate = (date: string) => formatDay(date);
  * above the register; linking them keeps them out of spending and income.
  */
 export function TransferSuggestions({ accountId, accountName }: Props) {
+  const { t } = useTranslation();
   const { data: suggestions = [] } = useTransferSuggestions(accountId);
   const [open, setOpen] = useState(false);
   const [unticked, setUnticked] = useState<ReadonlySet<string>>(new Set());
@@ -61,11 +63,13 @@ export function TransferSuggestions({ accountId, accountName }: Props) {
       onSuccess: ({ linked, failed, interrupted }) => {
         setOpen(false);
         setNotice(
-          `Linked ${linked.length} transfer${linked.length === 1 ? '' : 's'}.` +
-            (failed ? ` ${failed} had changed and ${failed === 1 ? 'was' : 'were'} skipped.` : '') +
-            (interrupted
-              ? ' The connection dropped before the rest; review them again later.'
-              : ''),
+          [
+            t('transactions.suggestions.notice.linked', { count: linked.length }),
+            failed ? t('transactions.suggestions.notice.failed', { count: failed }) : '',
+            interrupted ? t('transactions.suggestions.notice.interrupted') : '',
+          ]
+            .filter(Boolean)
+            .join(' '),
         );
       },
     });
@@ -74,7 +78,7 @@ export function TransferSuggestions({ accountId, accountName }: Props) {
   return (
     <>
       <section
-        aria-label="Possible transfers"
+        aria-label={t('transactions.suggestions.section')}
         className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5 border-b border-brand-100 bg-brand-50"
       >
         <ArrowLeftRight size={15} className="text-brand-600 shrink-0" aria-hidden />
@@ -82,11 +86,9 @@ export function TransferSuggestions({ accountId, accountName }: Props) {
           {count > 0 ? (
             <>
               <span className="font-medium">
-                {count} possible transfer{count === 1 ? '' : 's'} between your accounts.
+                {t('transactions.suggestions.heading', { count })}
               </span>{' '}
-              <span className="text-text-secondary">
-                The same amount left one account and arrived in another within a few days.
-              </span>
+              <span className="text-text-secondary">{t('transactions.suggestions.explain')}</span>
               {notice && (
                 <span role="status" className="block text-text-secondary">
                   {notice}
@@ -106,21 +108,27 @@ export function TransferSuggestions({ accountId, accountName }: Props) {
               setOpen(true);
             }}
           >
-            Review
+            {t('transactions.suggestions.review')}
           </Button>
         ) : (
           <Button variant="ghost" size="sm" onClick={() => setNotice(null)}>
-            Dismiss
+            {t('transactions.suggestions.dismiss')}
           </Button>
         )}
       </section>
 
-      <Modal isOpen={open} onClose={() => setOpen(false)} title="Possible transfers" size="xl">
+      <Modal
+        isOpen={open}
+        onClose={() => setOpen(false)}
+        title={t('transactions.suggestions.title')}
+        size="xl"
+      >
         <div className="space-y-4">
           <p className="text-sm text-text-secondary">
-            Linked transfers move money between your accounts, so they aren&apos;t counted as
-            spending or income. Untick any that aren&apos;t transfers, or choose{' '}
-            <span className="font-medium">Not a transfer</span> so they aren&apos;t suggested again.
+            <Trans
+              i18nKey="transactions.suggestions.intro"
+              components={{ emphasis: <span className="font-medium" /> }}
+            />
           </p>
           <ul className="divide-y divide-border-light border border-border-light rounded-lg max-h-[50vh] overflow-y-auto">
             {suggestions.map((s) => (
@@ -142,26 +150,26 @@ export function TransferSuggestions({ accountId, accountName }: Props) {
           </ul>
           {linkMany.isError && (
             <p role="alert" className="text-sm text-negative">
-              Couldn&apos;t link the transfers. Please try again.
+              {t('transactions.suggestions.linkFailed')}
             </p>
           )}
           {dismiss.isError && (
             <p role="alert" className="text-sm text-negative">
-              Couldn&apos;t save &ldquo;Not a transfer&rdquo;. Please try again.
+              {t('transactions.suggestions.dismissFailed')}
             </p>
           )}
           <SavingPausedHint />
           <div className="flex flex-wrap justify-end gap-2">
             <Button variant="secondary" onClick={() => setOpen(false)}>
-              Cancel
+              {t('transactions.suggestions.cancel')}
             </Button>
             <Button
               onClick={linkTicked}
               disabled={!canSave || ticked.length === 0 || linkMany.isPending}
             >
               {linkMany.isPending
-                ? 'Linking…'
-                : `Link ${ticked.length} transfer${ticked.length === 1 ? '' : 's'}`}
+                ? t('transactions.suggestions.linking')
+                : t('transactions.suggestions.link', { count: ticked.length })}
             </Button>
           </div>
         </div>
@@ -187,20 +195,27 @@ function SuggestionRow({
   onDismiss,
   disabled,
 }: RowProps) {
+  const { t } = useTranslation();
   const { outflow, inflow } = suggestion;
   const currencyOf = useAccountCurrency();
   const sent = formatMoney(-outflow.amount, currencyOf(outflow.accountId));
   const received = formatMoney(inflow.amount, currencyOf(inflow.accountId));
   // Between currencies: what left and what arrived
   const amount =
-    currencyOf(outflow.accountId) === currencyOf(inflow.accountId) ? sent : `${sent} → ${received}`;
-  const from = accountName(outflow.accountId) ?? 'Another account';
-  const to = accountName(inflow.accountId) ?? 'another account';
+    currencyOf(outflow.accountId) === currencyOf(inflow.accountId)
+      ? sent
+      : t('transactions.suggestions.row.amountChange', { sent, received });
+  const from =
+    accountName(outflow.accountId) ?? t('transactions.suggestions.row.anotherAccountFrom');
+  const to = accountName(inflow.accountId) ?? t('transactions.suggestions.row.anotherAccountTo');
   const side = (tx: Transaction, account: string) => (
     <span className="block min-w-0">
       <span className="block text-sm text-text truncate">{account}</span>
       <span className="block text-xs text-text-tertiary truncate">
-        {shortDate(tx.date)} · {tx.payeeName || 'No payee'}
+        {t('transactions.suggestions.row.side', {
+          date: shortDate(tx.date),
+          payee: tx.payeeName || t('transactions.suggestions.row.noPayee'),
+        })}
       </span>
     </span>
   );
@@ -212,7 +227,7 @@ function SuggestionRow({
           type="checkbox"
           checked={checked}
           onChange={onToggle}
-          aria-label={`Link ${amount} from ${from} to ${to}`}
+          aria-label={t('transactions.suggestions.row.linkAria', { amount, from, to })}
           className="h-4 w-4 shrink-0 rounded border-border text-brand-600 focus:ring-brand-500"
         />
         <span className="flex-1 min-w-0 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
@@ -227,9 +242,9 @@ function SuggestionRow({
         size="sm"
         onClick={onDismiss}
         disabled={disabled}
-        aria-label={`Not a transfer: ${amount} from ${from} to ${to}`}
+        aria-label={t('transactions.suggestions.row.notTransferAria', { amount, from, to })}
       >
-        Not a transfer
+        {t('transactions.suggestions.row.notTransfer')}
       </Button>
     </li>
   );

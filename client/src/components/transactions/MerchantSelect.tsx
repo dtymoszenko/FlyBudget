@@ -3,6 +3,7 @@ import { CreditCard, Plus } from 'lucide-react';
 import { useCanSave } from '../../hooks/useConnection';
 import { usePayees, useCreatePayee } from '../../hooks/usePayees';
 import { PayeeIcon } from '../payees/PayeeIcon';
+import { useTranslation } from 'react-i18next';
 
 export const selectorInputClass =
   'block w-full rounded-md border border-border px-3 py-2 text-sm text-text bg-surface placeholder-text-disabled focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600';
@@ -25,12 +26,8 @@ interface Props {
  * by transaction count, merchant icons, and "Create new merchant". Free text that
  * isn't confirmed (picked or created) is cleared on blur.
  */
-export function MerchantSelect({
-  value,
-  onChange,
-  placeholder = 'Search merchants...',
-  label = 'Merchant',
-}: Props) {
+export function MerchantSelect({ value, onChange, placeholder, label }: Props) {
+  const { t } = useTranslation();
   const { data: payees = [] } = usePayees();
   const createPayee = useCreatePayee();
   const canSave = useCanSave();
@@ -81,8 +78,8 @@ export function MerchantSelect({
           setOpen(true);
         }}
         onFocus={() => setOpen(true)}
-        placeholder={placeholder}
-        aria-label={label}
+        placeholder={placeholder ?? t('transactions.merchantSelect.placeholder')}
+        aria-label={label ?? t('transactions.merchantSelect.label')}
         className={selectorInputClass}
       />
       {open && (filtered.length > 0 || query) && (
@@ -108,7 +105,7 @@ export function MerchantSelect({
           {query.trim() && !exactMatch && !canSave && (
             // New merchants are made on the server, so offline only existing ones can be picked
             <p className="px-3 py-2.5 text-xs text-caution border-t border-border-light">
-              New merchants can be added once FlyBudget reconnects.
+              {t('transactions.merchantSelect.offline')}
             </p>
           )}
           {query.trim() && !exactMatch && canSave && (
@@ -124,7 +121,7 @@ export function MerchantSelect({
               className="w-full text-left px-3 py-2.5 text-sm text-brand-600 font-medium flex items-center gap-1.5 hover:bg-surface-alt cursor-pointer border-t border-border-light"
             >
               <Plus size={14} />
-              Create new merchant: &ldquo;{query.trim()}&rdquo;
+              {t('transactions.merchantSelect.create', { name: query.trim() })}
             </button>
           )}
         </div>

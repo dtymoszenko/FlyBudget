@@ -2,6 +2,7 @@ import { keepPreviousData, useQuery, useMutation, useQueryClient } from '@tansta
 import * as budgetApi from '../api/budget';
 import { useUndoStore } from '../store/undoStore';
 import type { BudgetGroup } from '../types';
+import { t } from '../i18n';
 
 // Switching months keeps showing the previous month until the next one arrives, so the
 // page doesn't collapse to an empty budget (and jump) in between
@@ -52,7 +53,7 @@ export function useSetBudget() {
       qc.invalidateQueries({ queryKey: ['budget-summary', month] });
       const oldBudgeted = ctx?.oldBudgeted ?? 0;
       useUndoStore.getState().push({
-        description: `Set budget`,
+        description: t('budget.undo.set'),
         undo: async () => {
           await budgetApi.setBudget(month, categoryId, oldBudgeted);
           qc.invalidateQueries({ queryKey: ['budget', month] });

@@ -1,4 +1,5 @@
 import { useSearchParams } from 'react-router-dom';
+import { Trans, useTranslation } from 'react-i18next';
 import {
   Layers,
   ArrowUpDown,
@@ -18,22 +19,23 @@ import { ConnectedAccounts } from '../components/settings/ConnectedAccounts';
 import { LICENSE_URL, SOURCE_CODE_URL } from '../utils/project';
 
 const tabs = [
-  { id: 'categories', label: 'Categories', icon: Layers },
-  { id: 'accounts', label: 'Accounts', icon: ArrowUpDown },
-  { id: 'connections', label: 'Connected Banks', icon: Link2 },
+  { id: 'categories', icon: Layers },
+  { id: 'accounts', icon: ArrowUpDown },
+  { id: 'connections', icon: Link2 },
   // The budget's currency, exchange rates and how each currency is written
-  { id: 'currencies', label: 'Currencies', icon: Coins },
-  { id: 'data', label: 'Data', icon: Download },
-  { id: 'preferences', label: 'Preferences', icon: SlidersHorizontal },
+  { id: 'currencies', icon: Coins },
+  { id: 'data', icon: Download },
+  { id: 'preferences', icon: SlidersHorizontal },
   // Where the data lives; on a self-hosted server also security, devices and password
-  { id: 'server', label: 'Server', icon: Server },
+  { id: 'server', icon: Server },
 ] as const;
 
 type TabId = (typeof tabs)[number]['id'];
 
-const tabIds = new Set<string>(tabs.map((t) => t.id));
+const tabIds = new Set<string>(tabs.map((tab) => tab.id));
 
 export default function SettingsPage() {
+  const { t } = useTranslation();
   // The tab lives in the URL (?tab=server), so links like the sidebar's "Server settings"
   // can open it
   const [searchParams, setSearchParams] = useSearchParams();
@@ -44,7 +46,7 @@ export default function SettingsPage() {
   return (
     <div className="flex flex-col h-full bg-surface">
       <div className="px-6 py-4 border-b border-border shrink-0">
-        <h1 className="text-lg font-semibold text-text">Settings</h1>
+        <h1 className="text-lg font-semibold text-text">{t('settings.title')}</h1>
         <div className="flex gap-0 mt-3 border-b border-border-light -mb-px overflow-x-auto [scrollbar-width:none]">
           {tabs.map((tab) => {
             const Icon = tab.icon;
@@ -60,7 +62,7 @@ export default function SettingsPage() {
                 }`}
               >
                 <Icon size={14} />
-                {tab.label}
+                {t(`settings.tabs.${tab.id}`)}
               </button>
             );
           })}
@@ -78,24 +80,27 @@ export default function SettingsPage() {
           {activeTab === 'server' && <ServerSettings onOpenTab={setActiveTab} />}
 
           <p className="mt-10 pt-4 border-t border-border-light text-xs text-text-tertiary">
-            FlyBudget is free software under the{' '}
-            <a
-              href={LICENSE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline hover:text-text-secondary"
-            >
-              GNU AGPL v3
-            </a>
-            .{' '}
-            <a
-              href={SOURCE_CODE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline hover:text-text-secondary"
-            >
-              Source code
-            </a>
+            <Trans
+              i18nKey="settings.footer"
+              components={{
+                license: (
+                  <a
+                    href={LICENSE_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:text-text-secondary"
+                  />
+                ),
+                repo: (
+                  <a
+                    href={SOURCE_CODE_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:text-text-secondary"
+                  />
+                ),
+              }}
+            />
           </p>
         </div>
       </div>

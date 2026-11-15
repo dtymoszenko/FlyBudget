@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AlertTriangle, KeyRound, Loader2, RefreshCw, Unlink } from 'lucide-react';
 import { differenceInCalendarDays, formatDistanceToNow } from 'date-fns';
 import { ConfirmModal } from '../ui/ConfirmModal';
@@ -21,6 +22,7 @@ export function EnableBankingConnectionCard({
 }: {
   connection: EnableBankingConnection;
 }) {
+  const { t } = useTranslation();
   const [showDisconnect, setShowDisconnect] = useState(false);
   const [showReconnect, setShowReconnect] = useState(false);
   const sync = useSyncEnableBankingConnection();
@@ -61,8 +63,9 @@ export function EnableBankingConnectionCard({
           </div>
           {connection.lastSyncedAt && (
             <span className="text-xs text-text-tertiary">
-              Last synced{' '}
-              {formatDistanceToNow(new Date(connection.lastSyncedAt), { addSuffix: true })}
+              {t('banks.enableBanking.card.lastSynced', {
+                ago: formatDistanceToNow(new Date(connection.lastSyncedAt), { addSuffix: true }),
+              })}
             </span>
           )}
         </div>
@@ -70,10 +73,7 @@ export function EnableBankingConnectionCard({
         {needsLogin ? (
           <div className="flex items-start gap-2 bg-caution-subtle border border-caution/20 rounded-md px-3 py-2">
             <KeyRound size={14} className="text-caution mt-0.5 shrink-0" />
-            <p className="text-xs text-text">
-              Your bank&apos;s access for FlyBudget has ended (banks ask again every few months).
-              Reconnect to keep syncing; your accounts and history stay as they are.
-            </p>
+            <p className="text-xs text-text">{t('banks.enableBanking.card.loginEnded')}</p>
           </div>
         ) : (
           connection.syncStatus === 'error' &&
@@ -94,7 +94,9 @@ export function EnableBankingConnectionCard({
               >
                 <span className="truncate">{acct.name}</span>
                 <span className="text-text-tertiary shrink-0">
-                  {acct.accountName ? `→ ${acct.accountName}` : 'Not linked'}
+                  {acct.accountName
+                    ? `→ ${acct.accountName}`
+                    : t('banks.enableBanking.card.notLinked')}
                 </span>
               </div>
             ))}
@@ -106,17 +108,23 @@ export function EnableBankingConnectionCard({
             className={`text-xs ${daysLeft <= EXPIRY_WARNING_DAYS ? 'text-caution' : 'text-text-tertiary'}`}
           >
             {daysLeft === 0
-              ? 'Bank access ends today. Reconnect to keep syncing.'
-              : `Bank access ends on ${formatDay(connection.validUntil!.slice(0, 10))} (in ${daysLeft} day${daysLeft === 1 ? '' : 's'})${
-                  daysLeft <= EXPIRY_WARNING_DAYS ? '. Reconnect to keep syncing.' : ''
-                }`}
+              ? t('banks.enableBanking.card.endsToday')
+              : daysLeft <= EXPIRY_WARNING_DAYS
+                ? t('banks.enableBanking.card.endsSoon', {
+                    date: formatDay(connection.validUntil!.slice(0, 10)),
+                    count: daysLeft,
+                  })
+                : t('banks.enableBanking.card.endsOn', {
+                    date: formatDay(connection.validUntil!.slice(0, 10)),
+                    count: daysLeft,
+                  })}
           </p>
         )}
 
         <div className="flex flex-wrap items-center gap-2 pt-1">
           {needsLogin || (daysLeft !== null && daysLeft <= EXPIRY_WARNING_DAYS) ? (
             <Button size="sm" onClick={() => setShowReconnect(true)} disabled={!canSave}>
-              <KeyRound size={12} /> Reconnect
+              <KeyRound size={12} /> {t('banks.enableBanking.card.reconnect')}
             </Button>
           ) : null}
           {!needsLogin && (
@@ -128,11 +136,12 @@ export function EnableBankingConnectionCard({
             >
               {isSyncing ? (
                 <>
-                  <Loader2 size={12} className="animate-spin" /> Syncing…
+                  <Loader2 size={12} className="animate-spin" />{' '}
+                  {t('banks.enableBanking.card.syncing')}
                 </>
               ) : (
                 <>
-                  <RefreshCw size={12} /> Sync now
+                  <RefreshCw size={12} /> {t('banks.enableBanking.card.syncNow')}
                 </>
               )}
             </Button>
@@ -143,14 +152,20 @@ export function EnableBankingConnectionCard({
             onClick={() => setShowDisconnect(true)}
             className="ml-auto text-negative"
           >
-            <Unlink size={12} /> Disconnect
+            <Unlink size={12} /> {t('banks.enableBanking.card.disconnect')}
           </Button>
         </div>
 
         {sync.isSuccess && sync.data && sync.data.errors.length === 0 && (
           <p className="text-xs text-positive">
-            Synced: {sync.data.added} new transaction{sync.data.added === 1 ? '' : 's'}
-            {lastSkipped > 0 ? `, ${lastSkipped} left out (no date or unreadable amount)` : ''}.
+            {lastSkipped > 0
+              ? t('banks.enableBanking.card.syncedSkipped', {
+                  added: t('banks.enableBanking.card.newTransactions', { count: sync.data.added }),
+                  skipped: t('banks.enableBanking.card.leftOut', { count: lastSkipped }),
+                })
+              : t('banks.enableBanking.card.synced', {
+                  added: t('banks.enableBanking.card.newTransactions', { count: sync.data.added }),
+                })}
           </p>
         )}
         {sync.isError && <p className="text-xs text-negative">{(sync.error as Error).message}</p>}
@@ -165,9 +180,9 @@ export function EnableBankingConnectionCard({
         isOpen={showDisconnect}
         onClose={() => setShowDisconnect(false)}
         onConfirm={() => disconnect.mutate(connection.id)}
-        title={`Disconnect ${connection.aspspName}`}
-        message={`FlyBudget will end its access to ${connection.aspspName} at Enable Banking and stop syncing. Your accounts and transactions stay in FlyBudget.`}
-        confirmLabel="Disconnect"
+        title={t('banks.enableBanking.card.disconnectTitle', { bank: connection.aspspName })}
+        message={t('banks.enableBanking.card.disconnectMessage', { bank: connection.aspspName })}
+        confirmLabel={t('banks.enableBanking.card.disconnect')}
         danger
       />
       <ConnectEnableBankingModal

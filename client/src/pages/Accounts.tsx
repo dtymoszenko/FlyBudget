@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Plus,
   ChevronRight,
@@ -41,26 +42,26 @@ const size = (a: Account) => {
 
 const SORTS: Record<
   Exclude<AccountSort, 'manual'>,
-  { label: string; short: string; compare: (a: Account, b: Account) => number }
+  {
+    /** Its texts in accounts.sort: a label for the menu and a short one for the button */
+    id: 'balanceDesc' | 'balanceAsc' | 'transactions' | 'name';
+    compare: (a: Account, b: Account) => number;
+  }
 > = {
   'balance-desc': {
-    label: 'Balance: high to low',
-    short: 'Highest balance',
+    id: 'balanceDesc',
     compare: (a, b) => size(b) - size(a),
   },
   'balance-asc': {
-    label: 'Balance: low to high',
-    short: 'Lowest balance',
+    id: 'balanceAsc',
     compare: (a, b) => Number(size(a) < 0) - Number(size(b) < 0) || size(a) - size(b),
   },
   transactions: {
-    label: 'Most transactions',
-    short: 'Most transactions',
+    id: 'transactions',
     compare: (a, b) => (b.transactionCount ?? 0) - (a.transactionCount ?? 0),
   },
   name: {
-    label: 'Name: A to Z',
-    short: 'Name',
+    id: 'name',
     // Card 2 before Card 10
     compare: (a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }),
   },
@@ -75,9 +76,9 @@ function groupAccountsByType(accounts: Account[], sort: AccountSort) {
     list.push(a);
     groups.set(group, list);
   }
-  return ACCOUNT_GROUPS.filter((g) => groups.has(g.value)).map((g) => ({
-    label: g.label,
-    accounts: groups.get(g.value)!,
+  return ACCOUNT_GROUPS.filter((g) => groups.has(g)).map((g) => ({
+    group: g,
+    accounts: groups.get(g)!,
   }));
 }
 
@@ -88,6 +89,7 @@ interface AccountGroupProps {
 }
 
 function AccountGroup({ label, accounts, balancesAgo }: AccountGroupProps) {
+  const { t } = useTranslation();
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   // In the budget's currency, at today's rate (so the change is the accounts', not the rate's)
@@ -109,7 +111,7 @@ function AccountGroup({ label, accounts, balancesAgo }: AccountGroupProps) {
           collapsed ? 'rounded-lg' : 'rounded-t-lg border-b border-border'
         }`}
       >
-        <div className="flex items-center gap-2.5">
+        <div className="min-w-0 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-left">
           <span className="text-text-tertiary">
             {collapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
           </span>
@@ -123,9 +125,9 @@ function AccountGroup({ label, accounts, balancesAgo }: AccountGroupProps) {
               {formatCurrency(change)} ({Math.abs(changePct).toFixed(1)}%)
             </span>
           )}
-          <span className="text-xs text-text-tertiary">past month</span>
+          <span className="text-xs text-text-tertiary">{t('accounts.pastMonth')}</span>
         </div>
-        <span className="text-right">
+        <span className="shrink-0 pl-3 text-right">
           <span
             className={`block text-base font-semibold tabular-nums ${groupTotal < 0 ? 'text-negative' : 'text-text'}`}
           >
@@ -179,6 +181,7 @@ function AccountGroup({ label, accounts, balancesAgo }: AccountGroupProps) {
 }
 
 export default function AccountsPage() {
+  const { t } = useTranslation();
   const { data: accounts = [], isLoading } = useAccounts();
   const { data: balancesAgo = {} } = useBalancesAgo();
   const [addOpen, setAddOpen] = useState(false);
@@ -208,30 +211,35 @@ export default function AccountsPage() {
   return (
     <div className="flex flex-col h-full bg-surface">
       <div className="px-6 py-4 border-b border-border shrink-0 flex items-center justify-between gap-2 max-md:flex-wrap">
-        <h1 className="text-lg font-semibold text-text">Accounts</h1>
-        <div className="flex items-center gap-2">
+        <h1 className="text-lg font-semibold text-text">{t('accounts.title')}</h1>
+        <div className="flex flex-wrap items-center gap-2">
           {accounts.length > 1 && (
             <RowMenu
-              label="Sort accounts"
+              label={t('accounts.sort.label')}
               trigger={
                 <>
                   <ArrowUpDown size={14} />
-                  Sort: {sort === 'manual' ? 'Manual order' : SORTS[sort].short}
+                  {t('accounts.sort.current', {
+                    sort:
+                      sort === 'manual'
+                        ? t('accounts.sort.manual')
+                        : t(`accounts.sort.${SORTS[sort].id}.short`),
+                  })}
                 </>
               }
               items={[
                 ...(Object.keys(SORTS) as (keyof typeof SORTS)[]).map((key) => ({
-                  label: SORTS[key].label,
+                  label: t(`accounts.sort.${SORTS[key].id}.label`),
                   checked: sort === key,
                   onClick: () => setSort(key),
                 })),
                 {
-                  label: 'Manual order',
+                  label: t('accounts.sort.manual'),
                   checked: sort === 'manual',
                   onClick: () => setSort('manual'),
                 },
                 {
-                  label: 'Edit manual order…',
+                  label: t('accounts.sort.editManual'),
                   divider: true,
                   onClick: () => navigate('/settings?tab=accounts'),
                 },
@@ -239,7 +247,7 @@ export default function AccountsPage() {
             />
           )}
           <Button size="sm" onClick={() => setAddOpen(true)}>
-            <Plus size={14} /> Add Account
+            <Plus size={14} /> {t('accounts.add')}
           </Button>
         </div>
       </div>
@@ -248,16 +256,16 @@ export default function AccountsPage() {
         <div className="flex-1 flex items-center justify-center overflow-y-auto">
           <EmptyState
             icon={<Landmark size={26} />}
-            title="Add the accounts you want to track"
-            description="Checking, savings, credit cards, loans, investments or your home: each account keeps its own balance and transactions, and together they make up your net worth."
+            title={t('accounts.empty.title')}
+            description={t('accounts.empty.description')}
             learnMoreHref={docsUrl('accounts')}
             actions={
               <>
                 <Button onClick={() => setAddOpen(true)}>
-                  <Plus size={14} /> Add your first account
+                  <Plus size={14} /> {t('accounts.empty.addFirst')}
                 </Button>
                 <ButtonLink variant="secondary" to="/settings?tab=connections">
-                  <Link2 size={14} /> Connect a bank
+                  <Link2 size={14} /> {t('accounts.empty.connectBank')}
                 </ButtonLink>
               </>
             }
@@ -279,8 +287,8 @@ export default function AccountsPage() {
           <div className="px-6 pb-6 space-y-4">
             {allGroups.map((g) => (
               <AccountGroup
-                key={g.label}
-                label={g.label}
+                key={g.group}
+                label={t(`accounts.groups.${g.group}`)}
                 accounts={g.accounts}
                 balancesAgo={balancesAgo}
               />

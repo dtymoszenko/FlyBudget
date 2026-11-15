@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AlertTriangle } from 'lucide-react';
 import { useCurrencySettings } from '../../hooks/useCurrency';
 
@@ -8,6 +9,7 @@ import { useCurrencySettings } from '../../hooks/useCurrency';
  * total that's quietly short
  */
 export function MissingRatesBanner({ className = '' }: { className?: string }) {
+  const { t } = useTranslation();
   const { data } = useCurrencySettings();
   const missing = data?.missing;
   if (!missing?.count) return null;
@@ -18,12 +20,14 @@ export function MissingRatesBanner({ className = '' }: { className?: string }) {
     >
       <AlertTriangle size={15} className="shrink-0 text-caution" aria-hidden />
       <span>
-        {missing.count} {missing.currencies.join(', ')} transaction{missing.count === 1 ? '' : 's'}{' '}
-        {missing.count === 1 ? 'has' : 'have'} no {data!.currency} value yet: no exchange rate for{' '}
-        {missing.count === 1 ? 'its' : 'their'} day.
+        {t('currency.missingRates', {
+          count: missing.count,
+          currencies: missing.currencies.join(', '),
+          budget: data!.currency,
+        })}
       </span>
       <Link to="/settings?tab=currencies" className="font-medium text-brand-600 hover:underline">
-        Add a rate
+        {t('currency.addRate')}
       </Link>
     </div>
   );

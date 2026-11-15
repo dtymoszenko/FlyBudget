@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Modal } from '../../ui/Modal';
 import { Input } from '../../ui/Input';
 import { Button } from '../../ui/Button';
@@ -25,6 +26,7 @@ export default function NameModal({
   onSave,
   isOpen = true,
 }: Props) {
+  const { t } = useTranslation();
   const [name, setName] = useState(initialName);
 
   function handleSubmit(e: React.FormEvent) {
@@ -46,7 +48,7 @@ export default function NameModal({
         />
         <div className="flex justify-end gap-2 mt-4">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Cancel
+            {t('common.actions.cancel')}
           </Button>
           <Button type="submit" disabled={!name.trim()}>
             {submitLabel}

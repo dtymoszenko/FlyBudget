@@ -1,10 +1,15 @@
 import { usePreferencesStore } from '../../store/preferencesStore';
 import { ACCOUNT_TYPE_COLORS } from '../../utils/transactionColors';
 
+// `text` holds class names, not text
 const SIZES = {
+  // i18n-ignore
   xs: { box: 'w-4 h-4', text: 'text-[8px]' },
+  // i18n-ignore
   sm: { box: 'w-5 h-5', text: 'text-[9px]' },
+  // i18n-ignore
   md: { box: 'w-8 h-8', text: 'text-xs' },
+  // i18n-ignore
   lg: { box: 'w-14 h-14', text: 'text-lg' },
 } as const;
 

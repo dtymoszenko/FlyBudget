@@ -5,6 +5,7 @@ import { usePreferencesStore } from '../../store/preferencesStore';
 import { CategoryPicker } from './CategoryPicker';
 import { selectorInputClass } from './MerchantSelect';
 import type { CategoryGroup } from '../../types';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   value: string | null;
@@ -22,10 +23,11 @@ export function CategorySelectButton({
   value,
   onChange,
   position = 'below',
-  placeholder = 'Search categories...',
+  placeholder,
   transferAccounts,
-  label = 'Category',
+  label,
 }: Props) {
+  const { t } = useTranslation();
   const showCategoryIcons = usePreferencesStore((s) => s.showCategoryIcons);
   const { data: groups = [] } = useCategories();
   const [open, setOpen] = useState(false);
@@ -34,21 +36,29 @@ export function CategorySelectButton({
     if (!value) return null;
     if (value.startsWith('transfer:')) {
       const account = transferAccounts?.find((a) => `transfer:${a.id}` === value);
-      return account ? { name: `Transfer: ${account.name}`, icon: null } : null;
+      return account
+        ? { name: t('transactions.categoryButton.transferTo', { name: account.name }), icon: null }
+        : null;
     }
     for (const g of groups as CategoryGroup[]) {
       const cat = g.categories.find((c) => c.id === value);
       if (cat) return { name: cat.name, icon: cat.icon };
     }
     return null;
-  }, [value, groups, transferAccounts]);
+  }, [value, groups, transferAccounts, t]);
+
+  const shownPlaceholder = placeholder ?? t('transactions.categoryButton.placeholder');
+  const shownLabel = label ?? t('transactions.categoryButton.label');
 
   return (
     <div className="relative">
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        aria-label={`${label}: ${entry?.name ?? placeholder}`}
+        aria-label={t('transactions.categoryButton.aria', {
+          label: shownLabel,
+          value: entry?.name ?? shownPlaceholder,
+        })}
         aria-expanded={open}
         className={`${selectorInputClass} text-left flex items-center justify-between cursor-pointer`}
       >
@@ -59,7 +69,7 @@ export function CategorySelectButton({
               <span className="text-text">{entry.name}</span>
             </>
           ) : (
-            <span className="text-text-disabled">{placeholder}</span>
+            <span className="text-text-disabled">{shownPlaceholder}</span>
           )}
         </span>
         <ChevronDown size={14} className="text-text-tertiary shrink-0" />

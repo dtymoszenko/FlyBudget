@@ -3,6 +3,7 @@
 // rest of the app works exactly as it does against a real server.
 import { startDemoWorker } from './demoWorker';
 import { resetPreferences } from '../store/preferencesStore';
+import { t } from '../i18n';
 
 export { IS_DEMO } from './isDemo';
 
@@ -65,7 +66,7 @@ export function startDemoApi() {
       request: { method: init?.method ?? 'GET', url: path, headers, body },
     });
     if (!reply.ok || !reply.response) {
-      return new Response(JSON.stringify({ error: 'Something went wrong' }), {
+      return new Response(JSON.stringify({ error: t('demo.error') }), {
         status: 500,
         headers: { 'content-type': 'application/json' },
       });

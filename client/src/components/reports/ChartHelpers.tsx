@@ -1,5 +1,7 @@
 import { format, parseISO } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 import { ChartNoAxesColumn } from 'lucide-react';
+import { t } from '../../i18n';
 import { formatCurrency } from '../../utils/currency';
 import { CATEGORY_COLORS } from '../../utils/chartColors';
 
@@ -15,7 +17,10 @@ export interface TooltipSummary {
 /** `summary` for CurrencyTooltip: the sum of every series at the hovered point. */
 export const sumSeries = (payload: any[]): TooltipSummary | null =>
   payload.length > 1
-    ? { label: 'Total', value: payload.reduce((s, p) => s + (Number(p.value) || 0), 0) }
+    ? {
+        label: t('reports.charts.total'),
+        value: payload.reduce((s, p) => s + (Number(p.value) || 0), 0),
+      }
     : null;
 
 export const TOOLTIP_CLASS = 'bg-surface border border-border rounded-md shadow-hover px-3 py-2';
@@ -32,6 +37,7 @@ export function CurrencyTooltip({
   summary,
   hideZero,
 }: any) {
+  const { t } = useTranslation();
   if (!active || !payload?.length) return null;
   const rows = hideZero ? payload.filter((p: any) => Number(p.value) !== 0) : payload;
   const extra: TooltipSummary | null = summary ? summary(payload) : null;
@@ -40,14 +46,17 @@ export function CurrencyTooltip({
       <p className="text-xs text-text-tertiary mb-1">
         {labelFormatter ? labelFormatter(label, payload) : label}
       </p>
-      {rows.map((p: any) => (
-        <p key={p.name} className="text-xs font-medium" style={{ color: p.color }}>
-          {p.name}: {formatCurrency(p.value)}
+      {rows.map((p: any, i: number) => (
+        <p key={i} className="text-xs font-medium" style={{ color: p.color }}>
+          {t('reports.charts.seriesValue', { name: p.name, amount: formatCurrency(p.value) })}
         </p>
       ))}
       {extra && (
         <p className="text-xs font-semibold text-text mt-1 pt-1 border-t border-border-light">
-          {extra.label}: {formatCurrency(extra.value)}
+          {t('reports.charts.seriesValue', {
+            name: extra.label,
+            amount: formatCurrency(extra.value),
+          })}
         </p>
       )}
     </div>
@@ -60,6 +69,7 @@ export function CurrencyTooltip({
  * for single-color line and area charts).
  */
 export function ShareTooltip({ active, payload, label, total, noSwatch }: any) {
+  const { t } = useTranslation();
   if (!active || !payload?.length) return null;
   const p = payload[0];
   const item = p.payload ?? {};
@@ -75,7 +85,10 @@ export function ShareTooltip({ active, payload, label, total, noSwatch }: any) {
       <p className="text-sm font-semibold text-text tabular-nums">{formatCurrency(value)}</p>
       {total > 0 && (
         <p className="text-xs text-text-tertiary tabular-nums">
-          {((value / total) * 100).toFixed(1)}% of {formatCurrency(total)}
+          {t('reports.charts.shareOf', {
+            percent: ((value / total) * 100).toFixed(1),
+            total: formatCurrency(total),
+          })}
         </p>
       )}
     </div>
@@ -93,18 +106,16 @@ export function ChartSkeleton() {
 }
 
 /** A chart with nothing to draw: says so, and what would fill it */
-export function EmptyState({
-  message = 'No data for this period',
-  hint = 'Add transactions, or pick a longer date range.',
-}: {
-  message?: string;
-  hint?: string;
-}) {
+export function EmptyState({ message, hint }: { message?: string; hint?: string }) {
+  const { t } = useTranslation();
+  const help = hint ?? t('reports.charts.empty.hint');
   return (
     <div className="h-full min-h-24 flex flex-col items-center justify-center text-center gap-1 px-4">
       <ChartNoAxesColumn size={20} className="text-text-disabled mb-1" aria-hidden />
-      <p className="text-sm font-medium text-text-secondary">{message}</p>
-      {hint && <p className="text-xs text-text-tertiary">{hint}</p>}
+      <p className="text-sm font-medium text-text-secondary">
+        {message ?? t('reports.charts.empty.message')}
+      </p>
+      {help && <p className="text-xs text-text-tertiary">{help}</p>}
     </div>
   );
 }
@@ -134,9 +145,9 @@ export function StatCardRow({
   if (variant === 'hero') {
     return (
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {cards.map((c) => (
+        {cards.map((c, i) => (
           <div
-            key={c.label}
+            key={i}
             className="rounded-xl bg-surface border border-border-light shadow-card px-4 py-6 text-center"
           >
             <p
@@ -153,9 +164,9 @@ export function StatCardRow({
   }
   return (
     <div className="flex gap-3 mb-5 flex-wrap">
-      {cards.map((c) => (
+      {cards.map((c, i) => (
         <div
-          key={c.label}
+          key={i}
           className="rounded-lg bg-surface-alt border border-border-light px-4 py-3 min-w-[110px]"
         >
           <p className="text-xs text-text-tertiary">{c.label}</p>

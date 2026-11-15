@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useAccounts } from '../../hooks/useAccounts';
 
 interface Props {
@@ -6,6 +7,7 @@ interface Props {
 }
 
 export default function AccountMultiSelect({ selected, onChange }: Props) {
+  const { t } = useTranslation();
   const { data: accounts = [] } = useAccounts();
   const open = accounts.filter((a) => !a.closedAt);
 
@@ -29,7 +31,7 @@ export default function AccountMultiSelect({ selected, onChange }: Props) {
         onClick={() => onChange([])}
         className={`text-xs px-1.5 py-0.5 rounded ${allSelected ? 'text-brand-600 font-medium' : 'text-text-tertiary hover:text-text-secondary'}`}
       >
-        {allSelected ? 'All selected' : 'Select all'}
+        {allSelected ? t('reports.pickers.allSelected') : t('reports.pickers.selectAll')}
       </button>
       {open.map((a) => {
         const checked = allSelected || selected.includes(a.id);

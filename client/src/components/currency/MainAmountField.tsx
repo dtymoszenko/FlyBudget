@@ -1,16 +1,13 @@
+import { useTranslation } from 'react-i18next';
 import { CurrencyInput } from '../ui/CurrencyInput';
 import { useUpdateTransaction } from '../../hooks/useTransactions';
 import { useBudgetCurrency } from '../../hooks/useCurrency';
 import { formatMoney } from '../../utils/currency';
 import type { Transaction } from '../../types';
 
-const SOURCE_TEXT: Record<string, string> = {
-  rate: "At the day's exchange rate.",
-  manual: 'As you typed it.',
-  transfer: 'What the other side of the transfer is worth.',
-  missing:
-    'No exchange rate for this day yet, so the budget counts it as nothing. Type what it cost, or add a rate in Settings → Currencies.',
-};
+const SOURCES = ['rate', 'manual', 'transfer', 'missing'] as const;
+const isSource = (source: string): source is (typeof SOURCES)[number] =>
+  (SOURCES as readonly string[]).includes(source);
 
 /**
  * For a transaction in another currency than the budget's: what the budget counts it as.
@@ -19,6 +16,7 @@ const SOURCE_TEXT: Record<string, string> = {
  * budget's currency, so it isn't editable then.
  */
 export function MainAmountField({ tx, disabled }: { tx: Transaction; disabled?: boolean }) {
+  const { t } = useTranslation();
   const budgetCurrency = useBudgetCurrency();
   const updateTx = useUpdateTransaction();
   // Shown without a sign, like the amount above it
@@ -39,15 +37,17 @@ export function MainAmountField({ tx, disabled }: { tx: Transaction; disabled?: 
   return (
     <div>
       <label className="text-xs font-medium text-text-secondary mb-1.5 block">
-        Value in {budgetCurrency}
+        {t('currency.mainAmount.label', { currency: budgetCurrency })}
       </label>
       {editable ? (
         <CurrencyInput
           value={value}
           onChange={save}
           currency={budgetCurrency}
-          aria-label={`Value in ${budgetCurrency}`}
-          placeholder={tx.mainAmountSource === 'missing' ? 'No rate yet' : undefined}
+          aria-label={t('currency.mainAmount.label', { currency: budgetCurrency })}
+          placeholder={
+            tx.mainAmountSource === 'missing' ? t('currency.mainAmount.noRate') : undefined
+          }
         />
       ) : tx.mainAmount !== null && tx.mainAmount !== undefined ? (
         <div className="text-sm tabular-nums text-text">{formatMoney(value, budgetCurrency)}</div>
@@ -55,7 +55,7 @@ export function MainAmountField({ tx, disabled }: { tx: Transaction; disabled?: 
       <p
         className={`mt-1 text-xs ${tx.mainAmountSource === 'missing' ? 'text-caution' : 'text-text-tertiary'}`}
       >
-        {SOURCE_TEXT[tx.mainAmountSource] ?? ''}
+        {isSource(tx.mainAmountSource) && t(`currency.mainAmount.source.${tx.mainAmountSource}`)}
         {editable && tx.mainAmountSource === 'manual' && (
           <>
             {' '}
@@ -64,7 +64,7 @@ export function MainAmountField({ tx, disabled }: { tx: Transaction; disabled?: 
               onClick={() => updateTx.mutate({ id: tx.id, data: { mainAmount: null } })}
               className="underline hover:no-underline"
             >
-              Use the day&apos;s rate
+              {t('currency.mainAmount.useRate')}
             </button>
           </>
         )}

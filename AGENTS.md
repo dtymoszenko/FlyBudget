@@ -19,6 +19,7 @@ cd client
 npm run dev          # Vite dev server
 npm run build        # tsc + vite build
 npx vite --mode demo # the website's in-browser demo (server/src/browser/README.md)
+npm run check:i18n   # UI text written in the code instead of en.json, and en.json problems
 ```
 
 **Server only:**
@@ -226,6 +227,17 @@ The website serves the real app at `/demo/` with a sample budget and no server: 
 - `ExternalLink` — opens outside the app (new tab / system browser in Electron) with `rel="noopener noreferrer"`
 
 **First run and empty states**: a new budget opens on `/welcome` (add an account, SimpleFIN or Plaid; "Skip for now" sets the persisted `setupSkipped` preference). Buttons on empty states can open a page's add dialog with `?add=1` (or `?import=1` on an account page) via `useOpenFromLink` (`hooks/useOpenFromLink.ts`): `/transactions`, `/accounts`, `/accounts/:id`, `/recurring`, `/rules`. Links to the user guide use `docsUrl(page)` from `utils/project.ts`; the pages live in `website/docs/`, so keep their file names in sync. The guide (`website/docs/`) explains every feature in detail and the tour (`website/tour/`) is a short overview of each page with a screenshot; when a feature changes, update its guide page, and retake affected screenshots with `e2e/screenshots.ts` (it takes each one in the light and dark theme; pages show them with `<Screenshot name=… />`, which follows the website's theme, never a Markdown image or `<img>`).
+
+### Translations (`client/src/i18n/`)
+
+- Every UI text is in `client/src/i18n/locales/en.json`, read with react-i18next: `const { t } = useTranslation()` in components, `import { t } from '../i18n'` in helpers that run during render and for text made when something happens (undo descriptions, notes saved to the database, messages the client writes). Never call `t()` at module level or keep translated text in module constants, stores or query data.
+- Keys are nested and semantic (`area.component.role`, camelCase, at most 4 levels); a wrong key fails `tsc` (`i18n/i18next.d.ts`). When in doubt, give a text its own key: the same English can need different words in another language.
+- Label maps keep their data and get labels by id at render time (``t(`accounts.types.${type}.label`)``, `accountTypeLabel`, `datePresetLabel`). Never compare or key on displayed text; use ids.
+- Whole sentences only: one key per variant with values (`{{name}}`), never a sentence put together from pieces. Counts are plurals (`key_one`/`key_other` with `{{count, number}}`, `t(key, { count })`). Rich text is `<Trans components={{ … }}>` with named tags; never name a tag after an HTML element that can't hold content (`link`, `source`, `input`, …): its text is dropped.
+- Brand names, CSV headers, file names and data (names, server errors) stay as they are. Put `// i18n-ignore` on the line above anything the checker flags that isn't text.
+- `npm run check:i18n` (`client/scripts/check-i18n.mjs`) fails on UI text written in the code instead of en.json and checks en.json (unused keys, plural pairs, tags); `-- --list` shows each finding, `-- --loose` also lists strings that might be text.
+- Languages are registered in `i18n/languages.ts`. `resolveLanguage` picks the saved choice, else the first device language that's available, else English (preference `language`, default `auto`; installs that had saved preferences before it stay English, ones that never saved any get `auto`). The Language row in Settings → Preferences lists Automatic and each language. A language change remounts the app (`LanguageRoot`), so memoized labels follow. date-fns gets the language for month and day names (`applyLanguage`; weeks still start on Sunday); amounts keep their own format setting.
+- The dev server (and builds with `VITE_I18N_PSEUDO=1`) has a test language, Pseudo (en-XA), that accents and lengthens every text: text that isn't stretched isn't translated, and text that gets cut off won't fit in a longer language.
 
 ### Pages and routes
 

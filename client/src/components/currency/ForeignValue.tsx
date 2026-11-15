@@ -1,4 +1,5 @@
 import { AlertTriangle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../utils/currency';
 import type { Transaction } from '../../types';
 
@@ -13,15 +14,16 @@ export function ForeignValue({
   tx: Pick<Transaction, 'amount' | 'mainAmount' | 'mainAmountSource'>;
   className?: string;
 }) {
+  const { t } = useTranslation();
   if (!tx.mainAmountSource) return null;
   if (tx.mainAmountSource === 'missing') {
     return (
       <span
         className={`inline-flex items-center gap-1 text-xs text-caution ${className}`}
-        title="No exchange rate for this day yet: the budget counts it as nothing until there is one"
+        title={t('currency.foreign.noRateHint')}
       >
         <AlertTriangle size={11} aria-hidden />
-        No rate
+        {t('currency.foreign.noRate')}
       </span>
     );
   }

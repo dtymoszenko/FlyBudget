@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { format, parse } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 import { useBudget } from '../../hooks/useBudget';
 import { formatCurrency } from '../../utils/currency';
 import { Wallet } from 'lucide-react';
@@ -21,6 +22,7 @@ function getStatus(spent: number, planned: number): 'over' | 'warning' | 'health
 }
 
 export default function BudgetProgress({ currentMonth }: Props) {
+  const { t } = useTranslation();
   const { data: groups = [], isLoading } = useBudget(currentMonth);
 
   const monthLabel = useMemo(
@@ -29,18 +31,13 @@ export default function BudgetProgress({ currentMonth }: Props) {
   );
 
   const groupStats = useMemo(() => {
-    const types: { key: BudgetType; name: string }[] = [
-      { key: 'fixed', name: 'Fixed' },
-      { key: 'flexible', name: 'Flexible' },
-      { key: 'non_monthly', name: 'Non-Monthly' },
-    ];
+    const types: BudgetType[] = ['fixed', 'flexible', 'non_monthly'];
     const allCats = groups.filter((g) => !g.isIncome).flatMap((g) => g.categories);
     return types
-      .map((t) => ({
-        id: t.key,
-        name: t.name,
-        planned: allCats.filter((c) => c.budgetType === t.key).reduce((s, c) => s + c.budgeted, 0),
-        spent: allCats.filter((c) => c.budgetType === t.key).reduce((s, c) => s + c.spent, 0),
+      .map((type) => ({
+        id: type,
+        planned: allCats.filter((c) => c.budgetType === type).reduce((s, c) => s + c.budgeted, 0),
+        spent: allCats.filter((c) => c.budgetType === type).reduce((s, c) => s + c.spent, 0),
       }))
       .filter((g) => g.planned > 0);
   }, [groups]);
@@ -69,7 +66,7 @@ export default function BudgetProgress({ currentMonth }: Props) {
     <Card>
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
-          <h3 className="text-base font-bold text-text">Budget</h3>
+          <h3 className="text-base font-bold text-text">{t('dashboard.budget.title')}</h3>
           <Link to="/budget" className="text-sm text-text-tertiary hover:text-text-secondary">
             {monthLabel}
           </Link>
@@ -80,12 +77,12 @@ export default function BudgetProgress({ currentMonth }: Props) {
         <EmptyState
           compact
           icon={<Wallet size={20} />}
-          title={`No budget for ${monthLabel} yet`}
-          description="Set how much you plan to spend in each category, then watch your progress here."
+          title={t('dashboard.budget.emptyTitle', { month: monthLabel })}
+          description={t('dashboard.budget.emptyDescription')}
           learnMoreHref={docsUrl('budgeting')}
           actions={
             <ButtonLink size="sm" to="/budget">
-              Plan your budget
+              {t('dashboard.budget.plan')}
             </ButtonLink>
           }
         />
@@ -99,9 +96,11 @@ export default function BudgetProgress({ currentMonth }: Props) {
             return (
               <div key={g.id} className="py-4 first:pt-0 last:pb-0">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-text">{g.name}</span>
+                  <span className="text-sm font-medium text-text">
+                    {t(`budget.types.${g.id}.label`)}
+                  </span>
                   <span className="text-sm text-text-tertiary tabular-nums">
-                    {formatCurrency(g.planned)} planned
+                    {t('dashboard.budget.planned', { amount: formatCurrency(g.planned) })}
                   </span>
                 </div>
 
@@ -129,7 +128,7 @@ export default function BudgetProgress({ currentMonth }: Props) {
 
                 <div className="flex items-center justify-between mt-2">
                   <span className="text-sm text-text-tertiary tabular-nums">
-                    {formatCurrency(g.spent)} spent
+                    {t('dashboard.budget.spent', { amount: formatCurrency(g.spent) })}
                   </span>
                   <span
                     className={`text-sm font-medium tabular-nums ${
@@ -140,8 +139,9 @@ export default function BudgetProgress({ currentMonth }: Props) {
                           : 'text-positive'
                     }`}
                   >
-                    {status === 'over' ? '-' : ''}
-                    {formatCurrency(Math.abs(remaining))} remaining
+                    {t('dashboard.budget.remaining', {
+                      amount: `${status === 'over' ? '-' : ''}${formatCurrency(Math.abs(remaining))}`,
+                    })}
                   </span>
                 </div>
               </div>

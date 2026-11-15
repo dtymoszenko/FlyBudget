@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Check, ChevronRight, X } from 'lucide-react';
 import { useAccounts } from '../../hooks/useAccounts';
 import { useTransactions } from '../../hooks/useTransactions';
@@ -12,12 +13,13 @@ import { AddAccountModal } from '../accounts/AddAccountModal';
 import { ExternalLink } from '../ui/ExternalLink';
 import { Card } from '../ui/Card';
 
+type StepId = 'account' | 'transactions' | 'recurring' | 'budget' | 'rules';
+type ActionId = 'account' | 'import' | 'connect' | 'recurring' | 'budget' | 'rules';
+
 interface Step {
-  id: string;
-  title: string;
-  description: string;
+  id: StepId;
   done: boolean;
-  action: { label: string; to?: string; onClick?: () => void };
+  action: { id: ActionId; to?: string; onClick?: () => void };
 }
 
 /**
@@ -25,6 +27,7 @@ interface Step {
  * dashboard until every step is done or the user hides it.
  */
 export default function GettingStarted({ currentMonth }: { currentMonth: string }) {
+  const { t } = useTranslation();
   const hidden = usePreferencesStore((s) => s.gettingStartedHidden);
   const setHidden = usePreferencesStore((s) => s.setGettingStartedHidden);
   const [addAccountOpen, setAddAccountOpen] = useState(false);
@@ -42,40 +45,30 @@ export default function GettingStarted({ currentMonth }: { currentMonth: string 
   const steps: Step[] = [
     {
       id: 'account',
-      title: 'Add your first account',
-      description: 'A checking account, credit card or cash: anything that holds money.',
       done: (accounts.data?.length ?? 0) > 0,
-      action: { label: 'Add account', onClick: () => setAddAccountOpen(true) },
+      action: { id: 'account', onClick: () => setAddAccountOpen(true) },
     },
     {
       id: 'transactions',
-      title: 'Bring in your transactions',
-      description: 'Import a CSV file from your bank, connect a bank, or add them by hand.',
       done: (transactions.data?.length ?? 0) > 0,
       action: firstAccount
-        ? { label: 'Import or add', to: `/accounts/${firstAccount.id}` }
-        : { label: 'Connect a bank', to: '/settings?tab=connections' },
+        ? { id: 'import', to: `/accounts/${firstAccount.id}` }
+        : { id: 'connect', to: '/settings?tab=connections' },
     },
     {
       id: 'recurring',
-      title: 'Add your bills and paychecks',
-      description: 'See what’s due next and never miss a payment.',
       done: (schedules.data?.length ?? 0) > 0,
-      action: { label: 'Add recurring', to: '/recurring' },
+      action: { id: 'recurring', to: '/recurring' },
     },
     {
       id: 'budget',
-      title: 'Plan this month’s budget',
-      description: 'With your paychecks and bills in, give the rest of your money a job.',
       done: (budget.data ?? []).some((g) => g.categories.some((c) => c.budgeted !== 0)),
-      action: { label: 'Open budget', to: '/budget' },
+      action: { id: 'budget', to: '/budget' },
     },
     {
       id: 'rules',
-      title: 'Categorize automatically',
-      description: 'Rules sort new transactions for you, by payee, amount and more.',
       done: (rules.data?.length ?? 0) > 0,
-      action: { label: 'Create a rule', to: '/rules' },
+      action: { id: 'rules', to: '/rules' },
     },
   ];
 
@@ -87,15 +80,17 @@ export default function GettingStarted({ currentMonth }: { currentMonth: string 
     <Card padding="none" className="overflow-hidden">
       <div className="flex items-start justify-between gap-3 px-5 pt-4">
         <div>
-          <h2 className="text-base font-semibold text-text">Get started with FlyBudget</h2>
+          <h2 className="text-base font-semibold text-text">
+            {t('dashboard.gettingStarted.title')}
+          </h2>
           <p className="text-sm text-text-tertiary mt-0.5">
-            {doneCount} of {steps.length} done. Each step brings more of your dashboard to life.
+            {t('dashboard.gettingStarted.progress', { done: doneCount, total: steps.length })}
           </p>
         </div>
         <button
           onClick={() => setHidden(true)}
-          aria-label="Hide getting started"
-          title="Hide getting started"
+          aria-label={t('dashboard.gettingStarted.hide')}
+          title={t('dashboard.gettingStarted.hide')}
           className="p-1.5 -mr-1.5 max-md:min-w-11 max-md:min-h-11 flex items-center justify-center rounded-md text-text-tertiary hover:bg-hover hover:text-text"
         >
           <X size={16} />
@@ -105,7 +100,7 @@ export default function GettingStarted({ currentMonth }: { currentMonth: string 
       <div
         className="mx-5 mt-3 h-1.5 rounded-full bg-surface-alt overflow-hidden"
         role="progressbar"
-        aria-label="Getting started progress"
+        aria-label={t('dashboard.gettingStarted.progressLabel')}
         aria-valuemin={0}
         aria-valuemax={steps.length}
         aria-valuenow={doneCount}
@@ -133,16 +128,22 @@ export default function GettingStarted({ currentMonth }: { currentMonth: string 
                       : 'bg-surface-alt text-text-tertiary'
                 }`}
               >
-                {step.done ? <Check size={14} aria-label="Done" /> : i + 1}
+                {step.done ? (
+                  <Check size={14} aria-label={t('dashboard.gettingStarted.done')} />
+                ) : (
+                  i + 1
+                )}
               </span>
               <div className="flex-1 min-w-0">
                 <p
                   className={`text-sm font-medium ${step.done ? 'text-text-tertiary line-through' : 'text-text'}`}
                 >
-                  {step.title}
+                  {t(`dashboard.gettingStarted.steps.${step.id}.title`)}
                 </p>
                 {!step.done && (
-                  <p className="text-xs text-text-tertiary mt-0.5">{step.description}</p>
+                  <p className="text-xs text-text-tertiary mt-0.5">
+                    {t(`dashboard.gettingStarted.steps.${step.id}.description`)}
+                  </p>
                 )}
               </div>
               {!step.done && <StepAction step={step} primary={isNext} />}
@@ -152,12 +153,12 @@ export default function GettingStarted({ currentMonth }: { currentMonth: string 
       </ol>
 
       <div className="px-5 py-3 border-t border-border-light text-xs text-text-tertiary">
-        Not sure where to begin?{' '}
+        {t('dashboard.gettingStarted.help')}{' '}
         <ExternalLink
           href={docsUrl('getting-started')}
           className="font-medium text-brand-600 hover:text-brand-700"
         >
-          Read the getting started guide
+          {t('dashboard.gettingStarted.guide')}
         </ExternalLink>
       </div>
 
@@ -167,12 +168,14 @@ export default function GettingStarted({ currentMonth }: { currentMonth: string 
 }
 
 function StepAction({ step, primary }: { step: Step; primary: boolean }) {
+  const { t } = useTranslation();
   const className = `shrink-0 inline-flex items-center gap-1 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-colors max-md:min-h-11 ${
     primary ? 'bg-brand-600 text-white hover:bg-brand-700' : 'text-brand-600 hover:bg-brand-50'
   }`;
   const content = (
     <>
-      {step.action.label} <ChevronRight size={13} aria-hidden />
+      {t(`dashboard.gettingStarted.actions.${step.action.id}`)}{' '}
+      <ChevronRight size={13} aria-hidden />
     </>
   );
   if (step.action.to) {

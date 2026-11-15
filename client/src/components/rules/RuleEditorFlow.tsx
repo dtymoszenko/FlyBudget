@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { RuleEditorModal } from './RuleEditorModal';
 import { ApplyRulesModal } from './ApplyRulesModal';
 import { useCreateRule, useRules, useUpdateRule } from '../../hooks/useRules';
@@ -22,6 +23,7 @@ const emptyRule = (): RuleInput => ({
 
 /** Rule editor that saves the rule, then optionally previews applying it to existing transactions */
 export function RuleEditorFlow({ isOpen, onClose, rule, initial, title }: Props) {
+  const { t } = useTranslation();
   const { data: rules = [] } = useRules();
   const createRule = useCreateRule();
   const updateRule = useUpdateRule();
@@ -38,7 +40,7 @@ export function RuleEditorFlow({ isOpen, onClose, rule, initial, title }: Props)
       <RuleEditorModal
         isOpen={isOpen && !applyRuleId}
         onClose={onClose}
-        title={title ?? (rule ? 'Edit rule' : 'New rule')}
+        title={title ?? t(rule ? 'rules.editor.editTitle' : 'rules.editor.newTitle')}
         initial={rule ?? initial ?? emptyRule()}
         saving={createRule.isPending || updateRule.isPending}
         onSave={handleSave}
@@ -49,7 +51,7 @@ export function RuleEditorFlow({ isOpen, onClose, rule, initial, title }: Props)
           onClose={onClose}
           ruleIds={[applyRuleId]}
           initialScope="all"
-          title="Apply rule to existing transactions"
+          title={t('rules.apply.ruleTitle')}
         />
       )}
     </>

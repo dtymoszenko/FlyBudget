@@ -1,0 +1,2759 @@
+{
+  "accounts": {
+    "title": "Accounts",
+    "add": "Add Account",
+    "saving": "Saving…",
+    "empty": {
+      "title": "Add the accounts you want to track",
+      "description": "Checking, savings, credit cards, loans, investments or your home: each account keeps its own balance and transactions, and together they make up your net worth.",
+      "addFirst": "Add your first account",
+      "connectBank": "Connect a bank"
+    },
+    "sort": {
+      "label": "Sort accounts",
+      "current": "Sort: {{sort}}",
+      "manual": "Manual order",
+      "editManual": "Edit manual order…",
+      "balanceDesc": {
+        "label": "Balance: high to low",
+        "short": "Highest balance"
+      },
+      "balanceAsc": {
+        "label": "Balance: low to high",
+        "short": "Lowest balance"
+      },
+      "transactions": {
+        "label": "Most transactions",
+        "short": "Most transactions"
+      },
+      "name": {
+        "label": "Name: A to Z",
+        "short": "Name"
+      }
+    },
+    "pastMonth": "past month",
+    "groups": {
+      "cash": "Cash",
+      "credit": "Credit",
+      "investments": "Investments",
+      "property": "Property",
+      "loans": "Loans",
+      "other": "Other"
+    },
+    "types": {
+      "checking": {
+        "label": "Checking",
+        "hint": "Everyday bank account"
+      },
+      "savings": {
+        "label": "Savings",
+        "hint": "Savings, money market, CDs"
+      },
+      "cash": {
+        "label": "Cash",
+        "hint": "Wallet or petty cash"
+      },
+      "credit": {
+        "label": "Credit Card",
+        "hint": "Credit or charge card"
+      },
+      "line_of_credit": {
+        "label": "Line of Credit",
+        "hint": "Personal line of credit or HELOC"
+      },
+      "investment": {
+        "label": "Brokerage",
+        "hint": "Taxable investment account"
+      },
+      "retirement": {
+        "label": "Retirement",
+        "hint": "401(k), IRA, Roth, pension"
+      },
+      "crypto": {
+        "label": "Crypto",
+        "hint": "Exchange account or wallet"
+      },
+      "real_estate": {
+        "label": "Real Estate",
+        "hint": "Home, rental or land"
+      },
+      "vehicle": {
+        "label": "Vehicle",
+        "hint": "Car, motorcycle, boat, RV"
+      },
+      "valuables": {
+        "label": "Valuables",
+        "hint": "Jewelry, art, collectibles, precious metals"
+      },
+      "mortgage": {
+        "label": "Mortgage",
+        "hint": "Home loan"
+      },
+      "auto_loan": {
+        "label": "Auto Loan",
+        "hint": "Car or vehicle loan"
+      },
+      "student_loan": {
+        "label": "Student Loan",
+        "hint": "Federal or private student loan"
+      },
+      "loan": {
+        "label": "Other Loan",
+        "hint": "Personal, medical or family loan"
+      },
+      "other_asset": {
+        "label": "Other Asset",
+        "hint": "Anything else you own"
+      },
+      "other_liability": {
+        "label": "Other Liability",
+        "hint": "Anything else you owe"
+      }
+    },
+    "summary": {
+      "assets": "Assets",
+      "liabilities": "Liabilities",
+      "noAssets": "No bank accounts, investments or property yet.",
+      "noLiabilities": "No credit cards or loans yet.",
+      "add": "Add account"
+    },
+    "form": {
+      "name": "Account Name",
+      "nameLabel": "Account name",
+      "type": "Account Type",
+      "typeLabel": "Account type",
+      "currency": "Currency",
+      "currencyLocked": "Can't be changed once the account has transactions."
+    },
+    "addModal": {
+      "title": "Add Account",
+      "namePlaceholder": "e.g. Chase Checking",
+      "namePlaceholderProperty": "e.g. 2021 Honda Civic",
+      "currencyBecomesBudget": "This also becomes your budget's currency.",
+      "currencyForeign": "Its amounts stay in {{currency}}; your budget counts them in {{budget}} at each day's rate.",
+      "chooseCurrency": "Choose a currency",
+      "owed": "Amount Owed",
+      "owedHint": "What you owe as of today.",
+      "value": "Current Value",
+      "valueHint": "What it's worth today. You can update it any time from the account page.",
+      "balance": "Current Balance",
+      "balanceHint": "Enter your balance as of today.",
+      "offBudget": "Off budget",
+      "offBudgetHint": "Counts toward net worth but not your budget. Recommended for investments, property and loans.",
+      "adding": "Adding…",
+      "submit": "Add Account"
+    },
+    "editModal": {
+      "title": "Edit Account",
+      "logo": "Logo",
+      "changeImage": "Change image",
+      "uploadImage": "Upload image",
+      "useInitials": "Use initials",
+      "cropped": "Cropped to a square.",
+      "showingInitials": "Showing initials. Upload a bank logo or any image.",
+      "imageError": "Could not use that image.",
+      "iconsOff": "Account icons are turned off in Settings → Preferences.",
+      "currencyFixed": "Its transactions are in this currency, so it stays. For another currency, add a new account and move the money with a transfer.",
+      "startingBalance": "Starting Balance",
+      "startingBalanceLabel": "Starting balance",
+      "offBudget": "Off budget (excluded from budgeting)",
+      "close": "Close Account"
+    },
+    "closeConfirm": {
+      "title": "Close Account",
+      "message": "Are you sure you want to close \"{{name}}\"? It will be hidden from your accounts list.",
+      "confirm": "Close Account"
+    },
+    "updateValue": {
+      "balanceTitle": "Update Balance",
+      "valueTitle": "Update Value",
+      "owedToday": "Amount owed today",
+      "valueToday": "Value today",
+      "current": "Currently {{amount}}.",
+      "adds": "Adds a <change>{{amount}}</change> adjustment dated today.",
+      "balanceNote": "Balance update",
+      "valueNote": "Value update"
+    },
+    "detail": {
+      "edit": "Edit",
+      "updateBalance": "Update balance",
+      "updateValue": "Update value",
+      "reconcile": "Reconcile"
+    },
+    "notFound": {
+      "title": "Account not found",
+      "description": "It may have been closed or deleted, or the link is out of date.",
+      "goToAccounts": "Go to Accounts"
+    },
+    "reconcile": {
+      "title": "Reconcile",
+      "heading": "Reconcile: {{name}}",
+      "enterBalance": "Enter your bank's ending balance",
+      "enterBalanceHint": "Check your bank statement or online banking for the current balance.",
+      "statementBalance": "Statement Balance",
+      "statementBalanceLabel": "Statement balance",
+      "currentSelected": "Current selected balance in app",
+      "start": "Start Reconciliation",
+      "columns": {
+        "date": "Date",
+        "payee": "Payee",
+        "amount": "Amount",
+        "cleared": "C"
+      },
+      "empty": "No unreconciled transactions.",
+      "selectedBalance": "Selected Balance",
+      "difference": "Difference",
+      "ready": "Ready to finish!",
+      "saving": "Saving...",
+      "finish": "Finish",
+      "createAdjustment": "Create Adjustment",
+      "adjustmentNote": "Reconciliation adjustment"
+    },
+    "undo": {
+      "create": "Create account \"{{name}}\"",
+      "edit": "Edit account",
+      "close": "Close account \"{{name}}\"",
+      "reorder": "Reorder accounts"
+    }
+  },
+  "auth": {
+    "serverAddress": "Server address",
+    "insecure": "<strong>Not a secure connection.</strong> Your password would travel unencrypted. Only continue on a network you trust.",
+    "login": {
+      "title": "Sign in to FlyBudget",
+      "password": "Password",
+      "submit": "Sign in"
+    },
+    "setup": {
+      "title": "Set up your FlyBudget server",
+      "hint": "Create the password that protects this server. Anyone who can reach it will need this password.",
+      "code": "Setup code",
+      "codeHint": "Printed in the server log. With Docker, run <code>docker logs flybudget</code>.",
+      "password": "New password",
+      "confirm": "Confirm password",
+      "submit": "Create password",
+      "tooShort_one": "Use at least {{count, number}} character.",
+      "tooShort_other": "Use at least {{count, number}} characters.",
+      "mismatch": "The passwords don't match."
+    }
+  },
+  "banks": {
+    "enableBanking": {
+      "connect": {
+        "title": "Connect a European bank",
+        "reconnectTitle": "Reconnect {{bank}}",
+        "setupIntro": "FlyBudget connects to European banks through your own free Enable Banking application. Set it up once:",
+        "reconnectIntro": "Log in at {{bank}} again to give FlyBudget access for the next few months. Your accounts and their history stay as they are.",
+        "logIn": "Log in at your bank",
+        "opening": "Opening your bank…",
+        "tryAgain": "Try again",
+        "syncing": "Bringing in your transactions",
+        "syncingHint": "The first sync asks your bank for its whole history, which can take a minute."
+      },
+      "bankPicker": {
+        "country": "Country",
+        "chooseCountry": "Choose…",
+        "bank": "Bank",
+        "search": "Search banks",
+        "banks": "Banks",
+        "countryFirst": "Choose your bank's country.",
+        "noBanks": "No banks to choose from",
+        "noBanksHint": "Free Enable Banking applications only list the banks of accounts you linked. Open your application in the Enable Banking Control Panel and link your accounts first.",
+        "noMatch": "No bank matches “{{search}}”.",
+        "beta": "beta"
+      },
+      "waiting": {
+        "title": "Log in at your bank in your browser",
+        "hint": "Your bank's page opened in your web browser. When you're done there, it sends you back and FlyBudget carries on by itself.",
+        "ownSite": "You log in on your bank's own site, never in FlyBudget.",
+        "reopen": "Open the bank again",
+        "pasteLabel": "After logging in, copy the whole address from your browser's address bar and paste it here:",
+        "continue": "Continue",
+        "notContinued": "Logged in, but FlyBudget didn't continue?"
+      },
+      "mapping": {
+        "hint": "Choose where each account's transactions go. Accounts you already import statements into are picked for you.",
+        "noAccounts": "Your bank didn't share any accounts. If you use a free Enable Banking application, link the accounts in its Control Panel, then connect again.",
+        "save": "Save and sync",
+        "target": "Where {{name}} goes",
+        "create": "New account",
+        "link": "Existing account",
+        "skip": "Don't sync",
+        "nameFor": "Name for {{name}}",
+        "accountName": "Account name",
+        "typeOf": "Type of {{name}}",
+        "accountFor": "Account for {{name}}",
+        "chooseAccount": "Choose an account…",
+        "suggested": "Your last bank statement for this account went here.",
+        "otherCurrency": "This bank account is in {{bankCurrency}}, but {{account}} is in {{accountCurrency}}. Link it to an account in {{bankCurrency}}, or create a new one.",
+        "fullHistory": "Also bring in older transactions the bank has. Without this, syncing starts a week before this account's latest transaction. Transactions you already imported from files are recognised either way."
+      },
+      "done": {
+        "title": "Bank connected",
+        "problems": "Connected, with problems",
+        "added_one": "Brought in {{count, number}} transaction.",
+        "added_other": "Brought in {{count, number}} transactions.",
+        "adopted_one": "{{count, number}} you already had (from files or typed in) is now kept up to date by the bank.",
+        "adopted_other": "{{count, number}} you already had (from files or typed in) are now kept up to date by the bank.",
+        "skipped_one": "Left out {{count, number}} the bank sent without a date or a readable amount.",
+        "skipped_other": "Left out {{count, number}} the bank sent without a date or a readable amount.",
+        "skippedOrCurrency_one": "Left out {{count, number}} the bank sent without a date or a readable amount, or in another currency.",
+        "skippedOrCurrency_other": "Left out {{count, number}} the bank sent without a date or a readable amount, or in another currency.",
+        "howItSyncs": "FlyBudget syncs when it starts and when you click Sync now. Banks allow only a few automatic updates a day.",
+        "howSyncingWorks": "How syncing works"
+      },
+      "card": {
+        "lastSynced": "Last synced {{ago}}",
+        "loginEnded": "Your bank's access for FlyBudget has ended (banks ask again every few months). Reconnect to keep syncing; your accounts and history stay as they are.",
+        "notLinked": "Not linked",
+        "endsToday": "Bank access ends today. Reconnect to keep syncing.",
+        "endsSoon_one": "Bank access ends on {{date}} (in {{count, number}} day). Reconnect to keep syncing.",
+        "endsSoon_other": "Bank access ends on {{date}} (in {{count, number}} days). Reconnect to keep syncing.",
+        "endsOn_one": "Bank access ends on {{date}} (in {{count, number}} day)",
+        "endsOn_other": "Bank access ends on {{date}} (in {{count, number}} days)",
+        "reconnect": "Reconnect",
+        "syncing": "Syncing…",
+        "syncNow": "Sync now",
+        "disconnect": "Disconnect",
+        "synced": "Synced: {{added}}.",
+        "syncedSkipped": "Synced: {{added}}, {{skipped}}.",
+        "newTransactions_one": "{{count, number}} new transaction",
+        "newTransactions_other": "{{count, number}} new transactions",
+        "leftOut_one": "{{count, number}} left out (no date or unreadable amount)",
+        "leftOut_other": "{{count, number}} left out (no date or unreadable amount)",
+        "disconnectTitle": "Disconnect {{bank}}",
+        "disconnectMessage": "FlyBudget will end its access to {{bank}} at Enable Banking and stop syncing. Your accounts and transactions stay in FlyBudget."
+      },
+      "setup": {
+        "copyRedirectUrl": "Copy the redirect URL",
+        "copy": "Copy",
+        "copied": "Copied",
+        "sandbox": "Sandbox",
+        "production": "Production",
+        "yourApplication": "Your application",
+        "sandboxHint": "A Sandbox application only reaches Enable Banking's test banks. Create a Production application to connect your real bank (it's free for your own accounts).",
+        "redirectMissing": "Your application doesn't list the redirect URL below yet. Add it in the Enable Banking Control Panel, or your bank can't send you back to FlyBudget.",
+        "redirectUrl": "Redirect URL",
+        "replace": "Replace application",
+        "remove": "Remove",
+        "signUp": "Sign up at <controlPanel>Enable Banking <icon/></controlPanel> and create a <strong>Production</strong> application. It's free for your own accounts.",
+        "addRedirect": "Add this redirect URL to the application:",
+        "insecureRedirect": "This server is on plain HTTP. Enable Banking needs an https:// redirect URL: put FlyBudget behind HTTPS (see the self-hosting guide), or you'll paste the address back by hand after each bank login.",
+        "saveKey": "Save the <strong>.pem</strong> file your browser downloads: it's the application's private key, and Enable Banking can't show it again.",
+        "linkAccounts": "Click <strong>Activate by linking accounts</strong> and log in to your bank there. Free applications can only use the accounts you link, so link every account you want in FlyBudget.",
+        "enterDetails": "Copy the application ID and choose the .pem file below.",
+        "applicationId": "Application ID",
+        "applicationIdExample": "e.g. 3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "privateKey": "Private key (.pem file)",
+        "chooseKey": "Choose the .pem file…",
+        "keyHint": "The key stays in FlyBudget, encrypted, and is only used to sign requests to Enable Banking.",
+        "keyTooBig": "That file is too big to be a private key. Choose the .pem file from Enable Banking.",
+        "notAKey": "That file isn't a private key. Choose the .pem file Enable Banking downloaded.",
+        "checking": "Checking…",
+        "save": "Check and save",
+        "guide": "Step-by-step guide"
+      },
+      "login": {
+        "expired": "The bank login took too long. Please try again."
+      }
+    },
+    "status": {
+      "good": "Synced",
+      "syncing": "Syncing...",
+      "error": "Error",
+      "login_required": "Login Required"
+    },
+    "config": {
+      "title": "Set Up Bank Sync"
+    },
+    "mapping": {
+      "hint": "Choose how to set up each discovered account.",
+      "createNew": "Create New",
+      "linkExisting": "Link Existing",
+      "skip": "Skip",
+      "selectAccount": "Select an account...",
+      "accountName": "Account name",
+      "saveAndSync": "Save & Sync"
+    },
+    "syncing": {
+      "title": "Syncing Transactions",
+      "hint": "Importing your transactions. This may take a moment..."
+    },
+    "done": {
+      "title": "Connection Complete",
+      "imported": "Imported {{transactions}} across {{accounts}}.",
+      "transactions_one": "{{count, number}} transaction",
+      "transactions_other": "{{count, number}} transactions",
+      "accounts_one": "{{count, number}} account",
+      "accounts_other": "{{count, number}} accounts"
+    },
+    "card": {
+      "lastSynced": "Last synced {{ago}}",
+      "notLinked": "Not linked",
+      "syncing": "Syncing...",
+      "syncNow": "Sync Now",
+      "disconnect": "Disconnect"
+    },
+    "plaid": {
+      "connect": {
+        "title": "Connect Bank Account",
+        "heading": "Connect Your Financial Institution",
+        "hint": "Securely link your bank accounts to automatically import transactions and keep your balances up to date.",
+        "preparing": "Preparing...",
+        "button": "Connect Bank"
+      },
+      "waiting": {
+        "title": "Finish connecting in your browser",
+        "hint": "Plaid opened in your web browser. Log in to your bank there — FlyBudget will continue automatically when you're done.",
+        "secure": "Your bank login happens on Plaid's secure site, never in FlyBudget.",
+        "reopen": "Open Plaid again"
+      },
+      "link": {
+        "cancelled": "Connection cancelled.",
+        "expired": "The Plaid session expired. Please try again."
+      },
+      "setup": {
+        "title": "Connect via Plaid",
+        "heading": "Connect with Plaid",
+        "intro": "Create a free <accountLink>Plaid developer account</accountLink> to get your API credentials, then enter them below.",
+        "configured": "Plaid Configured",
+        "configuredHint": "Your credentials have been saved. You can now connect your bank."
+      },
+      "config": {
+        "hint": "Connect your bank accounts to automatically import transactions using Plaid. A developer account is free and always includes up to 10 bank connections.",
+        "getCredentials": "Get Plaid credentials"
+      },
+      "credentials": {
+        "clientId": "Client ID",
+        "clientIdPlaceholder": "Enter your Plaid Client ID",
+        "secret": "Secret",
+        "secretPlaceholder": "Enter your Plaid Secret",
+        "saving": "Saving...",
+        "save": "Save Credentials",
+        "error": "Failed to save credentials. Please check your input and try again."
+      },
+      "environment": {
+        "label": "Environment",
+        "production": "Production — your real bank accounts",
+        "sandbox": "Sandbox — test data only (for developers)",
+        "hint": "Use the secret that matches this environment in your Plaid dashboard."
+      },
+      "card": {
+        "loginRequired": "Your bank requires you to re-authenticate. Click \"Reconnect\" to update your credentials.",
+        "reconnect": "Reconnect",
+        "synced": "Synced: {{added, number}} added, {{modified, number}} modified, {{removed, number}} removed."
+      },
+      "disconnect": {
+        "title": "Disconnect Institution",
+        "message": "Are you sure you want to disconnect {{name}}? This revokes FlyBudget's access to this bank at Plaid. Your existing accounts and transactions will not be deleted."
+      }
+    },
+    "simplefin": {
+      "connect": {
+        "title": "Connect via SimpleFIN",
+        "heading": "Connect with SimpleFIN Bridge",
+        "intro": "Visit <bridgeLink>SimpleFIN Bridge</bridgeLink> to create a setup token, then paste it below. SimpleFIN costs $1.50/month paid directly to them.",
+        "placeholder": "Paste your SimpleFIN setup token...",
+        "connecting": "Connecting...",
+        "button": "Connect",
+        "error": "Failed to connect. Check your setup token and try again."
+      },
+      "config": {
+        "hint": "Connect your bank accounts to automatically import transactions using SimpleFIN Bridge. The service costs $1.50/month paid directly to SimpleFIN.",
+        "getToken": "Get a SimpleFIN token",
+        "token": "Setup Token",
+        "placeholder": "Paste your SimpleFIN setup token"
+      },
+      "card": {
+        "synced_one": "Synced: {{count, number}} new transaction imported.",
+        "synced_other": "Synced: {{count, number}} new transactions imported."
+      },
+      "disconnect": {
+        "title": "Disconnect SimpleFIN",
+        "message": "Are you sure you want to disconnect {{name}}? FlyBudget will delete its stored access. To revoke it completely, also remove this app from your SimpleFIN Bridge account at bridge.simplefin.org. Your existing accounts and transactions will not be deleted."
+      }
+    }
+  },
+  "budget": {
+    "sheet": {
+      "title": "Plan {{name}}",
+      "titleFallback": "Plan",
+      "planned": "Planned",
+      "plannedFor": "Planned for {{name}}",
+      "earnedLastMonth": "Earned last month",
+      "spentLastMonth": "Spent last month",
+      "monthlyAverage": "Monthly average",
+      "allYear": "Use this amount for the next 12 months"
+    },
+    "phone": {
+      "progress": "{{actual}} of {{planned}}",
+      "showInactive_one": "Show {{count, number}} inactive category",
+      "showInactive_other": "Show {{count, number}} inactive categories",
+      "hideInactive_one": "Hide {{count, number}} inactive category",
+      "hideInactive_other": "Hide {{count, number}} inactive categories",
+      "remaining": "remaining",
+      "planned": "Planned",
+      "plannedFor": "Planned for {{name}}: {{amount}}",
+      "received": "Received",
+      "spent": "Spent"
+    },
+    "undo": {
+      "set": "Set budget"
+    },
+    "unreadableAmount": "That isn't an amount. Type it like 12.50 or 12,50.",
+    "types": {
+      "fixed": {
+        "label": "Fixed",
+        "description": "Consistent, predictable monthly amount"
+      },
+      "flexible": {
+        "label": "Flexible",
+        "description": "Variable spending that changes each month"
+      },
+      "non_monthly": {
+        "label": "Non-Monthly",
+        "description": "Periodic or irregular expenses"
+      },
+      "savings": {
+        "label": "Savings/Investments",
+        "description": "Savings goals and investment contributions"
+      }
+    },
+    "page": {
+      "previousMonth": "Previous month",
+      "nextMonth": "Next month",
+      "today": "Today",
+      "nothingPlannedTap": "Nothing is planned for {{month}} yet. Tap an amount in the <strong>Planned</strong> column to set what you expect to earn and spend in each category. Categories you leave empty are tucked away once you've planned something.",
+      "nothingPlannedClick": "Nothing is planned for {{month}} yet. Click an amount in the <strong>Planned</strong> column to set what you expect to earn and spend in each category. Categories you leave empty are tucked away once you've planned something.",
+      "howItWorks": "How budgeting works",
+      "income": "Income",
+      "expenses": "Expenses",
+      "planned": "Planned",
+      "actual": "Actual",
+      "remaining": "Remaining",
+      "totalIncome": "Total Income",
+      "totalExpenses": "Total Expenses",
+      "noCategories": "No categories yet. <settingsLink>Add some in Settings</settingsLink>",
+      "plannedFor": "Planned for {{name}}",
+      "plannedForAmount": "Planned for {{name}}: {{amount}}",
+      "savingPaused": "Saving is paused until FlyBudget reconnects",
+      "showInactive_one": "Show {{count, number}} inactive category",
+      "showInactive_other": "Show {{count, number}} inactive categories",
+      "hideInactive_one": "Hide {{count, number}} inactive category",
+      "hideInactive_other": "Hide {{count, number}} inactive categories"
+    },
+    "popover": {
+      "title": "History",
+      "earnedLastMonth": "Earned last month",
+      "spentLastMonth": "Spent last month",
+      "monthlyAverage": "Monthly average",
+      "noHistory": "No history available",
+      "applyToFuture": "Apply {{amount}} to all future months"
+    },
+    "summary": {
+      "toBeBudgeted": "To be budgeted",
+      "overBudget": "Over budget",
+      "fullyBudgeted": "Fully budgeted",
+      "almostBudgeted": "Almost budgeted",
+      "leftToBudget": "Left to budget",
+      "planned": "{{amount}} planned",
+      "remaining": "remaining",
+      "earned": "earned",
+      "spent": "spent",
+      "contributed": "contributed",
+      "saveUp": "Save up",
+      "tabs": {
+        "summary": "Summary",
+        "income": "Income",
+        "expenses": "Expenses"
+      },
+      "income": "Income",
+      "expenses": "Expenses"
+    },
+    "detail": {
+      "categoryFallback": "Category",
+      "breadcrumb": "Budget",
+      "spendingHistory": "Spending History",
+      "noHistory": "No history available",
+      "budget": "Budget",
+      "planned": "Planned",
+      "actual": "Actual",
+      "remaining": "Remaining",
+      "summary": "Summary",
+      "noData": "No data",
+      "totalTransactions": "Total transactions",
+      "largest": "Largest transaction",
+      "average": "Average transaction",
+      "totalIncome": "Total income",
+      "totalSpending": "Total spending",
+      "first": "First transaction",
+      "last": "Last transaction"
+    }
+  },
+  "cashFlow": {
+    "title": "Cash Flow",
+    "presets": {
+      "thisMonth": "1M",
+      "last3Months": "3M",
+      "last6Months": "6M",
+      "thisYear": "This Year",
+      "lastYear": "Last Year",
+      "custom": "Custom"
+    },
+    "exportCsv": "Export CSV",
+    "stats": {
+      "totalIncome": "Total income",
+      "totalExpenses": "Total expenses",
+      "netIncome": "Total net income",
+      "savingsRate": "Savings rate"
+    },
+    "node": {
+      "income": "Income",
+      "totalIncome": "Total Income",
+      "savings": "Savings",
+      "uncategorized": "Uncategorized"
+    },
+    "diagram": {
+      "showTransactions": "Show transactions: {{name}}",
+      "negativeFlows": "Some flows excluded — Sankey diagrams cannot represent negative values (e.g. refunds). Summary totals may differ slightly."
+    },
+    "tooltip": {
+      "ofIncome": "{{percent}}% of total income",
+      "savingsRate": "{{percent}}% savings rate",
+      "ofSpending": "{{percent}}% of total spending",
+      "ofGroup": "{{percent}}% of {{group}}"
+    },
+    "list": {
+      "moneyIn": "Money in",
+      "whereItWent": "Where it went",
+      "saved": "Saved",
+      "shareOfIncome": "{{share}}<srOnly> of income</srOnly>",
+      "hideTransactions": "Hide transactions",
+      "allTransactions": "All {{group}} transactions"
+    },
+    "view": {
+      "label": "Show as",
+      "list": "List",
+      "diagram": "Diagram",
+      "swipe": "Swipe to see it all"
+    },
+    "transactions": {
+      "title": "Transactions: {{name}}",
+      "clear": "Clear"
+    }
+  },
+  "common": {
+    "actions": {
+      "cancel": "Cancel",
+      "close": "Close",
+      "confirm": "Confirm",
+      "done": "Done",
+      "learnMore": "Learn more",
+      "delete": "Delete",
+      "save": "Save"
+    },
+    "actionsMenu": "Actions",
+    "badge": {
+      "credit": "Credit",
+      "positive": "Positive",
+      "negative": "Negative"
+    },
+    "emojiSearch": "Search emoji...",
+    "monthRange": {
+      "choose": "Choose months",
+      "from": "From",
+      "to": "To",
+      "previousYear": "Previous year",
+      "nextYear": "Next year"
+    },
+    "opensInNewTab": "(opens in a new tab)",
+    "dragToReorder": "Drag to reorder",
+    "loading": "Loading...",
+    "errors": {
+      "generic": "Something went wrong.",
+      "tryAgain": "Something went wrong. Try again.",
+      "invalidValues": "Some of the values entered are invalid"
+    }
+  },
+  "connection": {
+    "savingPaused": "Saving is paused until FlyBudget reconnects.",
+    "savedOnDevice": "Can't reach FlyBudget. This is saved on this device and sent when it reconnects.",
+    "banner": {
+      "label": "Connection",
+      "cantReach": "Can't reach FlyBudget.",
+      "dataAsOf": "Showing your data as of {{ago}}.",
+      "lookAround": "You can still look around.",
+      "savedOnDevice": "New transactions are saved on this device; other changes wait until it reconnects.",
+      "savingPaused": "Saving is paused.",
+      "waiting_one": "{{count, number}} transaction waiting to send",
+      "waiting_other": "{{count, number}} transactions waiting to send",
+      "retryNow": "Retry now",
+      "reconnected": "Reconnected. Everything is up to date."
+    },
+    "retry": {
+      "checking": "Checking…",
+      "paused": "Paused while this tab is in the background",
+      "tryingAgain": "Trying again…",
+      "tryingAgainIn": "Trying again in {{seconds}}s",
+      "retrying": "Retrying…",
+      "retryingIn": "Retrying in {{seconds}}s",
+      "progress": "Time until the next try"
+    },
+    "reconnect": {
+      "title": {
+        "desktop": "FlyBudget is starting up again",
+        "server": "Reconnecting to your server",
+        "dev": "Reconnecting to FlyBudget"
+      },
+      "desktopHint": "This usually takes a few seconds.",
+      "serverError": "FlyBudget's server answered with an error.",
+      "cantReach": "Can't reach it right now. {{retry}}",
+      "tryNow": "Try now",
+      "desktopHelp": "If this doesn't go away, quit FlyBudget and open it again. Your data is safe on this computer.",
+      "devHelp": "The development server may be restarting. If it stopped, run <code>npm run dev</code> again.",
+      "troubleshooting": "Troubleshooting",
+      "serverSafe": "Your budget is safe on the server; this page just can't reach it.",
+      "checkRunning": "Check that the container is running:",
+      "checkLog": "See what it logged:",
+      "checkProxy": "If you reach it through a reverse proxy or VPN, check that it's running too, and that this device is connected to the right network."
+    },
+    "device": {
+      "browserOn": "{{browser}} on {{os}}",
+      "unknown": "Unknown browser"
+    },
+    "networkError": "Can't reach FlyBudget right now. Nothing was saved; try again once it reconnects.",
+    "notSaved": "Couldn't be saved"
+  },
+  "currency": {
+    "addRate": "Add a rate",
+    "missingRates_one": "{{count, number}} {{currencies}} transaction has no {{budget}} value yet: no exchange rate for its day.",
+    "missingRates_other": "{{count, number}} {{currencies}} transactions have no {{budget}} value yet: no exchange rate for their day.",
+    "unconverted": "Without {{currencies}}: no exchange rate yet.",
+    "select": {
+      "label": "Currency",
+      "common": "Common",
+      "all": "All currencies"
+    },
+    "foreign": {
+      "noRate": "No rate",
+      "noRateHint": "No exchange rate for this day yet: the budget counts it as nothing until there is one"
+    },
+    "mainAmount": {
+      "label": "Value in {{currency}}",
+      "noRate": "No rate yet",
+      "useRate": "Use the day's rate",
+      "source": {
+        "rate": "At the day's exchange rate.",
+        "manual": "As you typed it.",
+        "transfer": "What the other side of the transfer is worth.",
+        "missing": "No exchange rate for this day yet, so the budget counts it as nothing. Type what it cost, or add a rate in Settings → Currencies."
+      }
+    },
+    "difference": {
+      "why": "What the change in the exchange rate did to this account's value",
+      "fromRate": "{{amount}} from the rate",
+      "title": "Currency difference",
+      "gain": "At today's rate, {{name}} is worth <strong>{{amount}} more</strong> than your budget counted when the money came in. Record it to bring your budget in step: it adds a correction worth that much as income.",
+      "loss": "At today's rate, {{name}} is worth <strong>{{amount}} less</strong> than your budget counted when the money came in. Record it to bring your budget in step: it adds a correction worth that much as spending.",
+      "category": "Category",
+      "noCategory": "No category (net worth only)",
+      "noCategoryHint": "Without a category it stays out of income and spending, like other balance corrections.",
+      "record": "Record difference"
+    }
+  },
+  "dashboard": {
+    "viewAll": "View all",
+    "gettingStarted": {
+      "title": "Get started with FlyBudget",
+      "progress": "{{done}} of {{total}} done. Each step brings more of your dashboard to life.",
+      "hide": "Hide getting started",
+      "progressLabel": "Getting started progress",
+      "done": "Done",
+      "help": "Not sure where to begin?",
+      "guide": "Read the getting started guide",
+      "steps": {
+        "account": {
+          "title": "Add your first account",
+          "description": "A checking account, credit card or cash: anything that holds money."
+        },
+        "transactions": {
+          "title": "Bring in your transactions",
+          "description": "Import a CSV file from your bank, connect a bank, or add them by hand."
+        },
+        "recurring": {
+          "title": "Add your bills and paychecks",
+          "description": "See what’s due next and never miss a payment."
+        },
+        "budget": {
+          "title": "Plan this month’s budget",
+          "description": "With your paychecks and bills in, give the rest of your money a job."
+        },
+        "rules": {
+          "title": "Categorize automatically",
+          "description": "Rules sort new transactions for you, by payee, amount and more."
+        }
+      },
+      "actions": {
+        "account": "Add account",
+        "import": "Import or add",
+        "connect": "Connect a bank",
+        "recurring": "Add recurring",
+        "budget": "Open budget",
+        "rules": "Create a rule"
+      }
+    },
+    "cashFlow": {
+      "title": "Cash Flow",
+      "netThisMonth": "Net this month: <net>{{amount}}</net>",
+      "income": "Income",
+      "expenses": "Expenses",
+      "emptyTitle": "No money in or out yet",
+      "emptyDescription": "Add transactions to compare what comes in with what goes out, month by month.",
+      "add": "Add a transaction"
+    },
+    "netWorth": {
+      "title": "Net Worth",
+      "description": "What you own minus what you owe, across all your accounts.",
+      "add": "Add an account",
+      "presets": {
+        "1m": "1 month",
+        "3m": "3 months",
+        "6m": "6 months",
+        "ytd": "Year to date",
+        "1y": "1 year",
+        "all": "All time"
+      }
+    },
+    "recent": {
+      "title": "Recent Transactions",
+      "emptyTitle": "No transactions yet",
+      "emptyDescription": "Import a CSV file from your bank, connect a bank, or add transactions by hand.",
+      "import": "Import a CSV file",
+      "add": "Add a transaction"
+    },
+    "spending": {
+      "title": "Spending by Category",
+      "emptyTitle": "No spending this month",
+      "emptyDescription": "As you spend, your biggest categories show up here.",
+      "uncategorized": "Uncategorized"
+    },
+    "summary": {
+      "leftToSpend": "Left to Spend",
+      "noBudget": "No budget set this month",
+      "avgIncome": "Avg Monthly Income",
+      "avgExpenses": "Avg Monthly Expenses",
+      "savingsRate": "Savings Rate",
+      "goal": "{{percent}}% goal",
+      "incomeHint": "Shown once you have income"
+    },
+    "upcoming": {
+      "title": "Upcoming Bills",
+      "emptyTitle": "Track your bills and paychecks",
+      "emptyDescription": "Add rent, subscriptions and income that repeat, or let FlyBudget find them in your transactions.",
+      "add": "Add recurring",
+      "none": "Nothing due in the next 30 days.",
+      "when": {
+        "overdue": "{{date}} · {{days}}d overdue",
+        "today": "{{date}} · Today",
+        "tomorrow": "{{date}} · Tomorrow",
+        "inDays": "{{date}} · in {{days}}d"
+      }
+    },
+    "budget": {
+      "title": "Budget",
+      "emptyTitle": "No budget for {{month}} yet",
+      "emptyDescription": "Set how much you plan to spend in each category, then watch your progress here.",
+      "plan": "Plan your budget",
+      "planned": "{{amount}} planned",
+      "spent": "{{amount}} spent",
+      "remaining": "{{amount}} remaining"
+    },
+    "comparison": {
+      "spendingWeek": "Spending <amount>{{amount}} this week</amount>",
+      "spendingMonth": "Spending <amount>{{amount}} this month</amount>",
+      "spendingYear": "Spending <amount>{{amount}} this year</amount>",
+      "modes": {
+        "week_vs_last_week": "This week vs. last week",
+        "month_vs_last_month": "This month vs. last month",
+        "month_vs_last_year": "This month vs. last year",
+        "month_vs_average": "This month vs. average month",
+        "year_vs_last_year": "This year vs. last year"
+      },
+      "thisWeek": "This week",
+      "thisMonth": "This month",
+      "thisYear": "This year",
+      "lastWeek": "Last week",
+      "lastMonth": "Last month",
+      "lastYear": "Last year",
+      "averageMonth": "Average month (last 12 months)",
+      "day": "Day {{day}}",
+      "emptyTitle": "Nothing to compare yet",
+      "emptyDescription": "Once you have some spending, this shows how this period compares with the last one."
+    }
+  },
+  "dateRange": {
+    "presets": {
+      "thisMonth": {
+        "label": "1M",
+        "long": "This month"
+      },
+      "last3Months": {
+        "label": "3M",
+        "long": "Last 3 months"
+      },
+      "last6Months": {
+        "label": "6M",
+        "long": "Last 6 months"
+      },
+      "last12Months": {
+        "label": "12M",
+        "long": "Last 12 months"
+      },
+      "yearToDate": {
+        "label": "YTD",
+        "long": "Year to date"
+      },
+      "lastYear": {
+        "label": "Last Year",
+        "long": "Last year"
+      },
+      "allTime": {
+        "label": "All",
+        "long": "All time"
+      },
+      "custom": {
+        "label": "Custom",
+        "long": "Custom"
+      }
+    },
+    "fromTo": "{{from}} – {{to}}",
+    "frozen": "Frozen",
+    "frozenHint": "Keep these dates fixed instead of moving with the current month"
+  },
+  "demo": {
+    "download": "Download FlyBudget",
+    "banner": {
+      "label": "Demo",
+      "short": "<strong>This is a demo budget.</strong><muted> Nothing is saved.</muted>",
+      "long": "<strong>This is a demo budget</strong><muted>. Change anything you like. Nothing is saved, and closing the tab starts it fresh.</muted>",
+      "home": "Back to home",
+      "homeHint": "Back to the FlyBudget homepage",
+      "startOver": "Start over",
+      "startOverHint": "Start over with the original demo budget",
+      "download": "Download<wide> FlyBudget</wide>"
+    },
+    "notAvailable": {
+      "title": "Not available in the demo",
+      "connectBank": "Connect a bank",
+      "banks": "Bank connections need the FlyBudget app, so the demo can't connect a bank or take bank credentials. In the app, Plaid, SimpleFIN or Enable Banking (European banks) brings in your transactions automatically, and you can also import CSV files from your bank."
+    },
+    "error": "Something went wrong"
+  },
+  "goals": {
+    "title": "Goals",
+    "add": "Add Goal",
+    "empty": {
+      "title": "Save for what matters",
+      "description": "Set a target like an emergency fund, a trip or a new car, and see how close you are and how much to set aside each month."
+    },
+    "stats": {
+      "saved": "Saved",
+      "ofTarget": "{{pct}}% of target",
+      "target": "Target",
+      "left": "Left to save",
+      "reached": "Goals reached",
+      "reachedValue": "{{reached}} of {{total}}"
+    },
+    "group": {
+      "inProgress": "In progress",
+      "completed": "Completed",
+      "count_one": "{{count, number}} goal",
+      "count_other": "{{count, number}} goals"
+    },
+    "row": {
+      "target": "Target {{date}}",
+      "of": "of {{amount}}",
+      "edit": "Edit goal",
+      "delete": "Delete goal",
+      "reached": "Goal reached",
+      "overdue": "Past target date · {{amount}} to go",
+      "toGo": "{{amount}} to go",
+      "perMonth": "· {{amount}}/mo to reach it on time"
+    },
+    "delete": {
+      "title": "Delete Goal",
+      "message": "Delete \"{{name}}\"? This cannot be undone."
+    },
+    "form": {
+      "editTitle": "Edit Goal",
+      "name": "Name",
+      "namePlaceholder": "e.g. Emergency Fund",
+      "target": "Target",
+      "saved": "Saved so far",
+      "targetDate": "Target date",
+      "targetDateOptional": "Target date (optional)",
+      "account": "Linked account",
+      "accountOptional": "Linked account (optional)",
+      "noAccount": "None",
+      "icon": "Icon",
+      "color": "Color",
+      "colorOption": "Color {{color}}",
+      "addTitle": "Add Goal",
+      "add": "Add Goal"
+    },
+    "undo": {
+      "create": "Create goal \"{{name}}\"",
+      "edit": "Edit goal",
+      "delete": "Delete goal \"{{name}}\""
+    }
+  },
+  "images": {
+    "notAnImage": "Please choose an image file.",
+    "processFailed": "Could not process image.",
+    "readFailed": "Could not read that image."
+  },
+  "import": {
+    "skipped": {
+      "count_one": "{{count, number}} row skipped",
+      "count_other": "{{count, number}} rows skipped",
+      "fields": {
+        "date": "date",
+        "amount": "amount",
+        "direction": "direction"
+      },
+      "row": "row {{row}}, {{field}} {{value}}",
+      "quoted": "\"{{value}}\"",
+      "empty": "(empty)",
+      "more": "and {{count, number}} more",
+      "summary": "{{total}}: {{rows}}."
+    },
+    "title": "Import Transactions",
+    "dismiss": "Dismiss",
+    "back": "Back",
+    "checking": "Checking...",
+    "upload": {
+      "drop": "Drag and drop a file from your bank, or click to browse",
+      "formats": "CSV, or a CAMT.053 bank statement (XML)",
+      "checking": "Checking…",
+      "demo": "Demo: your file stays in this browser tab and isn't saved.",
+      "bankFile": "Bank file"
+    },
+    "statement": {
+      "intro_one": "This file has statements for {{count, number}} account. Which one belongs to this account?",
+      "intro_other": "This file has statements for {{count, number}} accounts. Which one belongs to this account?",
+      "label": "Statement",
+      "noNumber": "Account without a number",
+      "option_one": "{{account}} ({{count, number}} transaction)",
+      "option_other": "{{account}} ({{count, number}} transactions)",
+      "optionKnown_one": "{{account}} ({{count, number}} transaction), imported here before",
+      "optionKnown_other": "{{account}} ({{count, number}} transactions), imported here before"
+    },
+    "map": {
+      "intro_one": "Map each column to a field. Found {{count, number}} row.",
+      "intro_other": "Map each column to a field. Found {{count, number}} rows.",
+      "usingSaved": "Using the settings from your last import into this account.",
+      "separator": "Separator",
+      "encoding": "Encoding",
+      "skipRows": "Rows above the header",
+      "dates": "Dates",
+      "amounts": "Amounts",
+      "choose": "Choose…",
+      "outWord": "Word for money out",
+      "outWordPlaceholder": "Optional, e.g. Af",
+      "column": "Column {{name}}",
+      "warn": {
+        "dateSample": "This file doesn't show in which order {{sample}} is written.",
+        "dateMixed": "Rows in this file write dates in different orders.",
+        "amountSample": "This file doesn't show whether {{sample}} uses a decimal point or a decimal comma.",
+        "amountMixed": "Rows in this file write amounts in different formats.",
+        "chooseFormat": "Choose the format your bank uses.",
+        "outWord": "FlyBudget doesn't know what {{words}} means in the direction column. Type the word your bank uses for money going out; other words it doesn't know count as money in."
+      },
+      "fromLastTime": {
+        "dates": "This file doesn't show how it writes dates: using {{format}}, as in your last import into this account.",
+        "amounts": "This file doesn't show how it writes amounts: using {{format}}, as in your last import into this account.",
+        "both": "This file doesn't show how it writes dates or amounts: using {{dateFormat}} and {{numberFormat}}, as in your last import into this account."
+      }
+    },
+    "delimiters": {
+      "comma": "Comma",
+      "semicolon": "Semicolon",
+      "tab": "Tab"
+    },
+    "encodings": {
+      "auto": "Detect",
+      "windows1252": "Western European (Windows-1252)",
+      "windows1250": "Central European (Windows-1250)",
+      "iso88592": "Central European (ISO-8859-2)"
+    },
+    "roles": {
+      "date": "Date",
+      "payee": "Payee",
+      "amount": "Amount",
+      "inflow": "Inflow",
+      "outflow": "Outflow",
+      "direction": "Direction (in/out)",
+      "notes": "Notes",
+      "skip": "Skip"
+    },
+    "preview": {
+      "button": "Preview",
+      "found_one": "{{count, number}} transaction found.",
+      "found_other": "{{count, number}} transactions found.",
+      "duplicates_one": "{{count, number}} duplicate detected.",
+      "duplicates_other": "{{count, number}} duplicates detected.",
+      "willImport_one": "{{count, number}} will be imported.",
+      "willImport_other": "{{count, number}} will be imported.",
+      "entriesLeftOut_one": "{{count, number}} entry is pending or couldn't be read, and left out.",
+      "entriesLeftOut_other": "{{count, number}} entries are pending or couldn't be read, and left out.",
+      "otherCurrency": "This statement is in {{statementCurrency}}, but this account is in {{currency}}. Import it into an account in {{statementCurrency}} instead (you can add one with that currency).",
+      "otherAccount": "This statement is for account {{statementAccount}}, but the last statement imported into this account was for {{knownAccount}}. Check that you're importing it into the right account.",
+      "fixFile": "Fix the file and import it again to include them.",
+      "columns": {
+        "date": "Date",
+        "payee": "Payee",
+        "amount": "Amount"
+      },
+      "rowLabel": "Import {{payee}} on {{date}}",
+      "rowLabelNoPayee": "Import row on {{date}}",
+      "duplicate": "duplicate",
+      "importing": "Importing...",
+      "import_one": "Import {{count, number}} Transaction",
+      "import_other": "Import {{count, number}} Transactions"
+    },
+    "done": {
+      "title": "Import complete",
+      "summary": "{{imported}}, {{skipped}}",
+      "imported_one": "{{count, number}} imported",
+      "imported_other": "{{count, number}} imported",
+      "skipped_one": "{{count, number}} skipped",
+      "skipped_other": "{{count, number}} skipped"
+    },
+    "errors": {
+      "parse": "Could not parse CSV file",
+      "tooManyRows_one": "This file has {{count, number}} transaction. FlyBudget imports up to {{max}} at a time: split it into smaller files.",
+      "tooManyRows_other": "This file has {{count, number}} transactions. FlyBudget imports up to {{max}} at a time: split it into smaller files.",
+      "previewFailed": "Preview failed",
+      "noBooked": "There are no booked transactions in this statement",
+      "unreadable": "Couldn't read this file",
+      "notStatement": "This file isn't a bank statement FlyBudget can read (CAMT.053)",
+      "chooseDates": "Choose how this file writes dates",
+      "chooseAmounts": "Choose how this file writes amounts",
+      "needOutWord": "Type the word your bank uses for money going out",
+      "noneImported": "No rows could be imported. {{skipped}}",
+      "noValidRows": "No valid rows found",
+      "noneSelected": "No rows selected",
+      "importFailed": "Import failed"
+    }
+  },
+  "layout": {
+    "accounts": {
+      "all": "All accounts",
+      "forBudget": "For budget",
+      "offBudget": "Off budget",
+      "none": "No accounts yet",
+      "withoutRate": "Without {{currencies}}: no exchange rate yet",
+      "add": "Add account",
+      "addManual": "Add Manual Account",
+      "connectPlaid": "Connect via Plaid",
+      "connectSimplefin": "Connect via SimpleFIN",
+      "connectEnableBanking": "Connect via Enable Banking"
+    },
+    "helpFooter": {
+      "newHere": "New to FlyBudget?",
+      "guide": "Read the guide",
+      "source": "Source on GitHub",
+      "report": "Report a problem or suggest an idea"
+    },
+    "nav": {
+      "main": "Main",
+      "manage": "Manage",
+      "dashboard": "Dashboard",
+      "accounts": "Accounts",
+      "transactions": "Transactions",
+      "budget": "Budget",
+      "recurring": "Recurring",
+      "reports": "Reports",
+      "cashFlow": "Cash Flow",
+      "goals": "Goals",
+      "payees": "Payees",
+      "rules": "Rules",
+      "settings": "Settings"
+    },
+    "openMenu": "Open menu",
+    "server": {
+      "statusOnline": "Server status: Online, {{place}}",
+      "statusReconnecting": "Server status: Reconnecting, {{place}}",
+      "reconnecting": "Reconnecting…",
+      "placeDemo": "Demo in this browser",
+      "placeComputer": "On this computer",
+      "addressDemo": "This browser",
+      "addressComputer": "This computer",
+      "menu": "Server",
+      "online": "Server online",
+      "reconnectingToServer": "Reconnecting to the server",
+      "address": "Address",
+      "connection": "Connection",
+      "version": "Version",
+      "retryNow": "Retry now",
+      "settings": "Server settings",
+      "signOut": "Sign out",
+      "security": {
+        "encrypted": "Encrypted (HTTPS)",
+        "local": "Stays on this computer",
+        "unencrypted": "Not encrypted (HTTP)"
+      }
+    },
+    "sidebar": {
+      "resize": "Resize sidebar",
+      "help": "Help & docs",
+      "helpLink": "Help & docs (opens in a new tab)",
+      "closeMenu": "Close menu",
+      "pin": "Pin sidebar",
+      "unpin": "Unpin sidebar"
+    },
+    "skipToContent": "Skip to main content"
+  },
+  "payees": {
+    "icon": {
+      "change": "Change image for {{name}}",
+      "upload": "Upload an image for {{name}}",
+      "useInitial": "Use initial instead",
+      "remove": "Remove image for {{name}}",
+      "failed": "Could not use that image."
+    },
+    "undo": {
+      "create": "Create payee \"{{name}}\"",
+      "edit": "Edit payee",
+      "delete": "Delete payee \"{{name}}\""
+    },
+    "title": "Payees",
+    "search": "Search payees…",
+    "mergeSelected_one": "Merge {{count, number}} payees",
+    "mergeSelected_other": "Merge {{count, number}} payees",
+    "noMatch": "No payees match your search.",
+    "empty": {
+      "title": "No payees yet",
+      "description": "Payees are the people and businesses you pay or get paid by. They’re added automatically as you enter or import transactions, and you can give each one a default category.",
+      "add": "Add a transaction"
+    },
+    "listLabel": "Payees",
+    "selectAllLabel": "Select all payees",
+    "selectAll": "Select all",
+    "sortLabel": "Sort payees",
+    "sort": {
+      "nameAsc": "Name (A–Z)",
+      "nameDesc": "Name (Z–A)",
+      "mostTransactions": "Most transactions",
+      "fewestTransactions": "Fewest transactions",
+      "categoryAsc": "Category (A–Z)",
+      "categoryDesc": "Category (Z–A)"
+    },
+    "select": "Select {{name}}",
+    "rename": "Rename {{name}}",
+    "transactionCount_one": "{{count, number}} transaction",
+    "transactionCount_other": "{{count, number}} transactions",
+    "actionsFor": "Actions for {{name}}",
+    "menu": {
+      "rename": "Rename",
+      "delete": "Delete"
+    },
+    "defaultCategoryFor": "Default category for {{name}}",
+    "noDefaultCategory": "No default category",
+    "noDefault": "No default",
+    "columns": {
+      "name": "Name",
+      "category": "Default category",
+      "transactions": "Transactions"
+    },
+    "doubleClickRename": "Double-click to rename",
+    "deleteLabel": "Delete {{name}}",
+    "merge": {
+      "title": "Merge Payees",
+      "intro": "Choose which payee name to keep. All transactions will be moved to the selected payee.",
+      "confirm": "Merge"
+    },
+    "delete": {
+      "title": "Delete Payee",
+      "message": "Delete \"{{name}}\"? This will remove the payee from all their transactions.",
+      "confirm": "Delete"
+    }
+  },
+  "recurring": {
+    "freq": {
+      "once": "One Time",
+      "weekly": "Weekly",
+      "biweekly": "Every 2 Weeks",
+      "semimonthly": "Twice a Month",
+      "monthly": "Monthly",
+      "quarterly": "Quarterly",
+      "semiannually": "Every 6 Months",
+      "yearly": "Yearly"
+    },
+    "status": {
+      "waiting": "Missed",
+      "due": "Due",
+      "upcoming": "Upcoming",
+      "paid": "Paid",
+      "skipped": "Skipped",
+      "cancelled": "Canceled",
+      "paused": "Paused",
+      "scheduled": "Scheduled"
+    },
+    "upcoming": {
+      "presets": {
+        "1": "1 day",
+        "7": "1 week",
+        "14": "2 weeks",
+        "oneMonth": "1 month",
+        "currentMonth": "End of the current month"
+      },
+      "length": {
+        "day_one": "{{count, number}} day",
+        "day_other": "{{count, number}} days",
+        "week_one": "{{count, number}} week",
+        "week_other": "{{count, number}} weeks",
+        "month_one": "{{count, number}} month",
+        "month_other": "{{count, number}} months",
+        "year_one": "{{count, number}} year",
+        "year_other": "{{count, number}} years"
+      },
+      "button": "Upcoming: {{length}}",
+      "buttonTitle": "Change upcoming length"
+    },
+    "lengthModal": {
+      "title": "Change upcoming length",
+      "intro": "Change how many days before its date a recurring item shows as <strong>Upcoming</strong>. Later items show as <strong>Scheduled</strong>.",
+      "note": "This only affects how recurring items are displayed. It can be changed at any time.",
+      "custom": "Custom length",
+      "units": {
+        "day": "Days",
+        "week": "Weeks",
+        "month": "Months",
+        "year": "Years"
+      },
+      "window_one": "Items due within the next <days>{{count, number}} day</days> will show as Upcoming.",
+      "window_other": "Items due within the next <days>{{count, number}} days</days> will show as Upcoming."
+    },
+    "all": {
+      "menu": {
+        "markNextPaid": "Mark next as paid",
+        "skipNext": "Skip next date",
+        "resume": "Resume",
+        "pause": "Pause",
+        "restart": "Restart",
+        "edit": "Edit",
+        "cancel": "Cancel recurring",
+        "deletePermanently": "Delete permanently"
+      },
+      "actionsFor": "Actions for {{name}}",
+      "next": "Next {{date}}",
+      "find": "Find recurring",
+      "add": "Add recurring",
+      "filterPlaceholder": "Filter recurring…",
+      "columns": {
+        "name": "Name",
+        "payee": "Payee",
+        "account": "Account",
+        "nextDate": "Next date",
+        "status": "Status",
+        "amount": "Amount",
+        "frequency": "Frequency"
+      },
+      "noMatch": "No matching recurring items",
+      "noActive": "No active recurring items",
+      "empty": {
+        "title": "No recurring items yet",
+        "description": "Add bills, subscriptions and paychecks to see what’s due and when, or let FlyBudget find them in the transactions you already have."
+      },
+      "showCanceled": "Show canceled recurring ({{count, number}})",
+      "confirm": {
+        "deleteTitle": "Delete recurring item?",
+        "cancelTitle": "Cancel recurring item?",
+        "deleteMessage": "\"{{name}}\" will be permanently deleted. This cannot be undone.",
+        "cancelMessage": "\"{{name}}\" will stop generating occurrences. You can restart it from the canceled list.",
+        "deleteConfirm": "Delete",
+        "cancelConfirm": "Cancel item"
+      }
+    },
+    "row": {
+      "overdue_one": "{{count, number}} day overdue",
+      "overdue_other": "{{count, number}} days overdue",
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "inDays_one": "in {{count, number}} day",
+      "inDays_other": "in {{count, number}} days",
+      "menu": {
+        "markPaid": "Mark as paid",
+        "match": "Match to transaction",
+        "skip": "Skip",
+        "unlink": "Unlink transaction",
+        "edit": "Edit recurring"
+      },
+      "actualPaid": "Actual paid amount",
+      "paidAmount": "Paid {{amount}}"
+    },
+    "calendar": {
+      "more_one": "+{{count, number}} more",
+      "more_other": "+{{count, number}} more"
+    },
+    "suggestions": {
+      "banner_one": "{{count, number}} transaction may match your recurring items",
+      "banner_other": "{{count, number}} transactions may match your recurring items",
+      "hide": "Hide",
+      "review": "Review now",
+      "match": "({{score}}% match)",
+      "accept": "Accept match",
+      "dismiss": "Dismiss"
+    },
+    "matchModal": {
+      "title": "Match to Transaction",
+      "expected": "Expected: {{date}} · {{amount}}",
+      "filterPlaceholder": "Filter by payee or notes…",
+      "none": "No matching transactions found.",
+      "match": "Match"
+    },
+    "discover": {
+      "title": "Search for recurring transactions",
+      "intro": "Your transaction history was scanned for payments from the same payee, for a similar amount, on a regular weekly, biweekly, or monthly schedule. Select any you'd like to track. Matching past transactions will be linked to each new recurring item.",
+      "hint": "Missing something? Transactions are only grouped when they share the same payee, so renaming payees to match may help. Payees you already track aren't listed.",
+      "selectAll": "Select all",
+      "columns": {
+        "payee": "Payee",
+        "account": "Account",
+        "when": "When",
+        "amount": "Amount"
+      },
+      "scanning": "Scanning your transactions…",
+      "none": "No recurring transactions found",
+      "track": "Track {{name}}",
+      "history_one": "{{count, number}} past · since {{date}}",
+      "history_other": "{{count, number}} past · since {{date}}",
+      "selected_one": "{{count, number}} selected",
+      "selected_other": "{{count, number}} selected",
+      "shiftHint": "Shift+click to select a range",
+      "creating": "Creating…",
+      "create_one": "Create {{count, number}} recurring",
+      "create_other": "Create {{count, number}} recurring",
+      "createEmpty": "Create recurring",
+      "describe": {
+        "weekly": "Every week on {{day}}",
+        "weeklyApprox": "Every week on {{day}} (approx.)",
+        "biweekly": "Every 2 weeks on {{day}}",
+        "biweeklyApprox": "Every 2 weeks on {{day}} (approx.)",
+        "monthlyLast": "Every month on the last day",
+        "monthlyLastApprox": "Every month on the last day (approx.)",
+        "monthlyDay_ordinal_one": "Every month on the {{count}}st",
+        "monthlyDay_ordinal_two": "Every month on the {{count}}nd",
+        "monthlyDay_ordinal_few": "Every month on the {{count}}rd",
+        "monthlyDay_ordinal_other": "Every month on the {{count}}th",
+        "monthlyDayApprox_ordinal_one": "Every month on the {{count}}st (approx.)",
+        "monthlyDayApprox_ordinal_two": "Every month on the {{count}}nd (approx.)",
+        "monthlyDayApprox_ordinal_few": "Every month on the {{count}}rd (approx.)",
+        "monthlyDayApprox_ordinal_other": "Every month on the {{count}}th (approx.)"
+      }
+    },
+    "form": {
+      "titleEdit": "Edit Recurring",
+      "titleAdd": "Add Recurring",
+      "name": "Name",
+      "namePlaceholder": "e.g. Netflix, Rent, Paycheck…",
+      "amount": "Amount",
+      "estimatedAmount": "Estimated Amount",
+      "type": "Type",
+      "expense": "Expense",
+      "income": "Income",
+      "precision": "Amount Precision",
+      "amountTypes": {
+        "exact": "Exact",
+        "approximate": "Approx",
+        "variable": "Variable"
+      },
+      "variableHint": "Amount is estimated — used for forecasting and matching, not an exact expectation.",
+      "frequency": "Frequency",
+      "account": "Account",
+      "noAccount": "No account",
+      "startDate": "Start Date",
+      "startDateLabel": "Start date",
+      "endDate": "End Date <optional>(optional)</optional>",
+      "endDateLabel": "End date",
+      "payee": "Payee <optional>(optional)</optional>",
+      "payeeLabel": "Payee",
+      "category": "Category",
+      "notes": "Notes <optional>(optional)</optional>",
+      "notesLabel": "Notes",
+      "notesPlaceholder": "Optional notes…",
+      "autoCreate": "Auto-create transactions",
+      "advancedOpen": "▾ Advanced",
+      "advancedClosed": "▸ Advanced",
+      "weekendAdjustment": "Weekend Adjustment",
+      "weekendAdjustmentLabel": "Weekend adjustment",
+      "weekendOptions": {
+        "none": "None",
+        "before": "Before weekend",
+        "after": "After weekend",
+        "closest": "Closest weekday"
+      },
+      "dateFlexibility": "Date Flexibility <hint>(± days for matching)</hint>",
+      "dateFlexibilityLabel": "Date flexibility",
+      "saveChanges": "Save Changes",
+      "add": "Add Recurring"
+    },
+    "undo": {
+      "create": "Create schedule \"{{name}}\"",
+      "edit": "Edit schedule",
+      "cancel": "Cancel schedule \"{{name}}\"",
+      "markPaid": "Mark as paid"
+    },
+    "page": {
+      "title": "Recurring",
+      "tabs": {
+        "monthly": "Monthly",
+        "all": "All recurring"
+      }
+    },
+    "monthly": {
+      "income": "Income",
+      "expenses": "Expenses",
+      "remaining": "remaining",
+      "incomeSummary": "{{paid}} received of {{total}}",
+      "expensesSummary": "{{paid}} paid of {{total}}",
+      "none": "None this month",
+      "columns": {
+        "date": "Date",
+        "account": "Account",
+        "status": "Status",
+        "amount": "Amount"
+      },
+      "previousMonth": "Previous month",
+      "nextMonth": "Next month",
+      "today": "Today",
+      "views": {
+        "list": "List",
+        "calendar": "Calendar"
+      },
+      "empty": {
+        "title": "Track your bills, subscriptions and paychecks",
+        "description": "See what’s due and what’s been paid each month. Add them one by one, or let FlyBudget find them in the transactions you already have."
+      },
+      "emptyMonth": {
+        "title": "No recurring items this month",
+        "description": "Nothing is scheduled for this month."
+      }
+    }
+  },
+  "reports": {
+    "builder": {
+      "title": "Custom Report",
+      "export": "Export",
+      "update": "Update",
+      "sections": {
+        "chartType": "Chart Type",
+        "mode": "Mode",
+        "groupBy": "Group By",
+        "balanceType": "Balance Type",
+        "dateRange": "Date Range",
+        "accounts": "Accounts",
+        "categories": "Categories"
+      },
+      "modes": {
+        "total": "Total",
+        "time": "Over Time"
+      },
+      "groupByLabel": "Group by",
+      "groupBy": {
+        "category": "Category",
+        "categoryGroup": "Category Group",
+        "payee": "Payee",
+        "account": "Account",
+        "month": "Month"
+      },
+      "balanceTypes": {
+        "expense": "Expenses",
+        "income": "Income",
+        "net": "Net"
+      },
+      "frozen": "Frozen: these dates stay fixed.",
+      "live": "Live: moves forward with the current month."
+    },
+    "chartType": {
+      "types": {
+        "bar": "Bar",
+        "stackedBar": "Stacked",
+        "line": "Line",
+        "area": "Area",
+        "donut": "Donut",
+        "table": "Table"
+      },
+      "onlyIn": {
+        "total": "{{chart}} is only available in 'Total' mode",
+        "time": "{{chart}} is only available in 'Over Time' mode"
+      }
+    },
+    "detail": {
+      "noData": "No data for this period.",
+      "showAll": "Show all {{count, number}}",
+      "exportCsv": "Export CSV",
+      "columns": {
+        "month": "Month",
+        "income": "Income",
+        "expenses": "Expenses",
+        "net": "Net",
+        "transactions": "Transactions",
+        "assets": "Assets",
+        "liabilities": "Liabilities",
+        "netWorth": "Net worth",
+        "change": "Change",
+        "savingsRate": "Savings rate",
+        "category": "Category",
+        "group": "Group",
+        "spent": "Spent",
+        "monthlyAverage": "Monthly average",
+        "share": "Share",
+        "highestMonth": "Highest month",
+        "shareOfAll": "Share of all spending",
+        "payee": "Payee",
+        "account": "Account",
+        "amount": "Amount",
+        "date": "Date",
+        "moneyIn": "Money in",
+        "moneyOut": "Money out"
+      },
+      "footer": {
+        "total": "Total",
+        "monthlyAverage": "Monthly average"
+      },
+      "stats": {
+        "netWorth": "Net Worth",
+        "change": "Change",
+        "assets": "Assets",
+        "liabilities": "Liabilities",
+        "income": "Income",
+        "expenses": "Expenses",
+        "netSavings": "Net Savings",
+        "savingsRate": "Savings Rate",
+        "totalSpent": "Total Spent",
+        "monthlyAverage": "Monthly Average",
+        "biggestCategory": "Biggest Category",
+        "categories": "Categories",
+        "shareOfAll": "Share of All Spending",
+        "moneyIn": "Money In",
+        "moneyOut": "Money Out",
+        "net": "Net",
+        "dailyAverageOut": "Daily Average Out",
+        "overDays_one": "Over {{count, number}} day",
+        "overDays_other": "Over {{count, number}} days"
+      },
+      "summary": {
+        "chartTitle": "Expenses by month",
+        "chartSubtitle": "Spending net of refunds, against the monthly average",
+        "tableTitle": "Monthly breakdown"
+      },
+      "netWorth": {
+        "chartTitle": "Net worth over time",
+        "chartSubtitle": "Assets minus liabilities",
+        "tableTitle": "Month-end balances"
+      },
+      "incomeExpenses": {
+        "chartTitle": "Income vs. expenses",
+        "chartSubtitle": "Money in and out each month",
+        "tableTitle": "Monthly breakdown"
+      },
+      "spending": {
+        "chartTitle": "Spending by category",
+        "chartTitleTop": "Top 10 categories",
+        "chartSubtitleTop": "Every category is listed in the table below",
+        "tableTitle": "All categories"
+      },
+      "trends": {
+        "chartTitle": "Spending over time",
+        "biggest_one": "Your biggest spending category in this period",
+        "biggest_other": "Your {{count, number}} biggest spending categories in this period",
+        "chosen_one": "{{count, number}} chosen category",
+        "chosen_other": "{{count, number}} chosen categories",
+        "tableTitle": "By category",
+        "deletedCategory": "Deleted category",
+        "picker": "Categories ({{count, number}})",
+        "pickBiggest": "Biggest categories",
+        "pickBiggestHint": "The {{count, number}} with the most spending in the date range",
+        "pickUpTo": "Or choose up to {{count, number}}"
+      },
+      "calendar": {
+        "chartTitle": "Transaction calendar",
+        "chartSubtitleNet": "Each day is colored by its net: green when more came in, red when more went out. Click a day to see its transactions.",
+        "chartSubtitle": "Green is money in, red is money out. Click a day to see its transactions.",
+        "tableTitle": "Days with transactions"
+      },
+      "day": {
+        "count_one": "{{count, number}} transaction",
+        "count_other": "{{count, number}} transactions",
+        "moneyIn": "· {{amount}} in",
+        "moneyOut": "· {{amount}} out",
+        "noPayee": "No payee",
+        "split": "Split ({{count, number}})",
+        "uncategorized": "Uncategorized"
+      }
+    },
+    "pickers": {
+      "allSelected": "All selected",
+      "selectAll": "Select all",
+      "groupCategories": "{{name}} categories"
+    },
+    "saved": {
+      "list": "Saved Reports",
+      "modal": {
+        "save": "Save Report",
+        "update": "Update Report",
+        "name": "Report Name",
+        "nameLabel": "Report name",
+        "placeholder": "e.g. Monthly Spending by Payee",
+        "updateButton": "Update"
+      },
+      "undo": {
+        "create": "Create report \"{{name}}\"",
+        "edit": "Edit report",
+        "delete": "Delete report \"{{name}}\""
+      }
+    },
+    "table": {
+      "name": "Name",
+      "amount": "Amount",
+      "total": "Total",
+      "month": "Month"
+    },
+    "page": {
+      "title": "Reports",
+      "editLayout": "Edit layout",
+      "customReport": "Custom Report",
+      "dateRange": "Date range",
+      "ownRange_one": "{{count, number}} widget keeps its own dates",
+      "ownRange_other": "{{count, number}} widgets keep their own dates",
+      "empty": {
+        "title": "This dashboard is empty",
+        "description": "Add charts like net worth, spending trends or a transaction calendar, or build your own report and pin it here."
+      }
+    },
+    "dashboard": {
+      "new": "New dashboard",
+      "name": "Dashboard name",
+      "namePlaceholder": "e.g. Yearly review",
+      "create": "Create",
+      "renameMenu": "Rename dashboard…",
+      "renameTitle": "Rename dashboard",
+      "rename": "Rename",
+      "delete": "Delete dashboard",
+      "deleteMessage": "Delete \"{{name}}\" and its widgets? Saved custom reports are kept.",
+      "addWidget": "Add widget",
+      "builtinReports": "Reports",
+      "customReports": "Custom reports",
+      "newCustomReport": "New custom report…"
+    },
+    "widget": {
+      "open": "Open",
+      "editReport": "Edit report",
+      "renameMenu": "Rename…",
+      "dateRangeMenu": "Date range…",
+      "freeze": "Freeze dates",
+      "unfreeze": "Unfreeze",
+      "useDashboardRange": "Use dashboard range",
+      "moveTo": "Move to {{name}}",
+      "remove": "Remove from dashboard",
+      "frozen": "Frozen",
+      "ownRange": "Own date range",
+      "renameTitle": "Rename widget",
+      "name": "Name",
+      "rename": "Rename",
+      "rangeModal": {
+        "title": "Date range",
+        "follow": "Follow dashboard",
+        "ownHint": "Ignores the dashboard's range",
+        "frozenNote": "Frozen: this widget keeps showing these months.",
+        "liveNote": "Live: this widget moves forward with the current month."
+      },
+      "view": {
+        "dashboard": "Dashboard",
+        "saveHint": "Show these settings on the dashboard widget",
+        "save": "Save to widget",
+        "notSaved": "Not saved: the dashboard widget is unchanged",
+        "following": "Following the dashboard ({{range}})",
+        "keepsDates": "This widget keeps these dates",
+        "ownRange": "This widget has its own date range"
+      },
+      "undo": {
+        "edit": "Edit report widget",
+        "remove": "Remove report widget"
+      }
+    },
+    "builtin": {
+      "summary": {
+        "label": "Summary",
+        "description": "Income, expenses and monthly averages",
+        "totalIncome": "Total Income",
+        "totalExpenses": "Total Expenses",
+        "avgMonthly": "Avg Monthly Expenses",
+        "avgPerTransaction": "Avg Per Transaction"
+      },
+      "netWorth": {
+        "label": "Net Worth",
+        "description": "Assets, liabilities and net worth over time"
+      },
+      "incomeExpenses": {
+        "label": "Income & Expenses",
+        "description": "Money in vs. money out each month"
+      },
+      "spending": {
+        "label": "Spending by Category",
+        "description": "Where your money went, by category"
+      },
+      "spendingTrends": {
+        "label": "Spending Trends",
+        "description": "How spending in your biggest categories changes over time",
+        "biggest_one": "Biggest spending category",
+        "biggest_other": "{{count, number}} biggest spending categories"
+      },
+      "calendar": {
+        "label": "Transaction Calendar",
+        "description": "Money in and out on each day"
+      }
+    },
+    "charts": {
+      "netWorth": {
+        "netWorth": "Net worth",
+        "assets": "Assets",
+        "liabilities": "Liabilities",
+        "netWorthValue": "Net worth: {{amount}}",
+        "assetsValue": "Assets: {{amount}}",
+        "liabilitiesValue": "Liabilities: {{amount}}"
+      },
+      "income": "Income",
+      "expenses": "Expenses",
+      "net": "Net",
+      "spent": "Spent",
+      "total": "Total",
+      "monthlyAverage": "Monthly average",
+      "average": "Avg {{amount}}",
+      "uncategorized": "Uncategorized",
+      "deletedCategory": "Deleted category",
+      "runningTotal": "Running total this month",
+      "captionRunningTotal": "{{caption}} · running total",
+      "seriesValue": "{{name}}: {{amount}}",
+      "shareOf": "{{percent}}% of {{total}}",
+      "empty": {
+        "message": "No data for this period",
+        "hint": "Add transactions, or pick a longer date range."
+      }
+    },
+    "calendar": {
+      "dayLabel": "{{day}}: {{income}} in, {{expenses}} out",
+      "moreOut": "More out",
+      "moreIn": "More in",
+      "in": "In: {{amount}}",
+      "out": "Out: {{amount}}",
+      "net": "Net: {{amount}}",
+      "transactions_one": "{{count, number}} transaction",
+      "transactions_other": "{{count, number}} transactions",
+      "noTransactions": "No transactions"
+    }
+  },
+  "rules": {
+    "title": "Rules",
+    "hint": "Rules run on new and imported transactions, top to bottom. Each matching rule applies, and a rule higher up wins when two set the same thing.",
+    "search": "Search rules…",
+    "run": "Run rules",
+    "add": "Add rule",
+    "noMatches": "No rules match your search.",
+    "empty": {
+      "title": "Let rules do the sorting",
+      "description": "Rules categorize, rename and split transactions for you as they come in, for example “payee contains Netflix → Streaming”. You can also make one from any transaction.",
+      "add": "Add your first rule"
+    },
+    "count": {
+      "filtered_one": "{{shown, number}} of {{count, number}} rule",
+      "filtered_other": "{{shown, number}} of {{count, number}} rules",
+      "summary": "{{rules}} · {{enabled}}",
+      "rules_one": "{{count, number}} rule",
+      "rules_other": "{{count, number}} rules",
+      "enabled_one": "{{count, number}} enabled",
+      "enabled_other": "{{count, number}} enabled"
+    },
+    "row": {
+      "enable": "Enable rule",
+      "disable": "Disable rule",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "if": "If",
+      "then": "Then",
+      "and": "and",
+      "or": "or",
+      "everyTransaction": "Every transaction",
+      "actions": "Rule actions",
+      "edit": "Edit",
+      "duplicate": "Duplicate",
+      "apply": "Apply to existing transactions",
+      "moveUp": "Move up",
+      "moveDown": "Move down"
+    },
+    "delete": {
+      "title": "Delete rule",
+      "message": "Delete this rule? Transactions it already changed stay as they are."
+    },
+    "editor": {
+      "newTitle": "New rule",
+      "editTitle": "Edit rule",
+      "duplicateTitle": "Duplicate rule",
+      "match": "<strong>If</strong> <choice></choice> of these conditions match",
+      "matchLabel": "How conditions combine",
+      "matchAll": "all",
+      "matchAny": "any",
+      "noConditions": "No conditions: this rule applies to every transaction.",
+      "addCondition": "Add condition",
+      "then": "Then",
+      "addAction": "Add action",
+      "applyAfterSave": "Apply to existing transactions after saving",
+      "saving": "Saving…",
+      "save": "Save rule",
+      "field": "Field",
+      "operator": "Operator",
+      "removeCondition": "Remove condition",
+      "rangeAnd": "and",
+      "chooseMany": "Choose one or more…",
+      "chooseOne": "Choose…",
+      "regexExample": "e.g. ^(amzn|amazon)",
+      "text": "Text…",
+      "removeValue": "Remove {{value}}",
+      "addValue": "Type and press Enter…",
+      "action": "Action",
+      "chooseCategory": "Choose a category…",
+      "choosePayee": "Choose or create a payee…",
+      "clearNotesHint": "Leave empty to clear notes",
+      "notesExample": "e.g. #business",
+      "splitHint": "Splits the transaction into parts, each with its own category.",
+      "removeAction": "Remove action"
+    },
+    "split": {
+      "kind": "Split amount type",
+      "kinds": {
+        "fixed": "Amount",
+        "percent": "Percent",
+        "remainder": "Remainder"
+      },
+      "whatsLeft": "What's left",
+      "category": "Category…",
+      "notes": "Notes",
+      "remove": "Remove split",
+      "add": "Add split",
+      "over100": "Percents add up to more than 100%.",
+      "leftover": "Anything left over stays uncategorized."
+    },
+    "preview": {
+      "incomplete": "Fill in every condition to see matching transactions",
+      "checking": "Checking…",
+      "none": "No transactions match yet",
+      "matches_one": "Matches {{count, number}} transaction",
+      "matches_other": "Matches {{count, number}} transactions",
+      "latest_one": "{{matches}} · showing the latest {{count, number}}",
+      "latest_other": "{{matches}} · showing the latest {{count, number}}",
+      "updating": "updating…"
+    },
+    "apply": {
+      "runTitle": "Run rules",
+      "ruleTitle": "Apply rule to existing transactions",
+      "updated_one": "Updated <strong>{{count, number}}</strong> transaction.",
+      "updated_other": "Updated <strong>{{count, number}}</strong> transactions.",
+      "scope": "Which transactions",
+      "scopes": {
+        "uncategorized": "Uncategorized only",
+        "all": "All transactions"
+      },
+      "neverChanged": "Reconciled, transfer and split transactions are never changed.",
+      "checking": "Checking transactions…",
+      "nothing": {
+        "uncategorized": "Nothing to change: no uncategorized transactions would be updated.",
+        "all": "Nothing to change: no transactions would be updated."
+      },
+      "selectAll": "Select all",
+      "columns": {
+        "date": "Date",
+        "payee": "Payee",
+        "amount": "Amount",
+        "changes": "Changes"
+      },
+      "include": "Include this transaction",
+      "applying": "Applying…",
+      "apply_one": "Apply to {{count, number}} transaction",
+      "apply_other": "Apply to {{count, number}} transactions",
+      "changes": {
+        "payee": "Payee",
+        "category": "Category",
+        "notes": "Notes",
+        "split": "Split",
+        "empty": "(empty)"
+      }
+    },
+    "picker": {
+      "select": "Select…",
+      "search": "Search…",
+      "noMatches": "No matches"
+    },
+    "names": {
+      "deleted": "(deleted)",
+      "uncategorized": "Uncategorized"
+    },
+    "fields": {
+      "payee": "Payee",
+      "payee_name": "Payee name",
+      "imported_payee": "Imported description",
+      "notes": "Notes",
+      "amount": "Amount",
+      "direction": "Inflow / outflow",
+      "category": "Category",
+      "account": "Account",
+      "date": "Date"
+    },
+    "fieldHints": {
+      "payee_name": "The payee name as shown on the transaction",
+      "imported_payee": "The original text from your bank or CSV, before any renaming",
+      "amount": "Compares the amount without its sign; add \"{{direction}}\" to tell them apart"
+    },
+    "direction": {
+      "inflow": "Is an inflow",
+      "outflow": "Is an outflow"
+    },
+    "ops": {
+      "is": "is",
+      "is_not": "is not",
+      "contains": "contains",
+      "not_contains": "doesn't contain",
+      "starts_with": "starts with",
+      "ends_with": "ends with",
+      "regex": "matches regex",
+      "one_of": "is one of",
+      "not_one_of": "is not one of",
+      "is_empty": "is empty",
+      "is_not_empty": "is not empty",
+      "gt": "is more than",
+      "gte": "is at least",
+      "lt": "is less than",
+      "lte": "is at most",
+      "between": "is between",
+      "approx": "is about",
+      "before": "is before",
+      "after": "is after",
+      "isOn": "is on",
+      "isUncategorized": "is uncategorized",
+      "isCategorized": "is categorized"
+    },
+    "actionTypes": {
+      "set_category": "Set category",
+      "set_payee": "Rename payee",
+      "set_notes": "Set notes",
+      "prepend_notes": "Add text before notes",
+      "append_notes": "Add text after notes",
+      "split": "Split transaction"
+    },
+    "summary": {
+      "quoted": "\"{{text}}\"",
+      "condition": {
+        "is": "{{field}} is {{value}}",
+        "is_not": "{{field}} is not {{value}}",
+        "contains": "{{field}} contains {{value}}",
+        "not_contains": "{{field}} doesn't contain {{value}}",
+        "starts_with": "{{field}} starts with {{value}}",
+        "ends_with": "{{field}} ends with {{value}}",
+        "regex": "{{field}} matches regex {{value}}",
+        "one_of": "{{field}} is one of {{value}}",
+        "not_one_of": "{{field}} is not one of {{value}}",
+        "is_empty": "{{field}} is empty",
+        "is_not_empty": "{{field}} is not empty",
+        "gt": "{{field}} is more than {{value}}",
+        "gte": "{{field}} is at least {{value}}",
+        "lt": "{{field}} is less than {{value}}",
+        "lte": "{{field}} is at most {{value}}",
+        "between": "{{field}} is between {{from}} and {{to}}",
+        "approx": "{{field}} is about {{value}}",
+        "before": "{{field}} is before {{value}}",
+        "after": "{{field}} is after {{value}}",
+        "isOn": "{{field}} is on {{value}}",
+        "isUncategorized": "{{field}} is uncategorized",
+        "isCategorized": "{{field}} is categorized"
+      },
+      "action": {
+        "setCategory": "Set category to {{category}}",
+        "setPayee": "Rename payee to {{payee}}",
+        "setNotes": "Set notes to \"{{text}}\"",
+        "clearNotes": "Clear notes",
+        "prependNotes": "Add \"{{text}}\" before notes",
+        "appendNotes": "Add \"{{text}}\" after notes",
+        "split": "Split: {{parts}}",
+        "splitPart": "{{amount}} to {{category}}",
+        "splitRest": "the rest to {{category}}",
+        "uncategorized": "uncategorized"
+      }
+    },
+    "undo": {
+      "create": "Create rule",
+      "edit": "Edit rule",
+      "enable": "Enable rule",
+      "disable": "Disable rule",
+      "delete": "Delete rule",
+      "reorder": "Reorder rules"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "tabs": {
+      "categories": "Categories",
+      "accounts": "Accounts",
+      "connections": "Connected Banks",
+      "currencies": "Currencies",
+      "data": "Data",
+      "preferences": "Preferences",
+      "server": "Server"
+    },
+    "footer": "FlyBudget is free software under the <license>GNU AGPL v3</license>. <repo>Source code</repo>",
+    "data": {
+      "title": "Data Export",
+      "hint": "Download your data for backup or analysis.",
+      "export": {
+        "title": "Export Transactions",
+        "hint": "Download all transactions as a CSV file. Optionally filter by date range.",
+        "formatComma": "Amounts are written like -12,50, with semicolons between columns, following your number format in <preferences>Preferences</preferences>. Report exports use the same separator.",
+        "formatDot": "Amounts are written like -12.50, with commas between columns, following your number format in <preferences>Preferences</preferences>. Report exports use the same separator.",
+        "from": "From",
+        "to": "To",
+        "download": "Download CSV"
+      },
+      "backup": {
+        "title": "Full Backup",
+        "hint": "Download a complete JSON backup of all your data — accounts, transactions, budgets, categories, payees, rules, recurring transactions, goals, reports and dashboards. Bank connection credentials are not included.",
+        "download": "Download Backup"
+      },
+      "restore": {
+        "title": "Restore from Backup",
+        "hint": "Replace all of your data with a backup file. A copy of your current data is saved first.",
+        "file": "Backup file",
+        "choose": "Restore Backup…",
+        "restoring": "Restoring…",
+        "notBackup": "{{name}} is not a FlyBudget backup file.",
+        "failed": "Restore failed",
+        "restored_one": "Restored {{name}} ({{count, number}} transaction).",
+        "restored_other": "Restored {{name}} ({{count, number}} transactions).",
+        "safetyCopy": "Your previous data was saved as {{file}} next to the database.",
+        "confirmTitle": "Restore this backup?",
+        "confirmMessage": "All of your current data will be replaced with the contents of {{name}}. Bank connections stay connected.",
+        "confirm": "Replace my data"
+      }
+    },
+    "preferences": {
+      "title": "Preferences",
+      "saved": "Settings are saved automatically to your browser.",
+      "savedDemo": "Settings are kept in this tab while you try the demo.",
+      "reset": {
+        "button": "Reset to defaults",
+        "title": "Reset preferences",
+        "message": "Are you sure you want to reset all preferences to their default values?",
+        "confirm": "Reset"
+      },
+      "language": {
+        "title": "Language",
+        "automatic": "Automatic ({{language}})",
+        "hint": "Automatic uses your device's language when FlyBudget has it, otherwise English."
+      },
+      "theme": {
+        "title": "Theme",
+        "light": "Light",
+        "dark": "Dark",
+        "system": "System"
+      },
+      "sidebar": {
+        "title": "Sidebar",
+        "pinned": "Pinned",
+        "pinnedHint": "Always open",
+        "autoHide": "Auto-hide",
+        "autoHideHint": "Collapsed, opens on hover"
+      },
+      "icons": {
+        "title": "Icons",
+        "merchant": "Merchant",
+        "merchantHint": "Merchant logos (or colored initials) next to merchant names",
+        "category": "Category",
+        "categoryHint": "Emoji icons next to category names",
+        "account": "Account",
+        "accountHint": "Account logos (or colored initials) next to account names",
+        "show": "Show",
+        "hide": "Hide"
+      },
+      "amounts": {
+        "title": "Amounts",
+        "hint": "How amounts are shown and typed on this device. Automatic follows your device's language. You can always type 12.50 or 12,50.",
+        "numberFormat": "Number format",
+        "automatic": "Automatic",
+        "symbolPosition": "Currency symbol position",
+        "currencySymbol": "Currency symbol",
+        "currencySymbolFor": "{{currency}} symbol",
+        "position": {
+          "auto": "Automatic",
+          "before": "Before",
+          "after": "After"
+        },
+        "automaticHint": "Automatic writes it as {{currency}} is written at home. Symbols of other currencies are in <currencies>Currencies</currencies>.",
+        "symbolHint": "Up to 3 characters (e.g. $, €, EUR, kr). Or choose your budget's currency in <currencies>Currencies</currencies>.",
+        "example": "Example:"
+      },
+      "dateFormat": {
+        "title": "Date Format"
+      }
+    },
+    "accounts": {
+      "title": "Account Order",
+      "hint": "Drag to reorder accounts in the sidebar.",
+      "empty": "No accounts yet. Add one from the Accounts page.",
+      "onBudget": "On Budget",
+      "offBudget": "Off Budget"
+    },
+    "connections": {
+      "title": "Connected Banks",
+      "hint": "Automatically import transactions from your financial institutions.",
+      "europeanBanks": "European banks",
+      "synced_one": "{{provider}} sync complete: {{count, number}} new transaction imported.",
+      "synced_other": "{{provider}} sync complete: {{count, number}} new transactions imported.",
+      "syncing": "Syncing...",
+      "syncAll": "Sync All",
+      "addAnotherBank": "Add Another Bank",
+      "addAnotherConnection": "Add Another Connection",
+      "noBanks": "No banks connected via {{provider}} yet.",
+      "connectBank": "Connect Bank",
+      "configuration": "{{provider}} Configuration",
+      "plaidHint": "Enter your Plaid API credentials to enable bank connections.",
+      "simplefinHint": "Enter your SimpleFIN setup token to enable bank connections.",
+      "enableBankingHint": "European banks (EEA), over PSD2. Free with your own Enable Banking application, for your own accounts.",
+      "enableBankingApp": "Enable Banking Application"
+    },
+    "server": {
+      "version": "Version {{version}}",
+      "local": {
+        "title": "Where your data lives",
+        "demo": "In this browser (demo)",
+        "demoHint": "This demo runs entirely in your browser: nothing you change is sent anywhere or saved. In the app, your budget is a file on your computer or on a server you run.",
+        "computer": "On this computer",
+        "computerHint": "Your budget is a file on this computer, and FlyBudget only talks to it through its own local server. Nothing is sent to FlyBudget or anyone else; bank sync contacts Plaid, SimpleFIN or Enable Banking only when you connect a bank."
+      },
+      "selfHost": {
+        "title": "Use FlyBudget on your phone and other devices",
+        "hint": "Run FlyBudget on a server you control, such as a home server or a small cloud machine, and sign in from any browser. Your data moves to that server; nobody else hosts it.",
+        "guide": "Read the self-hosting guide",
+        "backup": "Make a backup first"
+      },
+      "offline": {
+        "title": "Offline copy",
+        "keep": "Keep a copy of my budget on this device",
+        "hint": "When FlyBudget can't reach its server, it opens with what this browser last loaded. You can look through everything and add new transactions; they're sent when it reconnects. The copy is deleted when you sign out. Turn this off on a shared computer.",
+        "waiting_one": "{{count, number}} transaction saved on this device is waiting to be sent.",
+        "waiting_other": "{{count, number}} transactions saved on this device are waiting to be sent."
+      },
+      "security": {
+        "title": "Security check",
+        "checking": "Checking your server…",
+        "allGood": "Everything looks good for how you connected just now.",
+        "warnings_one": "{{count, number}} thing to look at. Each is fixed with a setting in your docker-compose.yml.",
+        "warnings_other": "{{count, number}} things to look at. Each is fixed with a setting in your docker-compose.yml.",
+        "version": "Version {{version}}.",
+        "passed": "Passed",
+        "warning": "Warning"
+      },
+      "checks": {
+        "httpsSecure": "Connection is encrypted (HTTPS)",
+        "httpsLocal": "Connected on the same computer as the server",
+        "httpsMissing": "Not using HTTPS: passwords and data travel unencrypted",
+        "httpsMissingFix": "Put FlyBudget behind a reverse proxy with HTTPS (Caddy, Nginx, Traefik) or a VPN, and set <env>FLYBUDGET_TRUST_PROXY</env>.",
+        "trustProxyOk": "Reverse proxy settings match how you connect",
+        "trustProxyUntrusted": "A reverse proxy is in front of FlyBudget, but not trusted",
+        "trustProxyUntrustedFix": "Set <env>FLYBUDGET_TRUST_PROXY=1</env> (the number of proxies in front of FlyBudget) so HTTPS and client addresses are detected.",
+        "trustProxyUnneeded": "FLYBUDGET_TRUST_PROXY is set, but this request came without a proxy",
+        "trustProxyUnneededFix": "If you connect directly, remove <env>FLYBUDGET_TRUST_PROXY</env>: otherwise clients can fake their address and get around the login attempt limit.",
+        "allowedHostsOk": "Only answers to the addresses you allowed",
+        "allowedHostsMissing": "Answers to any host name",
+        "allowedHostsMissingFix": "Set <env>FLYBUDGET_ALLOWED_HOSTS</env> to the address you use, e.g. <env>FLYBUDGET_ALLOWED_HOSTS=budget.example.com</env>.",
+        "encryptionKeyOk": "Bank credentials are encrypted at rest",
+        "encryptionKeyMissing": "Bank credentials are not encrypted",
+        "encryptionKeyMissingFix": "Set <env>FLYBUDGET_DATA_KEY_FILE</env> to a file with a random key (see the self-hosting guide).",
+        "passwordOk": "A password protects this server",
+        "passwordMissing": "No password is set yet"
+      },
+      "devices": {
+        "title": "Signed-in devices",
+        "hint": "Browsers signed in to this server. Sign out any you don't recognize, then change the password.",
+        "loadFailed": "Couldn't load the devices.",
+        "thisDevice": "This device",
+        "active": "Active {{active}} · signed in {{signedIn}}",
+        "signedIn": "Signed in {{signedIn}}",
+        "signOut": "Sign out",
+        "signOutDevice": "Sign out {{name}}",
+        "signOutOthers": "Sign out all other devices"
+      },
+      "password": {
+        "title": "Change password",
+        "hint": "This password protects your FlyBudget server. Changing it signs out every other device.",
+        "current": "Current password",
+        "new": "New password",
+        "confirm": "Confirm new password",
+        "submit": "Change password",
+        "tooShort_one": "Use at least {{count, number}} character.",
+        "tooShort_other": "Use at least {{count, number}} characters.",
+        "mismatch": "The new passwords don't match.",
+        "changed": "Password changed. Other devices have been signed out."
+      },
+      "signOut": {
+        "title": "Sign out",
+        "hint": "Sign out of FlyBudget on this browser.",
+        "button": "Sign out"
+      }
+    },
+    "currencies": {
+      "title": "Currencies",
+      "hint": "Your budget has one currency. Accounts can each have their own: their amounts stay in it, and the budget and reports count them in yours at each day's exchange rate.",
+      "learnMore": "How currencies work",
+      "budget": {
+        "title": "Budget currency",
+        "hint": "What your budget, reports and net worth are counted in. It can be corrected while no account in another currency has transactions.",
+        "chooseHint": "Choose the currency your amounts are in. Nothing is converted: it only names the currency, so accounts in other currencies can be added.",
+        "change": "Change",
+        "use": "Use this currency"
+      },
+      "values": {
+        "title": "Values in {{currency}}",
+        "missing_one": "{{count, number}} transaction in {{currencies}} has no exchange rate for its day yet, so the budget counts it as nothing. Add a rate below, or turn on downloading.",
+        "missing_other": "{{count, number}} transactions in {{currencies}} have no exchange rate for their day yet, so the budget counts them as nothing. Add a rate below, or turn on downloading.",
+        "hint": "Every transaction in another currency has its value in {{currency}}. Values stay as they were when a rate changes; recalculate after correcting a rate.",
+        "recalculate": "Recalculate from rates",
+        "updated_one": "{{count, number}} value updated.",
+        "updated_other": "{{count, number}} values updated.",
+        "nothingToUpdate": "Nothing to update.",
+        "typedInStay": "Values you typed in stay."
+      },
+      "rates": {
+        "title": "Exchange rates",
+        "hint": "A day without a rate uses the closest earlier one, up to a month back. A rate you type in wins over a downloaded one for its day.",
+        "typedIn": "typed in",
+        "noRecentRate": "No rate in the last month",
+        "currency": "Currency",
+        "day": "Day",
+        "rate": "1 {{currency}} in {{budget}}",
+        "add": "Add rate",
+        "invalid": "Type the rate as a positive number, like 1.0812.",
+        "typedInTitle": "Rates you typed in",
+        "delete": "Delete the rate for {{currency}} on {{date}}"
+      },
+      "download": {
+        "title": "Download rates",
+        "hint": "The European Central Bank's daily reference rates, from {{host}} (Frankfurter, open source). Only currency codes and dates are sent, never anything about your budget. Off until you turn it on; then it checks every few hours.",
+        "notInDemo": "Not available in the demo: rates can be typed in above.",
+        "enable": "Download ECB reference rates",
+        "downloading": "Downloading…",
+        "now": "Download now",
+        "last": "Last downloaded {{date}}",
+        "never": "Not downloaded yet",
+        "unsupported": "{{status}}. The ECB has no rates for {{currencies}}: type those in.",
+        "server": "Server (optional, for your own Frankfurter)",
+        "saveServer": "Save server",
+        "hintNoServer": "The European Central Bank's daily reference rates, from the rates server (Frankfurter, open source). Only currency codes and dates are sent, never anything about your budget. Off until you turn it on; then it checks every few hours."
+      },
+      "display": {
+        "title": "How amounts are written",
+        "hint": "On this device. Automatic writes each currency as at home: 1 234,56 zł, $1,234.56, CHF 1'234.56 (the number format is in Preferences). {{budget}}'s position is the Preferences one.",
+        "symbol": "{{currency}} symbol",
+        "position": "{{currency}} symbol position",
+        "autoBefore": "Automatic (before)",
+        "autoAfter": "Automatic (after)",
+        "before": "Before",
+        "after": "After"
+      }
+    },
+    "categories": {
+      "sections": {
+        "income": "Income",
+        "expense": "Expenses"
+      },
+      "createGroup": "Create group",
+      "groupNamePlaceholder": "Group name...",
+      "addGroup": "Add group",
+      "noGroups": "No groups yet.",
+      "reorderGroup": "Drag to reorder group",
+      "reorderCategory": "Drag to reorder {{name}}",
+      "editCategory": "Edit {{name}}",
+      "editGroup": "Edit",
+      "noCategories": "No categories yet.",
+      "pickIcon": "Pick icon",
+      "categoryNamePlaceholder": "Category name...",
+      "addCategory": "Add category",
+      "createCategory": "Create Category",
+      "deleteGroup": {
+        "title": "Delete Group",
+        "message": "Delete \"{{name}}\" and all its categories? This cannot be undone."
+      },
+      "deleteEmpty": {
+        "title": "Delete Category",
+        "message": "Delete \"{{name}}\"? This cannot be undone."
+      },
+      "deleteModal": {
+        "title": "Delete Category",
+        "summary_one": "<name>{{name}}</name> has <count>{{count, number}}</count> transaction. Choose a category to reassign them to before deleting.",
+        "summary_other": "<name>{{name}}</name> has <count>{{count, number}}</count> transactions. Choose a category to reassign them to before deleting.",
+        "allocations": "Budget allocations for this category will be removed.",
+        "moveTo": "Move transactions to",
+        "select": "Select a category...",
+        "confirm": "Reassign & Delete"
+      },
+      "undo": {
+        "createGroup": "Create group \"{{name}}\"",
+        "renameGroup": "Rename group",
+        "deleteGroup": "Delete group \"{{name}}\"",
+        "reorderGroups": "Reorder groups",
+        "createCategory": "Create category \"{{name}}\"",
+        "editCategory": "Edit category",
+        "reorderCategories": "Reorder categories"
+      },
+      "edit": {
+        "title": "Edit Category",
+        "iconAndName": "Icon & Name",
+        "changeIcon": "Change icon",
+        "categoryName": "Category name",
+        "group": "Group",
+        "budgetType": "Budget Type",
+        "saving": "Saving..."
+      }
+    }
+  },
+  "transactions": {
+    "page": {
+      "title": "All Transactions",
+      "add": "Add"
+    },
+    "add": {
+      "title": "Add transaction",
+      "debit": "Debit",
+      "credit": "Credit",
+      "amount": "Amount *",
+      "amountAria": "Amount",
+      "otherAccount": "the other account",
+      "otherAmount": {
+        "received": "Amount received in {{name}} ({{currency}}) *",
+        "sent": "Amount sent in {{name}} ({{currency}}) *",
+        "aria": "Amount in {{currency}}"
+      },
+      "rateHint": {
+        "typed": "As your bank shows it.",
+        "rate": "At the rate on {{date}} ({{rate}}). Change it to what your bank shows.",
+        "noRateReceived": "No rate for this day: type what arrived.",
+        "noRateSent": "No rate for this day: type what was sent."
+      },
+      "merchant": "Merchant *",
+      "date": "Date *",
+      "account": {
+        "plain": "Account *",
+        "from": "From account *",
+        "to": "To account *",
+        "select": "Select account...",
+        "onBudget": "On Budget",
+        "offBudget": "Off Budget"
+      },
+      "category": "Category",
+      "splitBetween": "Split between categories",
+      "split": "Split",
+      "notes": "Notes",
+      "notesPlaceholder": "Add a note...",
+      "adding": "Adding...",
+      "saveOnDevice": "Save on device",
+      "submit": "Add transaction"
+    },
+    "categoryPicker": {
+      "search": "Search categories...",
+      "searchAria": "Search categories",
+      "uncategorized": "Uncategorized",
+      "transfer": "Transfer",
+      "transferTo": "Transfer: {{name}}",
+      "none": "No categories found",
+      "budgetTypes": {
+        "fixed": "Fixed",
+        "flexible": "Flexible",
+        "nonMonthly": "Non-Monthly"
+      },
+      "newName": "Category name",
+      "newNameAria": "New category name",
+      "creating": "Creating...",
+      "create": "Create",
+      "createNew": "Create new category"
+    },
+    "categorySelect": {
+      "label": "Category",
+      "uncategorized": "Uncategorized",
+      "transfer": "Transfer",
+      "transferTo": "Transfer: {{name}}"
+    },
+    "categoryButton": {
+      "label": "Category",
+      "placeholder": "Search categories...",
+      "transferTo": "Transfer: {{name}}",
+      "aria": "{{label}}: {{value}}"
+    },
+    "merchantSelect": {
+      "placeholder": "Search merchants...",
+      "label": "Merchant",
+      "offline": "New merchants can be added once FlyBudget reconnects.",
+      "create": "Create new merchant: “{{name}}”"
+    },
+    "payeeCombobox": {
+      "label": "Payee",
+      "newPayee": "New payee: \"{{name}}\""
+    },
+    "payeePicker": {
+      "search": "Search merchants...",
+      "yours": "Your merchants",
+      "none": "No merchants found",
+      "create": "Create new \"{{name}}\" merchant"
+    },
+    "splitParts": {
+      "category": "Split {{n}} category",
+      "amount": "Split {{n}} amount",
+      "remove": "Remove split {{n}}",
+      "notes": "Notes",
+      "notesAria": "Split {{n}} notes",
+      "add": "Add split",
+      "balanced": "Balanced",
+      "remaining": "{{amount}} remaining",
+      "setTo": "Set split {{n}} to {{amount}}"
+    },
+    "splitModal": {
+      "title": "Split transaction",
+      "thisTransaction": "This transaction",
+      "intro": "{{payee}}: <amount>{{amount}}</amount>. Each part counts toward its own category; the account balance doesn't change.",
+      "saveFailed": "Couldn't save the split. Try again.",
+      "unsplit": "Unsplit",
+      "unsplitHint": "Make it one uncategorized transaction again",
+      "saving": "Saving...",
+      "save": "Save split"
+    },
+    "filters": {
+      "search": "Search payee or notes…",
+      "category": "Category",
+      "clearCategory": "Clear category filter",
+      "presets": {
+        "thisMonth": "This Month",
+        "last3": "Last 3 Months",
+        "thisYear": "This Year",
+        "all": "All Time"
+      }
+    },
+    "form": {
+      "editTitle": "Edit transaction",
+      "newTitle": "New transaction",
+      "date": "Date",
+      "payee": "Payee",
+      "category": "Category",
+      "split": "Split",
+      "notes": "Notes",
+      "outflow": "Outflow",
+      "inflow": "Inflow",
+      "save": "Save",
+      "savePaused": "Save (paused until FlyBudget reconnects)",
+      "saveOnThisDevice": "Save on this device (sent when FlyBudget reconnects)",
+      "saveOnDevice": "Save on device",
+      "splitTransaction": "Split transaction",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "splitCategory": "Split {{n}} category",
+      "splitNotes": "Split {{n}} notes",
+      "splitAmount": "Split {{n}} amount",
+      "removeSplit": "Remove split {{n}}",
+      "addSplit": "Add split",
+      "balanced": "Balanced",
+      "remaining": "{{amount}} remaining"
+    },
+    "suggestions": {
+      "section": "Possible transfers",
+      "heading_one": "{{count, number}} possible transfer between your accounts.",
+      "heading_other": "{{count, number}} possible transfers between your accounts.",
+      "explain": "The same amount left one account and arrived in another within a few days.",
+      "review": "Review",
+      "dismiss": "Dismiss",
+      "title": "Possible transfers",
+      "intro": "Linked transfers move money between your accounts, so they aren't counted as spending or income. Untick any that aren't transfers, or choose <emphasis>Not a transfer</emphasis> so they aren't suggested again.",
+      "linkFailed": "Couldn't link the transfers. Please try again.",
+      "dismissFailed": "Couldn't save “Not a transfer”. Please try again.",
+      "cancel": "Cancel",
+      "linking": "Linking…",
+      "link_one": "Link {{count, number}} transfer",
+      "link_other": "Link {{count, number}} transfers",
+      "notice": {
+        "linked_one": "Linked {{count, number}} transfer.",
+        "linked_other": "Linked {{count, number}} transfers.",
+        "failed_one": "{{count, number}} had changed and was skipped.",
+        "failed_other": "{{count, number}} had changed and were skipped.",
+        "interrupted": "The connection dropped before the rest; review them again later."
+      },
+      "row": {
+        "anotherAccountFrom": "Another account",
+        "anotherAccountTo": "another account",
+        "noPayee": "No payee",
+        "side": "{{date}} · {{payee}}",
+        "amountChange": "{{sent}} → {{received}}",
+        "linkAria": "Link {{amount}} from {{from}} to {{to}}",
+        "notTransfer": "Not a transfer",
+        "notTransferAria": "Not a transfer: {{amount}} from {{from}} to {{to}}"
+      }
+    },
+    "waiting": {
+      "title": "Saved on this device",
+      "sending": "Sending…",
+      "offline": "Sent when FlyBudget reconnects. Not in balances or the budget yet.",
+      "transferTo": "Transfer: {{name}}",
+      "anotherAccount": "another account",
+      "noPayee": "No payee",
+      "transfer": "Transfer",
+      "split": "Split ({{n}})",
+      "uncategorized": "Uncategorized",
+      "withAccount": "{{detail}} · {{account}}",
+      "notSaved": "Not saved: {{error}}",
+      "tryAgain": "Try again",
+      "tryAgainAria": "Try again: {{name}}",
+      "discard": "Discard",
+      "discardAria": "Discard {{name}}",
+      "discardTitle": "Discard this transaction?",
+      "discardMessage": "It was only saved on this device and hasn't been sent to FlyBudget, so it will be gone."
+    },
+    "undo": {
+      "makeTransfer": "Make transfer",
+      "link_one": "Link {{count, number}} transfer",
+      "link_other": "Link {{count, number}} transfers",
+      "notTransfer": "Not a transfer",
+      "create": "Create transaction",
+      "edit": "Edit transaction",
+      "split": "Split transaction",
+      "unsplit": "Unsplit transaction",
+      "delete": "Delete transaction",
+      "createTransfer": "Create transfer"
+    },
+    "csv": {
+      "dateRequired": "Date column is required",
+      "amountRequired": "At least one amount column is required"
+    },
+    "table": {
+      "count_one": "{{count, number}} transaction",
+      "count_other": "{{count, number}} transactions",
+      "importCsv": "Import CSV",
+      "add": "Add Transaction",
+      "savingPaused": "Saving is paused until FlyBudget reconnects",
+      "savedOnDevice": "Saved on this device and sent when FlyBudget reconnects",
+      "newTitle": "New transaction",
+      "dayTotalHint": "In {{currency}}, at each day's rate",
+      "showing_one": "Showing {{shown, number}} of {{count, number}} transaction",
+      "showing_other": "Showing {{shown, number}} of {{count, number}} transactions",
+      "showMore_one": "Show {{count, number}} more",
+      "showMore_other": "Show {{count, number}} more",
+      "empty": {
+        "title": "No transactions yet",
+        "accountHint": "Import a CSV file downloaded from your bank, or add transactions by hand as you spend.",
+        "allHint": "Add transactions by hand, import a CSV file from an account page, or connect a bank to bring them in automatically.",
+        "import": "Import a CSV file",
+        "add": "Add a transaction",
+        "connect": "Connect a bank"
+      },
+      "notFound": {
+        "title": "No transactions found",
+        "filtered": "Nothing matches your search and filters.",
+        "here": "There are no transactions here.",
+        "range": "There are no transactions in this date range.",
+        "clearFilters": "Clear filters",
+        "showAllDates": "Show all dates"
+      }
+    },
+    "row": {
+      "transfer": "Transfer",
+      "showPayee": "Show all \"{{name}}\" transactions",
+      "showCategory": "Show all \"{{name}}\" transactions",
+      "split": "Split ({{n}})",
+      "goToAccount": "Go to {{name}}"
+    },
+    "card": {
+      "transfer": "Transfer",
+      "split": "Split ({{n}})",
+      "uncategorized": "Uncategorized",
+      "reconciled": "Reconciled"
+    },
+    "detail": {
+      "aria": "Transaction details",
+      "title": "Transaction Details",
+      "close": "Close details",
+      "transfer": "Transfer",
+      "splitHint": "Divide this transaction between categories",
+      "editSplit": "Edit split",
+      "split": "Split",
+      "splitCount": "Split ({{n}})",
+      "reconciled": "This transaction is reconciled and cannot be edited.",
+      "date": "Date",
+      "category": "Category",
+      "uncategorized": "Uncategorized",
+      "notTransfer": "Not a transfer",
+      "notTransferHint": "Make both sides ordinary transactions again",
+      "payee": "Payee",
+      "notes": "Notes",
+      "notesPlaceholder": "Add notes to this transaction...",
+      "recurring": "Recurring",
+      "unlinkRecurring": "Unlink from recurring",
+      "createRule": "Create rule",
+      "delete": "Delete Transaction",
+      "newRule": "New rule from transaction",
+      "deleteMessage": "Are you sure you want to delete this transaction? This action cannot be undone.",
+      "notSaved": "Couldn't save this change.",
+      "retryCategory": "Pick it again to retry.",
+      "retryField": "Leave the field again to retry."
+    }
+  },
+  "undo": {
+    "toast": {
+      "undid": "Undid: {{action}}",
+      "redid": "Redid: {{action}}",
+      "undo": "Undo",
+      "redo": "Redo"
+    }
+  },
+  "welcome": {
+    "title": "Welcome to <brand/>!",
+    "intro": "A budget that shows where your money goes and gives every dollar a job. Start by adding the accounts you want to track.",
+    "setupTime": "Setup time:",
+    "options": {
+      "plaid": {
+        "title": "Connect with Plaid",
+        "tag": "Free",
+        "time": "~10 min + approval",
+        "description": "Set it up once and new transactions arrive on their own. Create a free Plaid developer account; Plaid then approves access to your real banks.",
+        "action": "Connect Plaid"
+      },
+      "simplefin": {
+        "title": "Connect with SimpleFIN",
+        "tag": "$1.50/month",
+        "time": "~5 min",
+        "description": "Set it up once and new transactions arrive on their own, through SimpleFIN Bridge (thousands of banks). Paid directly to SimpleFIN.",
+        "action": "Connect SimpleFIN"
+      },
+      "europe": {
+        "title": "Connect a European bank",
+        "tag": "Free",
+        "time": "~15 min",
+        "description": "Set it up once and new transactions arrive on their own, from banks across Europe (PSD2), through your own free Enable Banking application. Log in to your bank again every few months.",
+        "action": "Connect with Enable Banking"
+      },
+      "manual": {
+        "title": "Add accounts manually",
+        "tag": "No bank link",
+        "time": "~1 min each",
+        "description": "You add each account and its balance yourself. Transactions are manual too: download CSV files from your bank and import them yourself, or enter each one by hand. Nothing updates on its own.",
+        "action": "Add manually"
+      }
+    },
+    "privacyServer": "Your budget is stored on your own server. No FlyBudget account, no tracking.",
+    "privacyLocal": "Your budget stays on this computer. No FlyBudget account, no tracking.",
+    "compare": "Compare bank options",
+    "skip": "Skip for now and look around"
+  }
+}

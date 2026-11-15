@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { format, subDays, addDays } from 'date-fns';
 import { Search, Sparkles, Clock, Plus, Repeat } from 'lucide-react';
 import { useAccounts } from '../../hooks/useAccounts';
@@ -15,7 +16,7 @@ import StatusBadge, { statusLabel, type RecurringBadgeStatus } from './StatusBad
 import RowMenu, { type RowMenuItem } from '../ui/RowMenu';
 import { useIsPhone } from '../../hooks/useIsPhone';
 import {
-  FREQ_LABEL,
+  freqLabel,
   formatScheduleAmount,
   getUpcomingDays,
   occurrenceBadgeStatus,
@@ -84,6 +85,7 @@ export default function AllTab({
   onFind,
   onChangeUpcomingLength,
 }: Props) {
+  const { t } = useTranslation();
   const upcomingLength = usePreferencesStore((s) => s.upcomingLength);
   const upcomingDays = getUpcomingDays(upcomingLength);
   const [filter, setFilter] = useState('');
@@ -135,7 +137,7 @@ export default function AllTab({
         formatScheduleAmount(r.schedule.amount, r.schedule.amountType, r.currency),
         statusLabel(r.status),
         r.nextDate ? formatDay(r.nextDate) : '',
-        FREQ_LABEL.get(r.schedule.recurrenceType) ?? '',
+        freqLabel(r.schedule.recurrenceType),
       ].some((f) => f.toLowerCase().includes(q)),
     );
   }, [rows, filter]);
@@ -151,7 +153,7 @@ export default function AllTab({
     const muted = isPaused || isCanceled;
     const menu: RowMenuItem[] = [
       {
-        label: 'Mark next as paid',
+        label: t('recurring.all.menu.markNextPaid'),
         hidden: !r.nextOcc || isCanceled,
         onClick: () =>
           r.nextOcc &&
@@ -162,29 +164,29 @@ export default function AllTab({
           }),
       },
       {
-        label: 'Skip next date',
+        label: t('recurring.all.menu.skipNext'),
         hidden: !r.nextOcc || isCanceled,
         onClick: () => r.nextOcc && skipOcc.mutate(r.nextOcc.id),
       },
       {
-        label: isPaused ? 'Resume' : 'Pause',
+        label: isPaused ? t('recurring.all.menu.resume') : t('recurring.all.menu.pause'),
         hidden: isCanceled,
         onClick: () => updateSchedule.mutate({ id: s.id, status: isPaused ? 'active' : 'paused' }),
       },
       {
-        label: 'Restart',
+        label: t('recurring.all.menu.restart'),
         hidden: !isCanceled,
         onClick: () => updateSchedule.mutate({ id: s.id, status: 'active' }),
       },
-      { label: 'Edit', onClick: () => onEdit(s) },
+      { label: t('recurring.all.menu.edit'), onClick: () => onEdit(s) },
       {
-        label: 'Cancel recurring',
+        label: t('recurring.all.menu.cancel'),
         danger: true,
         hidden: isCanceled,
         onClick: () => setConfirm({ schedule: s, hard: false }),
       },
       {
-        label: 'Delete permanently',
+        label: t('recurring.all.menu.deletePermanently'),
         danger: true,
         hidden: !isCanceled,
         onClick: () => setConfirm({ schedule: s, hard: true }),
@@ -200,7 +202,7 @@ export default function AllTab({
       </span>
     );
     const nextDate = r.nextDate ? formatDay(r.nextDate) : '—';
-    const frequency = FREQ_LABEL.get(s.recurrenceType) ?? s.recurrenceType;
+    const frequency = freqLabel(s.recurrenceType);
 
     // Phones: a card. Name and amount on top; payee, account and frequency, then the status
     // and next date
@@ -220,16 +222,19 @@ export default function AllTab({
               </p>
               {amount}
             </div>
-            <p className="text-xs text-text-tertiary truncate mt-0.5">
+            {/* Wraps on phones: the frequency is UI text, not to be cut off */}
+            <p className="text-xs text-text-tertiary truncate max-md:whitespace-normal mt-0.5">
               {[frequency, r.payeeName, r.accountName].filter(Boolean).join(' · ')}
             </p>
             <div className="mt-1.5 flex items-center gap-2 text-xs text-text-secondary">
               <StatusBadge status={r.status} />
-              {r.nextDate && <span className="tabular-nums">Next {nextDate}</span>}
+              {r.nextDate && (
+                <span className="tabular-nums">{t('recurring.all.next', { date: nextDate })}</span>
+              )}
             </div>
           </div>
           <div onClick={(e) => e.stopPropagation()}>
-            <RowMenu label={`Actions for ${s.name}`} items={menu} />
+            <RowMenu label={t('recurring.all.actionsFor', { name: s.name })} items={menu} />
           </div>
         </div>
       );
@@ -254,9 +259,9 @@ export default function AllTab({
           <StatusBadge status={r.status} />
         </div>
         {amount}
-        <span className="text-sm text-text-secondary truncate">{frequency}</span>
+        <span className="text-sm text-text-secondary">{frequency}</span>
         <div onClick={(e) => e.stopPropagation()}>
-          <RowMenu label={`Actions for ${s.name}`} items={menu} />
+          <RowMenu label={t('recurring.all.actionsFor', { name: s.name })} items={menu} />
         </div>
       </div>
     );
@@ -267,15 +272,16 @@ export default function AllTab({
       <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
         <div className="flex items-center gap-2">
           <Button variant="secondary" size="sm" onClick={onFind} className="max-md:hidden">
-            <Sparkles size={13} /> Find recurring
+            <Sparkles size={13} /> {t('recurring.all.find')}
           </Button>
           <Button
             variant="secondary"
             size="sm"
             onClick={onChangeUpcomingLength}
-            title="Change upcoming length"
+            title={t('recurring.upcoming.buttonTitle')}
           >
-            <Clock size={13} /> Upcoming: {describeUpcomingLength(upcomingLength)}
+            <Clock size={13} />{' '}
+            {t('recurring.upcoming.button', { length: describeUpcomingLength(upcomingLength) })}
           </Button>
         </div>
         <div className="relative w-72 max-md:w-full">
@@ -286,7 +292,7 @@ export default function AllTab({
           <input
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            placeholder="Filter recurring…"
+            placeholder={t('recurring.all.filterPlaceholder')}
             className="w-full text-sm border border-border rounded-md pl-8 pr-3 py-1.5 bg-surface text-text placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-brand-600 focus:border-brand-600"
           />
         </div>
@@ -296,13 +302,13 @@ export default function AllTab({
         <div
           className={`${GRID} max-md:hidden px-5 py-2.5 bg-surface-alt border-b border-border-light text-xs font-medium text-text-tertiary sticky top-0 z-10`}
         >
-          <span>Name</span>
-          <span>Payee</span>
-          <span>Account</span>
-          <span>Next date</span>
-          <span>Status</span>
-          <span className="text-right">Amount</span>
-          <span>Frequency</span>
+          <span>{t('recurring.all.columns.name')}</span>
+          <span>{t('recurring.all.columns.payee')}</span>
+          <span>{t('recurring.all.columns.account')}</span>
+          <span>{t('recurring.all.columns.nextDate')}</span>
+          <span>{t('recurring.all.columns.status')}</span>
+          <span className="text-right">{t('recurring.all.columns.amount')}</span>
+          <span>{t('recurring.all.columns.frequency')}</span>
           <span />
         </div>
 
@@ -310,21 +316,21 @@ export default function AllTab({
           (!canceled.length || !showCanceled) &&
           (filter || allRecurring.length > 0 ? (
             <p className="py-16 text-center text-sm italic text-text-tertiary">
-              {filter ? 'No matching recurring items' : 'No active recurring items'}
+              {filter ? t('recurring.all.noMatch') : t('recurring.all.noActive')}
             </p>
           ) : (
             <EmptyState
               icon={<Repeat size={26} />}
-              title="No recurring items yet"
-              description="Add bills, subscriptions and paychecks to see what’s due and when, or let FlyBudget find them in the transactions you already have."
+              title={t('recurring.all.empty.title')}
+              description={t('recurring.all.empty.description')}
               learnMoreHref={docsUrl('recurring')}
               actions={
                 <>
                   <Button variant="secondary" onClick={onFind}>
-                    <Sparkles size={14} /> Find recurring
+                    <Sparkles size={14} /> {t('recurring.all.find')}
                   </Button>
                   <Button onClick={onAdd}>
-                    <Plus size={14} /> Add recurring
+                    <Plus size={14} /> {t('recurring.all.add')}
                   </Button>
                 </>
               }
@@ -340,7 +346,7 @@ export default function AllTab({
               onClick={() => setShowCanceled(true)}
               className="w-full py-2.5 text-center text-sm italic text-text-tertiary hover:bg-hover transition-colors cursor-pointer"
             >
-              Show canceled recurring ({canceled.length})
+              {t('recurring.all.showCanceled', { count: canceled.length })}
             </button>
           ))}
       </div>
@@ -352,13 +358,21 @@ export default function AllTab({
           if (confirm) deleteSchedule.mutate({ id: confirm.schedule.id, hard: confirm.hard });
           setConfirm(null);
         }}
-        title={confirm?.hard ? 'Delete recurring item?' : 'Cancel recurring item?'}
+        title={
+          confirm?.hard
+            ? t('recurring.all.confirm.deleteTitle')
+            : t('recurring.all.confirm.cancelTitle')
+        }
         message={
           confirm?.hard
-            ? `"${confirm.schedule.name}" will be permanently deleted. This cannot be undone.`
-            : `"${confirm?.schedule.name}" will stop generating occurrences. You can restart it from the canceled list.`
+            ? t('recurring.all.confirm.deleteMessage', { name: confirm.schedule.name })
+            : t('recurring.all.confirm.cancelMessage', { name: confirm?.schedule.name ?? '' })
         }
-        confirmLabel={confirm?.hard ? 'Delete' : 'Cancel item'}
+        confirmLabel={
+          confirm?.hard
+            ? t('recurring.all.confirm.deleteConfirm')
+            : t('recurring.all.confirm.cancelConfirm')
+        }
         danger
       />
     </div>

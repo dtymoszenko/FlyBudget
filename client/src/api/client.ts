@@ -1,13 +1,14 @@
 import { API_BASE } from './base';
 import { reportNetworkFailure, reportServerReachable } from '../store/connectionStore';
 import { isUnreachableResponse } from '../utils/connection';
+import { t } from '../i18n';
 
 export const AUTH_REQUIRED_EVENT = 'flybudget:auth-required';
 
 /** The request never reached FlyBudget's server (it's restarting, stopped, or offline). */
 export class NetworkError extends Error {
   constructor() {
-    super("Can't reach FlyBudget right now. Nothing was saved; try again once it reconnects.");
+    super(t('connection.networkError'));
     this.name = 'NetworkError';
   }
 }
@@ -53,7 +54,7 @@ export async function apiFetch<T>(path: string, options?: RequestInit): Promise<
       typeof body.error === 'string'
         ? body.error
         : body.error
-          ? 'Some of the values entered are invalid'
+          ? t('common.errors.invalidValues')
           : res.statusText;
     throw new ApiError(message, res.status);
   }

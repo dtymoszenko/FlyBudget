@@ -1,4 +1,6 @@
 import { useState, useMemo } from 'react';
+import { format } from 'date-fns';
+import { Trans, useTranslation } from 'react-i18next';
 import {
   AreaChart,
   Area,
@@ -24,13 +26,17 @@ type Mode =
   | 'month_vs_average'
   | 'year_vs_last_year';
 
-const MODES: { value: Mode; label: string }[] = [
-  { value: 'week_vs_last_week', label: 'This week vs. last week' },
-  { value: 'month_vs_last_month', label: 'This month vs. last month' },
-  { value: 'month_vs_last_year', label: 'This month vs. last year' },
-  { value: 'month_vs_average', label: 'This month vs. average month' },
-  { value: 'year_vs_last_year', label: 'This year vs. last year' },
+const MODES: Mode[] = [
+  'week_vs_last_week',
+  'month_vs_last_month',
+  'month_vs_last_year',
+  'month_vs_average',
+  'year_vs_last_year',
 ];
+
+/** The period being spent in: this week, month or year */
+const periodOf = (mode: Mode) =>
+  mode.startsWith('week') ? 'week' : mode.startsWith('year') ? 'year' : 'month';
 
 function formatYAxis(value: number): string {
   const dollars = Math.abs(value) / 100;
@@ -63,6 +69,7 @@ function ComparisonTooltip({ active, payload, label }: any) {
 }
 
 export default function SpendingComparison() {
+  const { t } = useTranslation();
   const [mode, setMode] = useState<Mode>('month_vs_last_month');
   const { data, isLoading } = useSpendingComparison(mode);
 
@@ -74,7 +81,7 @@ export default function SpendingComparison() {
     > = {};
 
     for (let day = 1; day <= data.maxDays; day++) {
-      merged[day] = { day, label: `Day ${day}` };
+      merged[day] = { day, label: t('dashboard.comparison.day', { day }) };
     }
 
     for (const pt of data.current) {
@@ -85,7 +92,7 @@ export default function SpendingComparison() {
     }
 
     return Object.values(merged).sort((a, b) => a.day - b.day);
-  }, [data]);
+  }, [data, t]);
 
   const hasData =
     !!data &&
@@ -101,6 +108,30 @@ export default function SpendingComparison() {
     fontSize: 11,
     inset: { left: 50, right: 8 },
   });
+
+  // Named here rather than taken from the server, so they follow the language
+  const period = periodOf(mode);
+  const currentLabel = t(
+    period === 'week'
+      ? 'dashboard.comparison.thisWeek'
+      : period === 'year'
+        ? 'dashboard.comparison.thisYear'
+        : 'dashboard.comparison.thisMonth',
+  );
+  const comparisonLabel = {
+    week_vs_last_week: () => t('dashboard.comparison.lastWeek'),
+    month_vs_last_month: () => t('dashboard.comparison.lastMonth'),
+    month_vs_last_year: () =>
+      format(new Date(new Date().getFullYear() - 1, new Date().getMonth(), 1), 'MMM yyyy'),
+    month_vs_average: () => t('dashboard.comparison.averageMonth'),
+    year_vs_last_year: () => t('dashboard.comparison.lastYear'),
+  }[mode]();
+
+  const spendingKeys = {
+    week: 'dashboard.comparison.spendingWeek',
+    month: 'dashboard.comparison.spendingMonth',
+    year: 'dashboard.comparison.spendingYear',
+  } as const;
 
   if (isLoading || !data) {
     return (
@@ -120,10 +151,13 @@ export default function SpendingComparison() {
       <div className="flex items-start justify-between mb-1">
         <div>
           <h3 className="text-sm font-semibold text-text">
-            Spending{' '}
-            <span className="text-text-secondary font-normal tabular-nums">
-              {formatCurrency(data.currentTotal)} {data.periodLabel}
-            </span>
+            <Trans
+              i18nKey={spendingKeys[period]}
+              values={{ amount: formatCurrency(data.currentTotal) }}
+              components={{
+                amount: <span className="text-text-secondary font-normal tabular-nums" />,
+              }}
+            />
           </h3>
         </div>
         <select
@@ -132,8 +166,8 @@ export default function SpendingComparison() {
           className="text-xs border border-border rounded-lg px-2 py-1.5 bg-surface text-text cursor-pointer focus:outline-none focus:ring-1 focus:ring-brand-600 min-w-0 max-w-[200px]"
         >
           {MODES.map((m) => (
-            <option key={m.value} value={m.value}>
-              {m.label}
+            <option key={m} value={m}>
+              {t(`dashboard.comparison.modes.${m}`)}
             </option>
           ))}
         </select>
@@ -162,7 +196,7 @@ export default function SpendingComparison() {
               <Line
                 type="monotone"
                 dataKey="comparison"
-                name={data.comparisonLabel}
+                name={comparisonLabel}
                 stroke="#9CA3AF"
                 strokeWidth={1.5}
                 dot={false}
@@ -172,7 +206,7 @@ export default function SpendingComparison() {
               <Area
                 type="monotone"
                 dataKey="current"
-                name={data.currentLabel}
+                name={currentLabel}
                 stroke={chartColors.brand}
                 strokeWidth={2}
                 fill="url(#gSpendingCur)"
@@ -185,8 +219,8 @@ export default function SpendingComparison() {
         <EmptyState
           compact
           icon={<TrendingDown size={20} />}
-          title="Nothing to compare yet"
-          description="Once you have some spending, this shows how this period compares with the last one."
+          title={t('dashboard.comparison.emptyTitle')}
+          description={t('dashboard.comparison.emptyDescription')}
         />
       )}
     </Card>

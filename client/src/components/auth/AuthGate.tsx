@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Trans, useTranslation } from 'react-i18next';
 import { AlertTriangle, Loader2, Lock } from 'lucide-react';
 import { AUTH_REQUIRED_EVENT, NetworkError } from '../../api/client';
 import * as authApi from '../../api/auth';
@@ -97,6 +98,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 }
 
 function PasswordForm({ mode, onDone }: { mode: 'setup' | 'login'; onDone: () => void }) {
+  const { t } = useTranslation();
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -108,9 +110,9 @@ function PasswordForm({ mode, onDone }: { mode: 'setup' | 'login'; onDone: () =>
     e.preventDefault();
     setError(null);
     if (isSetup && password.length < MIN_PASSWORD_LENGTH) {
-      return setError(`Use at least ${MIN_PASSWORD_LENGTH} characters.`);
+      return setError(t('auth.setup.tooShort', { count: MIN_PASSWORD_LENGTH }));
     }
-    if (isSetup && password !== confirm) return setError("The passwords don't match.");
+    if (isSetup && password !== confirm) return setError(t('auth.setup.mismatch'));
     setBusy(true);
     try {
       await (isSetup ? authApi.setupPassword(password, code) : authApi.login(password));
@@ -128,18 +130,13 @@ function PasswordForm({ mode, onDone }: { mode: 'setup' | 'login'; onDone: () =>
 
   return (
     <AuthScreen
-      title={isSetup ? 'Set up your FlyBudget server' : 'Sign in to FlyBudget'}
+      title={t(isSetup ? 'auth.setup.title' : 'auth.login.title')}
       subtitle={
         <>
-          <span className="block font-mono text-xs break-all" aria-label="Server address">
+          <span className="block font-mono text-xs break-all" aria-label={t('auth.serverAddress')}>
             {host}
           </span>
-          {isSetup && (
-            <span className="block mt-2">
-              Create the password that protects this server. Anyone who can reach it will need this
-              password.
-            </span>
-          )}
+          {isSetup && <span className="block mt-2">{t('auth.setup.hint')}</span>}
         </>
       }
     >
@@ -150,8 +147,10 @@ function PasswordForm({ mode, onDone }: { mode: 'setup' | 'login'; onDone: () =>
         >
           <AlertTriangle size={14} className="text-caution shrink-0 mt-0.5" aria-hidden />
           <p>
-            <span className="font-semibold">Not a secure connection.</span> Your password would
-            travel unencrypted. Only continue on a network you trust.
+            <Trans
+              i18nKey="auth.insecure"
+              components={{ strong: <span className="font-semibold" /> }}
+            />
           </p>
         </div>
       )}
@@ -162,27 +161,30 @@ function PasswordForm({ mode, onDone }: { mode: 'setup' | 'login'; onDone: () =>
               htmlFor="setup-code"
               className="block text-sm font-medium text-text-secondary mb-1"
             >
-              Setup code
+              {t('auth.setup.code')}
             </label>
             <input
               id="setup-code"
               autoComplete="off"
               spellCheck={false}
               autoFocus
+              // i18n-ignore
               placeholder="XXXX-XXXX-XXXX-XXXX"
               value={code}
               onChange={(e) => setCode(e.target.value)}
               className={`${inputClass} font-mono uppercase`}
             />
             <p className="text-xs text-text-tertiary mt-1">
-              Printed in the server log. With Docker, run{' '}
-              <code className="font-mono">docker logs flybudget</code>.
+              <Trans
+                i18nKey="auth.setup.codeHint"
+                components={{ code: <code className="font-mono" /> }}
+              />
             </p>
           </div>
         )}
         <div>
           <label htmlFor="password" className="block text-sm font-medium text-text-secondary mb-1">
-            {isSetup ? 'New password' : 'Password'}
+            {t(isSetup ? 'auth.setup.password' : 'auth.login.password')}
           </label>
           <input
             id="password"
@@ -197,7 +199,7 @@ function PasswordForm({ mode, onDone }: { mode: 'setup' | 'login'; onDone: () =>
         {isSetup && (
           <div>
             <label htmlFor="confirm" className="block text-sm font-medium text-text-secondary mb-1">
-              Confirm password
+              {t('auth.setup.confirm')}
             </label>
             <input
               id="confirm"
@@ -212,7 +214,7 @@ function PasswordForm({ mode, onDone }: { mode: 'setup' | 'login'; onDone: () =>
         {error && <p className="text-xs text-negative">{error}</p>}
         <Button type="submit" className="w-full" disabled={busy || !password || (isSetup && !code)}>
           {busy ? <Loader2 size={14} className="animate-spin" /> : <Lock size={14} />}
-          {isSetup ? 'Create password' : 'Sign in'}
+          {t(isSetup ? 'auth.setup.submit' : 'auth.login.submit')}
         </Button>
       </form>
     </AuthScreen>

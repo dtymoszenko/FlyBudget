@@ -1,23 +1,25 @@
+import { useTranslation } from 'react-i18next';
 import { BookOpen, MessageCircleQuestion } from 'lucide-react';
 import { ExternalLink } from '../ui/ExternalLink';
 import { DOCS_URL, ISSUES_URL, SOURCE_CODE_URL } from '../../utils/project';
 
 /** "Learn more" links at the bottom of a page: the user guide, the source code and issues */
 export function HelpFooter({ className = '' }: { className?: string }) {
+  const { t } = useTranslation();
   const link = 'text-text-tertiary hover:text-brand-600 transition-colors gap-1.5';
   return (
     <footer
       className={`flex flex-wrap items-center justify-center gap-x-5 gap-y-2 py-6 text-xs text-text-tertiary ${className}`}
     >
-      <span>New to FlyBudget?</span>
+      <span>{t('layout.helpFooter.newHere')}</span>
       <ExternalLink href={DOCS_URL} className={link} icon={false}>
-        <BookOpen size={13} aria-hidden /> Read the guide
+        <BookOpen size={13} aria-hidden /> {t('layout.helpFooter.guide')}
       </ExternalLink>
       <ExternalLink href={SOURCE_CODE_URL} className={link} icon={false}>
-        <GithubMark /> Source on GitHub
+        <GithubMark /> {t('layout.helpFooter.source')}
       </ExternalLink>
       <ExternalLink href={ISSUES_URL} className={link} icon={false}>
-        <MessageCircleQuestion size={13} aria-hidden /> Report a problem or suggest an idea
+        <MessageCircleQuestion size={13} aria-hidden /> {t('layout.helpFooter.report')}
       </ExternalLink>
     </footer>
   );

@@ -14,7 +14,9 @@ export function BrandName({
 }: Props) {
   return (
     <span className={className}>
+      {/* i18n-ignore */}
       <span className={flyClassName}>Fly</span>
+      {/* i18n-ignore */}
       <span className={budgetClassName}>Budget</span>
     </span>
   );

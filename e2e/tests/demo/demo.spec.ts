@@ -224,7 +224,7 @@ test('nothing leaves the browser: imports, backups and restores stay in the tab'
     buffer: Buffer.from('Date,Description,Amount\n2026-01-05,Private Test Payee,-12.34\n'),
   });
   await page.getByRole('button', { name: 'Preview' }).click();
-  await page.getByRole('button', { name: 'Import 1 Transactions' }).click();
+  await page.getByRole('button', { name: 'Import 1 Transaction', exact: true }).click();
   await expect(page.getByText('Import complete')).toBeVisible();
 
   expect(outside).toEqual([]);

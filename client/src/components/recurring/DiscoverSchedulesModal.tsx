@@ -1,29 +1,39 @@
 import { useEffect, useMemo, useState } from 'react';
 import { format, parseISO } from 'date-fns';
+import { useTranslation } from 'react-i18next';
+import { t } from '../../i18n';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { useDiscoverSchedules, useCreateDiscoveredSchedules } from '../../hooks/useSchedules';
 import { formatScheduleAmount } from './scheduleFormat';
 import { useAccountCurrency } from '../../hooks/useCurrency';
 import type { DiscoveredSchedule } from '../../types';
-
-const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-function ordinal(n: number) {
-  const s = ['th', 'st', 'nd', 'rd'];
-  const v = n % 100;
-  return n + (s[(v - 20) % 10] || s[v] || s[0]);
-}
+import { weekdayNames } from '../../utils/dates';
 
 /** Human description like Actual's getRecurringDescription. */
 function describe(item: DiscoveredSchedule): string {
   const r = item.recurrenceRule;
-  const approx = item.exactDate ? '' : ' (approx.)';
-  if (r.type === 'weekly') return `Every week on ${WEEKDAYS[r.anchorDay]}${approx}`;
-  if (r.type === 'biweekly') return `Every 2 weeks on ${WEEKDAYS[r.anchorDay]}${approx}`;
+  const exact = item.exactDate;
+  if (r.type === 'weekly') {
+    const day = weekdayNames('long')[r.anchorDay];
+    return exact
+      ? t('recurring.discover.describe.weekly', { day })
+      : t('recurring.discover.describe.weeklyApprox', { day });
+  }
+  if (r.type === 'biweekly') {
+    const day = weekdayNames('long')[r.anchorDay];
+    return exact
+      ? t('recurring.discover.describe.biweekly', { day })
+      : t('recurring.discover.describe.biweeklyApprox', { day });
+  }
   if (r.type === 'monthly') {
-    const day = r.anchorDay >= 31 ? 'the last day' : `the ${ordinal(r.anchorDay)}`;
-    return `Every month on ${day}${approx}`;
+    if (r.anchorDay >= 31)
+      return exact
+        ? t('recurring.discover.describe.monthlyLast')
+        : t('recurring.discover.describe.monthlyLastApprox');
+    return exact
+      ? t('recurring.discover.describe.monthlyDay', { count: r.anchorDay, ordinal: true })
+      : t('recurring.discover.describe.monthlyDayApprox', { count: r.anchorDay, ordinal: true });
   }
   return item.recurrenceType;
 }
@@ -34,6 +44,7 @@ interface Props {
 }
 
 export default function DiscoverSchedulesModal({ isOpen, onClose }: Props) {
+  const { t } = useTranslation();
   const { data: found = [], isLoading, isFetching } = useDiscoverSchedules(isOpen);
   const createMut = useCreateDiscoveredSchedules();
   const accountCurrency = useAccountCurrency();
@@ -73,17 +84,10 @@ export default function DiscoverSchedulesModal({ isOpen, onClose }: Props) {
     'grid grid-cols-[28px_minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.6fr)_110px] items-center gap-3';
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Search for recurring transactions" size="xl">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('recurring.discover.title')} size="xl">
       <div className="space-y-3 text-sm text-text-secondary">
-        <p>
-          Your transaction history was scanned for payments from the same payee, for a similar
-          amount, on a regular weekly, biweekly, or monthly schedule. Select any you'd like to
-          track. Matching past transactions will be linked to each new recurring item.
-        </p>
-        <p className="text-xs text-text-tertiary">
-          Missing something? Transactions are only grouped when they share the same payee, so
-          renaming payees to match may help. Payees you already track aren't listed.
-        </p>
+        <p>{t('recurring.discover.intro')}</p>
+        <p className="text-xs text-text-tertiary">{t('recurring.discover.hint')}</p>
       </div>
 
       <div className="mt-4 border border-border-light rounded-lg overflow-hidden">
@@ -92,16 +96,16 @@ export default function DiscoverSchedulesModal({ isOpen, onClose }: Props) {
         >
           <input
             type="checkbox"
-            aria-label="Select all"
+            aria-label={t('recurring.discover.selectAll')}
             disabled={loading || found.length === 0}
             checked={allSelected}
             onChange={() => setSelected(allSelected ? new Set() : new Set(found.map((f) => f.id)))}
             className="accent-brand-600 cursor-pointer"
           />
-          <span>Payee</span>
-          <span>Account</span>
-          <span>When</span>
-          <span className="text-right">Amount</span>
+          <span>{t('recurring.discover.columns.payee')}</span>
+          <span>{t('recurring.discover.columns.account')}</span>
+          <span>{t('recurring.discover.columns.when')}</span>
+          <span className="text-right">{t('recurring.discover.columns.amount')}</span>
         </div>
 
         <div className="max-h-[360px] overflow-y-auto">
@@ -111,12 +115,12 @@ export default function DiscoverSchedulesModal({ isOpen, onClose }: Props) {
                 <div key={i} className="h-8 bg-surface-alt rounded animate-pulse" />
               ))}
               <p className="text-xs text-center text-text-tertiary pt-1">
-                Scanning your transactions…
+                {t('recurring.discover.scanning')}
               </p>
             </div>
           ) : found.length === 0 ? (
             <p className="py-12 text-center text-sm italic text-text-tertiary">
-              No recurring transactions found
+              {t('recurring.discover.none')}
             </p>
           ) : (
             found.map((item, idx) => {
@@ -133,7 +137,7 @@ export default function DiscoverSchedulesModal({ isOpen, onClose }: Props) {
                       click reaches the row's handler */}
                   <input
                     type="checkbox"
-                    aria-label={`Track ${item.payeeName}`}
+                    aria-label={t('recurring.discover.track', { name: item.payeeName })}
                     checked={isSel}
                     readOnly
                     className="accent-brand-600 cursor-pointer"
@@ -141,8 +145,10 @@ export default function DiscoverSchedulesModal({ isOpen, onClose }: Props) {
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-text truncate">{item.payeeName}</p>
                     <p className="text-xs text-text-tertiary">
-                      {item.transactionIds.length} past · since{' '}
-                      {format(parseISO(item.startDate), 'MMM yyyy')}
+                      {t('recurring.discover.history', {
+                        count: item.transactionIds.length,
+                        date: format(parseISO(item.startDate), 'MMM yyyy'),
+                      })}
                     </p>
                   </div>
                   <span className="text-sm text-text-secondary truncate">{item.accountName}</span>
@@ -165,17 +171,17 @@ export default function DiscoverSchedulesModal({ isOpen, onClose }: Props) {
         </div>
       </div>
 
-      <div className="flex items-center justify-between mt-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 mt-4">
         <span className="text-xs text-text-tertiary">
           {selected.size > 0
-            ? `${selected.size} selected`
+            ? t('recurring.discover.selected', { count: selected.size })
             : found.length > 0
-              ? 'Shift+click to select a range'
+              ? t('recurring.discover.shiftHint')
               : ''}
         </span>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap justify-end gap-2">
           <Button variant="secondary" size="sm" onClick={onClose}>
-            Cancel
+            {t('common.actions.cancel')}
           </Button>
           <Button
             size="sm"
@@ -183,10 +189,10 @@ export default function DiscoverSchedulesModal({ isOpen, onClose }: Props) {
             onClick={handleCreate}
           >
             {createMut.isPending
-              ? 'Creating…'
+              ? t('recurring.discover.creating')
               : selected.size > 0
-                ? `Create ${selected.size} recurring`
-                : 'Create recurring'}
+                ? t('recurring.discover.create', { count: selected.size })
+                : t('recurring.discover.createEmpty')}
           </Button>
         </div>
       </div>

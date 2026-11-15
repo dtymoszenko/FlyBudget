@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { Trans, useTranslation } from 'react-i18next';
 import { Download, Upload } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { ConfirmModal } from '../ui/ConfirmModal';
@@ -15,6 +16,7 @@ const download = (url: string) =>
   IS_DEMO ? void downloadFromApi(url) : void (window.location.href = url);
 
 export function DataExport() {
+  const { t } = useTranslation();
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const decimalComma = decimalSeparator(useAmountStyle().format) === ',';
@@ -32,7 +34,10 @@ export function DataExport() {
     try {
       setPending({ name: file.name, data: JSON.parse(await file.text()) });
     } catch {
-      setRestoreMessage({ ok: false, text: `${file.name} is not a FlyBudget backup file.` });
+      setRestoreMessage({
+        ok: false,
+        text: t('settings.data.restore.notBackup', { name: file.name }),
+      });
     }
   }
 
@@ -44,16 +49,20 @@ export function DataExport() {
       const count = result.restored.transactions ?? 0;
       setRestoreMessage({
         ok: true,
-        text:
-          `Restored ${pending.name} (${count.toLocaleString()} transactions).` +
-          (result.safetyCopy
-            ? ` Your previous data was saved as ${result.safetyCopy} next to the database.`
-            : ''),
+        text: [
+          t('settings.data.restore.restored', { name: pending.name, count }),
+          result.safetyCopy && t('settings.data.restore.safetyCopy', { file: result.safetyCopy }),
+        ]
+          .filter(Boolean)
+          .join(' '),
       });
       // Everything on screen is from before the restore
       await queryClient.invalidateQueries();
     } catch (err) {
-      setRestoreMessage({ ok: false, text: err instanceof Error ? err.message : 'Restore failed' });
+      setRestoreMessage({
+        ok: false,
+        text: err instanceof Error ? err.message : t('settings.data.restore.failed'),
+      });
     } finally {
       setRestoring(false);
       setPending(null);
@@ -73,32 +82,35 @@ export function DataExport() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-sm font-semibold text-text">Data Export</h2>
-        <p className="text-xs text-text-tertiary mt-0.5">
-          Download your data for backup or analysis.
-        </p>
+        <h2 className="text-sm font-semibold text-text">{t('settings.data.title')}</h2>
+        <p className="text-xs text-text-tertiary mt-0.5">{t('settings.data.hint')}</p>
       </div>
 
       <div className="bg-surface-alt rounded-lg p-5 space-y-4">
         <div>
-          <h3 className="text-sm font-medium text-text">Export Transactions</h3>
-          <p className="text-xs text-text-tertiary mt-0.5">
-            Download all transactions as a CSV file. Optionally filter by date range.
-          </p>
+          <h3 className="text-sm font-medium text-text">{t('settings.data.export.title')}</h3>
+          <p className="text-xs text-text-tertiary mt-0.5">{t('settings.data.export.hint')}</p>
           <p className="text-xs text-text-tertiary mt-1">
-            {decimalComma
-              ? 'Amounts are written like -12,50, with semicolons between columns, '
-              : 'Amounts are written like -12.50, with commas between columns, '}
-            following your number format in{' '}
-            <Link to="/settings?tab=preferences" className="underline hover:text-text-secondary">
-              Preferences
-            </Link>
-            . Report exports use the same separator.
+            <Trans
+              i18nKey={
+                decimalComma ? 'settings.data.export.formatComma' : 'settings.data.export.formatDot'
+              }
+              components={{
+                preferences: (
+                  <Link
+                    to="/settings?tab=preferences"
+                    className="underline hover:text-text-secondary"
+                  />
+                ),
+              }}
+            />
           </p>
         </div>
-        <div className="flex items-end gap-3">
+        <div className="flex flex-wrap items-end gap-3">
           <div>
-            <label className="block text-xs font-medium text-text-tertiary mb-1">From</label>
+            <label className="block text-xs font-medium text-text-tertiary mb-1">
+              {t('settings.data.export.from')}
+            </label>
             <input
               type="date"
               value={from}
@@ -107,7 +119,9 @@ export function DataExport() {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-text-tertiary mb-1">To</label>
+            <label className="block text-xs font-medium text-text-tertiary mb-1">
+              {t('settings.data.export.to')}
+            </label>
             <input
               type="date"
               value={to}
@@ -116,19 +130,15 @@ export function DataExport() {
             />
           </div>
           <Button onClick={downloadCsv} size="sm">
-            <Download size={14} /> Download CSV
+            <Download size={14} /> {t('settings.data.export.download')}
           </Button>
         </div>
       </div>
 
       <div className="bg-surface-alt rounded-lg p-5 space-y-4">
         <div>
-          <h3 className="text-sm font-medium text-text">Full Backup</h3>
-          <p className="text-xs text-text-tertiary mt-0.5">
-            Download a complete JSON backup of all your data — accounts, transactions, budgets,
-            categories, payees, rules, recurring transactions, goals, reports and dashboards. Bank
-            connection credentials are not included.
-          </p>
+          <h3 className="text-sm font-medium text-text">{t('settings.data.backup.title')}</h3>
+          <p className="text-xs text-text-tertiary mt-0.5">{t('settings.data.backup.hint')}</p>
         </div>
         <button
           onClick={() => {
@@ -136,23 +146,21 @@ export function DataExport() {
           }}
           className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-white bg-text-secondary rounded-md hover:opacity-90 transition-colors"
         >
-          <Download size={14} /> Download Backup
+          <Download size={14} /> {t('settings.data.backup.download')}
         </button>
       </div>
 
       <div className="bg-surface-alt rounded-lg p-5 space-y-4">
         <div>
-          <h3 className="text-sm font-medium text-text">Restore from Backup</h3>
-          <p className="text-xs text-text-tertiary mt-0.5">
-            Replace all of your data with a backup file. A copy of your current data is saved first.
-          </p>
+          <h3 className="text-sm font-medium text-text">{t('settings.data.restore.title')}</h3>
+          <p className="text-xs text-text-tertiary mt-0.5">{t('settings.data.restore.hint')}</p>
         </div>
         <input
           ref={fileInput}
           type="file"
           accept="application/json,.json"
           className="hidden"
-          aria-label="Backup file"
+          aria-label={t('settings.data.restore.file')}
           onChange={chooseBackup}
         />
         <Button
@@ -161,7 +169,8 @@ export function DataExport() {
           disabled={restoring}
           onClick={() => fileInput.current?.click()}
         >
-          <Upload size={14} /> {restoring ? 'Restoring…' : 'Restore Backup…'}
+          <Upload size={14} />{' '}
+          {t(restoring ? 'settings.data.restore.restoring' : 'settings.data.restore.choose')}
         </Button>
         {restoreMessage && (
           <p
@@ -177,9 +186,9 @@ export function DataExport() {
         isOpen={pending !== null}
         onClose={() => setPending(null)}
         onConfirm={confirmRestore}
-        title="Restore this backup?"
-        message={`All of your current data will be replaced with the contents of ${pending?.name ?? 'the backup'}. Bank connections stay connected.`}
-        confirmLabel="Replace my data"
+        title={t('settings.data.restore.confirmTitle')}
+        message={t('settings.data.restore.confirmMessage', { name: pending?.name ?? '' })}
+        confirmLabel={t('settings.data.restore.confirm')}
         danger
       />
     </div>

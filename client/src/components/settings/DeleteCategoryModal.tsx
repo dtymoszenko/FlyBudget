@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { usePreferencesStore } from '../../store/preferencesStore';
@@ -23,6 +24,7 @@ export function DeleteCategoryModal({
   transactionCount,
   groups,
 }: Props) {
+  const { t } = useTranslation();
   const showCategoryIcons = usePreferencesStore((s) => s.showCategoryIcons);
   const [reassignTo, setReassignTo] = useState('');
 
@@ -33,24 +35,32 @@ export function DeleteCategoryModal({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Delete Category" size="sm">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={t('settings.categories.deleteModal.title')}
+      size="sm"
+    >
       <div className="space-y-4">
         <p className="text-sm text-text-secondary">
-          <span className="font-medium text-text">{categoryName}</span> has{' '}
-          <span className="font-medium text-text">{transactionCount}</span> transaction
-          {transactionCount !== 1 ? 's' : ''}. Choose a category to reassign them to before
-          deleting.
+          <Trans
+            i18nKey="settings.categories.deleteModal.summary"
+            count={transactionCount}
+            values={{ name: categoryName }}
+            components={{
+              name: <span className="font-medium text-text" />,
+              count: <span className="font-medium text-text" />,
+            }}
+          />
         </p>
-        <p className="text-xs text-caution">
-          Budget allocations for this category will be removed.
-        </p>
+        <p className="text-xs text-caution">{t('settings.categories.deleteModal.allocations')}</p>
         <select
-          aria-label="Move transactions to"
+          aria-label={t('settings.categories.deleteModal.moveTo')}
           value={reassignTo}
           onChange={(e) => setReassignTo(e.target.value)}
           className="block w-full text-sm border border-border rounded-md px-3 py-2 bg-surface text-text focus:outline-none focus:ring-1 focus:ring-brand-600 focus:border-brand-600"
         >
-          <option value="">Select a category...</option>
+          <option value="">{t('settings.categories.deleteModal.select')}</option>
           {groups.map((g) => (
             <optgroup key={g.id} label={g.name}>
               {g.categories
@@ -67,10 +77,10 @@ export function DeleteCategoryModal({
       </div>
       <div className="flex justify-end gap-3 mt-6">
         <Button variant="secondary" onClick={onClose}>
-          Cancel
+          {t('common.actions.cancel')}
         </Button>
         <Button variant="danger" onClick={handleConfirm} disabled={!reassignTo}>
-          Reassign & Delete
+          {t('settings.categories.deleteModal.confirm')}
         </Button>
       </div>
     </Modal>

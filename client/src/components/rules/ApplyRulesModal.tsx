@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Trans, useTranslation } from 'react-i18next';
 import { ArrowRight } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
@@ -19,10 +20,7 @@ interface Props {
   title: string;
 }
 
-const SCOPES: Array<{ value: RuleApplyScope; label: string }> = [
-  { value: 'uncategorized', label: 'Uncategorized only' },
-  { value: 'all', label: 'All transactions' },
-];
+const SCOPES: RuleApplyScope[] = ['uncategorized', 'all'];
 
 /** Preview what rules would change on existing transactions, then apply the ticked ones */
 export function ApplyRulesModal({
@@ -32,6 +30,7 @@ export function ApplyRulesModal({
   initialScope = 'uncategorized',
   title,
 }: Props) {
+  const { t } = useTranslation();
   const [scope, setScope] = useState<RuleApplyScope>(initialScope);
   const [excluded, setExcluded] = useState<Set<string>>(new Set());
   const [done, setDone] = useState<number | null>(null);
@@ -70,19 +69,21 @@ export function ApplyRulesModal({
   }
 
   const category = (id: string | null) =>
-    id ? (lookups.category(id) ?? '(deleted)') : 'Uncategorized';
+    id ? (lookups.category(id) ?? t('rules.names.deleted')) : t('rules.names.uncategorized');
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} size="xl">
       {done !== null ? (
         <div className="space-y-4">
           <p className="text-sm text-text-secondary py-4 text-center">
-            Updated <span className="font-semibold text-text">{done.toLocaleString()}</span>{' '}
-            transaction
-            {done === 1 ? '' : 's'}.
+            <Trans
+              i18nKey="rules.apply.updated"
+              count={done}
+              components={{ strong: <span className="font-semibold text-text" /> }}
+            />
           </p>
           <div className="flex justify-end">
-            <Button onClick={onClose}>Done</Button>
+            <Button onClick={onClose}>{t('common.actions.done')}</Button>
           </div>
         </div>
       ) : (
@@ -91,36 +92,35 @@ export function ApplyRulesModal({
             <div
               className="flex rounded-lg border border-border overflow-hidden"
               role="radiogroup"
-              aria-label="Which transactions"
+              aria-label={t('rules.apply.scope')}
             >
               {SCOPES.map((s) => (
                 <button
-                  key={s.value}
+                  key={s}
                   type="button"
                   role="radio"
-                  aria-checked={scope === s.value}
-                  onClick={() => setScope(s.value)}
+                  aria-checked={scope === s}
+                  onClick={() => setScope(s)}
                   className={`px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
-                    scope === s.value
+                    scope === s
                       ? 'bg-brand-50 text-brand-700'
                       : 'bg-surface text-text-secondary hover:bg-hover'
                   }`}
                 >
-                  {s.label}
+                  {t(`rules.apply.scopes.${s}`)}
                 </button>
               ))}
             </div>
-            <p className="text-xs text-text-tertiary">
-              Reconciled, transfer and split transactions are never changed.
-            </p>
+            <p className="text-xs text-text-tertiary">{t('rules.apply.neverChanged')}</p>
           </div>
 
           {isLoading || !items ? (
-            <p className="text-sm text-text-tertiary py-8 text-center">Checking transactions…</p>
+            <p className="text-sm text-text-tertiary py-8 text-center">
+              {t('rules.apply.checking')}
+            </p>
           ) : items.length === 0 ? (
             <p className="text-sm text-text-secondary py-8 text-center">
-              Nothing to change: no {scope === 'uncategorized' ? 'uncategorized ' : ''}transactions
-              would be updated.
+              {t(`rules.apply.nothing.${scope}`)}
             </p>
           ) : (
             <div className="rounded-lg border border-border-light overflow-hidden">
@@ -138,13 +138,15 @@ export function ApplyRulesModal({
                             )
                           }
                           className="accent-brand-600"
-                          aria-label="Select all"
+                          aria-label={t('rules.apply.selectAll')}
                         />
                       </th>
-                      <th className="px-2 py-2 font-medium">Date</th>
-                      <th className="px-2 py-2 font-medium">Payee</th>
-                      <th className="px-2 py-2 font-medium text-right">Amount</th>
-                      <th className="px-3 py-2 font-medium">Changes</th>
+                      <th className="px-2 py-2 font-medium">{t('rules.apply.columns.date')}</th>
+                      <th className="px-2 py-2 font-medium">{t('rules.apply.columns.payee')}</th>
+                      <th className="px-2 py-2 font-medium text-right">
+                        {t('rules.apply.columns.amount')}
+                      </th>
+                      <th className="px-3 py-2 font-medium">{t('rules.apply.columns.changes')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border-light">
@@ -161,7 +163,7 @@ export function ApplyRulesModal({
                             onChange={() => toggle(item.transactionId)}
                             onClick={(e) => e.stopPropagation()}
                             className="accent-brand-600"
-                            aria-label="Include this transaction"
+                            aria-label={t('rules.apply.include')}
                           />
                         </td>
                         <td className="px-2 py-2 text-text-tertiary whitespace-nowrap">
@@ -186,12 +188,12 @@ export function ApplyRulesModal({
 
           <div className="flex justify-end gap-3 pt-1">
             <Button variant="secondary" onClick={onClose}>
-              Cancel
+              {t('common.actions.cancel')}
             </Button>
             <Button onClick={handleApply} disabled={!selected.length || apply.isPending}>
               {apply.isPending
-                ? 'Applying…'
-                : `Apply to ${selected.length.toLocaleString()} transaction${selected.length === 1 ? '' : 's'}`}
+                ? t('rules.apply.applying')
+                : t('rules.apply.apply', { count: selected.length })}
             </Button>
           </div>
         </div>
@@ -220,16 +222,35 @@ function Changes({
   item: RulePreviewItem;
   category: (id: string | null) => string;
 }) {
+  const { t } = useTranslation();
   const { payee, category: cat, notes, split } = item.changes;
-  const blank = (s: string | null) => s || '(empty)';
+  const blank = (s: string | null) => s || t('rules.apply.changes.empty');
   return (
     <div className="space-y-0.5 max-w-80">
-      {payee && <Change label="Payee" from={blank(payee.from)} to={blank(payee.to)} />}
-      {cat && <Change label="Category" from={category(cat.from)} to={category(cat.to)} />}
-      {notes && <Change label="Notes" from={blank(notes.from)} to={blank(notes.to)} />}
+      {payee && (
+        <Change
+          label={t('rules.apply.changes.payee')}
+          from={blank(payee.from)}
+          to={blank(payee.to)}
+        />
+      )}
+      {cat && (
+        <Change
+          label={t('rules.apply.changes.category')}
+          from={category(cat.from)}
+          to={category(cat.to)}
+        />
+      )}
+      {notes && (
+        <Change
+          label={t('rules.apply.changes.notes')}
+          from={blank(notes.from)}
+          to={blank(notes.to)}
+        />
+      )}
       {split && (
         <div className="text-text">
-          <span className="text-text-tertiary">Split </span>
+          <span className="text-text-tertiary">{t('rules.apply.changes.split')} </span>
           {split.map((s) => `${formatCurrency(s.amount)} ${category(s.categoryId)}`).join(' · ')}
         </div>
       )}

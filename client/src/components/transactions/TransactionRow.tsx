@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { ChevronRight, ChevronDown, ArrowRight, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useUpdateTransaction } from '../../hooks/useTransactions';
 import { useTransferToAccount } from '../../hooks/useTransfers';
 import { useCanSave } from '../../hooks/useConnection';
@@ -49,6 +50,7 @@ export function TransactionRow({
   onFilterSearch,
   transferAccounts = [],
 }: Props) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const currency = useAccountCurrency()(tx.accountId);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
@@ -66,7 +68,7 @@ export function TransactionRow({
   const canEditCategory = !tx.reconciled && !isTransfer && !isSplitParent;
   const canEditPayee = !tx.reconciled && !isTransfer;
 
-  const payeeName = tx.payeeName || (isTransfer ? 'Transfer' : '—');
+  const payeeName = tx.payeeName || (isTransfer ? t('transactions.row.transfer') : '—');
   const payee = useMemo(
     () => (tx.payeeId ? payees.find((p) => p.id === tx.payeeId) : undefined),
     [payees, tx.payeeId],
@@ -139,7 +141,7 @@ export function TransactionRow({
                 e.stopPropagation();
                 onFilterSearch(tx.payeeName!);
               }}
-              title={`Show all "${tx.payeeName}" transactions`}
+              title={t('transactions.row.showPayee', { name: tx.payeeName })}
             >
               <ArrowRight size={12} />
             </button>
@@ -167,10 +169,12 @@ export function TransactionRow({
               className="flex items-center gap-1 text-brand-600 hover:text-brand-700"
             >
               {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-              <span className="text-sm">Split ({tx.children!.length})</span>
+              <span className="text-sm">
+                {t('transactions.row.split', { n: tx.children!.length })}
+              </span>
             </button>
           ) : isTransfer ? (
-            <span className="text-sm text-brand-500">Transfer</span>
+            <span className="text-sm text-brand-500">{t('transactions.row.transfer')}</span>
           ) : (
             <>
               <button
@@ -211,7 +215,7 @@ export function TransactionRow({
                     e.stopPropagation();
                     onFilterCategory(tx.categoryId!);
                   }}
-                  title={`Show all "${categoryEntry?.name}" transactions`}
+                  title={t('transactions.row.showCategory', { name: categoryEntry?.name ?? '' })}
                 >
                   <ArrowRight size={12} />
                 </button>
@@ -248,7 +252,7 @@ export function TransactionRow({
                 e.stopPropagation();
                 navigate(`/accounts/${tx.accountId}`);
               }}
-              title={`Go to ${accountName}`}
+              title={t('transactions.row.goToAccount', { name: accountName })}
             >
               <ArrowRight size={12} />
             </button>
@@ -299,6 +303,7 @@ export function TransactionRow({
                     <span className="text-xs text-text-tertiary truncate">{childCat.name}</span>
                   </>
                 ) : (
+                  // i18n-ignore
                   <span className="text-xs text-text-disabled">&mdash;</span>
                 )}
                 {child.notes && (

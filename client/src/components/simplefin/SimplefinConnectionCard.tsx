@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { RefreshCw, Unlink, AlertTriangle, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { Button } from '../ui/Button';
 import { useSyncSimplefinConnection, useDisconnectSimplefin } from '../../hooks/useSimplefin';
 import { formatDistanceToNow } from 'date-fns';
 import type { SimplefinConnection, SimplefinSyncStatus } from '../../types';
 
-const statusConfig: Record<SimplefinSyncStatus, { dot: string; label: string }> = {
-  good: { dot: 'bg-positive', label: 'Synced' },
-  syncing: { dot: '', label: 'Syncing...' },
-  error: { dot: 'bg-negative', label: 'Error' },
+const statusDot: Record<SimplefinSyncStatus, string> = {
+  good: 'bg-positive',
+  syncing: '',
+  error: 'bg-negative',
 };
 
 interface Props {
@@ -17,13 +18,13 @@ interface Props {
 }
 
 export function SimplefinConnectionCard({ connection }: Props) {
+  const { t } = useTranslation();
   const [showDisconnect, setShowDisconnect] = useState(false);
   const syncConnection = useSyncSimplefinConnection();
   const disconnectConnection = useDisconnectSimplefin();
 
   const isSyncing = syncConnection.isPending || connection.syncStatus === 'syncing';
   const initial = connection.connectionName.charAt(0).toUpperCase();
-  const statusCfg = statusConfig[connection.syncStatus];
   const enabledAccounts = connection.accounts.filter((a) => a.isEnabled);
 
   return (
@@ -45,16 +46,17 @@ export function SimplefinConnectionCard({ connection }: Props) {
                 {connection.syncStatus === 'syncing' ? (
                   <Loader2 size={12} className="animate-spin text-brand-500" />
                 ) : (
-                  <span className={`w-2 h-2 rounded-full ${statusCfg.dot}`} />
+                  <span className={`w-2 h-2 rounded-full ${statusDot[connection.syncStatus]}`} />
                 )}
-                {statusCfg.label}
+                {t(`banks.status.${connection.syncStatus}`)}
               </span>
             </div>
           </div>
           {connection.lastSyncedAt && (
             <span className="text-xs text-text-tertiary">
-              Last synced{' '}
-              {formatDistanceToNow(new Date(connection.lastSyncedAt), { addSuffix: true })}
+              {t('banks.card.lastSynced', {
+                ago: formatDistanceToNow(new Date(connection.lastSyncedAt), { addSuffix: true }),
+              })}
             </span>
           )}
         </div>
@@ -75,7 +77,7 @@ export function SimplefinConnectionCard({ connection }: Props) {
               >
                 <span>{acct.simplefinAccountName}</span>
                 <span className="text-text-tertiary">
-                  {acct.accountName ? `→ ${acct.accountName}` : 'Not linked'}
+                  {acct.accountName ? `→ ${acct.accountName}` : t('banks.card.notLinked')}
                 </span>
               </div>
             ))}
@@ -91,11 +93,11 @@ export function SimplefinConnectionCard({ connection }: Props) {
           >
             {isSyncing ? (
               <>
-                <Loader2 size={12} className="animate-spin" /> Syncing...
+                <Loader2 size={12} className="animate-spin" /> {t('banks.card.syncing')}
               </>
             ) : (
               <>
-                <RefreshCw size={12} /> Sync Now
+                <RefreshCw size={12} /> {t('banks.card.syncNow')}
               </>
             )}
           </Button>
@@ -104,13 +106,13 @@ export function SimplefinConnectionCard({ connection }: Props) {
             onClick={() => setShowDisconnect(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-negative hover:bg-negative-subtle rounded-md transition-colors ml-auto"
           >
-            <Unlink size={12} /> Disconnect
+            <Unlink size={12} /> {t('banks.card.disconnect')}
           </button>
         </div>
 
         {syncConnection.isSuccess && syncConnection.data && (
           <p className="text-xs text-positive">
-            Synced: {syncConnection.data.added} new transactions imported.
+            {t('banks.simplefin.card.synced', { count: syncConnection.data.added })}
           </p>
         )}
       </div>
@@ -119,9 +121,9 @@ export function SimplefinConnectionCard({ connection }: Props) {
         isOpen={showDisconnect}
         onClose={() => setShowDisconnect(false)}
         onConfirm={() => disconnectConnection.mutateAsync(connection.id)}
-        title="Disconnect SimpleFIN"
-        message={`Are you sure you want to disconnect ${connection.connectionName}? FlyBudget will delete its stored access. To revoke it completely, also remove this app from your SimpleFIN Bridge account at bridge.simplefin.org. Your existing accounts and transactions will not be deleted.`}
-        confirmLabel="Disconnect"
+        title={t('banks.simplefin.disconnect.title')}
+        message={t('banks.simplefin.disconnect.message', { name: connection.connectionName })}
+        confirmLabel={t('banks.card.disconnect')}
         danger
       />
     </>

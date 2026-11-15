@@ -105,8 +105,8 @@ describe('rule editor helpers (property-based)', () => {
         }
       }),
     );
-    for (const { value } of ACTION_TYPES) {
-      const a = makeAction(value);
+    for (const type of ACTION_TYPES) {
+      const a = makeAction(type);
       const withTarget = (
         a.type === 'set_category' || a.type === 'set_payee' ? { ...a, value: 'gone' } : a
       ) as RuleAction;

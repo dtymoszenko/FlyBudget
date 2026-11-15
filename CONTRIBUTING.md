@@ -57,6 +57,10 @@ CI runs all of these on every pull request.
 - **Never leave a blank screen.** When a page or card has nothing to show, use
   `EmptyState` (`client/src/components/ui/`): say what goes there and offer a
   button for the first step.
+- **UI text goes in `client/src/i18n/locales/en.json`** and is read with `t()`
+  (see Translations in [CLAUDE.md](CLAUDE.md)); `npm run check:i18n` in `client/`
+  finds text written in the code instead. Don't edit other languages' files in a
+  feature PR.
 - **Give controls accessible names** (labels, `aria-label`), so they work with
   screen readers and can be found by tests.
 - **Keep the security model intact.** [SECURITY.md](SECURITY.md) and

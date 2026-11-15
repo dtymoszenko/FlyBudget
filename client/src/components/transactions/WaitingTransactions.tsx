@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AlertCircle, CloudUpload, Loader2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { discardWaiting, retryWaiting, sendWaiting, useOutbox } from '../../offline/outbox';
@@ -21,6 +22,7 @@ interface Props {
  * above the register until they're sent. They aren't in balances or the budget yet.
  */
 export function WaitingTransactions({ accountId, categoryName, accountName }: Props) {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const currencyOf = useAccountCurrency();
   const items = useOutbox((s) => s.items);
@@ -34,34 +36,40 @@ export function WaitingTransactions({ accountId, categoryName, accountName }: Pr
   if (shown.length === 0) return null;
 
   const status = sending
-    ? 'Sending…'
+    ? t('transactions.waiting.sending')
     : connected
       ? null
-      : 'Sent when FlyBudget reconnects. Not in balances or the budget yet.';
+      : t('transactions.waiting.offline');
 
   function payeeOf(item: OutboxItem) {
     if (item.kind === 'transfer') {
       const other =
         accountId === item.data.toAccountId ? item.data.fromAccountId : item.data.toAccountId;
-      return `Transfer: ${accountName(other) ?? 'another account'}`;
+      return t('transactions.waiting.transferTo', {
+        name: accountName(other) ?? t('transactions.waiting.anotherAccount'),
+      });
     }
-    return item.data.payeeName || 'No payee';
+    return item.data.payeeName || t('transactions.waiting.noPayee');
   }
 
   function detailOf(item: OutboxItem) {
-    if (item.kind === 'transfer') return 'Transfer';
-    if (item.data.splits?.length) return `Split (${item.data.splits.length})`;
-    return (item.data.categoryId && categoryName(item.data.categoryId)) || 'Uncategorized';
+    if (item.kind === 'transfer') return t('transactions.waiting.transfer');
+    if (item.data.splits?.length)
+      return t('transactions.waiting.split', { n: item.data.splits.length });
+    return (
+      (item.data.categoryId && categoryName(item.data.categoryId)) ||
+      t('transactions.waiting.uncategorized')
+    );
   }
 
   return (
     <section
-      aria-label="Saved on this device"
+      aria-label={t('transactions.waiting.title')}
       className="border-b border-caution/30 bg-caution-subtle/40"
     >
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-4 py-2 border-b border-caution/20">
         <CloudUpload size={15} className="text-caution shrink-0" aria-hidden />
-        <span className="text-sm font-medium text-text">Saved on this device</span>
+        <span className="text-sm font-medium text-text">{t('transactions.waiting.title')}</span>
         {status && (
           <span className="text-xs text-text-secondary flex items-center gap-1">
             {sending && <Loader2 size={12} className="animate-spin" aria-hidden />}
@@ -82,8 +90,12 @@ export function WaitingTransactions({ accountId, categoryName, accountName }: Pr
             <span className="flex-1 min-w-0 grid">
               <span className="truncate text-sm font-medium text-text">{payeeOf(item)}</span>
               <span className="truncate text-xs text-text-tertiary">
-                {detailOf(item)}
-                {!accountId && ` · ${accountName(entry.accountId) ?? ''}`}
+                {accountId
+                  ? detailOf(item)
+                  : t('transactions.waiting.withAccount', {
+                      detail: detailOf(item),
+                      account: accountName(entry.accountId) ?? '',
+                    })}
               </span>
             </span>
             <span
@@ -95,31 +107,32 @@ export function WaitingTransactions({ accountId, categoryName, accountName }: Pr
             {item.error ? (
               <span className="basis-full flex flex-wrap items-center gap-2 text-xs">
                 <span className="flex items-center gap-1 text-negative">
-                  <AlertCircle size={12} aria-hidden /> Not saved: {item.error}
+                  <AlertCircle size={12} aria-hidden />{' '}
+                  {t('transactions.waiting.notSaved', { error: item.error })}
                 </span>
                 <button
                   onClick={() => void retryWaiting(item.id).then(() => sendWaiting(qc))}
-                  aria-label={`Try again: ${payeeOf(item)}`}
+                  aria-label={t('transactions.waiting.tryAgainAria', { name: payeeOf(item) })}
                   disabled={!connected}
                   className="px-2 py-1 max-md:min-h-11 rounded border border-border bg-surface text-text-secondary hover:text-text disabled:opacity-50"
                 >
-                  Try again
+                  {t('transactions.waiting.tryAgain')}
                 </button>
                 <button
                   onClick={() => setDiscarding(item)}
-                  aria-label={`Discard ${payeeOf(item)}`}
+                  aria-label={t('transactions.waiting.discardAria', { name: payeeOf(item) })}
                   className="px-2 py-1 max-md:min-h-11 rounded border border-border bg-surface text-negative hover:bg-negative-subtle"
                 >
-                  Discard
+                  {t('transactions.waiting.discard')}
                 </button>
               </span>
             ) : (
               <button
                 onClick={() => setDiscarding(item)}
-                aria-label={`Discard ${payeeOf(item)}`}
+                aria-label={t('transactions.waiting.discardAria', { name: payeeOf(item) })}
                 className="text-xs px-2 py-1 max-md:min-h-11 rounded text-text-tertiary hover:text-negative hover:bg-surface"
               >
-                Discard
+                {t('transactions.waiting.discard')}
               </button>
             )}
           </li>
@@ -132,9 +145,9 @@ export function WaitingTransactions({ accountId, categoryName, accountName }: Pr
           if (discarding) void discardWaiting(discarding.id);
           setDiscarding(null);
         }}
-        title="Discard this transaction?"
-        message="It was only saved on this device and hasn't been sent to FlyBudget, so it will be gone."
-        confirmLabel="Discard"
+        title={t('transactions.waiting.discardTitle')}
+        message={t('transactions.waiting.discardMessage')}
+        confirmLabel={t('transactions.waiting.discard')}
         danger
       />
     </section>

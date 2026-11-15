@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   TOP_TREND_CATEGORIES,
   useIncomeVsExpenses,
@@ -16,20 +17,18 @@ import { ChartSkeleton } from './ChartHelpers';
 import type { StatCard } from './ChartHelpers';
 import type { BuiltinWidgetType } from '../../types';
 
-export const BUILTIN_REPORTS: Record<BuiltinWidgetType, { label: string; description: string }> = {
-  summary: { label: 'Summary', description: 'Income, expenses and monthly averages' },
-  'net-worth': { label: 'Net Worth', description: 'Assets, liabilities and net worth over time' },
-  'income-expenses': {
-    label: 'Income & Expenses',
-    description: 'Money in vs. money out each month',
-  },
-  spending: { label: 'Spending by Category', description: 'Where your money went, by category' },
-  'spending-trends': {
-    label: 'Spending Trends',
-    description: 'How spending in your biggest categories changes over time',
-  },
-  calendar: { label: 'Transaction Calendar', description: 'Money in and out on each day' },
-};
+/**
+ * Each built-in report by widget type, with where its texts are in en.json: its title is
+ * reports.builtin.<key>.label and what it shows is reports.builtin.<key>.description.
+ */
+export const BUILTIN_REPORTS = {
+  summary: 'summary',
+  'net-worth': 'netWorth',
+  'income-expenses': 'incomeExpenses',
+  spending: 'spending',
+  'spending-trends': 'spendingTrends',
+  calendar: 'calendar',
+} as const satisfies Record<BuiltinWidgetType, string>;
 
 export const BUILTIN_TYPES = Object.keys(BUILTIN_REPORTS) as BuiltinWidgetType[];
 
@@ -39,18 +38,25 @@ export const BUILTIN_TYPES = Object.keys(BUILTIN_REPORTS) as BuiltinWidgetType[]
  * activity in the range.
  */
 export function useSummaryCards(from: string, to: string): StatCard[] {
+  const { t } = useTranslation();
   const { data: ieData = [] } = useIncomeVsExpenses(from, to);
   return useMemo(() => {
     const totalInc = ieData.reduce((s, d) => s + d.income, 0);
     const expNet = ieData.reduce((s, d) => s + d.expenseNet, 0);
     const txCount = ieData.reduce((s, d) => s + d.expenseCount, 0);
     return [
-      { label: 'Total Income', ...incomeFigure(totalInc) },
-      { label: 'Total Expenses', ...expenseFigure(expNet) },
-      { label: 'Avg Monthly Expenses', ...expenseFigure(expNet / monthsToAverage(ieData)) },
-      { label: 'Avg Per Transaction', ...expenseFigure(txCount > 0 ? expNet / txCount : 0) },
+      { label: t('reports.builtin.summary.totalIncome'), ...incomeFigure(totalInc) },
+      { label: t('reports.builtin.summary.totalExpenses'), ...expenseFigure(expNet) },
+      {
+        label: t('reports.builtin.summary.avgMonthly'),
+        ...expenseFigure(expNet / monthsToAverage(ieData)),
+      },
+      {
+        label: t('reports.builtin.summary.avgPerTransaction'),
+        ...expenseFigure(txCount > 0 ? expNet / txCount : 0),
+      },
     ];
-  }, [ieData]);
+  }, [ieData, t]);
 }
 
 const TONE_CLASS = {
@@ -67,8 +73,8 @@ function SummaryTiles({ from, to }: { from: string; to: string }) {
   const cards = useSummaryCards(from, to);
   return (
     <div className="h-full grid grid-cols-2 @4xl:grid-cols-4 gap-x-3 gap-y-2 content-center">
-      {cards.map((c) => (
-        <div key={c.label} className="text-center min-w-0">
+      {cards.map((c, i) => (
+        <div key={i} className="text-center min-w-0">
           {/* A size down on narrow cards (a phone), so "$12,345.67" fits two to a row */}
           <p
             className={`text-lg @sm:text-xl font-semibold tabular-nums break-words ${c.tone ? TONE_CLASS[c.tone] : 'text-text'}`}
@@ -95,14 +101,13 @@ function DashboardSpendingTrends({
   to: string;
   categoryIds?: string[];
 }) {
+  const { t } = useTranslation();
   const top = useTopSpendingCategories(from, to, TOP_TREND_CATEGORIES);
   const ids = categoryIds ?? top.ids;
   if (!categoryIds && top.isLoading) return <ChartSkeleton />;
   const caption = categoryIds
     ? undefined
-    : ids.length === 1
-      ? 'Biggest spending category'
-      : `${ids.length} biggest spending categories`;
+    : t('reports.builtin.spendingTrends.biggest', { count: ids.length });
   return <SpendingTrendsChart from={from} to={to} categoryIds={ids} caption={caption} />;
 }
 

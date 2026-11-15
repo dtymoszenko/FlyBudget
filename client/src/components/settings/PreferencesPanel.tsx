@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import {
   usePreferencesStore,
   type Theme,
@@ -7,39 +8,40 @@ import {
   type AmountFormat,
   type SymbolPosition,
 } from '../../store/preferencesStore';
+import {
+  availableLanguages,
+  deviceLanguages,
+  languageInfo,
+  resolveLanguage,
+  type LanguagePreference,
+} from '../../i18n/languages';
 import { amountStyle, formatAmount, formatMoney, useAmountStyle } from '../../utils/currency';
 import { Link } from 'react-router-dom';
 import { useCurrencySettings } from '../../hooks/useCurrency';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { IS_DEMO } from '../../demo/isDemo';
 import { SIDEBAR_DEFAULT_WIDTH } from '../../utils/sidebarWidth';
+import { formatDay } from '../../utils/dates';
 
-const themeOptions: { value: Theme; label: string }[] = [
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
-  { value: 'system', label: 'System' },
-];
+const themeOptions: Theme[] = ['light', 'dark', 'system'];
 
-const sidebarModes: { value: SidebarMode; label: string; description: string }[] = [
-  { value: 'persistent', label: 'Pinned', description: 'Always open' },
-  { value: 'auto-hide', label: 'Auto-hide', description: 'Collapsed, opens on hover' },
-];
+const sidebarModes = [
+  { value: 'persistent', id: 'pinned' },
+  { value: 'auto-hide', id: 'autoHide' },
+] as const satisfies { value: SidebarMode; id: string }[];
 
-const dateFormats: { value: DateFormatOption; label: string; example: string }[] = [
-  { value: 'MMM d, yyyy', label: 'MMM d, yyyy', example: 'Jan 5, 2026' },
-  { value: 'MM/dd/yyyy', label: 'MM/dd/yyyy', example: '01/05/2026' },
-  { value: 'dd/MM/yyyy', label: 'dd/MM/yyyy', example: '05/01/2026' },
-  { value: 'dd.MM.yyyy', label: 'dd.MM.yyyy', example: '05.01.2026' },
-  { value: 'yyyy-MM-dd', label: 'yyyy-MM-dd', example: '2026-01-05' },
+// Shown as written; each with 5 January 2026 as an example
+const dateFormats: DateFormatOption[] = [
+  'MMM d, yyyy',
+  'MM/dd/yyyy',
+  'dd/MM/yyyy',
+  'dd.MM.yyyy',
+  'yyyy-MM-dd',
 ];
 
 const amountFormats: (AmountFormat | 'auto')[] = ['auto', 'dot', 'comma', 'space', 'apostrophe'];
 
-const symbolPositions: { value: SymbolPosition | 'auto'; label: string }[] = [
-  { value: 'auto', label: 'Automatic' },
-  { value: 'before', label: 'Before' },
-  { value: 'after', label: 'After' },
-];
+const symbolPositions: (SymbolPosition | 'auto')[] = ['auto', 'before', 'after'];
 
 /** 1,234.56 in a format, without a symbol */
 const numberExample = (format: AmountFormat) =>
@@ -51,6 +53,55 @@ const choiceClass = (selected: boolean) =>
       ? 'border-brand-500 bg-brand-50 text-brand-700 font-medium'
       : 'border-border bg-surface text-text-secondary hover:border-border'
   }`;
+
+// Changing the language draws the app again (LanguageRoot), so the select it was chosen in is a
+// new element: this puts the focus back on it
+let refocusLanguage = false;
+
+/** Automatic (the device's language when FlyBudget has it), or one of FlyBudget's languages */
+function LanguageSetting() {
+  const { t } = useTranslation();
+  const language = usePreferencesStore((s) => s.language);
+  const setLanguage = usePreferencesStore((s) => s.setLanguage);
+  const languages = availableLanguages();
+  const automatic = languageInfo(resolveLanguage('auto', deviceLanguages())).name;
+
+  return (
+    <div className="bg-surface-alt rounded-lg p-5 space-y-3">
+      <h3 id="language-heading" className="text-sm font-medium text-text">
+        {t('settings.preferences.language.title')}
+      </h3>
+      <select
+        ref={(el) => {
+          if (el && refocusLanguage) {
+            refocusLanguage = false;
+            el.focus();
+          }
+        }}
+        value={language}
+        onChange={(e) => {
+          refocusLanguage = true;
+          setLanguage(e.target.value as LanguagePreference);
+        }}
+        aria-labelledby="language-heading"
+        aria-describedby="language-hint"
+        className="block w-full sm:w-72 rounded-lg border border-border bg-surface px-3 py-2 max-md:min-h-11 text-sm text-text focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+      >
+        <option value="auto">
+          {t('settings.preferences.language.automatic', { language: automatic })}
+        </option>
+        {languages.map((l) => (
+          <option key={l.code} value={l.code} lang={l.code}>
+            {l.name}
+          </option>
+        ))}
+      </select>
+      <p id="language-hint" className="text-xs text-text-tertiary">
+        {t('settings.preferences.language.hint')}
+      </p>
+    </div>
+  );
+}
 
 export function PreferencesPanel() {
   const {
@@ -73,7 +124,9 @@ export function PreferencesPanel() {
     setShowMerchantIcons,
     setShowCategoryIcons,
     setShowAccountIcons,
+    setLanguage,
   } = usePreferencesStore();
+  const { t } = useTranslation();
   const [resetOpen, setResetOpen] = useState(false);
   const style = useAmountStyle();
   const example = formatAmount(-123_456, style);
@@ -97,6 +150,7 @@ export function PreferencesPanel() {
     setShowMerchantIcons(true);
     setShowCategoryIcons(true);
     setShowAccountIcons(true);
+    setLanguage('auto');
     setResetOpen(false);
   }
 
@@ -104,18 +158,16 @@ export function PreferencesPanel() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-sm font-semibold text-text">Preferences</h2>
+          <h2 className="text-sm font-semibold text-text">{t('settings.preferences.title')}</h2>
           <p className="text-xs text-text-tertiary mt-0.5">
-            {IS_DEMO
-              ? 'Settings are kept in this tab while you try the demo.'
-              : 'Settings are saved automatically to your browser.'}
+            {t(IS_DEMO ? 'settings.preferences.savedDemo' : 'settings.preferences.saved')}
           </p>
         </div>
         <button
           onClick={() => setResetOpen(true)}
           className="text-xs text-text-tertiary hover:text-text-secondary transition-colors"
         >
-          Reset to defaults
+          {t('settings.preferences.reset.button')}
         </button>
       </div>
 
@@ -123,33 +175,35 @@ export function PreferencesPanel() {
         isOpen={resetOpen}
         onClose={() => setResetOpen(false)}
         onConfirm={handleReset}
-        title="Reset preferences"
-        message="Are you sure you want to reset all preferences to their default values?"
-        confirmLabel="Reset"
+        title={t('settings.preferences.reset.title')}
+        message={t('settings.preferences.reset.message')}
+        confirmLabel={t('settings.preferences.reset.confirm')}
         danger
       />
 
+      <LanguageSetting />
+
       <div className="bg-surface-alt rounded-lg p-5 space-y-4">
-        <h3 className="text-sm font-medium text-text">Theme</h3>
+        <h3 className="text-sm font-medium text-text">{t('settings.preferences.theme.title')}</h3>
         <div className="flex gap-3">
           {themeOptions.map((opt) => (
             <button
-              key={opt.value}
-              onClick={() => setTheme(opt.value)}
+              key={opt}
+              onClick={() => setTheme(opt)}
               className={`px-4 py-2 text-sm rounded-md border transition-colors ${
-                theme === opt.value
+                theme === opt
                   ? 'border-brand-500 bg-brand-50 text-brand-700 font-medium'
                   : 'border-border bg-surface text-text-secondary hover:border-border'
               }`}
             >
-              {opt.label}
+              {t(`settings.preferences.theme.${opt}`)}
             </button>
           ))}
         </div>
       </div>
 
       <div className="bg-surface-alt rounded-lg p-5 space-y-4">
-        <h3 className="text-sm font-medium text-text">Sidebar</h3>
+        <h3 className="text-sm font-medium text-text">{t('settings.preferences.sidebar.title')}</h3>
         <div className="flex gap-3">
           {sidebarModes.map((opt) => (
             <button
@@ -161,9 +215,9 @@ export function PreferencesPanel() {
                   : 'border-border bg-surface text-text-secondary hover:border-border'
               }`}
             >
-              <span>{opt.label}</span>
+              <span>{t(`settings.preferences.sidebar.${opt.id}`)}</span>
               <span className="text-xs text-text-tertiary font-normal mt-0.5">
-                {opt.description}
+                {t(`settings.preferences.sidebar.${opt.id}Hint`)}
               </span>
             </button>
           ))}
@@ -171,38 +225,25 @@ export function PreferencesPanel() {
       </div>
 
       <div className="bg-surface-alt rounded-lg p-5 space-y-5">
-        <h3 className="text-sm font-medium text-text">Icons</h3>
+        <h3 className="text-sm font-medium text-text">{t('settings.preferences.icons.title')}</h3>
         {(
           [
-            {
-              label: 'Merchant',
-              description: 'Merchant logos (or colored initials) next to merchant names',
-              value: showMerchantIcons,
-              setter: setShowMerchantIcons,
-            },
-            {
-              label: 'Category',
-              description: 'Emoji icons next to category names',
-              value: showCategoryIcons,
-              setter: setShowCategoryIcons,
-            },
-            {
-              label: 'Account',
-              description: 'Account logos (or colored initials) next to account names',
-              value: showAccountIcons,
-              setter: setShowAccountIcons,
-            },
+            { id: 'merchant', value: showMerchantIcons, setter: setShowMerchantIcons },
+            { id: 'category', value: showCategoryIcons, setter: setShowCategoryIcons },
+            { id: 'account', value: showAccountIcons, setter: setShowAccountIcons },
           ] as const
         ).map((row) => (
-          <div key={row.label} className="flex items-center justify-between gap-4">
+          <div key={row.id} className="flex items-center justify-between gap-4">
             <div className="min-w-0">
-              <div className="text-sm text-text">{row.label}</div>
-              <div className="text-xs text-text-tertiary mt-0.5">{row.description}</div>
+              <div className="text-sm text-text">{t(`settings.preferences.icons.${row.id}`)}</div>
+              <div className="text-xs text-text-tertiary mt-0.5">
+                {t(`settings.preferences.icons.${row.id}Hint`)}
+              </div>
             </div>
             <div className="flex gap-2 shrink-0">
               {[
-                { v: true, l: 'Show' },
-                { v: false, l: 'Hide' },
+                { v: true, l: t('settings.preferences.icons.show') },
+                { v: false, l: t('settings.preferences.icons.hide') },
               ].map((opt) => (
                 <button
                   key={String(opt.v)}
@@ -227,27 +268,38 @@ export function PreferencesPanel() {
       >
         <div>
           <h3 id="amounts-heading" className="text-sm font-medium text-text">
-            Amounts
+            {t('settings.preferences.amounts.title')}
           </h3>
           <p className="text-xs text-text-tertiary mt-0.5">
-            How amounts are shown and typed on this device. Automatic follows your device's
-            language. You can always type 12.50 or 12,50.
+            {t('settings.preferences.amounts.hint')}
           </p>
         </div>
 
-        <div className="space-y-2" role="group" aria-label="Number format">
-          <div className="text-xs font-medium text-text-secondary">Number format</div>
+        <div
+          className="space-y-2"
+          role="group"
+          aria-label={t('settings.preferences.amounts.numberFormat')}
+        >
+          <div className="text-xs font-medium text-text-secondary">
+            {t('settings.preferences.amounts.numberFormat')}
+          </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {amountFormats.map((opt) => (
               <button
                 key={opt}
                 type="button"
                 aria-pressed={amountFormat === opt}
-                aria-label={opt === 'auto' ? 'Automatic' : numberExample(opt)}
+                aria-label={
+                  opt === 'auto' ? t('settings.preferences.amounts.automatic') : numberExample(opt)
+                }
                 onClick={() => setAmountFormat(opt)}
                 className={choiceClass(amountFormat === opt)}
               >
-                <span>{opt === 'auto' ? 'Automatic' : numberExample(opt)}</span>
+                <span>
+                  {opt === 'auto'
+                    ? t('settings.preferences.amounts.automatic')
+                    : numberExample(opt)}
+                </span>
                 {opt === 'auto' && (
                   <span className="text-xs text-text-tertiary">{numberExample(auto.format)}</span>
                 )}
@@ -256,15 +308,21 @@ export function PreferencesPanel() {
           </div>
         </div>
 
-        <div className="space-y-2" role="group" aria-label="Currency symbol position">
+        <div
+          className="space-y-2"
+          role="group"
+          aria-label={t('settings.preferences.amounts.symbolPosition')}
+        >
           <div className="text-xs font-medium text-text-secondary">
-            {budgetCurrency ? `${budgetCurrency} symbol` : 'Currency symbol'}
+            {budgetCurrency
+              ? t('settings.preferences.amounts.currencySymbolFor', { currency: budgetCurrency })
+              : t('settings.preferences.amounts.currencySymbol')}
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {!budgetCurrency && (
               <input
                 type="text"
-                aria-label="Currency symbol"
+                aria-label={t('settings.preferences.amounts.currencySymbol')}
                 value={currencySymbol}
                 onChange={(e) => setCurrencySymbol(e.target.value.slice(0, 3))}
                 maxLength={3}
@@ -273,40 +331,36 @@ export function PreferencesPanel() {
             )}
             {symbolPositions.map((opt) => (
               <button
-                key={opt.value}
+                key={opt}
                 type="button"
-                aria-pressed={symbolPosition === opt.value}
-                onClick={() => setSymbolPosition(opt.value)}
-                className={choiceClass(symbolPosition === opt.value)}
+                aria-pressed={symbolPosition === opt}
+                onClick={() => setSymbolPosition(opt)}
+                className={choiceClass(symbolPosition === opt)}
               >
-                {opt.label}
+                {t(`settings.preferences.amounts.position.${opt}`)}
               </button>
             ))}
           </div>
           <p className="text-xs text-text-tertiary">
-            {budgetCurrency ? (
-              <>
-                Automatic writes it as {budgetCurrency} is written at home. Symbols of other
-                currencies are in{' '}
-                <Link to="/settings?tab=currencies" className="underline hover:no-underline">
-                  Currencies
-                </Link>
-                .
-              </>
-            ) : (
-              <>
-                Up to 3 characters (e.g. $, €, EUR, kr). Or choose your budget&apos;s currency in{' '}
-                <Link to="/settings?tab=currencies" className="underline hover:no-underline">
-                  Currencies
-                </Link>
-                .
-              </>
-            )}
+            <Trans
+              i18nKey={
+                budgetCurrency
+                  ? 'settings.preferences.amounts.automaticHint'
+                  : 'settings.preferences.amounts.symbolHint'
+              }
+              values={{ currency: budgetCurrency }}
+              components={{
+                currencies: (
+                  <Link to="/settings?tab=currencies" className="underline hover:no-underline" />
+                ),
+              }}
+            />
           </p>
         </div>
 
         <p className="text-sm text-text-secondary">
-          Example: <span className="font-medium text-text tabular-nums">{example}</span>
+          {t('settings.preferences.amounts.example')}{' '}
+          <span className="font-medium text-text tabular-nums">{example}</span>
           {otherExamples.map((e) => (
             <span key={e} className="font-medium text-text tabular-nums">
               {' · '}
@@ -317,20 +371,22 @@ export function PreferencesPanel() {
       </section>
 
       <div className="bg-surface-alt rounded-lg p-5 space-y-4">
-        <h3 className="text-sm font-medium text-text">Date Format</h3>
+        <h3 className="text-sm font-medium text-text">
+          {t('settings.preferences.dateFormat.title')}
+        </h3>
         <div className="grid grid-cols-2 gap-2">
           {dateFormats.map((opt) => (
             <button
-              key={opt.value}
-              onClick={() => setDateFormat(opt.value)}
+              key={opt}
+              onClick={() => setDateFormat(opt)}
               className={`flex items-center justify-between px-4 py-2.5 text-sm rounded-md border transition-colors ${
-                dateFormat === opt.value
+                dateFormat === opt
                   ? 'border-brand-500 bg-brand-50 text-brand-700 font-medium'
                   : 'border-border bg-surface text-text-secondary hover:border-border'
               }`}
             >
-              <span>{opt.label}</span>
-              <span className="text-xs text-text-tertiary">{opt.example}</span>
+              <span>{opt}</span>
+              <span className="text-xs text-text-tertiary">{formatDay('2026-01-05', opt)}</span>
             </button>
           ))}
         </div>

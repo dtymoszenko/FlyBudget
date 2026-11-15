@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as rulesApi from '../api/rules';
+import { t } from '../i18n';
 import { useUndoStore } from '../store/undoStore';
 import type { Rule, RuleInput } from '../types';
 
@@ -25,7 +26,7 @@ export function useCreateRule() {
       qc.invalidateQueries({ queryKey: QK });
       let current = created;
       useUndoStore.getState().push({
-        description: `Create rule`,
+        description: t('rules.undo.create'),
         undo: async () => {
           await rulesApi.deleteRule(current.id);
           qc.invalidateQueries({ queryKey: QK });
@@ -55,8 +56,8 @@ export function useUpdateRule() {
       useUndoStore.getState().push({
         description:
           data.enabled !== undefined && Object.keys(data).length === 1
-            ? `${data.enabled ? 'Enable' : 'Disable'} rule`
-            : `Edit rule`,
+            ? t(data.enabled ? 'rules.undo.enable' : 'rules.undo.disable')
+            : t('rules.undo.edit'),
         undo: async () => {
           await rulesApi.updateRule(id, snapshot);
           qc.invalidateQueries({ queryKey: QK });
@@ -83,7 +84,7 @@ export function useDeleteRule() {
       if (!snapshot) return;
       let current = snapshot;
       useUndoStore.getState().push({
-        description: `Delete rule`,
+        description: t('rules.undo.delete'),
         undo: async () => {
           current = await rulesApi.createRule(toInput(snapshot));
           qc.invalidateQueries({ queryKey: QK });
@@ -108,7 +109,7 @@ export function useReorderRules() {
     onSuccess: (oldIds, newIds) => {
       qc.invalidateQueries({ queryKey: QK });
       useUndoStore.getState().push({
-        description: `Reorder rules`,
+        description: t('rules.undo.reorder'),
         undo: async () => {
           await rulesApi.reorderRules(oldIds);
           qc.invalidateQueries({ queryKey: QK });

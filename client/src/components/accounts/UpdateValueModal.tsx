@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
+import { Trans, useTranslation } from 'react-i18next';
 import { Modal } from '../ui/Modal';
 import { useCanSave } from '../../hooks/useConnection';
 import { SavingPausedHint } from '../connection/SavingPausedHint';
@@ -20,6 +21,7 @@ interface Props {
  * by adding a dated adjustment transaction, so net worth history keeps the change.
  */
 export function UpdateValueModal({ account, onClose }: Props) {
+  const { t } = useTranslation();
   const liability = isLiabilityType(account.type);
   // Debts are entered as the positive amount owed
   const current = liability ? -account.balance : account.balance;
@@ -37,7 +39,8 @@ export function UpdateValueModal({ account, onClose }: Props) {
         accountId: account.id,
         date: format(new Date(), 'yyyy-MM-dd'),
         amount: change,
-        notes: liability ? 'Balance update' : 'Value update',
+        // Saved in the language in use now
+        notes: t(liability ? 'accounts.updateValue.balanceNote' : 'accounts.updateValue.valueNote'),
         adjustment: true,
       });
     }
@@ -45,30 +48,42 @@ export function UpdateValueModal({ account, onClose }: Props) {
   }
 
   return (
-    <Modal isOpen onClose={onClose} title={liability ? 'Update Balance' : 'Update Value'} size="sm">
+    <Modal
+      isOpen
+      onClose={onClose}
+      title={t(liability ? 'accounts.updateValue.balanceTitle' : 'accounts.updateValue.valueTitle')}
+      size="sm"
+    >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-text-secondary mb-1">
-            {liability ? 'Amount owed today' : 'Value today'}
+            {t(liability ? 'accounts.updateValue.owedToday' : 'accounts.updateValue.valueToday')}
           </label>
           <CurrencyInput
             currency={account.currency}
             value={value}
             onChange={setValue}
             allowNegative={!liability}
-            aria-label={liability ? 'Amount owed today' : 'Value today'}
+            aria-label={t(
+              liability ? 'accounts.updateValue.owedToday' : 'accounts.updateValue.valueToday',
+            )}
           />
           <p className="mt-1 text-xs text-text-tertiary">
-            Currently {formatMoney(current, account.currency)}.
+            {t('accounts.updateValue.current', {
+              amount: formatMoney(current, account.currency),
+            })}
             {change !== 0 && (
               <>
                 {' '}
-                Adds a{' '}
-                <span className={change > 0 ? 'text-positive' : 'text-negative'}>
-                  {change > 0 ? '+' : ''}
-                  {formatMoney(change, account.currency)}
-                </span>{' '}
-                adjustment dated today.
+                <Trans
+                  i18nKey="accounts.updateValue.adds"
+                  values={{
+                    amount: `${change > 0 ? '+' : ''}${formatMoney(change, account.currency)}`,
+                  }}
+                  components={{
+                    change: <span className={change > 0 ? 'text-positive' : 'text-negative'} />,
+                  }}
+                />
               </>
             )}
           </p>
@@ -81,14 +96,14 @@ export function UpdateValueModal({ account, onClose }: Props) {
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-text-secondary bg-surface border border-border rounded-lg hover:bg-hover transition-colors"
           >
-            Cancel
+            {t('common.actions.cancel')}
           </button>
           <button
             type="submit"
             disabled={createTransaction.isPending || !canSave}
             className="px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {createTransaction.isPending ? 'Saving…' : 'Save'}
+            {createTransaction.isPending ? t('accounts.saving') : t('common.actions.save')}
           </button>
         </div>
       </form>

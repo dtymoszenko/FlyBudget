@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../utils/currency';
 import { monthLabel } from './ChartHelpers';
 import type { CustomReportData } from '../../types';
@@ -7,14 +8,19 @@ interface Props {
 }
 
 export default function ReportTable({ data }: Props) {
+  const { t } = useTranslation();
   if (data.mode === 'total') {
     return (
       <div className="overflow-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border">
-              <th className="text-left py-2 px-3 font-semibold text-text-secondary">Name</th>
-              <th className="text-right py-2 px-3 font-semibold text-text-secondary">Amount</th>
+              <th className="text-left py-2 px-3 font-semibold text-text-secondary">
+                {t('reports.table.name')}
+              </th>
+              <th className="text-right py-2 px-3 font-semibold text-text-secondary">
+                {t('reports.table.amount')}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -31,7 +37,7 @@ export default function ReportTable({ data }: Props) {
           </tbody>
           <tfoot>
             <tr className="border-t border-border">
-              <td className="py-2 px-3 font-semibold text-text">Total</td>
+              <td className="py-2 px-3 font-semibold text-text">{t('reports.table.total')}</td>
               <td className="py-2 px-3 text-right tabular-nums font-semibold text-text">
                 {formatCurrency(data.data.reduce((s, r) => s + r.value, 0))}
               </td>
@@ -48,7 +54,7 @@ export default function ReportTable({ data }: Props) {
         <thead>
           <tr className="border-b border-border">
             <th className="text-left py-2 px-3 font-semibold text-text-secondary sticky left-0 bg-surface">
-              Month
+              {t('reports.table.month')}
             </th>
             {data.groups.map((g) => (
               <th

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, CloudOff, Loader2, RefreshCw } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 import { useConnection } from '../../hooks/useConnection';
 import { useOutbox } from '../../offline/outbox';
 import { shownDataAsOf } from '../../offline/snapshot';
@@ -17,6 +18,7 @@ const RECONNECTED_MS = 4_000;
  * refreshes the data, OutboxSender sends what waited, and this says so briefly.
  */
 export function ConnectionBanner() {
+  const { t } = useTranslation();
   const connection = useConnection();
   const reconnectedAt = useConnectionStore((s) => s.reconnectedAt);
   const [showReconnected, setShowReconnected] = useState(false);
@@ -34,8 +36,8 @@ export function ConnectionBanner() {
     if (!wasOffline.current) return;
     wasOffline.current = false;
     setShowReconnected(true);
-    const t = setTimeout(() => setShowReconnected(false), RECONNECTED_MS);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setShowReconnected(false), RECONNECTED_MS);
+    return () => clearTimeout(timer);
   }, [connection.status, reconnectedAt]);
 
   if (connection.status === 'reconnecting') {
@@ -44,26 +46,26 @@ export function ConnectionBanner() {
     return (
       <div
         role="status"
-        aria-label="Connection"
+        aria-label={t('connection.banner.label')}
         className="shrink-0 flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 text-sm bg-caution-subtle text-text border-b border-caution/30"
       >
         <CloudOff size={16} className="text-caution shrink-0" aria-hidden />
         <span className="font-medium">
-          Can't reach FlyBudget.{' '}
+          {t('connection.banner.cantReach')}{' '}
           {dataAsOf !== null
-            ? `Showing your data as of ${formatDistanceToNow(dataAsOf, { addSuffix: true })}.`
-            : 'You can still look around.'}{' '}
-          {canWait
-            ? 'New transactions are saved on this device; other changes wait until it reconnects.'
-            : 'Saving is paused.'}
+            ? t('connection.banner.dataAsOf', {
+                ago: formatDistanceToNow(dataAsOf, { addSuffix: true }),
+              })
+            : t('connection.banner.lookAround')}{' '}
+          {t(canWait ? 'connection.banner.savedOnDevice' : 'connection.banner.savingPaused')}
         </span>
         {waiting > 0 && (
           <span className="text-text-secondary">
-            {waiting} transaction{waiting === 1 ? '' : 's'} waiting to send
+            {t('connection.banner.waiting', { count: waiting })}
           </span>
         )}
         <span className="text-text-secondary tabular-nums" aria-live="off">
-          {retryLabel(connection, 'Retrying')}
+          {retryLabel(connection, 'retrying')}
         </span>
         <button
           onClick={() => void connection.retryNow()}
@@ -75,7 +77,7 @@ export function ConnectionBanner() {
           ) : (
             <RefreshCw size={12} />
           )}
-          Retry now
+          {t('connection.banner.retryNow')}
         </button>
       </div>
     );
@@ -85,11 +87,11 @@ export function ConnectionBanner() {
     return (
       <div
         role="status"
-        aria-label="Connection"
+        aria-label={t('connection.banner.label')}
         className="shrink-0 flex items-center gap-2 px-4 py-2 text-sm bg-positive-subtle text-text border-b border-positive/30 animate-fade-in"
       >
         <CheckCircle2 size={16} className="text-positive shrink-0" aria-hidden />
-        Reconnected. Everything is up to date.
+        {t('connection.banner.reconnected')}
       </div>
     );
   }

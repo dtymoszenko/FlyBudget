@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeftRight, ChevronRight, Lock, Split } from 'lucide-react';
 import { PayeeIcon } from '../payees/PayeeIcon';
 import { formatMoney } from '../../utils/currency';
@@ -30,11 +31,12 @@ export function TransactionCard({
   isSelected,
   onOpenDetail,
 }: Props) {
+  const { t } = useTranslation();
   const showCategoryIcons = usePreferencesStore((s) => s.showCategoryIcons);
   const currencyOf = useAccountCurrency();
   const isTransfer = !!tx.transferTransactionId;
   const isSplit = tx.isParent === 1 && !!tx.children?.length;
-  const payeeName = tx.payeeName || (isTransfer ? 'Transfer' : '—');
+  const payeeName = tx.payeeName || (isTransfer ? t('transactions.card.transfer') : '—');
   const payee = useMemo(
     () => (tx.payeeId ? payees.find((p) => p.id === tx.payeeId) : undefined),
     [payees, tx.payeeId],
@@ -42,11 +44,11 @@ export function TransactionCard({
 
   const category = isSplit ? (
     <span className="inline-flex items-center gap-1 text-brand-600">
-      <Split size={12} aria-hidden /> Split ({tx.children!.length})
+      <Split size={12} aria-hidden /> {t('transactions.card.split', { n: tx.children!.length })}
     </span>
   ) : isTransfer ? (
     <span className="inline-flex items-center gap-1">
-      <ArrowLeftRight size={12} aria-hidden /> Transfer
+      <ArrowLeftRight size={12} aria-hidden /> {t('transactions.card.transfer')}
     </span>
   ) : categoryEntry ? (
     <span>
@@ -54,7 +56,7 @@ export function TransactionCard({
       {categoryEntry.name}
     </span>
   ) : (
-    <span className="text-caution">Uncategorized</span>
+    <span className="text-caution">{t('transactions.card.uncategorized')}</span>
   );
 
   return (
@@ -85,7 +87,11 @@ export function TransactionCard({
           <span className="truncate">{category}</span>
           {accountName && <span className="truncate">· {accountName}</span>}
           {tx.reconciled ? (
-            <Lock size={11} className="shrink-0 text-text-disabled" aria-label="Reconciled" />
+            <Lock
+              size={11}
+              className="shrink-0 text-text-disabled"
+              aria-label={t('transactions.card.reconciled')}
+            />
           ) : null}
         </span>
         {tx.notes && <span className="text-xs text-text-tertiary truncate">{tx.notes}</span>}
