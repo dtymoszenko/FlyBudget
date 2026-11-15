@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { Trans, useTranslation } from 'react-i18next';
 import { format, parseISO } from 'date-fns';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useIncomeVsExpenses } from '../../hooks/useReports';
@@ -31,6 +32,7 @@ interface Props {
 }
 
 export default function IncomeExpensesMini({ sixMonthsAgo, currentMonth }: Props) {
+  const { t } = useTranslation();
   const { data = [], isLoading } = useIncomeVsExpenses(sixMonthsAgo, currentMonth);
 
   const chartData = useMemo(
@@ -65,19 +67,24 @@ export default function IncomeExpensesMini({ sixMonthsAgo, currentMonth }: Props
   return (
     <Card>
       <div className="flex items-center justify-between mb-1">
-        <h3 className="text-sm font-semibold text-text">Cash Flow</h3>
+        <h3 className="text-sm font-semibold text-text">{t('dashboard.cashFlow.title')}</h3>
         <Link to="/reports" className="text-xs text-brand-600 hover:text-brand-700 font-medium">
-          View all
+          {t('dashboard.viewAll')}
         </Link>
       </div>
       {hasData && (
         <p className="text-sm text-text-tertiary mb-3">
-          Net this month:{' '}
-          <span
-            className={`font-semibold tabular-nums ${latestNet >= 0 ? 'text-positive' : 'text-negative'}`}
-          >
-            {formatCurrency(latestNet)}
-          </span>
+          <Trans
+            i18nKey="dashboard.cashFlow.netThisMonth"
+            values={{ amount: formatCurrency(latestNet) }}
+            components={{
+              net: (
+                <span
+                  className={`font-semibold tabular-nums ${latestNet >= 0 ? 'text-positive' : 'text-negative'}`}
+                />
+              ),
+            }}
+          />
         </p>
       )}
 
@@ -90,13 +97,13 @@ export default function IncomeExpensesMini({ sixMonthsAgo, currentMonth }: Props
               <Legend iconSize={8} wrapperStyle={{ fontSize: 11, color: chartColors.axis }} />
               <Bar
                 dataKey="income"
-                name="Income"
+                name={t('dashboard.cashFlow.income')}
                 fill={chartColors.positive}
                 radius={[3, 3, 0, 0]}
               />
               <Bar
                 dataKey="expenses"
-                name="Expenses"
+                name={t('dashboard.cashFlow.expenses')}
                 fill={chartColors.negative}
                 radius={[3, 3, 0, 0]}
               />
@@ -107,11 +114,11 @@ export default function IncomeExpensesMini({ sixMonthsAgo, currentMonth }: Props
         <EmptyState
           compact
           icon={<ArrowLeftRight size={20} />}
-          title="No money in or out yet"
-          description="Add transactions to compare what comes in with what goes out, month by month."
+          title={t('dashboard.cashFlow.emptyTitle')}
+          description={t('dashboard.cashFlow.emptyDescription')}
           actions={
             <ButtonLink size="sm" to="/transactions?add=1">
-              Add a transaction
+              {t('dashboard.cashFlow.add')}
             </ButtonLink>
           }
         />

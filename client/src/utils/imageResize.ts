@@ -1,3 +1,5 @@
+import { t } from '../i18n';
+
 /**
  * Load an image file and return a square, center-cropped PNG data URL.
  * Keeps logos tiny (≈5–20 KB at 128px) so they can live in the DB.
@@ -5,7 +7,7 @@
 export function fileToSquareDataUrl(file: File, size = 128): Promise<string> {
   return new Promise((resolve, reject) => {
     if (!file.type.startsWith('image/')) {
-      reject(new Error('Please choose an image file.'));
+      reject(new Error(t('images.notAnImage')));
       return;
     }
     const url = URL.createObjectURL(file);
@@ -18,7 +20,7 @@ export function fileToSquareDataUrl(file: File, size = 128): Promise<string> {
       const ctx = canvas.getContext('2d');
       if (!ctx) {
         URL.revokeObjectURL(url);
-        reject(new Error('Could not process image.'));
+        reject(new Error(t('images.processFailed')));
         return;
       }
       ctx.imageSmoothingQuality = 'high';
@@ -38,7 +40,7 @@ export function fileToSquareDataUrl(file: File, size = 128): Promise<string> {
     };
     img.onerror = () => {
       URL.revokeObjectURL(url);
-      reject(new Error('Could not read that image.'));
+      reject(new Error(t('images.readFailed')));
     };
     img.src = url;
   });

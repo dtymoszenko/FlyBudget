@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as payeesApi from '../api/payees';
 import { useUndoStore } from '../store/undoStore';
 import type { PayeeWithCount } from '../types';
+import { t } from '../i18n';
 
 const QK = ['payees'];
 
@@ -22,7 +23,7 @@ export function useCreatePayee() {
     onSuccess: (created) => {
       qc.invalidateQueries({ queryKey: QK });
       useUndoStore.getState().push({
-        description: `Create payee "${created.name}"`,
+        description: t('payees.undo.create', { name: created.name }),
         undo: async () => {
           await payeesApi.deletePayee(created.id);
           qc.invalidateQueries({ queryKey: QK });
@@ -57,7 +58,7 @@ export function useUpdatePayee() {
       if (!ctx?.old) return;
       const snapshot = ctx.old;
       useUndoStore.getState().push({
-        description: `Edit payee`,
+        description: t('payees.undo.edit'),
         undo: async () => {
           await payeesApi.updatePayee(id, {
             name: snapshot.name,
@@ -88,7 +89,7 @@ export function useDeletePayee() {
       qc.invalidateQueries({ queryKey: ['transactions'] });
       if (!snapshot) return;
       useUndoStore.getState().push({
-        description: `Delete payee "${snapshot.name}"`,
+        description: t('payees.undo.delete', { name: snapshot.name }),
         undo: async () => {
           await payeesApi.createPayee(snapshot.name, snapshot.defaultCategoryId);
           qc.invalidateQueries({ queryKey: QK });

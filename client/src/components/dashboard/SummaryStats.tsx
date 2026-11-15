@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { format, subMonths } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 import { useBudget } from '../../hooks/useBudget';
 import { useIncomeVsExpenses } from '../../hooks/useReports';
 import { formatCurrency } from '../../utils/currency';
@@ -15,6 +16,7 @@ interface Props {
 const GOAL_OPTIONS = [10, 15, 20, 25, 30];
 
 export default function SummaryStats({ currentMonth }: Props) {
+  const { t } = useTranslation();
   const twelveMonthsAgo = useMemo(() => format(subMonths(new Date(), 11), 'yyyy-MM'), []);
   const savingsGoal = usePreferencesStore((s) => s.savingsGoal);
   const setSavingsGoal = usePreferencesStore((s) => s.setSavingsGoal);
@@ -56,23 +58,33 @@ export default function SummaryStats({ currentMonth }: Props) {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       {totalBudgeted > 0 ? (
-        <StatCard label="Left to Spend" value={formatCurrency(leftToSpend)} valueColor={ltsColor} />
+        <StatCard
+          label={t('dashboard.summary.leftToSpend')}
+          value={formatCurrency(leftToSpend)}
+          valueColor={ltsColor}
+        />
       ) : (
-        <StatCard label="Left to Spend" value="—" sub="No budget set this month" />
+        <StatCard
+          label={t('dashboard.summary.leftToSpend')}
+          value="—"
+          sub={t('dashboard.summary.noBudget')}
+        />
       )}
       <StatCard
-        label="Avg Monthly Income"
+        label={t('dashboard.summary.avgIncome')}
         value={formatCurrency(avgIncome)}
         valueColor={avgIncome > 0 ? 'text-positive' : undefined}
       />
       <StatCard
-        label="Avg Monthly Expenses"
+        label={t('dashboard.summary.avgExpenses')}
         value={formatCurrency(avgExpenses)}
         valueColor={avgExpenses > 0 ? 'text-negative' : undefined}
       />
       <div className="bg-surface-alt rounded-lg px-4 py-3 border border-border-light">
         <div className="flex items-center justify-between">
-          <p className="text-xs font-medium text-text-tertiary">Savings Rate</p>
+          <p className="text-xs font-medium text-text-tertiary">
+            {t('dashboard.summary.savingsRate')}
+          </p>
           <select
             value={savingsGoal}
             onChange={(e) => setSavingsGoal(Number(e.target.value))}
@@ -80,7 +92,7 @@ export default function SummaryStats({ currentMonth }: Props) {
           >
             {GOAL_OPTIONS.map((g) => (
               <option key={g} value={g}>
-                {g}% goal
+                {t('dashboard.summary.goal', { percent: g })}
               </option>
             ))}
           </select>
@@ -94,7 +106,7 @@ export default function SummaryStats({ currentMonth }: Props) {
         ) : (
           <>
             <p className="text-lg font-semibold tabular-nums mt-0.5 text-text">—</p>
-            <p className="text-xs text-text-tertiary mt-0.5">Shown once you have income</p>
+            <p className="text-xs text-text-tertiary mt-0.5">{t('dashboard.summary.incomeHint')}</p>
           </>
         )}
       </div>

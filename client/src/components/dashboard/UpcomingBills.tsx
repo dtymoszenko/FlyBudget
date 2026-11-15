@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { format, addDays, parseISO, differenceInCalendarDays } from 'date-fns';
 import { useScheduleOccurrences } from '../../hooks/useSchedules';
 import { formatMoney } from '../../utils/currency';
@@ -11,6 +12,7 @@ import { useSchedules } from '../../hooks/useSchedules';
 import { formatShortDay } from '../../utils/dates';
 
 export default function UpcomingBills() {
+  const { t } = useTranslation();
   const today = format(new Date(), 'yyyy-MM-dd');
   const thirtyDaysOut = format(addDays(new Date(), 30), 'yyyy-MM-dd');
 
@@ -46,9 +48,9 @@ export default function UpcomingBills() {
   return (
     <Card>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-text">Upcoming Bills</h3>
+        <h3 className="text-sm font-semibold text-text">{t('dashboard.upcoming.title')}</h3>
         <Link to="/recurring" className="text-xs text-brand-600 hover:text-brand-700 font-medium">
-          View all
+          {t('dashboard.viewAll')}
         </Link>
       </div>
 
@@ -57,17 +59,17 @@ export default function UpcomingBills() {
           <EmptyState
             compact
             icon={<CalendarClock size={20} />}
-            title="Track your bills and paychecks"
-            description="Add rent, subscriptions and income that repeat, or let FlyBudget find them in your transactions."
+            title={t('dashboard.upcoming.emptyTitle')}
+            description={t('dashboard.upcoming.emptyDescription')}
             actions={
               <ButtonLink size="sm" to="/recurring?add=1">
-                Add recurring
+                {t('dashboard.upcoming.add')}
               </ButtonLink>
             }
           />
         ) : (
           <p className="text-sm text-text-tertiary py-6 text-center">
-            Nothing due in the next 30 days.
+            {t('dashboard.upcoming.none')}
           </p>
         )
       ) : (
@@ -91,14 +93,23 @@ export default function UpcomingBills() {
                     {occ.scheduleName}
                   </p>
                   <p className="text-xs text-text-tertiary">
-                    {formatShortDay(occ.expectedDate)}
                     {isWaiting
-                      ? ` · ${Math.abs(daysUntil)}d overdue`
+                      ? t('dashboard.upcoming.when.overdue', {
+                          date: formatShortDay(occ.expectedDate),
+                          days: Math.abs(daysUntil),
+                        })
                       : daysUntil === 0
-                        ? ' · Today'
+                        ? t('dashboard.upcoming.when.today', {
+                            date: formatShortDay(occ.expectedDate),
+                          })
                         : daysUntil === 1
-                          ? ' · Tomorrow'
-                          : ` · in ${daysUntil}d`}
+                          ? t('dashboard.upcoming.when.tomorrow', {
+                              date: formatShortDay(occ.expectedDate),
+                            })
+                          : t('dashboard.upcoming.when.inDays', {
+                              date: formatShortDay(occ.expectedDate),
+                              days: daysUntil,
+                            })}
                   </p>
                 </div>
                 <span

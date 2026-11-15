@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useTransactions } from '../../hooks/useTransactions';
 import { useCategories } from '../../hooks/useCategories';
 import { useAccounts } from '../../hooks/useAccounts';
@@ -13,6 +14,7 @@ import { docsUrl } from '../../utils/project';
 import type { CategoryGroup } from '../../types';
 
 export default function RecentTransactions() {
+  const { t } = useTranslation();
   const { data: transactions = [], isLoading } = useTransactions({ limit: 5 });
   const { data: groups = [] } = useCategories();
   const { data: accounts = [] } = useAccounts();
@@ -50,12 +52,12 @@ export default function RecentTransactions() {
   return (
     <Card padding="none" className="h-full flex flex-col">
       <div className="flex items-center justify-between px-5 pt-4 pb-3">
-        <h3 className="text-sm font-semibold text-text">Recent Transactions</h3>
+        <h3 className="text-sm font-semibold text-text">{t('dashboard.recent.title')}</h3>
         <Link
           to="/transactions"
           className="text-xs text-brand-600 hover:text-brand-700 font-medium"
         >
-          View all
+          {t('dashboard.viewAll')}
         </Link>
       </div>
 
@@ -64,8 +66,8 @@ export default function RecentTransactions() {
           compact
           className="flex-1 justify-center pb-8"
           icon={<Receipt size={20} />}
-          title="No transactions yet"
-          description="Import a CSV file from your bank, connect a bank, or add transactions by hand."
+          title={t('dashboard.recent.emptyTitle')}
+          description={t('dashboard.recent.emptyDescription')}
           learnMoreHref={docsUrl('transactions')}
           actions={
             <>
@@ -75,11 +77,11 @@ export default function RecentTransactions() {
                   variant="secondary"
                   to={`/accounts/${firstAccount.id}?import=1`}
                 >
-                  <Upload size={13} /> Import a CSV file
+                  <Upload size={13} /> {t('dashboard.recent.import')}
                 </ButtonLink>
               )}
               <ButtonLink size="sm" to="/transactions?add=1">
-                <Plus size={13} /> Add a transaction
+                <Plus size={13} /> {t('dashboard.recent.add')}
               </ButtonLink>
             </>
           }

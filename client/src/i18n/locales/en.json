@@ -474,6 +474,33 @@
       }
     }
   },
+  "budget": {
+    "sheet": {
+      "title": "Plan {{name}}",
+      "titleFallback": "Plan",
+      "planned": "Planned",
+      "plannedFor": "Planned for {{name}}",
+      "earnedLastMonth": "Earned last month",
+      "spentLastMonth": "Spent last month",
+      "monthlyAverage": "Monthly average",
+      "allYear": "Use this amount for the next 12 months"
+    },
+    "phone": {
+      "progress": "{{actual}} of {{planned}}",
+      "showInactive_one": "Show {{count, number}} inactive category",
+      "showInactive_other": "Show {{count, number}} inactive categories",
+      "hideInactive_one": "Hide {{count, number}} inactive category",
+      "hideInactive_other": "Hide {{count, number}} inactive categories",
+      "remaining": "remaining",
+      "planned": "Planned",
+      "plannedFor": "Planned for {{name}}: {{amount}}",
+      "received": "Received",
+      "spent": "Spent"
+    },
+    "undo": {
+      "set": "Set budget"
+    }
+  },
   "cashFlow": {
     "title": "Cash Flow",
     "presets": {
@@ -642,6 +669,105 @@
       "record": "Record difference"
     }
   },
+  "dashboard": {
+    "viewAll": "View all",
+    "gettingStarted": {
+      "title": "Get started with FlyBudget",
+      "progress": "{{done}} of {{total}} done. Each step brings more of your dashboard to life.",
+      "hide": "Hide getting started",
+      "progressLabel": "Getting started progress",
+      "done": "Done",
+      "help": "Not sure where to begin?",
+      "guide": "Read the getting started guide",
+      "steps": {
+        "account": {
+          "title": "Add your first account",
+          "description": "A checking account, credit card or cash: anything that holds money."
+        },
+        "transactions": {
+          "title": "Bring in your transactions",
+          "description": "Import a CSV file from your bank, connect a bank, or add them by hand."
+        },
+        "recurring": {
+          "title": "Add your bills and paychecks",
+          "description": "See what’s due next and never miss a payment."
+        },
+        "budget": {
+          "title": "Plan this month’s budget",
+          "description": "With your paychecks and bills in, give the rest of your money a job."
+        },
+        "rules": {
+          "title": "Categorize automatically",
+          "description": "Rules sort new transactions for you, by payee, amount and more."
+        }
+      },
+      "actions": {
+        "account": "Add account",
+        "import": "Import or add",
+        "connect": "Connect a bank",
+        "recurring": "Add recurring",
+        "budget": "Open budget",
+        "rules": "Create a rule"
+      }
+    },
+    "cashFlow": {
+      "title": "Cash Flow",
+      "netThisMonth": "Net this month: <net>{{amount}}</net>",
+      "income": "Income",
+      "expenses": "Expenses",
+      "emptyTitle": "No money in or out yet",
+      "emptyDescription": "Add transactions to compare what comes in with what goes out, month by month.",
+      "add": "Add a transaction"
+    },
+    "netWorth": {
+      "title": "Net Worth",
+      "description": "What you own minus what you owe, across all your accounts.",
+      "add": "Add an account",
+      "presets": {
+        "1m": "1 month",
+        "3m": "3 months",
+        "6m": "6 months",
+        "ytd": "Year to date",
+        "1y": "1 year",
+        "all": "All time"
+      }
+    },
+    "recent": {
+      "title": "Recent Transactions",
+      "emptyTitle": "No transactions yet",
+      "emptyDescription": "Import a CSV file from your bank, connect a bank, or add transactions by hand.",
+      "import": "Import a CSV file",
+      "add": "Add a transaction"
+    },
+    "spending": {
+      "title": "Spending by Category",
+      "emptyTitle": "No spending this month",
+      "emptyDescription": "As you spend, your biggest categories show up here.",
+      "uncategorized": "Uncategorized"
+    },
+    "summary": {
+      "leftToSpend": "Left to Spend",
+      "noBudget": "No budget set this month",
+      "avgIncome": "Avg Monthly Income",
+      "avgExpenses": "Avg Monthly Expenses",
+      "savingsRate": "Savings Rate",
+      "goal": "{{percent}}% goal",
+      "incomeHint": "Shown once you have income"
+    },
+    "upcoming": {
+      "title": "Upcoming Bills",
+      "emptyTitle": "Track your bills and paychecks",
+      "emptyDescription": "Add rent, subscriptions and income that repeat, or let FlyBudget find them in your transactions.",
+      "add": "Add recurring",
+      "none": "Nothing due in the next 30 days.",
+      "when": {
+        "overdue": "{{date}} · {{days}}d overdue",
+        "today": "{{date}} · Today",
+        "tomorrow": "{{date}} · Tomorrow",
+        "inDays": "{{date}} · in {{days}}d"
+      }
+    }
+  },
   "dateRange": {
     "presets": {
       "thisMonth": {
@@ -755,6 +881,11 @@
       "delete": "Delete goal \"{{name}}\""
     }
   },
+  "images": {
+    "notAnImage": "Please choose an image file.",
+    "processFailed": "Could not process image.",
+    "readFailed": "Could not read that image."
+  },
   "layout": {
     "accounts": {
       "all": "All accounts",
@@ -822,6 +953,20 @@
       "unpin": "Unpin sidebar"
     },
     "skipToContent": "Skip to main content"
+  },
+  "payees": {
+    "icon": {
+      "change": "Change image for {{name}}",
+      "upload": "Upload an image for {{name}}",
+      "useInitial": "Use initial instead",
+      "remove": "Remove image for {{name}}",
+      "failed": "Could not use that image."
+    },
+    "undo": {
+      "create": "Create payee \"{{name}}\"",
+      "edit": "Edit payee",
+      "delete": "Delete payee \"{{name}}\""
+    }
   },
   "recurring": {
     "freq": {
@@ -1874,6 +2019,51 @@
         "autoAfter": "Automatic (after)",
         "before": "Before",
         "after": "After"
+      }
+    },
+    "categories": {
+      "sections": {
+        "income": "Income",
+        "expense": "Expenses"
+      },
+      "createGroup": "Create group",
+      "groupNamePlaceholder": "Group name...",
+      "addGroup": "Add group",
+      "noGroups": "No groups yet.",
+      "reorderGroup": "Drag to reorder group",
+      "reorderCategory": "Drag to reorder {{name}}",
+      "editCategory": "Edit {{name}}",
+      "editGroup": "Edit",
+      "noCategories": "No categories yet.",
+      "pickIcon": "Pick icon",
+      "categoryNamePlaceholder": "Category name...",
+      "addCategory": "Add category",
+      "createCategory": "Create Category",
+      "deleteGroup": {
+        "title": "Delete Group",
+        "message": "Delete \"{{name}}\" and all its categories? This cannot be undone."
+      },
+      "deleteEmpty": {
+        "title": "Delete Category",
+        "message": "Delete \"{{name}}\"? This cannot be undone."
+      },
+      "deleteModal": {
+        "title": "Delete Category",
+        "summary_one": "<name>{{name}}</name> has <count>{{count, number}}</count> transaction. Choose a category to reassign them to before deleting.",
+        "summary_other": "<name>{{name}}</name> has <count>{{count, number}}</count> transactions. Choose a category to reassign them to before deleting.",
+        "allocations": "Budget allocations for this category will be removed.",
+        "moveTo": "Move transactions to",
+        "select": "Select a category...",
+        "confirm": "Reassign & Delete"
+      },
+      "undo": {
+        "createGroup": "Create group \"{{name}}\"",
+        "renameGroup": "Rename group",
+        "deleteGroup": "Delete group \"{{name}}\"",
+        "reorderGroups": "Reorder groups",
+        "createCategory": "Create category \"{{name}}\"",
+        "editCategory": "Edit category",
+        "reorderCategories": "Reorder categories"
       }
     }
   },
