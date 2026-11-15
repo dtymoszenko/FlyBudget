@@ -16,6 +16,7 @@ import {
   UNREADABLE_AMOUNT,
 } from '../../utils/currency';
 import { useAccountCurrency } from '../../hooks/useCurrency';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   initial?: Transaction;
@@ -47,6 +48,7 @@ export function TransactionFormRow({
   onDelete,
   layout = 'row',
 }: Props) {
+  const { t } = useTranslation();
   const sheet = layout === 'sheet';
   // Amounts are typed and shown in the account's currency (no decimals for yen)
   const style = useAmountStyle(useAccountCurrency()(initial?.accountId ?? accountId));
@@ -195,15 +197,16 @@ export function TransactionFormRow({
       }
       title={
         !canAdd
-          ? 'Save (paused until FlyBudget reconnects)'
+          ? t('transactions.form.savePaused')
           : onDevice
-            ? 'Save on this device (sent when FlyBudget reconnects)'
-            : 'Save'
+            ? t('transactions.form.saveOnThisDevice')
+            : t('transactions.form.save')
       }
-      aria-label="Save"
+      aria-label={t('transactions.form.save')}
     >
       <Check size={16} />
-      {sheet && (onDevice && canAdd ? 'Save on device' : 'Save')}
+      {sheet &&
+        (onDevice && canAdd ? t('transactions.form.saveOnDevice') : t('transactions.form.save'))}
     </button>
   );
   const splitButton = !isEditingParent && !isTransfer && (
@@ -215,11 +218,11 @@ export function TransactionFormRow({
           ? `${sheetBtn} border ${splitMode ? 'border-brand-600 text-brand-600 bg-brand-50' : 'border-border text-text-secondary'}`
           : `p-1.5 rounded ${splitMode ? 'text-brand-600 bg-brand-100' : 'text-text-tertiary hover:text-text-secondary hover:bg-surface-alt'}`
       }
-      title="Split transaction"
-      aria-label="Split transaction"
+      title={t('transactions.form.splitTransaction')}
+      aria-label={t('transactions.form.splitTransaction')}
     >
       <Split size={16} />
-      {sheet && 'Split'}
+      {sheet && t('transactions.form.split')}
     </button>
   );
   const cancelButton = (
@@ -230,32 +233,32 @@ export function TransactionFormRow({
           ? `${sheetBtn} border border-border text-text-secondary`
           : 'p-1.5 rounded text-text-tertiary hover:text-text-secondary hover:bg-surface-alt'
       }
-      title="Cancel"
-      aria-label="Cancel"
+      title={t('transactions.form.cancel')}
+      aria-label={t('transactions.form.cancel')}
     >
-      {sheet ? 'Cancel' : <X size={16} />}
+      {sheet ? t('transactions.form.cancel') : <X size={16} />}
     </button>
   );
 
   return (
     <div
       role="form"
-      aria-label={initial ? 'Edit transaction' : 'New transaction'}
+      aria-label={initial ? t('transactions.form.editTitle') : t('transactions.form.newTitle')}
       className={sheet ? 'grid gap-4' : 'bg-brand-50 border-b border-brand-100 px-4 py-3'}
     >
       <div className={sheet ? 'grid gap-3' : 'grid grid-cols-4 gap-3 mb-3'}>
         <div>
-          <label className={labelCls}>Date</label>
+          <label className={labelCls}>{t('transactions.form.date')}</label>
           <input
             type="date"
-            aria-label="Date"
+            aria-label={t('transactions.form.date')}
             value={date}
             onChange={(e) => setDate(e.target.value)}
             className={inputCls}
           />
         </div>
         <div>
-          <label className={labelCls}>Payee</label>
+          <label className={labelCls}>{t('transactions.form.payee')}</label>
           <PayeeCombobox
             value={payee}
             onChange={setPayee}
@@ -264,9 +267,11 @@ export function TransactionFormRow({
           />
         </div>
         <div>
-          <label className={labelCls}>Category</label>
+          <label className={labelCls}>{t('transactions.form.category')}</label>
           {splitMode ? (
-            <span className="text-sm text-brand-600 font-medium leading-8">Split</span>
+            <span className="text-sm text-brand-600 font-medium leading-8">
+              {t('transactions.form.split')}
+            </span>
           ) : (
             <CategorySelect
               value={categoryId}
@@ -279,13 +284,13 @@ export function TransactionFormRow({
           )}
         </div>
         <div>
-          <label className={labelCls}>Notes</label>
+          <label className={labelCls}>{t('transactions.form.notes')}</label>
           <input
             type="text"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Notes"
-            aria-label="Notes"
+            placeholder={t('transactions.form.notes')}
+            aria-label={t('transactions.form.notes')}
             className={inputCls}
           />
         </div>
@@ -293,12 +298,12 @@ export function TransactionFormRow({
 
       <div className={sheet ? 'grid grid-cols-2 gap-3' : 'flex items-end gap-3'}>
         <div className={sheet ? '' : 'w-28'}>
-          <label className={labelCls}>Outflow</label>
+          <label className={labelCls}>{t('transactions.form.outflow')}</label>
           <input
             type="text"
             inputMode="decimal"
             value={outflow}
-            aria-label="Outflow"
+            aria-label={t('transactions.form.outflow')}
             {...amountProps('outflow')}
             onChange={(e) => {
               setOutflow(e.target.value);
@@ -309,12 +314,12 @@ export function TransactionFormRow({
           />
         </div>
         <div className={sheet ? '' : 'w-28'}>
-          <label className={labelCls}>Inflow</label>
+          <label className={labelCls}>{t('transactions.form.inflow')}</label>
           <input
             type="text"
             inputMode="decimal"
             value={inflow}
-            aria-label="Inflow"
+            aria-label={t('transactions.form.inflow')}
             {...amountProps('inflow')}
             onChange={(e) => {
               setInflow(e.target.value);
@@ -335,7 +340,7 @@ export function TransactionFormRow({
                 <button
                   onClick={onDelete}
                   className="p-1.5 rounded text-text-tertiary hover:text-negative hover:bg-red-50 ml-1"
-                  title="Delete"
+                  title={t('transactions.form.delete')}
                 >
                   <Trash2 size={16} />
                 </button>
@@ -372,7 +377,7 @@ export function TransactionFormRow({
                   value={s.categoryId}
                   onChange={(v) => updateSplit(i, 'categoryId', v)}
                   groups={groups}
-                  label={`Split ${i + 1} category`}
+                  label={t('transactions.form.splitCategory', { n: i + 1 })}
                   className="text-xs"
                   fieldClassName={pickerField}
                 />
@@ -381,8 +386,8 @@ export function TransactionFormRow({
                 type="text"
                 value={s.notes}
                 onChange={(e) => updateSplit(i, 'notes', e.target.value)}
-                placeholder="Notes"
-                aria-label={`Split ${i + 1} notes`}
+                placeholder={t('transactions.form.notes')}
+                aria-label={t('transactions.form.splitNotes', { n: i + 1 })}
                 className={`${inputCls} ${sheet ? '' : 'text-xs'}`}
               />
               <input
@@ -390,7 +395,7 @@ export function TransactionFormRow({
                 inputMode="decimal"
                 value={s.amount}
                 onChange={(e) => updateSplit(i, 'amount', e.target.value)}
-                aria-label={`Split ${i + 1} amount`}
+                aria-label={t('transactions.form.splitAmount', { n: i + 1 })}
                 {...amountProps(`split-${i}`)}
                 placeholder={amountPlaceholder()}
                 className={`${inputCls} text-right tabular-nums ${sheet ? '' : 'text-xs'}${invalidCls(`split-${i}`)}`}
@@ -399,7 +404,7 @@ export function TransactionFormRow({
                 {splits.length > 2 && (
                   <button
                     onClick={() => removeSplitRow(i)}
-                    aria-label={`Remove split ${i + 1}`}
+                    aria-label={t('transactions.form.removeSplit', { n: i + 1 })}
                     className={`rounded text-text-tertiary hover:text-negative ${sheet ? 'w-11 h-11 flex items-center justify-center' : 'p-0.5'}`}
                   >
                     <Trash2 size={sheet ? 16 : 14} />
@@ -413,12 +418,14 @@ export function TransactionFormRow({
               onClick={addSplitRow}
               className={`flex items-center gap-1 text-brand-600 hover:text-brand-700 ${sheet ? 'text-sm min-h-11' : 'text-xs'}`}
             >
-              <Plus size={12} /> Add split
+              <Plus size={12} /> {t('transactions.form.addSplit')}
             </button>
             <span
               className={`text-xs tabular-nums ${splitRemaining === 0 ? 'text-positive' : 'text-negative'}`}
             >
-              {splitRemaining === 0 ? 'Balanced' : `${formatCurrency(splitRemaining)} remaining`}
+              {splitRemaining === 0
+                ? t('transactions.form.balanced')
+                : t('transactions.form.remaining', { amount: formatCurrency(splitRemaining) })}
             </span>
           </div>
         </div>

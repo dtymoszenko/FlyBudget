@@ -15,6 +15,7 @@ import { CategorySelectButton } from './CategorySelectButton';
 import { SplitPartsEditor } from './SplitPartsEditor';
 import { emptyPart, partsBalanced, partsToSend, type SplitPart } from '../../utils/splitParts';
 import { AccountIcon } from '../accounts/AccountIcon';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   isOpen: boolean;
@@ -25,6 +26,7 @@ const inputClass =
   'block w-full rounded-md border border-border px-3 py-2 text-sm text-text bg-surface placeholder-text-disabled focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600';
 
 export function AddTransactionModal({ isOpen, onClose }: Props) {
+  const { t } = useTranslation();
   const [type, setType] = useState<'debit' | 'credit'>('debit');
   const [amount, setAmount] = useState(0);
   const [payeeName, setPayeeName] = useState('');
@@ -62,13 +64,14 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
   const selectedAccount = openAccounts.find((a) => a.id === accountId);
   const accountLabel = transferToId
     ? type === 'debit'
-      ? 'From account'
-      : 'To account'
-    : 'Account';
+      ? t('transactions.add.account.from')
+      : t('transactions.add.account.to')
+    : t('transactions.add.account.plain');
   const ownCurrency = currencyOf(accountId || null);
   const otherCurrency = transferToId ? currencyOf(transferToId) : null;
   const crossCurrency = !!transferToId && !!accountId && ownCurrency !== otherCurrency;
-  const otherName = openAccounts.find((a) => a.id === transferToId)?.name ?? 'the other account';
+  const otherName =
+    openAccounts.find((a) => a.id === transferToId)?.name ?? t('transactions.add.otherAccount');
   const { data: converted } = useConverted(
     { from: ownCurrency, to: otherCurrency, date, amount },
     crossCurrency && !otherTyped,
@@ -170,7 +173,7 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Add transaction" size="md">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('transactions.add.title')} size="md">
       <AmountFields report={report}>
         <div className="space-y-5">
           {/* Debit / Credit toggle */}
@@ -185,7 +188,7 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
               }`}
             >
               <MinusCircle size={15} />
-              Debit
+              {t('transactions.add.debit')}
             </button>
             <button
               type="button"
@@ -197,17 +200,19 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
               }`}
             >
               <PlusCircle size={15} />
-              Credit
+              {t('transactions.add.credit')}
             </button>
           </div>
 
           {/* Amount */}
           <div>
-            <label className="block text-sm font-medium text-text mb-1">Amount *</label>
+            <label className="block text-sm font-medium text-text mb-1">
+              {t('transactions.add.amount')}
+            </label>
             <CurrencyInput
               value={amount}
               onChange={setAmount}
-              aria-label="Amount"
+              aria-label={t('transactions.add.amountAria')}
               currency={ownCurrency}
             />
           </div>
@@ -216,8 +221,12 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
           {crossCurrency && (
             <div>
               <label className="block text-sm font-medium text-text mb-1">
-                {type === 'debit' ? 'Amount received' : 'Amount sent'} in {otherName} (
-                {otherCurrency}) *
+                {t(
+                  type === 'debit'
+                    ? 'transactions.add.otherAmount.received'
+                    : 'transactions.add.otherAmount.sent',
+                  { name: otherName, currency: otherCurrency },
+                )}
               </label>
               <CurrencyInput
                 value={otherAmount}
@@ -225,15 +234,22 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
                   setOtherAmount(v);
                   setOtherTyped(true);
                 }}
-                aria-label={`Amount in ${otherCurrency}`}
+                aria-label={t('transactions.add.otherAmount.aria', { currency: otherCurrency })}
                 currency={otherCurrency}
               />
               <p className="mt-1 text-xs text-text-secondary">
                 {otherTyped
-                  ? 'As your bank shows it.'
+                  ? t('transactions.add.rateHint.typed')
                   : converted?.rate
-                    ? `At the rate on ${converted.date} (${converted.rate}). Change it to what your bank shows.`
-                    : `No rate for this day: type what ${type === 'debit' ? 'arrived' : 'was sent'}.`}
+                    ? t('transactions.add.rateHint.rate', {
+                        date: converted.date,
+                        rate: converted.rate,
+                      })
+                    : t(
+                        type === 'debit'
+                          ? 'transactions.add.rateHint.noRateReceived'
+                          : 'transactions.add.rateHint.noRateSent',
+                      )}
               </p>
             </div>
           )}
@@ -241,7 +257,9 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
           {/* Merchant (a transfer has none: it's named after the other account) */}
           {!transferToId && (
             <div>
-              <label className="block text-sm font-medium text-text mb-1">Merchant *</label>
+              <label className="block text-sm font-medium text-text mb-1">
+                {t('transactions.add.merchant')}
+              </label>
               <MerchantSelect
                 value={{ id: payeeId, name: payeeName }}
                 onChange={(v) => {
@@ -254,7 +272,9 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
 
           {/* Date */}
           <div>
-            <label className="block text-sm font-medium text-text mb-1">Date *</label>
+            <label className="block text-sm font-medium text-text mb-1">
+              {t('transactions.add.date')}
+            </label>
             <input
               type="date"
               value={date}
@@ -265,7 +285,7 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
 
           {/* Account */}
           <div>
-            <label className="block text-sm font-medium text-text mb-1">{accountLabel} *</label>
+            <label className="block text-sm font-medium text-text mb-1">{accountLabel}</label>
             <div ref={accountRef} className="relative">
               <button
                 type="button"
@@ -283,7 +303,9 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
                       <span className="text-text">{selectedAccount.name}</span>
                     </>
                   ) : (
-                    <span className="text-text-disabled">Select account...</span>
+                    <span className="text-text-disabled">
+                      {t('transactions.add.account.select')}
+                    </span>
                   )}
                 </span>
                 <ChevronDown size={14} className="text-text-tertiary shrink-0" />
@@ -296,7 +318,7 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
                   {onBudgetAccounts.length > 0 && (
                     <>
                       <div className="px-3 py-1.5 text-xs font-medium text-text-tertiary bg-surface-alt">
-                        On Budget
+                        {t('transactions.add.account.onBudget')}
                       </div>
                       {onBudgetAccounts.map((a) => (
                         <button
@@ -324,7 +346,7 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
                   {offBudgetAccounts.length > 0 && (
                     <>
                       <div className="px-3 py-1.5 text-xs font-medium text-text-tertiary bg-surface-alt">
-                        Off Budget
+                        {t('transactions.add.account.offBudget')}
                       </div>
                       {offBudgetAccounts.map((a) => (
                         <button
@@ -358,7 +380,7 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="block text-sm font-medium text-text">
-                {splitting ? 'Split between categories' : 'Category'}
+                {splitting ? t('transactions.add.splitBetween') : t('transactions.add.category')}
               </label>
               {!transferToId && (
                 <button
@@ -368,7 +390,7 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
                   className={`flex items-center gap-1 text-sm rounded px-1.5 max-md:min-h-11 ${splitting ? 'text-brand-600 bg-brand-50' : 'text-text-tertiary hover:text-text-secondary'}`}
                 >
                   <Split size={14} />
-                  Split
+                  {t('transactions.add.split')}
                 </button>
               )}
             </div>
@@ -391,12 +413,14 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-text mb-1">Notes</label>
+            <label className="block text-sm font-medium text-text mb-1">
+              {t('transactions.add.notes')}
+            </label>
             <input
               type="text"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add a note..."
+              placeholder={t('transactions.add.notesPlaceholder')}
               className={inputClass}
             />
           </div>
@@ -405,14 +429,18 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
           <SavedOnDeviceHint className="text-right" />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" size="md" onClick={onClose}>
-              Cancel
+              {t('common.actions.cancel')}
             </Button>
             <Button
               size="md"
               onClick={handleSubmit}
               disabled={!isValid || newTx.pending || !newTx.allowed}
             >
-              {newTx.pending ? 'Adding...' : newTx.onDevice ? 'Save on device' : 'Add transaction'}
+              {newTx.pending
+                ? t('transactions.add.adding')
+                : newTx.onDevice
+                  ? t('transactions.add.saveOnDevice')
+                  : t('transactions.add.title')}
             </Button>
           </div>
         </div>

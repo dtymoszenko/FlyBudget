@@ -886,6 +886,22 @@
     "processFailed": "Could not process image.",
     "readFailed": "Could not read that image."
   },
+  "import": {
+    "skipped": {
+      "count_one": "{{count, number}} row skipped",
+      "count_other": "{{count, number}} rows skipped",
+      "fields": {
+        "date": "date",
+        "amount": "amount",
+        "direction": "direction"
+      },
+      "row": "row {{row}}, {{field}} {{value}}",
+      "quoted": "\"{{value}}\"",
+      "empty": "(empty)",
+      "more": "and {{count, number}} more",
+      "summary": "{{total}}: {{rows}}."
+    }
+  },
   "layout": {
     "accounts": {
       "all": "All accounts",
@@ -2065,6 +2081,213 @@
         "editCategory": "Edit category",
         "reorderCategories": "Reorder categories"
       }
+    }
+  },
+  "transactions": {
+    "page": {
+      "title": "All Transactions",
+      "add": "Add"
+    },
+    "add": {
+      "title": "Add transaction",
+      "debit": "Debit",
+      "credit": "Credit",
+      "amount": "Amount *",
+      "amountAria": "Amount",
+      "otherAccount": "the other account",
+      "otherAmount": {
+        "received": "Amount received in {{name}} ({{currency}}) *",
+        "sent": "Amount sent in {{name}} ({{currency}}) *",
+        "aria": "Amount in {{currency}}"
+      },
+      "rateHint": {
+        "typed": "As your bank shows it.",
+        "rate": "At the rate on {{date}} ({{rate}}). Change it to what your bank shows.",
+        "noRateReceived": "No rate for this day: type what arrived.",
+        "noRateSent": "No rate for this day: type what was sent."
+      },
+      "merchant": "Merchant *",
+      "date": "Date *",
+      "account": {
+        "plain": "Account *",
+        "from": "From account *",
+        "to": "To account *",
+        "select": "Select account...",
+        "onBudget": "On Budget",
+        "offBudget": "Off Budget"
+      },
+      "category": "Category",
+      "splitBetween": "Split between categories",
+      "split": "Split",
+      "notes": "Notes",
+      "notesPlaceholder": "Add a note...",
+      "adding": "Adding...",
+      "saveOnDevice": "Save on device"
+    },
+    "categoryPicker": {
+      "search": "Search categories...",
+      "searchAria": "Search categories",
+      "uncategorized": "Uncategorized",
+      "transfer": "Transfer",
+      "transferTo": "Transfer: {{name}}",
+      "none": "No categories found",
+      "budgetTypes": {
+        "fixed": "Fixed",
+        "flexible": "Flexible",
+        "nonMonthly": "Non-Monthly"
+      },
+      "newName": "Category name",
+      "newNameAria": "New category name",
+      "creating": "Creating...",
+      "create": "Create",
+      "createNew": "Create new category"
+    },
+    "categorySelect": {
+      "label": "Category",
+      "uncategorized": "Uncategorized",
+      "transfer": "Transfer",
+      "transferTo": "Transfer: {{name}}"
+    },
+    "categoryButton": {
+      "label": "Category",
+      "placeholder": "Search categories...",
+      "transferTo": "Transfer: {{name}}",
+      "aria": "{{label}}: {{value}}"
+    },
+    "merchantSelect": {
+      "placeholder": "Search merchants...",
+      "label": "Merchant",
+      "offline": "New merchants can be added once FlyBudget reconnects.",
+      "create": "Create new merchant: “{{name}}”"
+    },
+    "payeeCombobox": {
+      "label": "Payee",
+      "newPayee": "New payee: \"{{name}}\""
+    },
+    "payeePicker": {
+      "search": "Search merchants...",
+      "yours": "Your merchants",
+      "none": "No merchants found",
+      "create": "Create new \"{{name}}\" merchant"
+    },
+    "splitParts": {
+      "category": "Split {{n}} category",
+      "amount": "Split {{n}} amount",
+      "remove": "Remove split {{n}}",
+      "notes": "Notes",
+      "notesAria": "Split {{n}} notes",
+      "add": "Add split",
+      "balanced": "Balanced",
+      "remaining": "{{amount}} remaining",
+      "setTo": "Set split {{n}} to {{amount}}"
+    },
+    "splitModal": {
+      "title": "Split transaction",
+      "thisTransaction": "This transaction",
+      "intro": "{{payee}}: <amount>{{amount}}</amount>. Each part counts toward its own category; the account balance doesn't change.",
+      "saveFailed": "Couldn't save the split. Try again.",
+      "unsplit": "Unsplit",
+      "unsplitHint": "Make it one uncategorized transaction again",
+      "saving": "Saving...",
+      "save": "Save split"
+    },
+    "filters": {
+      "search": "Search payee or notes…",
+      "category": "Category",
+      "clearCategory": "Clear category filter",
+      "presets": {
+        "thisMonth": "This Month",
+        "last3": "Last 3 Months",
+        "thisYear": "This Year",
+        "all": "All Time"
+      }
+    },
+    "form": {
+      "editTitle": "Edit transaction",
+      "newTitle": "New transaction",
+      "date": "Date",
+      "payee": "Payee",
+      "category": "Category",
+      "split": "Split",
+      "notes": "Notes",
+      "outflow": "Outflow",
+      "inflow": "Inflow",
+      "save": "Save",
+      "savePaused": "Save (paused until FlyBudget reconnects)",
+      "saveOnThisDevice": "Save on this device (sent when FlyBudget reconnects)",
+      "saveOnDevice": "Save on device",
+      "splitTransaction": "Split transaction",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "splitCategory": "Split {{n}} category",
+      "splitNotes": "Split {{n}} notes",
+      "splitAmount": "Split {{n}} amount",
+      "removeSplit": "Remove split {{n}}",
+      "addSplit": "Add split",
+      "balanced": "Balanced",
+      "remaining": "{{amount}} remaining"
+    },
+    "suggestions": {
+      "section": "Possible transfers",
+      "heading_one": "{{count, number}} possible transfer between your accounts.",
+      "heading_other": "{{count, number}} possible transfers between your accounts.",
+      "explain": "The same amount left one account and arrived in another within a few days.",
+      "review": "Review",
+      "dismiss": "Dismiss",
+      "title": "Possible transfers",
+      "intro": "Linked transfers move money between your accounts, so they aren't counted as spending or income. Untick any that aren't transfers, or choose <emphasis>Not a transfer</emphasis> so they aren't suggested again.",
+      "linkFailed": "Couldn't link the transfers. Please try again.",
+      "dismissFailed": "Couldn't save “Not a transfer”. Please try again.",
+      "cancel": "Cancel",
+      "linking": "Linking…",
+      "link_one": "Link {{count, number}} transfer",
+      "link_other": "Link {{count, number}} transfers",
+      "notice": {
+        "linked_one": "Linked {{count, number}} transfer.",
+        "linked_other": "Linked {{count, number}} transfers.",
+        "failed_one": "{{count, number}} had changed and was skipped.",
+        "failed_other": "{{count, number}} had changed and were skipped.",
+        "interrupted": "The connection dropped before the rest; review them again later."
+      },
+      "row": {
+        "anotherAccountFrom": "Another account",
+        "anotherAccountTo": "another account",
+        "noPayee": "No payee",
+        "side": "{{date}} · {{payee}}",
+        "amountChange": "{{sent}} → {{received}}",
+        "linkAria": "Link {{amount}} from {{from}} to {{to}}",
+        "notTransfer": "Not a transfer",
+        "notTransferAria": "Not a transfer: {{amount}} from {{from}} to {{to}}"
+      }
+    },
+    "waiting": {
+      "title": "Saved on this device",
+      "sending": "Sending…",
+      "offline": "Sent when FlyBudget reconnects. Not in balances or the budget yet.",
+      "transferTo": "Transfer: {{name}}",
+      "anotherAccount": "another account",
+      "noPayee": "No payee",
+      "transfer": "Transfer",
+      "split": "Split ({{n}})",
+      "uncategorized": "Uncategorized",
+      "withAccount": "{{detail}} · {{account}}",
+      "notSaved": "Not saved: {{error}}",
+      "tryAgain": "Try again",
+      "tryAgainAria": "Try again: {{name}}",
+      "discard": "Discard",
+      "discardAria": "Discard {{name}}",
+      "discardTitle": "Discard this transaction?",
+      "discardMessage": "It was only saved on this device and hasn't been sent to FlyBudget, so it will be gone."
+    },
+    "undo": {
+      "makeTransfer": "Make transfer",
+      "link_one": "Link {{count, number}} transfer",
+      "link_other": "Link {{count, number}} transfers",
+      "notTransfer": "Not a transfer"
+    },
+    "csv": {
+      "dateRequired": "Date column is required",
+      "amountRequired": "At least one amount column is required"
     }
   },
   "undo": {

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 import * as txApi from '../api/transactions';
 import { ApiError } from '../api/client';
 import { useUndoStore } from '../store/undoStore';
+import { t } from '../i18n';
 import type { Transaction, TransferLinkResult } from '../types';
 
 // Existing transactions as transfers: suggestions, linking, "Transfer: account" on one, and
@@ -39,7 +40,7 @@ function pushUndo(
   // Redo can create a new other side, so undo always works on the latest result
   let result = initial;
   useUndoStore.getState().push({
-    description: 'Make transfer',
+    description: t('transactions.undo.makeTransfer'),
     undo: async () => {
       const [tx, other] = result.transactions;
       const [txBefore, otherBefore] = result.previous;
@@ -88,7 +89,7 @@ export function useLinkTransfers() {
     onSuccess: ({ linked }) => {
       if (!linked.length) return;
       useUndoStore.getState().push({
-        description: `Link ${linked.length} transfer${linked.length === 1 ? '' : 's'}`,
+        description: t('transactions.undo.link', { count: linked.length }),
         undo: async () => {
           for (const result of linked) {
             await txApi.unlinkTransfer(result.transactions[0].id, { dismiss: false });
@@ -128,7 +129,7 @@ export function useUnlinkTransfer() {
       refresh(qc);
       if (!other) return;
       useUndoStore.getState().push({
-        description: 'Not a transfer',
+        description: t('transactions.undo.notTransfer'),
         undo: async () => {
           await txApi.linkTransfer(tx.id, other.id);
           refresh(qc);
