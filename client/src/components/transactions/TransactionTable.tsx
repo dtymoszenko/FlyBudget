@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { Plus, Receipt, SearchX, Upload, Link2 } from 'lucide-react';
 import { useTransactions } from '../../hooks/useTransactions';
 import { useCategories } from '../../hooks/useCategories';
@@ -60,6 +61,7 @@ export function TransactionTable({
   overlayDetail,
   onAddTransaction,
 }: Props) {
+  const { t } = useTranslation();
   const [filters, setFilters] = useState<FilterState>(() => ({
     ...DEFAULT_FILTERS,
     datePreset:
@@ -263,25 +265,27 @@ export function TransactionTable({
         externalRange={from && to ? `${formatDay(from)} – ${formatDay(to)}` : undefined}
       />
       <div className="px-4 py-2 border-b border-border-light bg-surface flex flex-wrap gap-2 justify-between items-center">
-        <span className="text-xs text-text-tertiary">{transactions.length} transactions</span>
+        <span className="text-xs text-text-tertiary">
+          {t('transactions.table.count', { count: transactions.length })}
+        </span>
         {accountId && (
           <div className="flex items-center gap-2">
             <Button variant="secondary" size="sm" onClick={() => setShowImport(true)}>
-              <Upload size={13} /> Import CSV
+              <Upload size={13} /> {t('transactions.table.importCsv')}
             </Button>
             <Button
               size="sm"
               disabled={!newTx.allowed}
               title={
                 !newTx.allowed
-                  ? 'Saving is paused until FlyBudget reconnects'
+                  ? t('transactions.table.savingPaused')
                   : newTx.onDevice
-                    ? 'Saved on this device and sent when FlyBudget reconnects'
+                    ? t('transactions.table.savedOnDevice')
                     : undefined
               }
               onClick={startAdd}
             >
-              <Plus size={13} /> Add Transaction
+              <Plus size={13} /> {t('transactions.table.add')}
             </Button>
           </div>
         )}
@@ -315,36 +319,38 @@ export function TransactionTable({
           )}
 
           {isLoading ? (
-            <div className="px-4 py-10 text-center text-sm text-text-tertiary">Loading...</div>
+            <div className="px-4 py-10 text-center text-sm text-text-tertiary">
+              {t('common.loading')}
+            </div>
           ) : transactions.length === 0 && (!showAdd || isPhone) ? (
             isFirstRun ? (
               <EmptyState
                 icon={<Receipt size={26} />}
-                title="No transactions yet"
+                title={t('transactions.table.empty.title')}
                 description={
                   accountId
-                    ? 'Import a CSV file downloaded from your bank, or add transactions by hand as you spend.'
-                    : 'Add transactions by hand, import a CSV file from an account page, or connect a bank to bring them in automatically.'
+                    ? t('transactions.table.empty.accountHint')
+                    : t('transactions.table.empty.allHint')
                 }
                 learnMoreHref={docsUrl('transactions')}
                 actions={
                   accountId ? (
                     <>
                       <Button variant="secondary" onClick={() => setShowImport(true)}>
-                        <Upload size={14} /> Import a CSV file
+                        <Upload size={14} /> {t('transactions.table.empty.import')}
                       </Button>
                       <Button disabled={!newTx.allowed} onClick={startAdd}>
-                        <Plus size={14} /> Add a transaction
+                        <Plus size={14} /> {t('transactions.table.empty.add')}
                       </Button>
                     </>
                   ) : (
                     <>
                       <ButtonLink variant="secondary" to="/settings?tab=connections">
-                        <Link2 size={14} /> Connect a bank
+                        <Link2 size={14} /> {t('transactions.table.empty.connect')}
                       </ButtonLink>
                       {onAddTransaction && (
                         <Button disabled={!newTx.allowed} onClick={onAddTransaction}>
-                          <Plus size={14} /> Add a transaction
+                          <Plus size={14} /> {t('transactions.table.empty.add')}
                         </Button>
                       )}
                     </>
@@ -355,13 +361,13 @@ export function TransactionTable({
               <EmptyState
                 compact
                 icon={<SearchX size={20} />}
-                title="No transactions found"
+                title={t('transactions.table.notFound.title')}
                 description={
                   filtersChanged
-                    ? 'Nothing matches your search and filters.'
+                    ? t('transactions.table.notFound.filtered')
                     : filters.datePreset === 'all'
-                      ? 'There are no transactions here.'
-                      : 'There are no transactions in this date range.'
+                      ? t('transactions.table.notFound.here')
+                      : t('transactions.table.notFound.range')
                 }
                 actions={
                   (filtersChanged || filters.datePreset !== 'all') && (
@@ -370,7 +376,9 @@ export function TransactionTable({
                       size="sm"
                       onClick={() => setFilters({ ...DEFAULT_FILTERS, datePreset: 'all' })}
                     >
-                      {filtersChanged ? 'Clear filters' : 'Show all dates'}
+                      {filtersChanged
+                        ? t('transactions.table.notFound.clearFilters')
+                        : t('transactions.table.notFound.showAllDates')}
                     </Button>
                   )
                 }
@@ -388,7 +396,7 @@ export function TransactionTable({
                       className="text-sm font-medium text-text-secondary tabular-nums"
                       title={
                         !accountId && budgetCurrency
-                          ? `In ${budgetCurrency}, at each day's rate`
+                          ? t('transactions.table.dayTotalHint', { currency: budgetCurrency })
                           : undefined
                       }
                     >
@@ -450,14 +458,19 @@ export function TransactionTable({
               {hiddenRows > 0 && (
                 <div className="flex flex-col items-center gap-2 px-4 py-6">
                   <span className="text-xs text-text-tertiary">
-                    Showing {transactions.length - hiddenRows} of {transactions.length} transactions
+                    {t('transactions.table.showing', {
+                      shown: transactions.length - hiddenRows,
+                      count: transactions.length,
+                    })}
                   </span>
                   <Button
                     variant="secondary"
                     size="sm"
                     onClick={() => setShown({ params, rows: shownRows + ROWS_PER_PAGE })}
                   >
-                    Show {Math.min(hiddenRows, ROWS_PER_PAGE)} more
+                    {t('transactions.table.showMore', {
+                      count: Math.min(hiddenRows, ROWS_PER_PAGE),
+                    })}
                   </Button>
                 </div>
               )}
@@ -489,7 +502,11 @@ export function TransactionTable({
 
       {/* Phones: the entry form in a sheet (splits and transfers included) */}
       {accountId && isPhone && (
-        <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="New transaction">
+        <Modal
+          isOpen={showAdd}
+          onClose={() => setShowAdd(false)}
+          title={t('transactions.table.newTitle')}
+        >
           <TransactionFormRow
             layout="sheet"
             accountId={accountId}

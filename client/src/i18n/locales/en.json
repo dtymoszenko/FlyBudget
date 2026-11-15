@@ -2370,11 +2370,88 @@
       "makeTransfer": "Make transfer",
       "link_one": "Link {{count, number}} transfer",
       "link_other": "Link {{count, number}} transfers",
-      "notTransfer": "Not a transfer"
+      "notTransfer": "Not a transfer",
+      "create": "Create transaction",
+      "edit": "Edit transaction",
+      "split": "Split transaction",
+      "unsplit": "Unsplit transaction",
+      "delete": "Delete transaction",
+      "createTransfer": "Create transfer"
     },
     "csv": {
       "dateRequired": "Date column is required",
       "amountRequired": "At least one amount column is required"
+    },
+    "table": {
+      "count_one": "{{count, number}} transaction",
+      "count_other": "{{count, number}} transactions",
+      "importCsv": "Import CSV",
+      "add": "Add Transaction",
+      "savingPaused": "Saving is paused until FlyBudget reconnects",
+      "savedOnDevice": "Saved on this device and sent when FlyBudget reconnects",
+      "newTitle": "New transaction",
+      "dayTotalHint": "In {{currency}}, at each day's rate",
+      "showing_one": "Showing {{shown, number}} of {{count, number}} transaction",
+      "showing_other": "Showing {{shown, number}} of {{count, number}} transactions",
+      "showMore_one": "Show {{count, number}} more",
+      "showMore_other": "Show {{count, number}} more",
+      "empty": {
+        "title": "No transactions yet",
+        "accountHint": "Import a CSV file downloaded from your bank, or add transactions by hand as you spend.",
+        "allHint": "Add transactions by hand, import a CSV file from an account page, or connect a bank to bring them in automatically.",
+        "import": "Import a CSV file",
+        "add": "Add a transaction",
+        "connect": "Connect a bank"
+      },
+      "notFound": {
+        "title": "No transactions found",
+        "filtered": "Nothing matches your search and filters.",
+        "here": "There are no transactions here.",
+        "range": "There are no transactions in this date range.",
+        "clearFilters": "Clear filters",
+        "showAllDates": "Show all dates"
+      }
+    },
+    "row": {
+      "transfer": "Transfer",
+      "showPayee": "Show all \"{{name}}\" transactions",
+      "showCategory": "Show all \"{{name}}\" transactions",
+      "split": "Split ({{n}})",
+      "goToAccount": "Go to {{name}}"
+    },
+    "card": {
+      "transfer": "Transfer",
+      "split": "Split ({{n}})",
+      "uncategorized": "Uncategorized",
+      "reconciled": "Reconciled"
+    },
+    "detail": {
+      "aria": "Transaction details",
+      "title": "Transaction Details",
+      "close": "Close details",
+      "transfer": "Transfer",
+      "splitHint": "Divide this transaction between categories",
+      "editSplit": "Edit split",
+      "split": "Split",
+      "splitCount": "Split ({{n}})",
+      "reconciled": "This transaction is reconciled and cannot be edited.",
+      "date": "Date",
+      "category": "Category",
+      "uncategorized": "Uncategorized",
+      "notTransfer": "Not a transfer",
+      "notTransferHint": "Make both sides ordinary transactions again",
+      "payee": "Payee",
+      "notes": "Notes",
+      "notesPlaceholder": "Add notes to this transaction...",
+      "recurring": "Recurring",
+      "unlinkRecurring": "Unlink from recurring",
+      "createRule": "Create rule",
+      "delete": "Delete Transaction",
+      "newRule": "New rule from transaction",
+      "deleteMessage": "Are you sure you want to delete this transaction? This action cannot be undone.",
+      "notSaved": "Couldn't save this change.",
+      "retryCategory": "Pick it again to retry.",
+      "retryField": "Leave the field again to retry."
     }
   },
   "undo": {

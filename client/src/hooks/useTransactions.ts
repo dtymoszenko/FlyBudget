@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import * as txApi from '../api/transactions';
 import { useUndoStore } from '../store/undoStore';
+import { t } from '../i18n';
 import type { Transaction, TransactionQueryParams } from '../types';
 
 function findTxInCache(qc: QueryClient, id: string): Transaction | undefined {
@@ -26,7 +27,7 @@ export function useCreateTransaction() {
       qc.invalidateQueries({ queryKey: ['transactions'] });
       qc.invalidateQueries({ queryKey: ['accounts'] });
       useUndoStore.getState().push({
-        description: `Create transaction`,
+        description: t('transactions.undo.create'),
         undo: async () => {
           await txApi.deleteTransaction(created.id);
           qc.invalidateQueries({ queryKey: ['transactions'] });
@@ -69,7 +70,7 @@ export function useUpdateTransaction() {
       if (!ctx?.old) return;
       const snapshot = ctx.old;
       useUndoStore.getState().push({
-        description: `Edit transaction`,
+        description: t('transactions.undo.edit'),
         undo: async () => {
           await txApi.updateTransaction(id, {
             accountId: snapshot.accountId,
@@ -112,7 +113,7 @@ export function useSetTransactionSplits() {
       if (!ctx?.old) return;
       const snapshot = ctx.old;
       useUndoStore.getState().push({
-        description: splits.length ? 'Split transaction' : 'Unsplit transaction',
+        description: splits.length ? t('transactions.undo.split') : t('transactions.undo.unsplit'),
         undo: async () => {
           await txApi.setTransactionSplits(id, snapshot.isParent === 1 ? partsOf(snapshot) : []);
           if (snapshot.isParent !== 1 && snapshot.categoryId) {
@@ -141,7 +142,7 @@ export function useDeleteTransaction() {
       qc.invalidateQueries({ queryKey: ['accounts'] });
       if (!snapshot) return;
       useUndoStore.getState().push({
-        description: `Delete transaction`,
+        description: t('transactions.undo.delete'),
         undo: async () => {
           await txApi.createTransaction({
             accountId: snapshot.accountId,
@@ -186,7 +187,7 @@ export function useCreateTransfer() {
       qc.invalidateQueries({ queryKey: ['accounts'] });
       const ids = created.map((t) => t.id);
       useUndoStore.getState().push({
-        description: `Create transfer`,
+        description: t('transactions.undo.createTransfer'),
         undo: async () => {
           for (const id of ids) await txApi.deleteTransaction(id);
           qc.invalidateQueries({ queryKey: ['transactions'] });
