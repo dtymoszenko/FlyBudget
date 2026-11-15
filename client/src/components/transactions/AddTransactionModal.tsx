@@ -440,7 +440,7 @@ export function AddTransactionModal({ isOpen, onClose }: Props) {
                 ? t('transactions.add.adding')
                 : newTx.onDevice
                   ? t('transactions.add.saveOnDevice')
-                  : t('transactions.add.title')}
+                  : t('transactions.add.submit')}
             </Button>
           </div>
         </div>

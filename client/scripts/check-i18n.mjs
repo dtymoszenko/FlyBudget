@@ -44,7 +44,8 @@ const TEXT_PROPERTIES = new Set([
   'tooltip',
 ]);
 /** State setters whose argument is shown */
-const TEXT_SETTERS = /^set(Error|Notice|Message|Status|Warning|Info)$/;
+// setError, setFileError, setRestoreMessage, …
+const TEXT_SETTERS = /^set\w*(Error|Notice|Message|Status|Warning|Info)$/;
 /** Names that stay as they are in every language */
 const NOT_TEXT = /^(FlyBudget|Plaid|SimpleFIN|Enable Banking|GitHub|Docker|CSV|CAMT|OFX|QIF|API)$/;
 
@@ -241,6 +242,14 @@ function checkEnglish(english, sources) {
     const cardinal = forms.filter((f) => !f.startsWith('_ordinal'));
     if (cardinal.length && !(cardinal.includes('_one') && cardinal.includes('_other'))) {
       problems.push(`${base}: a plural needs _one and _other`);
+    }
+    // English ordinals: 1st, 2nd, 3rd, 4th
+    const ordinal = forms.filter((f) => f.startsWith('_ordinal'));
+    const missing = ['one', 'two', 'few', 'other'].filter(
+      (c) => !ordinal.includes(`_ordinal_${c}`),
+    );
+    if (ordinal.length && missing.length) {
+      problems.push(`${base}: an ordinal needs _ordinal_${missing.join(', _ordinal_')}`);
     }
   }
   return problems;

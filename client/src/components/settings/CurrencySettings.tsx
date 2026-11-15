@@ -322,11 +322,9 @@ function RateDownload() {
   const canSave = useCanSave();
   const [url, setUrl] = useState(settings?.ratesUrl ?? '');
   if (!settings) return null;
-  const server =
-    settings.ratesUrl ||
-    settings.defaultRatesUrl ||
-    t('settings.currencies.download.defaultServer');
+  const server = settings.ratesUrl || settings.defaultRatesUrl;
   const host = (() => {
+    if (!server) return null;
     try {
       return new URL(server).host;
     } catch {
@@ -341,7 +339,9 @@ function RateDownload() {
           {t('settings.currencies.download.title')}
         </h3>
         <p className="text-xs text-text-tertiary mt-0.5">
-          {t('settings.currencies.download.hint', { host })}
+          {host
+            ? t('settings.currencies.download.hint', { host })
+            : t('settings.currencies.download.hintNoServer')}
         </p>
       </div>
       {!settings.canDownload ? (

@@ -84,7 +84,7 @@ export function GoalFormModal({ isOpen, onClose, onSave, editGoal }: Props) {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={t(editGoal ? 'goals.form.editTitle' : 'goals.add')}
+      title={t(editGoal ? 'goals.form.editTitle' : 'goals.form.addTitle')}
       size="sm"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -202,7 +202,7 @@ export function GoalFormModal({ isOpen, onClose, onSave, editGoal }: Props) {
             {t('common.actions.cancel')}
           </Button>
           <Button type="submit" disabled={!name.trim() || targetAmount <= 0}>
-            {t(editGoal ? 'common.actions.save' : 'goals.add')}
+            {t(editGoal ? 'common.actions.save' : 'goals.form.add')}
           </Button>
         </div>
       </form>

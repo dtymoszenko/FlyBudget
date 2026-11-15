@@ -997,7 +997,9 @@
       "noAccount": "None",
       "icon": "Icon",
       "color": "Color",
-      "colorOption": "Color {{color}}"
+      "colorOption": "Color {{color}}",
+      "addTitle": "Add Goal",
+      "add": "Add Goal"
     },
     "undo": {
       "create": "Create goal \"{{name}}\"",
@@ -1494,7 +1496,8 @@
       },
       "dateFlexibility": "Date Flexibility <hint>(± days for matching)</hint>",
       "dateFlexibilityLabel": "Date flexibility",
-      "saveChanges": "Save Changes"
+      "saveChanges": "Save Changes",
+      "add": "Add Recurring"
     },
     "undo": {
       "create": "Create schedule \"{{name}}\"",
@@ -2344,7 +2347,6 @@
       "download": {
         "title": "Download rates",
         "hint": "The European Central Bank's daily reference rates, from {{host}} (Frankfurter, open source). Only currency codes and dates are sent, never anything about your budget. Off until you turn it on; then it checks every few hours.",
-        "defaultServer": "the rates server",
         "notInDemo": "Not available in the demo: rates can be typed in above.",
         "enable": "Download ECB reference rates",
         "downloading": "Downloading…",
@@ -2353,7 +2355,8 @@
         "never": "Not downloaded yet",
         "unsupported": "{{status}}. The ECB has no rates for {{currencies}}: type those in.",
         "server": "Server (optional, for your own Frankfurter)",
-        "saveServer": "Save server"
+        "saveServer": "Save server",
+        "hintNoServer": "The European Central Bank's daily reference rates, from the rates server (Frankfurter, open source). Only currency codes and dates are sent, never anything about your budget. Off until you turn it on; then it checks every few hours."
       },
       "display": {
         "title": "How amounts are written",
@@ -2460,7 +2463,8 @@
       "notes": "Notes",
       "notesPlaceholder": "Add a note...",
       "adding": "Adding...",
-      "saveOnDevice": "Save on device"
+      "saveOnDevice": "Save on device",
+      "submit": "Add transaction"
     },
     "categoryPicker": {
       "search": "Search categories...",
