@@ -21,7 +21,9 @@
       "previousYear": "Previous year",
       "nextYear": "Next year"
     },
-    "opensInNewTab": "(opens in a new tab)"
+    "opensInNewTab": "(opens in a new tab)",
+    "dragToReorder": "Drag to reorder",
+    "loading": "Loading..."
   },
   "layout": {
     "accounts": {
@@ -194,6 +196,111 @@
       },
       "dateFormat": {
         "title": "Date Format"
+      }
+    },
+    "accounts": {
+      "title": "Account Order",
+      "hint": "Drag to reorder accounts in the sidebar.",
+      "empty": "No accounts yet. Add one from the Accounts page.",
+      "onBudget": "On Budget",
+      "offBudget": "Off Budget"
+    },
+    "connections": {
+      "title": "Connected Banks",
+      "hint": "Automatically import transactions from your financial institutions.",
+      "europeanBanks": "European banks",
+      "synced_one": "{{provider}} sync complete: {{count, number}} new transaction imported.",
+      "synced_other": "{{provider}} sync complete: {{count, number}} new transactions imported.",
+      "syncing": "Syncing...",
+      "syncAll": "Sync All",
+      "addAnotherBank": "Add Another Bank",
+      "addAnotherConnection": "Add Another Connection",
+      "noBanks": "No banks connected via {{provider}} yet.",
+      "connectBank": "Connect Bank",
+      "configuration": "{{provider}} Configuration",
+      "plaidHint": "Enter your Plaid API credentials to enable bank connections.",
+      "simplefinHint": "Enter your SimpleFIN setup token to enable bank connections.",
+      "enableBankingHint": "European banks (EEA), over PSD2. Free with your own Enable Banking application, for your own accounts.",
+      "enableBankingApp": "Enable Banking Application"
+    },
+    "server": {
+      "version": "Version {{version}}",
+      "local": {
+        "title": "Where your data lives",
+        "demo": "In this browser (demo)",
+        "demoHint": "This demo runs entirely in your browser: nothing you change is sent anywhere or saved. In the app, your budget is a file on your computer or on a server you run.",
+        "computer": "On this computer",
+        "computerHint": "Your budget is a file on this computer, and FlyBudget only talks to it through its own local server. Nothing is sent to FlyBudget or anyone else; bank sync contacts Plaid, SimpleFIN or Enable Banking only when you connect a bank."
+      },
+      "selfHost": {
+        "title": "Use FlyBudget on your phone and other devices",
+        "hint": "Run FlyBudget on a server you control, such as a home server or a small cloud machine, and sign in from any browser. Your data moves to that server; nobody else hosts it.",
+        "guide": "Read the self-hosting guide",
+        "backup": "Make a backup first"
+      },
+      "offline": {
+        "title": "Offline copy",
+        "keep": "Keep a copy of my budget on this device",
+        "hint": "When FlyBudget can't reach its server, it opens with what this browser last loaded. You can look through everything and add new transactions; they're sent when it reconnects. The copy is deleted when you sign out. Turn this off on a shared computer.",
+        "waiting_one": "{{count, number}} transaction saved on this device is waiting to be sent.",
+        "waiting_other": "{{count, number}} transactions saved on this device are waiting to be sent."
+      },
+      "security": {
+        "title": "Security check",
+        "checking": "Checking your server…",
+        "allGood": "Everything looks good for how you connected just now.",
+        "warnings_one": "{{count, number}} thing to look at. Each is fixed with a setting in your docker-compose.yml.",
+        "warnings_other": "{{count, number}} things to look at. Each is fixed with a setting in your docker-compose.yml.",
+        "version": "Version {{version}}.",
+        "passed": "Passed",
+        "warning": "Warning"
+      },
+      "checks": {
+        "httpsSecure": "Connection is encrypted (HTTPS)",
+        "httpsLocal": "Connected on the same computer as the server",
+        "httpsMissing": "Not using HTTPS: passwords and data travel unencrypted",
+        "httpsMissingFix": "Put FlyBudget behind a reverse proxy with HTTPS (Caddy, Nginx, Traefik) or a VPN, and set <env>FLYBUDGET_TRUST_PROXY</env>.",
+        "trustProxyOk": "Reverse proxy settings match how you connect",
+        "trustProxyUntrusted": "A reverse proxy is in front of FlyBudget, but not trusted",
+        "trustProxyUntrustedFix": "Set <env>FLYBUDGET_TRUST_PROXY=1</env> (the number of proxies in front of FlyBudget) so HTTPS and client addresses are detected.",
+        "trustProxyUnneeded": "FLYBUDGET_TRUST_PROXY is set, but this request came without a proxy",
+        "trustProxyUnneededFix": "If you connect directly, remove <env>FLYBUDGET_TRUST_PROXY</env>: otherwise clients can fake their address and get around the login attempt limit.",
+        "allowedHostsOk": "Only answers to the addresses you allowed",
+        "allowedHostsMissing": "Answers to any host name",
+        "allowedHostsMissingFix": "Set <env>FLYBUDGET_ALLOWED_HOSTS</env> to the address you use, e.g. <env>FLYBUDGET_ALLOWED_HOSTS=budget.example.com</env>.",
+        "encryptionKeyOk": "Bank credentials are encrypted at rest",
+        "encryptionKeyMissing": "Bank credentials are not encrypted",
+        "encryptionKeyMissingFix": "Set <env>FLYBUDGET_DATA_KEY_FILE</env> to a file with a random key (see the self-hosting guide).",
+        "passwordOk": "A password protects this server",
+        "passwordMissing": "No password is set yet"
+      },
+      "devices": {
+        "title": "Signed-in devices",
+        "hint": "Browsers signed in to this server. Sign out any you don't recognize, then change the password.",
+        "loadFailed": "Couldn't load the devices.",
+        "thisDevice": "This device",
+        "active": "Active {{active}} · signed in {{signedIn}}",
+        "signedIn": "Signed in {{signedIn}}",
+        "signOut": "Sign out",
+        "signOutDevice": "Sign out {{name}}",
+        "signOutOthers": "Sign out all other devices"
+      },
+      "password": {
+        "title": "Change password",
+        "hint": "This password protects your FlyBudget server. Changing it signs out every other device.",
+        "current": "Current password",
+        "new": "New password",
+        "confirm": "Confirm new password",
+        "submit": "Change password",
+        "tooShort_one": "Use at least {{count, number}} character.",
+        "tooShort_other": "Use at least {{count, number}} characters.",
+        "mismatch": "The new passwords don't match.",
+        "changed": "Password changed. Other devices have been signed out."
+      },
+      "signOut": {
+        "title": "Sign out",
+        "hint": "Sign out of FlyBudget on this browser.",
+        "button": "Sign out"
       }
     }
   },

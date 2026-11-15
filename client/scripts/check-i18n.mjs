@@ -19,8 +19,11 @@ const ENFORCED = [
   'i18n/',
   'components/layout/',
   'components/ui/',
+  'components/settings/AccountReorder.tsx',
+  'components/settings/ConnectedAccounts.tsx',
   'components/settings/DataExport.tsx',
   'components/settings/PreferencesPanel.tsx',
+  'components/settings/ServerSettings.tsx',
   'pages/Settings.tsx',
 ];
 
