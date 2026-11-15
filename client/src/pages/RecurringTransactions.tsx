@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Sparkles } from 'lucide-react';
 import MonthlyTab from '../components/recurring/MonthlyTab';
 import AllTab from '../components/recurring/AllTab';
@@ -18,14 +19,12 @@ import {
 import type { Schedule } from '../types';
 import { format, subDays, addDays } from 'date-fns';
 
-const tabs = [
-  { id: 'monthly' as const, label: 'Monthly' },
-  { id: 'all' as const, label: 'All recurring' },
-];
+const TABS = ['monthly', 'all'] as const;
 
-type TabId = (typeof tabs)[number]['id'];
+type TabId = (typeof TABS)[number];
 
 export default function RecurringTransactionsPage() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabId>('monthly');
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState<Schedule | null>(null);
@@ -87,29 +86,29 @@ export default function RecurringTransactionsPage() {
     <div className="flex flex-col h-full bg-surface">
       <div className="px-6 border-b border-border shrink-0 flex flex-wrap items-center justify-between gap-x-4">
         <div className="flex items-center gap-6">
-          <h1 className="text-lg font-semibold text-text py-4">Recurring</h1>
+          <h1 className="text-lg font-semibold text-text py-4">{t('recurring.page.title')}</h1>
           <div className="flex gap-1 self-stretch">
-            {tabs.map((tab) => (
+            {TABS.map((tab) => (
               <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                key={tab}
+                onClick={() => setActiveTab(tab)}
                 className={`px-2 text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px cursor-pointer ${
-                  activeTab === tab.id
+                  activeTab === tab
                     ? 'border-brand-600 text-brand-600'
                     : 'border-transparent text-text-tertiary hover:text-text-secondary'
                 }`}
               >
-                {tab.label}
+                {t(`recurring.page.tabs.${tab}`)}
               </button>
             ))}
           </div>
         </div>
         <div className="flex items-center gap-2 py-2">
           <Button variant="secondary" size="sm" onClick={() => setDiscoverOpen(true)}>
-            <Sparkles size={13} /> Find recurring
+            <Sparkles size={13} /> {t('recurring.all.find')}
           </Button>
           <Button size="sm" onClick={handleAdd}>
-            <Plus size={13} /> Add recurring
+            <Plus size={13} /> {t('recurring.all.add')}
           </Button>
         </div>
       </div>

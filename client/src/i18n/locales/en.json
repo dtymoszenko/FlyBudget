@@ -982,6 +982,57 @@
       "create": "Create payee \"{{name}}\"",
       "edit": "Edit payee",
       "delete": "Delete payee \"{{name}}\""
+    },
+    "title": "Payees",
+    "search": "Search payees…",
+    "mergeSelected_one": "Merge {{count, number}} payees",
+    "mergeSelected_other": "Merge {{count, number}} payees",
+    "noMatch": "No payees match your search.",
+    "empty": {
+      "title": "No payees yet",
+      "description": "Payees are the people and businesses you pay or get paid by. They’re added automatically as you enter or import transactions, and you can give each one a default category.",
+      "add": "Add a transaction"
+    },
+    "listLabel": "Payees",
+    "selectAllLabel": "Select all payees",
+    "selectAll": "Select all",
+    "sortLabel": "Sort payees",
+    "sort": {
+      "nameAsc": "Name (A–Z)",
+      "nameDesc": "Name (Z–A)",
+      "mostTransactions": "Most transactions",
+      "fewestTransactions": "Fewest transactions",
+      "categoryAsc": "Category (A–Z)",
+      "categoryDesc": "Category (Z–A)"
+    },
+    "select": "Select {{name}}",
+    "rename": "Rename {{name}}",
+    "transactionCount_one": "{{count, number}} transaction",
+    "transactionCount_other": "{{count, number}} transactions",
+    "actionsFor": "Actions for {{name}}",
+    "menu": {
+      "rename": "Rename",
+      "delete": "Delete"
+    },
+    "defaultCategoryFor": "Default category for {{name}}",
+    "noDefaultCategory": "No default category",
+    "noDefault": "No default",
+    "columns": {
+      "name": "Name",
+      "category": "Default category",
+      "transactions": "Transactions"
+    },
+    "doubleClickRename": "Double-click to rename",
+    "deleteLabel": "Delete {{name}}",
+    "merge": {
+      "title": "Merge Payees",
+      "intro": "Choose which payee name to keep. All transactions will be moved to the selected payee.",
+      "confirm": "Merge"
+    },
+    "delete": {
+      "title": "Delete Payee",
+      "message": "Delete \"{{name}}\"? This will remove the payee from all their transactions.",
+      "confirm": "Delete"
     }
   },
   "recurring": {
@@ -1208,6 +1259,42 @@
       "edit": "Edit schedule",
       "cancel": "Cancel schedule \"{{name}}\"",
       "markPaid": "Mark as paid"
+    },
+    "page": {
+      "title": "Recurring",
+      "tabs": {
+        "monthly": "Monthly",
+        "all": "All recurring"
+      }
+    },
+    "monthly": {
+      "income": "Income",
+      "expenses": "Expenses",
+      "remaining": "remaining",
+      "incomeSummary": "{{paid}} received of {{total}}",
+      "expensesSummary": "{{paid}} paid of {{total}}",
+      "none": "None this month",
+      "columns": {
+        "date": "Date",
+        "account": "Account",
+        "status": "Status",
+        "amount": "Amount"
+      },
+      "previousMonth": "Previous month",
+      "nextMonth": "Next month",
+      "today": "Today",
+      "views": {
+        "list": "List",
+        "calendar": "Calendar"
+      },
+      "empty": {
+        "title": "Track your bills, subscriptions and paychecks",
+        "description": "See what’s due and what’s been paid each month. Add them one by one, or let FlyBudget find them in the transactions you already have."
+      },
+      "emptyMonth": {
+        "title": "No recurring items this month",
+        "description": "Nothing is scheduled for this month."
+      }
     }
   },
   "reports": {
