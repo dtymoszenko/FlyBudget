@@ -70,6 +70,17 @@ const uiText = await (async () => {
   return texts;
 })();
 const tr = (text: string) => uiText.get(text) ?? text;
+/**
+ * Whether cut-off text is UI text in SCREENSHOT_LANG (a real language has no ⟦markers⟧ like
+ * the pseudo-language): it contains one of the translations, or one starts with it
+ */
+const uiTexts = [...new Set(uiText.values())]
+  .map((t) => t.split(/\{\{[^}]*\}\}/)[0].trim())
+  .filter((t) => t.length >= 4);
+const isUiText = (text: string) => {
+  const shown = text.replace(/…$/, '').trim();
+  return uiTexts.some((t) => shown.includes(t) || t.startsWith(shown));
+};
 const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 /**
  * A text with {{values}} ("Import {{count, number}} Transactions"), in SCREENSHOT_LANG or in
@@ -477,7 +488,7 @@ async function take(browser: Browser, shot: Shot) {
     console.log(`  ${shot.name}.webp`);
     if (REPORT) {
       for (const c of await clippedText(page)) {
-        if (c.kind === 'label')
+        if (c.kind === 'label' || isUiText(c.text))
           findings.push({ shot: shot.name, problem: `text cut off: ${c.element}` });
         else
           findings.push({ shot: shot.name, problem: `data cut off without a title: ${c.element}` });
