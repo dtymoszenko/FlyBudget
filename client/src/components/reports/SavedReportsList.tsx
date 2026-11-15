@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown, Trash2 } from 'lucide-react';
 import { useSavedReports, useDeleteSavedReport } from '../../hooks/useCustomReports';
 
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export default function SavedReportsList({ activeId }: Props) {
+  const { t } = useTranslation();
   const { data: reports = [] } = useSavedReports();
   const deleteMutation = useDeleteSavedReport();
   const navigate = useNavigate();
@@ -32,7 +34,7 @@ export default function SavedReportsList({ activeId }: Props) {
         onClick={() => setOpen(!open)}
         className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-text-secondary bg-surface border border-border rounded-md hover:bg-surface-alt transition-colors"
       >
-        {activeReport ? activeReport.name : 'Saved Reports'}
+        {activeReport ? activeReport.name : t('reports.saved.list')}
         <ChevronDown className="w-3.5 h-3.5 text-text-tertiary" />
       </button>
 

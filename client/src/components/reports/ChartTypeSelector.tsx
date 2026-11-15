@@ -1,20 +1,21 @@
 import { BarChart3, LineChart, AreaChart, PieChart, Table2, Layers } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { ChartType, ReportMode } from '../../types';
 
-const MODE_LABELS: Record<ReportMode, string> = {
-  total: 'Total',
-  time: 'Over Time',
-};
-
-const CHART_TYPES: { id: ChartType; icon: typeof BarChart3; label: string; modes: ReportMode[] }[] =
-  [
-    { id: 'bar', icon: BarChart3, label: 'Bar', modes: ['total', 'time'] },
-    { id: 'stacked-bar', icon: Layers, label: 'Stacked', modes: ['time'] },
-    { id: 'line', icon: LineChart, label: 'Line', modes: ['total', 'time'] },
-    { id: 'area', icon: AreaChart, label: 'Area', modes: ['total', 'time'] },
-    { id: 'donut', icon: PieChart, label: 'Donut', modes: ['total'] },
-    { id: 'table', icon: Table2, label: 'Table', modes: ['total', 'time'] },
-  ];
+const CHART_TYPES: {
+  id: ChartType;
+  /** Its name in reports.chartType.types (a key can't have a dash) */
+  labelKey: 'bar' | 'stackedBar' | 'line' | 'area' | 'donut' | 'table';
+  icon: typeof BarChart3;
+  modes: ReportMode[];
+}[] = [
+  { id: 'bar', labelKey: 'bar', icon: BarChart3, modes: ['total', 'time'] },
+  { id: 'stacked-bar', labelKey: 'stackedBar', icon: Layers, modes: ['time'] },
+  { id: 'line', labelKey: 'line', icon: LineChart, modes: ['total', 'time'] },
+  { id: 'area', labelKey: 'area', icon: AreaChart, modes: ['total', 'time'] },
+  { id: 'donut', labelKey: 'donut', icon: PieChart, modes: ['total'] },
+  { id: 'table', labelKey: 'table', icon: Table2, modes: ['total', 'time'] },
+];
 
 interface Props {
   value: ChartType;
@@ -23,21 +24,23 @@ interface Props {
 }
 
 export default function ChartTypeSelector({ value, mode, onChange }: Props) {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-wrap gap-1">
-      {CHART_TYPES.map((t) => {
-        const disabled = !t.modes.includes(mode);
-        const active = t.id === value;
+      {CHART_TYPES.map((c) => {
+        const disabled = !c.modes.includes(mode);
+        const active = c.id === value;
+        const label = t(`reports.chartType.types.${c.labelKey}`);
+        // With two modes, a chart that can't be used in this one only works in the other
+        const title = disabled
+          ? t(`reports.chartType.onlyIn.${c.modes[0]}`, { chart: label })
+          : label;
         return (
           <button
-            key={t.id}
+            key={c.id}
             disabled={disabled}
-            onClick={() => onChange(t.id)}
-            title={
-              disabled
-                ? `${t.label} is only available in '${t.modes.map((m) => MODE_LABELS[m]).join("' and '")}' mode`
-                : t.label
-            }
+            onClick={() => onChange(c.id)}
+            title={title}
             className={`flex items-center gap-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
               active
                 ? 'bg-brand-50 text-brand-700 border border-brand-200'
@@ -46,8 +49,8 @@ export default function ChartTypeSelector({ value, mode, onChange }: Props) {
                   : 'text-text-secondary hover:bg-hover border border-transparent'
             }`}
           >
-            <t.icon className="w-3.5 h-3.5" />
-            {t.label}
+            <c.icon className="w-3.5 h-3.5" />
+            {label}
           </button>
         );
       })}

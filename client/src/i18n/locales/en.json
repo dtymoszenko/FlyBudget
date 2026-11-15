@@ -399,6 +399,186 @@
     },
     "skipToContent": "Skip to main content"
   },
+  "reports": {
+    "builder": {
+      "title": "Custom Report",
+      "export": "Export",
+      "update": "Update",
+      "sections": {
+        "chartType": "Chart Type",
+        "mode": "Mode",
+        "groupBy": "Group By",
+        "balanceType": "Balance Type",
+        "dateRange": "Date Range",
+        "accounts": "Accounts",
+        "categories": "Categories"
+      },
+      "modes": {
+        "total": "Total",
+        "time": "Over Time"
+      },
+      "groupByLabel": "Group by",
+      "groupBy": {
+        "category": "Category",
+        "categoryGroup": "Category Group",
+        "payee": "Payee",
+        "account": "Account",
+        "month": "Month"
+      },
+      "balanceTypes": {
+        "expense": "Expenses",
+        "income": "Income",
+        "net": "Net"
+      },
+      "frozen": "Frozen: these dates stay fixed.",
+      "live": "Live: moves forward with the current month."
+    },
+    "chartType": {
+      "types": {
+        "bar": "Bar",
+        "stackedBar": "Stacked",
+        "line": "Line",
+        "area": "Area",
+        "donut": "Donut",
+        "table": "Table"
+      },
+      "onlyIn": {
+        "total": "{{chart}} is only available in 'Total' mode",
+        "time": "{{chart}} is only available in 'Over Time' mode"
+      }
+    },
+    "detail": {
+      "noData": "No data for this period.",
+      "showAll": "Show all {{count, number}}",
+      "exportCsv": "Export CSV",
+      "columns": {
+        "month": "Month",
+        "income": "Income",
+        "expenses": "Expenses",
+        "net": "Net",
+        "transactions": "Transactions",
+        "assets": "Assets",
+        "liabilities": "Liabilities",
+        "netWorth": "Net worth",
+        "change": "Change",
+        "savingsRate": "Savings rate",
+        "category": "Category",
+        "group": "Group",
+        "spent": "Spent",
+        "monthlyAverage": "Monthly average",
+        "share": "Share",
+        "highestMonth": "Highest month",
+        "shareOfAll": "Share of all spending",
+        "payee": "Payee",
+        "account": "Account",
+        "amount": "Amount",
+        "date": "Date",
+        "moneyIn": "Money in",
+        "moneyOut": "Money out"
+      },
+      "footer": {
+        "total": "Total",
+        "monthlyAverage": "Monthly average"
+      },
+      "stats": {
+        "netWorth": "Net Worth",
+        "change": "Change",
+        "assets": "Assets",
+        "liabilities": "Liabilities",
+        "income": "Income",
+        "expenses": "Expenses",
+        "netSavings": "Net Savings",
+        "savingsRate": "Savings Rate",
+        "totalSpent": "Total Spent",
+        "monthlyAverage": "Monthly Average",
+        "biggestCategory": "Biggest Category",
+        "categories": "Categories",
+        "shareOfAll": "Share of All Spending",
+        "moneyIn": "Money In",
+        "moneyOut": "Money Out",
+        "net": "Net",
+        "dailyAverageOut": "Daily Average Out",
+        "overDays_one": "Over {{count, number}} day",
+        "overDays_other": "Over {{count, number}} days"
+      },
+      "summary": {
+        "chartTitle": "Expenses by month",
+        "chartSubtitle": "Spending net of refunds, against the monthly average",
+        "tableTitle": "Monthly breakdown"
+      },
+      "netWorth": {
+        "chartTitle": "Net worth over time",
+        "chartSubtitle": "Assets minus liabilities",
+        "tableTitle": "Month-end balances"
+      },
+      "incomeExpenses": {
+        "chartTitle": "Income vs. expenses",
+        "chartSubtitle": "Money in and out each month",
+        "tableTitle": "Monthly breakdown"
+      },
+      "spending": {
+        "chartTitle": "Spending by category",
+        "chartTitleTop": "Top 10 categories",
+        "chartSubtitleTop": "Every category is listed in the table below",
+        "tableTitle": "All categories"
+      },
+      "trends": {
+        "chartTitle": "Spending over time",
+        "biggest_one": "Your biggest spending category in this period",
+        "biggest_other": "Your {{count, number}} biggest spending categories in this period",
+        "chosen_one": "{{count, number}} chosen category",
+        "chosen_other": "{{count, number}} chosen categories",
+        "tableTitle": "By category",
+        "deletedCategory": "Deleted category",
+        "picker": "Categories ({{count, number}})",
+        "pickBiggest": "Biggest categories",
+        "pickBiggestHint": "The {{count, number}} with the most spending in the date range",
+        "pickUpTo": "Or choose up to {{count, number}}"
+      },
+      "calendar": {
+        "chartTitle": "Transaction calendar",
+        "chartSubtitleNet": "Each day is colored by its net: green when more came in, red when more went out. Click a day to see its transactions.",
+        "chartSubtitle": "Green is money in, red is money out. Click a day to see its transactions.",
+        "tableTitle": "Days with transactions"
+      },
+      "day": {
+        "count_one": "{{count, number}} transaction",
+        "count_other": "{{count, number}} transactions",
+        "moneyIn": "· {{amount}} in",
+        "moneyOut": "· {{amount}} out",
+        "noPayee": "No payee",
+        "split": "Split ({{count, number}})",
+        "uncategorized": "Uncategorized"
+      }
+    },
+    "pickers": {
+      "allSelected": "All selected",
+      "selectAll": "Select all",
+      "groupCategories": "{{name}} categories"
+    },
+    "saved": {
+      "list": "Saved Reports",
+      "modal": {
+        "save": "Save Report",
+        "update": "Update Report",
+        "name": "Report Name",
+        "nameLabel": "Report name",
+        "placeholder": "e.g. Monthly Spending by Payee",
+        "updateButton": "Update"
+      },
+      "undo": {
+        "create": "Create report \"{{name}}\"",
+        "edit": "Edit report",
+        "delete": "Delete report \"{{name}}\""
+      }
+    },
+    "table": {
+      "name": "Name",
+      "amount": "Amount",
+      "total": "Total",
+      "month": "Month"
+    }
+  },
   "settings": {
     "title": "Settings",
     "tabs": {

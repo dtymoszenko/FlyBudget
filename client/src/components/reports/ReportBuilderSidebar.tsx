@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { computeDateRange, DATE_PRESETS } from '../../utils/dateRange';
 import { MonthRangePicker } from '../ui/MonthRangePicker';
 import ChartTypeSelector from './ChartTypeSelector';
@@ -17,24 +18,17 @@ interface Props {
   onChange: (config: CustomReportConfig) => void;
 }
 
-const MODE_OPTIONS: { id: ReportMode; label: string }[] = [
-  { id: 'total', label: 'Total' },
-  { id: 'time', label: 'Over Time' },
+const MODE_OPTIONS: { id: ReportMode }[] = [{ id: 'total' }, { id: 'time' }];
+
+const GROUP_BY_OPTIONS: { id: ReportGroupBy; modes: ReportMode[] }[] = [
+  { id: 'category', modes: ['total', 'time'] },
+  { id: 'categoryGroup', modes: ['total', 'time'] },
+  { id: 'payee', modes: ['total', 'time'] },
+  { id: 'account', modes: ['total', 'time'] },
+  { id: 'month', modes: ['total'] },
 ];
 
-const GROUP_BY_OPTIONS: { id: ReportGroupBy; label: string; modes: ReportMode[] }[] = [
-  { id: 'category', label: 'Category', modes: ['total', 'time'] },
-  { id: 'categoryGroup', label: 'Category Group', modes: ['total', 'time'] },
-  { id: 'payee', label: 'Payee', modes: ['total', 'time'] },
-  { id: 'account', label: 'Account', modes: ['total', 'time'] },
-  { id: 'month', label: 'Month', modes: ['total'] },
-];
-
-const BALANCE_OPTIONS: { id: BalanceType; label: string }[] = [
-  { id: 'expense', label: 'Expenses' },
-  { id: 'income', label: 'Income' },
-  { id: 'net', label: 'Net' },
-];
+const BALANCE_OPTIONS: { id: BalanceType }[] = [{ id: 'expense' }, { id: 'income' }, { id: 'net' }];
 
 function set<K extends keyof CustomReportConfig>(
   config: CustomReportConfig,
@@ -45,6 +39,7 @@ function set<K extends keyof CustomReportConfig>(
 }
 
 export default function ReportBuilderSidebar({ config, onChange }: Props) {
+  const { t } = useTranslation();
   // Open the month picker right after choosing Custom, not when a saved report loads with it
   const [justChoseCustom, setJustChoseCustom] = useState(false);
 
@@ -75,7 +70,7 @@ export default function ReportBuilderSidebar({ config, onChange }: Props) {
 
   return (
     <div className="w-72 max-md:w-full shrink-0 bg-surface border-r max-md:border-r-0 max-md:border-t border-border overflow-y-auto max-md:overflow-visible p-4 space-y-5">
-      <Section label="Chart Type">
+      <Section label={t('reports.builder.sections.chartType')}>
         <ChartTypeSelector
           value={config.chartType}
           mode={config.mode}
@@ -83,7 +78,7 @@ export default function ReportBuilderSidebar({ config, onChange }: Props) {
         />
       </Section>
 
-      <Section label="Mode">
+      <Section label={t('reports.builder.sections.mode')}>
         <div className="flex gap-1">
           {MODE_OPTIONS.map((m) => (
             <button
@@ -95,28 +90,28 @@ export default function ReportBuilderSidebar({ config, onChange }: Props) {
                   : 'text-text-secondary hover:bg-hover border border-transparent'
               }`}
             >
-              {m.label}
+              {t(`reports.builder.modes.${m.id}`)}
             </button>
           ))}
         </div>
       </Section>
 
-      <Section label="Group By">
+      <Section label={t('reports.builder.sections.groupBy')}>
         <select
-          aria-label="Group by"
+          aria-label={t('reports.builder.groupByLabel')}
           value={config.groupBy}
           onChange={(e) => onChange(set(config, 'groupBy', e.target.value as ReportGroupBy))}
           className="w-full rounded-md border border-border text-sm py-1.5 px-2 bg-surface text-text focus:border-brand-600 focus:ring-1 focus:ring-brand-600 focus:outline-none"
         >
           {GROUP_BY_OPTIONS.filter((g) => g.modes.includes(config.mode)).map((g) => (
             <option key={g.id} value={g.id}>
-              {g.label}
+              {t(`reports.builder.groupBy.${g.id}`)}
             </option>
           ))}
         </select>
       </Section>
 
-      <Section label="Balance Type">
+      <Section label={t('reports.builder.sections.balanceType')}>
         <div className="flex gap-1">
           {BALANCE_OPTIONS.map((b) => (
             <button
@@ -128,13 +123,13 @@ export default function ReportBuilderSidebar({ config, onChange }: Props) {
                   : 'text-text-secondary hover:bg-hover border border-transparent'
               }`}
             >
-              {b.label}
+              {t(`reports.builder.balanceTypes.${b.id}`)}
             </button>
           ))}
         </div>
       </Section>
 
-      <Section label="Date Range">
+      <Section label={t('reports.builder.sections.dateRange')}>
         <div className="flex flex-wrap gap-1 mb-2">
           {DATE_PRESETS.map((p) => (
             <button
@@ -162,12 +157,12 @@ export default function ReportBuilderSidebar({ config, onChange }: Props) {
         )}
         <p className="text-[11px] text-text-tertiary mt-1.5">
           {config.dateRange.preset === 'custom'
-            ? 'Frozen: these dates stay fixed.'
-            : 'Live: moves forward with the current month.'}
+            ? t('reports.builder.frozen')
+            : t('reports.builder.live')}
         </p>
       </Section>
 
-      <Section label="Accounts">
+      <Section label={t('reports.builder.sections.accounts')}>
         <AccountMultiSelect
           selected={config.filters.accountIds}
           onChange={(ids) =>
@@ -176,7 +171,7 @@ export default function ReportBuilderSidebar({ config, onChange }: Props) {
         />
       </Section>
 
-      <Section label="Categories">
+      <Section label={t('reports.builder.sections.categories')}>
         <CategoryTreePicker
           selectedCategoryIds={config.filters.categoryIds}
           selectedGroupIds={config.filters.categoryGroupIds}
