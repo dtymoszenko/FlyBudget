@@ -78,7 +78,7 @@ test.describe('CSV import', () => {
     await expect(dialog).toContainText(
       '5 transactions found. 4 duplicates detected. 1 will be imported.',
     );
-    await dialog.getByRole('button', { name: 'Import 1 Transactions' }).click();
+    await dialog.getByRole('button', { name: 'Import 1 Transaction', exact: true }).click();
     await expect(dialog).toContainText('1 imported, 0 skipped');
     expect(await api.transactions(`?account_id=${checking.id}&from=2025-01-01`)).toHaveLength(5);
   });
@@ -163,7 +163,7 @@ test.describe('CSV import', () => {
     await dialog.getByRole('combobox', { name: 'Amounts' }).selectOption('comma');
     await expect(dialog).not.toContainText('Choose the format your bank uses');
     await dialog.getByRole('button', { name: 'Preview' }).click();
-    await dialog.getByRole('button', { name: 'Import 1 Transactions' }).click();
+    await dialog.getByRole('button', { name: 'Import 1 Transaction', exact: true }).click();
     await expect(dialog).toContainText('1 imported, 0 skipped');
 
     const [tx] = await api.transactions(`?account_id=${checking.id}&from=2025-01-01`);
@@ -180,7 +180,7 @@ test.describe('CSV import', () => {
     await dialog.getByRole('combobox', { name: 'Amounts' }).selectOption('comma');
     await dialog.getByRole('combobox', { name: 'Column Empfänger' }).selectOption('notes');
     await dialog.getByRole('button', { name: 'Preview' }).click();
-    await dialog.getByRole('button', { name: 'Import 1 Transactions' }).click();
+    await dialog.getByRole('button', { name: 'Import 1 Transaction', exact: true }).click();
     await dialog.getByRole('button', { name: 'Done' }).click();
 
     // Next month's file is just as ambiguous, but this account has answered before
@@ -195,7 +195,7 @@ test.describe('CSV import', () => {
     await expect(dialog.getByRole('combobox', { name: 'Amounts' })).toHaveValue('comma');
     await expect(dialog.getByRole('combobox', { name: 'Column Empfänger' })).toHaveValue('notes');
     await dialog.getByRole('button', { name: 'Preview' }).click();
-    await dialog.getByRole('button', { name: 'Import 1 Transactions' }).click();
+    await dialog.getByRole('button', { name: 'Import 1 Transaction', exact: true }).click();
     await expect(dialog).toContainText('1 imported, 0 skipped');
 
     const txs = await api.transactions(`?account_id=${checking.id}&from=2025-01-01`);
@@ -252,7 +252,7 @@ test.describe('CSV import', () => {
     await expect(dialog.getByRole('combobox', { name: 'Column Opis' })).toHaveValue('payee');
     await expect(dialog.getByRole('cell', { name: 'Łódź' })).toBeVisible();
     await dialog.getByRole('button', { name: 'Preview' }).click();
-    await dialog.getByRole('button', { name: 'Import 1 Transactions' }).click();
+    await dialog.getByRole('button', { name: 'Import 1 Transaction', exact: true }).click();
     await expect(dialog).toContainText('1 imported, 0 skipped');
 
     const [tx] = await api.transactions(`?account_id=${checking.id}&from=2025-01-01`);
@@ -356,13 +356,13 @@ test.describe('CSV import', () => {
         mimeType: 'application/xml',
         buffer: Buffer.from(statementFor(iban, ref), 'utf8'),
       });
-      await expect(dialog).toContainText('1 transactions found.');
+      await expect(dialog).toContainText('1 transaction found.');
       return dialog;
     };
 
     let dialog = await importStatement('DE89370400440532013000', 'B1');
     await expect(dialog.getByRole('alert')).toHaveCount(0);
-    await dialog.getByRole('button', { name: 'Import 1 Transactions' }).click();
+    await dialog.getByRole('button', { name: 'Import 1 Transaction', exact: true }).click();
     await dialog.getByRole('button', { name: 'Done' }).click();
 
     // The same account written in groups of four is the same account
@@ -376,7 +376,7 @@ test.describe('CSV import', () => {
         'this account was for DE89370400440532013000.',
     );
     // It's a warning: the import still goes ahead if it's meant
-    await dialog.getByRole('button', { name: 'Import 1 Transactions' }).click();
+    await dialog.getByRole('button', { name: 'Import 1 Transaction', exact: true }).click();
     await expect(dialog).toContainText('1 imported, 0 skipped');
   });
 
@@ -390,7 +390,7 @@ test.describe('CSV import', () => {
     await dialog.getByRole('combobox', { name: 'Dates' }).selectOption('dmy');
     await dialog.getByRole('combobox', { name: 'Amounts' }).selectOption('comma');
     await dialog.getByRole('button', { name: 'Preview' }).click();
-    await dialog.getByRole('button', { name: 'Import 1 Transactions' }).click();
+    await dialog.getByRole('button', { name: 'Import 1 Transaction', exact: true }).click();
     await dialog.getByRole('button', { name: 'Done' }).click();
 
     // A US export into the same account: just as ambiguous, but it may be another bank
@@ -410,7 +410,7 @@ test.describe('CSV import', () => {
     await dialog.getByRole('combobox', { name: 'Column Richting' }).selectOption('direction');
     await dialog.getByRole('textbox', { name: 'Word for money out' }).fill('Uit');
     await dialog.getByRole('button', { name: 'Preview' }).click();
-    await dialog.getByRole('button', { name: 'Import 1 Transactions' }).click();
+    await dialog.getByRole('button', { name: 'Import 1 Transaction', exact: true }).click();
     await dialog.getByRole('button', { name: 'Done' }).click();
 
     // Another export with other columns and the words FlyBudget knows

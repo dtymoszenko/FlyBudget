@@ -900,6 +900,124 @@
       "empty": "(empty)",
       "more": "and {{count, number}} more",
       "summary": "{{total}}: {{rows}}."
+    },
+    "title": "Import Transactions",
+    "dismiss": "Dismiss",
+    "back": "Back",
+    "checking": "Checking...",
+    "upload": {
+      "drop": "Drag and drop a file from your bank, or click to browse",
+      "formats": "CSV, or a CAMT.053 bank statement (XML)",
+      "checking": "Checking…",
+      "demo": "Demo: your file stays in this browser tab and isn't saved.",
+      "bankFile": "Bank file"
+    },
+    "statement": {
+      "intro_one": "This file has statements for {{count, number}} account. Which one belongs to this account?",
+      "intro_other": "This file has statements for {{count, number}} accounts. Which one belongs to this account?",
+      "label": "Statement",
+      "noNumber": "Account without a number",
+      "option_one": "{{account}} ({{count, number}} transaction)",
+      "option_other": "{{account}} ({{count, number}} transactions)",
+      "optionKnown_one": "{{account}} ({{count, number}} transaction), imported here before",
+      "optionKnown_other": "{{account}} ({{count, number}} transactions), imported here before"
+    },
+    "map": {
+      "intro_one": "Map each column to a field. Found {{count, number}} row.",
+      "intro_other": "Map each column to a field. Found {{count, number}} rows.",
+      "usingSaved": "Using the settings from your last import into this account.",
+      "separator": "Separator",
+      "encoding": "Encoding",
+      "skipRows": "Rows above the header",
+      "dates": "Dates",
+      "amounts": "Amounts",
+      "choose": "Choose…",
+      "outWord": "Word for money out",
+      "outWordPlaceholder": "Optional, e.g. Af",
+      "column": "Column {{name}}",
+      "warn": {
+        "dateSample": "This file doesn't show in which order {{sample}} is written.",
+        "dateMixed": "Rows in this file write dates in different orders.",
+        "amountSample": "This file doesn't show whether {{sample}} uses a decimal point or a decimal comma.",
+        "amountMixed": "Rows in this file write amounts in different formats.",
+        "chooseFormat": "Choose the format your bank uses.",
+        "outWord": "FlyBudget doesn't know what {{words}} means in the direction column. Type the word your bank uses for money going out; other words it doesn't know count as money in."
+      },
+      "fromLastTime": {
+        "dates": "This file doesn't show how it writes dates: using {{format}}, as in your last import into this account.",
+        "amounts": "This file doesn't show how it writes amounts: using {{format}}, as in your last import into this account.",
+        "both": "This file doesn't show how it writes dates or amounts: using {{dateFormat}} and {{numberFormat}}, as in your last import into this account."
+      }
+    },
+    "delimiters": {
+      "comma": "Comma",
+      "semicolon": "Semicolon",
+      "tab": "Tab"
+    },
+    "encodings": {
+      "auto": "Detect",
+      "windows1252": "Western European (Windows-1252)",
+      "windows1250": "Central European (Windows-1250)",
+      "iso88592": "Central European (ISO-8859-2)"
+    },
+    "roles": {
+      "date": "Date",
+      "payee": "Payee",
+      "amount": "Amount",
+      "inflow": "Inflow",
+      "outflow": "Outflow",
+      "direction": "Direction (in/out)",
+      "notes": "Notes",
+      "skip": "Skip"
+    },
+    "preview": {
+      "button": "Preview",
+      "found_one": "{{count, number}} transaction found.",
+      "found_other": "{{count, number}} transactions found.",
+      "duplicates_one": "{{count, number}} duplicate detected.",
+      "duplicates_other": "{{count, number}} duplicates detected.",
+      "willImport_one": "{{count, number}} will be imported.",
+      "willImport_other": "{{count, number}} will be imported.",
+      "entriesLeftOut_one": "{{count, number}} entry is pending or couldn't be read, and left out.",
+      "entriesLeftOut_other": "{{count, number}} entries are pending or couldn't be read, and left out.",
+      "otherCurrency": "This statement is in {{statementCurrency}}, but this account is in {{currency}}. Import it into an account in {{statementCurrency}} instead (you can add one with that currency).",
+      "otherAccount": "This statement is for account {{statementAccount}}, but the last statement imported into this account was for {{knownAccount}}. Check that you're importing it into the right account.",
+      "fixFile": "Fix the file and import it again to include them.",
+      "columns": {
+        "date": "Date",
+        "payee": "Payee",
+        "amount": "Amount"
+      },
+      "rowLabel": "Import {{payee}} on {{date}}",
+      "rowLabelNoPayee": "Import row on {{date}}",
+      "duplicate": "duplicate",
+      "importing": "Importing...",
+      "import_one": "Import {{count, number}} Transaction",
+      "import_other": "Import {{count, number}} Transactions"
+    },
+    "done": {
+      "title": "Import complete",
+      "summary": "{{imported}}, {{skipped}}",
+      "imported_one": "{{count, number}} imported",
+      "imported_other": "{{count, number}} imported",
+      "skipped_one": "{{count, number}} skipped",
+      "skipped_other": "{{count, number}} skipped"
+    },
+    "errors": {
+      "parse": "Could not parse CSV file",
+      "tooManyRows_one": "This file has {{count, number}} transaction. FlyBudget imports up to {{max}} at a time: split it into smaller files.",
+      "tooManyRows_other": "This file has {{count, number}} transactions. FlyBudget imports up to {{max}} at a time: split it into smaller files.",
+      "previewFailed": "Preview failed",
+      "noBooked": "There are no booked transactions in this statement",
+      "unreadable": "Couldn't read this file",
+      "notStatement": "This file isn't a bank statement FlyBudget can read (CAMT.053)",
+      "chooseDates": "Choose how this file writes dates",
+      "chooseAmounts": "Choose how this file writes amounts",
+      "needOutWord": "Type the word your bank uses for money going out",
+      "noneImported": "No rows could be imported. {{skipped}}",
+      "noValidRows": "No valid rows found",
+      "noneSelected": "No rows selected",
+      "importFailed": "Import failed"
     }
   },
   "layout": {

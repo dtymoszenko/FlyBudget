@@ -128,17 +128,19 @@ export function detectSkipRows(records: string[][]): number {
   return 0;
 }
 
+/** The encodings a file can be read as; their names are in ImportModal */
+/** The encodings a file can be read as; their names are in ImportModal */
 export const CSV_ENCODINGS = [
-  { value: 'auto', label: 'Detect' },
-  { value: 'utf-8', label: 'UTF-8' },
-  { value: 'utf-16le', label: 'UTF-16 LE' },
-  { value: 'utf-16be', label: 'UTF-16 BE' },
-  { value: 'windows-1252', label: 'Western European (Windows-1252)' },
-  { value: 'windows-1250', label: 'Central European (Windows-1250)' },
-  { value: 'iso-8859-2', label: 'Central European (ISO-8859-2)' },
+  'auto',
+  'utf-8',
+  'utf-16le',
+  'utf-16be',
+  'windows-1252',
+  'windows-1250',
+  'iso-8859-2',
 ] as const;
 
-export type CsvEncoding = (typeof CSV_ENCODINGS)[number]['value'];
+export type CsvEncoding = (typeof CSV_ENCODINGS)[number];
 
 /**
  * The text of a file. `auto` follows a byte order mark (UTF-16 from Excel's "Unicode text"),
@@ -391,6 +393,7 @@ const COLUMN_HINTS: Record<string, ColumnRole> = {
   'transaction date': 'date',
   'posted date': 'date',
   'post date': 'date',
+  // i18n-ignore
   description: 'payee',
   payee: 'payee',
   name: 'payee',
