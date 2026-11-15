@@ -18,21 +18,23 @@ const LOOSE = process.argv.includes('--loose');
 const ENFORCED = [
   'i18n/',
   'components/auth/',
+  'components/connection/',
   'components/currency/',
   'components/demo/',
   'components/goals/',
   'components/layout/',
-  'components/ui/',
   'components/settings/AccountReorder.tsx',
   'components/settings/ConnectedAccounts.tsx',
   'components/settings/CurrencySettings.tsx',
   'components/settings/DataExport.tsx',
   'components/settings/PreferencesPanel.tsx',
   'components/settings/ServerSettings.tsx',
+  'components/ui/',
   'hooks/useGoals.ts',
   'pages/Goals.tsx',
   'pages/Settings.tsx',
   'pages/Welcome.tsx',
+  'utils/connection.ts',
 ];
 
 /** JSX attributes and object properties that hold text people read */

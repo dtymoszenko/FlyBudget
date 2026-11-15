@@ -1,5 +1,6 @@
 // Pure helpers for the connection layer (store/connectionStore.ts): when to retry,
 // what counts as "can't reach the server", and how to describe a connection.
+import { t } from '../i18n';
 
 /** First retry after 2s, then 4s, 8s, 16s, and every 30s after that. */
 export const FIRST_RETRY_MS = 2_000;
@@ -74,6 +75,6 @@ export function describeUserAgent(userAgent: string | null | undefined): string 
               : /Linux/.test(ua)
                 ? 'Linux'
                 : null;
-  if (browser && os) return `${browser} on ${os}`;
-  return browser ?? os ?? 'Unknown browser';
+  if (browser && os) return t('connection.device.browserOn', { browser, os });
+  return browser ?? os ?? t('connection.device.unknown');
 }

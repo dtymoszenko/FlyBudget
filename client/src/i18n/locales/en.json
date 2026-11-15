@@ -52,6 +52,53 @@
       "tryAgain": "Something went wrong. Try again."
     }
   },
+  "connection": {
+    "savingPaused": "Saving is paused until FlyBudget reconnects.",
+    "savedOnDevice": "Can't reach FlyBudget. This is saved on this device and sent when it reconnects.",
+    "banner": {
+      "label": "Connection",
+      "cantReach": "Can't reach FlyBudget.",
+      "dataAsOf": "Showing your data as of {{ago}}.",
+      "lookAround": "You can still look around.",
+      "savedOnDevice": "New transactions are saved on this device; other changes wait until it reconnects.",
+      "savingPaused": "Saving is paused.",
+      "waiting_one": "{{count, number}} transaction waiting to send",
+      "waiting_other": "{{count, number}} transactions waiting to send",
+      "retryNow": "Retry now",
+      "reconnected": "Reconnected. Everything is up to date."
+    },
+    "retry": {
+      "checking": "Checking…",
+      "paused": "Paused while this tab is in the background",
+      "tryingAgain": "Trying again…",
+      "tryingAgainIn": "Trying again in {{seconds}}s",
+      "retrying": "Retrying…",
+      "retryingIn": "Retrying in {{seconds}}s",
+      "progress": "Time until the next try"
+    },
+    "reconnect": {
+      "title": {
+        "desktop": "FlyBudget is starting up again",
+        "server": "Reconnecting to your server",
+        "dev": "Reconnecting to FlyBudget"
+      },
+      "desktopHint": "This usually takes a few seconds.",
+      "serverError": "FlyBudget's server answered with an error.",
+      "cantReach": "Can't reach it right now. {{retry}}",
+      "tryNow": "Try now",
+      "desktopHelp": "If this doesn't go away, quit FlyBudget and open it again. Your data is safe on this computer.",
+      "devHelp": "The development server may be restarting. If it stopped, run <code>npm run dev</code> again.",
+      "troubleshooting": "Troubleshooting",
+      "serverSafe": "Your budget is safe on the server; this page just can't reach it.",
+      "checkRunning": "Check that the container is running:",
+      "checkLog": "See what it logged:",
+      "checkProxy": "If you reach it through a reverse proxy or VPN, check that it's running too, and that this device is connected to the right network."
+    },
+    "device": {
+      "browserOn": "{{browser}} on {{os}}",
+      "unknown": "Unknown browser"
+    }
+  },
   "currency": {
     "addRate": "Add a rate",
     "missingRates_one": "{{count, number}} {{currencies}} transaction has no {{budget}} value yet: no exchange rate for its day.",
