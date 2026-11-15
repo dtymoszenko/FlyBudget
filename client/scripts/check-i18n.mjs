@@ -34,6 +34,7 @@ const ENFORCED = [
   'components/reports/ReportTable.tsx',
   'components/reports/SaveReportModal.tsx',
   'components/reports/SavedReportsList.tsx',
+  'components/rules/',
   'components/settings/AccountReorder.tsx',
   'components/settings/ConnectedAccounts.tsx',
   'components/settings/CurrencySettings.tsx',
@@ -48,16 +49,19 @@ const ENFORCED = [
   'hooks/useGoals.ts',
   'hooks/usePlaid.ts',
   'hooks/usePlaidHostedLink.ts',
+  'hooks/useRules.ts',
   'hooks/useSimplefin.ts',
   'pages/AccountTransactions.tsx',
   'pages/Accounts.tsx',
   'pages/CustomReportBuilder.tsx',
   'pages/Goals.tsx',
   'pages/ReconcilePage.tsx',
+  'pages/Rules.tsx',
   'pages/Settings.tsx',
   'pages/Welcome.tsx',
   'utils/accountTypes.ts',
   'utils/connection.ts',
+  'utils/ruleFormat.ts',
 ];
 
 /** JSX attributes and object properties that hold text people read */

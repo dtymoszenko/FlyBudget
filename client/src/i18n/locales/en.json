@@ -912,6 +912,250 @@
       "month": "Month"
     }
   },
+  "rules": {
+    "title": "Rules",
+    "hint": "Rules run on new and imported transactions, top to bottom. Each matching rule applies, and a rule higher up wins when two set the same thing.",
+    "search": "Search rules…",
+    "run": "Run rules",
+    "add": "Add rule",
+    "noMatches": "No rules match your search.",
+    "empty": {
+      "title": "Let rules do the sorting",
+      "description": "Rules categorize, rename and split transactions for you as they come in, for example “payee contains Netflix → Streaming”. You can also make one from any transaction.",
+      "add": "Add your first rule"
+    },
+    "count": {
+      "filtered_one": "{{shown, number}} of {{count, number}} rule",
+      "filtered_other": "{{shown, number}} of {{count, number}} rules",
+      "summary": "{{rules}} · {{enabled}}",
+      "rules_one": "{{count, number}} rule",
+      "rules_other": "{{count, number}} rules",
+      "enabled_one": "{{count, number}} enabled",
+      "enabled_other": "{{count, number}} enabled"
+    },
+    "row": {
+      "enable": "Enable rule",
+      "disable": "Disable rule",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "if": "If",
+      "then": "Then",
+      "and": "and",
+      "or": "or",
+      "everyTransaction": "Every transaction",
+      "actions": "Rule actions",
+      "edit": "Edit",
+      "duplicate": "Duplicate",
+      "apply": "Apply to existing transactions",
+      "moveUp": "Move up",
+      "moveDown": "Move down"
+    },
+    "delete": {
+      "title": "Delete rule",
+      "message": "Delete this rule? Transactions it already changed stay as they are."
+    },
+    "editor": {
+      "newTitle": "New rule",
+      "editTitle": "Edit rule",
+      "duplicateTitle": "Duplicate rule",
+      "match": "<strong>If</strong> <choice></choice> of these conditions match",
+      "matchLabel": "How conditions combine",
+      "matchAll": "all",
+      "matchAny": "any",
+      "noConditions": "No conditions: this rule applies to every transaction.",
+      "addCondition": "Add condition",
+      "then": "Then",
+      "addAction": "Add action",
+      "applyAfterSave": "Apply to existing transactions after saving",
+      "saving": "Saving…",
+      "save": "Save rule",
+      "field": "Field",
+      "operator": "Operator",
+      "removeCondition": "Remove condition",
+      "rangeAnd": "and",
+      "chooseMany": "Choose one or more…",
+      "chooseOne": "Choose…",
+      "regexExample": "e.g. ^(amzn|amazon)",
+      "text": "Text…",
+      "removeValue": "Remove {{value}}",
+      "addValue": "Type and press Enter…",
+      "action": "Action",
+      "chooseCategory": "Choose a category…",
+      "choosePayee": "Choose or create a payee…",
+      "clearNotesHint": "Leave empty to clear notes",
+      "notesExample": "e.g. #business",
+      "splitHint": "Splits the transaction into parts, each with its own category.",
+      "removeAction": "Remove action"
+    },
+    "split": {
+      "kind": "Split amount type",
+      "kinds": {
+        "fixed": "Amount",
+        "percent": "Percent",
+        "remainder": "Remainder"
+      },
+      "whatsLeft": "What's left",
+      "category": "Category…",
+      "notes": "Notes",
+      "remove": "Remove split",
+      "add": "Add split",
+      "over100": "Percents add up to more than 100%.",
+      "leftover": "Anything left over stays uncategorized."
+    },
+    "preview": {
+      "incomplete": "Fill in every condition to see matching transactions",
+      "checking": "Checking…",
+      "none": "No transactions match yet",
+      "matches_one": "Matches {{count, number}} transaction",
+      "matches_other": "Matches {{count, number}} transactions",
+      "latest_one": "{{matches}} · showing the latest {{count, number}}",
+      "latest_other": "{{matches}} · showing the latest {{count, number}}",
+      "updating": "updating…"
+    },
+    "apply": {
+      "runTitle": "Run rules",
+      "ruleTitle": "Apply rule to existing transactions",
+      "updated_one": "Updated <strong>{{count, number}}</strong> transaction.",
+      "updated_other": "Updated <strong>{{count, number}}</strong> transactions.",
+      "scope": "Which transactions",
+      "scopes": {
+        "uncategorized": "Uncategorized only",
+        "all": "All transactions"
+      },
+      "neverChanged": "Reconciled, transfer and split transactions are never changed.",
+      "checking": "Checking transactions…",
+      "nothing": {
+        "uncategorized": "Nothing to change: no uncategorized transactions would be updated.",
+        "all": "Nothing to change: no transactions would be updated."
+      },
+      "selectAll": "Select all",
+      "columns": {
+        "date": "Date",
+        "payee": "Payee",
+        "amount": "Amount",
+        "changes": "Changes"
+      },
+      "include": "Include this transaction",
+      "applying": "Applying…",
+      "apply_one": "Apply to {{count, number}} transaction",
+      "apply_other": "Apply to {{count, number}} transactions",
+      "changes": {
+        "payee": "Payee",
+        "category": "Category",
+        "notes": "Notes",
+        "split": "Split",
+        "empty": "(empty)"
+      }
+    },
+    "picker": {
+      "select": "Select…",
+      "search": "Search…",
+      "noMatches": "No matches"
+    },
+    "names": {
+      "deleted": "(deleted)",
+      "uncategorized": "Uncategorized"
+    },
+    "fields": {
+      "payee": "Payee",
+      "payee_name": "Payee name",
+      "imported_payee": "Imported description",
+      "notes": "Notes",
+      "amount": "Amount",
+      "direction": "Inflow / outflow",
+      "category": "Category",
+      "account": "Account",
+      "date": "Date"
+    },
+    "fieldHints": {
+      "payee_name": "The payee name as shown on the transaction",
+      "imported_payee": "The original text from your bank or CSV, before any renaming",
+      "amount": "Compares the amount without its sign; add \"{{direction}}\" to tell them apart"
+    },
+    "direction": {
+      "inflow": "Is an inflow",
+      "outflow": "Is an outflow"
+    },
+    "ops": {
+      "is": "is",
+      "is_not": "is not",
+      "contains": "contains",
+      "not_contains": "doesn't contain",
+      "starts_with": "starts with",
+      "ends_with": "ends with",
+      "regex": "matches regex",
+      "one_of": "is one of",
+      "not_one_of": "is not one of",
+      "is_empty": "is empty",
+      "is_not_empty": "is not empty",
+      "gt": "is more than",
+      "gte": "is at least",
+      "lt": "is less than",
+      "lte": "is at most",
+      "between": "is between",
+      "approx": "is about",
+      "before": "is before",
+      "after": "is after",
+      "isOn": "is on",
+      "isUncategorized": "is uncategorized",
+      "isCategorized": "is categorized"
+    },
+    "actionTypes": {
+      "set_category": "Set category",
+      "set_payee": "Rename payee",
+      "set_notes": "Set notes",
+      "prepend_notes": "Add text before notes",
+      "append_notes": "Add text after notes",
+      "split": "Split transaction"
+    },
+    "summary": {
+      "quoted": "\"{{text}}\"",
+      "condition": {
+        "is": "{{field}} is {{value}}",
+        "is_not": "{{field}} is not {{value}}",
+        "contains": "{{field}} contains {{value}}",
+        "not_contains": "{{field}} doesn't contain {{value}}",
+        "starts_with": "{{field}} starts with {{value}}",
+        "ends_with": "{{field}} ends with {{value}}",
+        "regex": "{{field}} matches regex {{value}}",
+        "one_of": "{{field}} is one of {{value}}",
+        "not_one_of": "{{field}} is not one of {{value}}",
+        "is_empty": "{{field}} is empty",
+        "is_not_empty": "{{field}} is not empty",
+        "gt": "{{field}} is more than {{value}}",
+        "gte": "{{field}} is at least {{value}}",
+        "lt": "{{field}} is less than {{value}}",
+        "lte": "{{field}} is at most {{value}}",
+        "between": "{{field}} is between {{from}} and {{to}}",
+        "approx": "{{field}} is about {{value}}",
+        "before": "{{field}} is before {{value}}",
+        "after": "{{field}} is after {{value}}",
+        "isOn": "{{field}} is on {{value}}",
+        "isUncategorized": "{{field}} is uncategorized",
+        "isCategorized": "{{field}} is categorized"
+      },
+      "action": {
+        "setCategory": "Set category to {{category}}",
+        "setPayee": "Rename payee to {{payee}}",
+        "setNotes": "Set notes to \"{{text}}\"",
+        "clearNotes": "Clear notes",
+        "prependNotes": "Add \"{{text}}\" before notes",
+        "appendNotes": "Add \"{{text}}\" after notes",
+        "split": "Split: {{parts}}",
+        "splitPart": "{{amount}} to {{category}}",
+        "splitRest": "the rest to {{category}}",
+        "uncategorized": "uncategorized"
+      }
+    },
+    "undo": {
+      "create": "Create rule",
+      "edit": "Edit rule",
+      "enable": "Enable rule",
+      "disable": "Disable rule",
+      "delete": "Delete rule",
+      "reorder": "Reorder rules"
+    }
+  },
   "settings": {
     "title": "Settings",
     "tabs": {

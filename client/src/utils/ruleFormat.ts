@@ -9,6 +9,7 @@ import type {
   RuleSplitPart,
 } from '../types';
 import { formatDay } from './dates';
+import { t } from '../i18n';
 
 const TEXT_OPS: RuleConditionOp[] = [
   'is',
@@ -25,69 +26,50 @@ const TEXT_OPS: RuleConditionOp[] = [
 ];
 const ID_OPS: RuleConditionOp[] = ['is', 'is_not', 'one_of', 'not_one_of'];
 
+// Fields, operators and actions are ids: their names are in en.json (rules.fields, rules.ops,
+// rules.actionTypes)
 export const CONDITION_FIELDS: Array<{
   value: RuleConditionField;
-  label: string;
   ops: RuleConditionOp[];
 }> = [
-  { value: 'payee', label: 'Payee', ops: [...ID_OPS, 'is_empty', 'is_not_empty'] },
-  { value: 'payee_name', label: 'Payee name', ops: TEXT_OPS },
-  { value: 'imported_payee', label: 'Imported description', ops: TEXT_OPS },
-  { value: 'notes', label: 'Notes', ops: TEXT_OPS },
-  {
-    value: 'amount',
-    label: 'Amount',
-    ops: ['is', 'is_not', 'gt', 'gte', 'lt', 'lte', 'between', 'approx'],
-  },
-  { value: 'direction', label: 'Inflow / outflow', ops: ['is'] },
-  { value: 'category', label: 'Category', ops: [...ID_OPS, 'is_empty', 'is_not_empty'] },
-  { value: 'account', label: 'Account', ops: ID_OPS },
-  { value: 'date', label: 'Date', ops: ['is', 'before', 'after', 'between'] },
+  { value: 'payee', ops: [...ID_OPS, 'is_empty', 'is_not_empty'] },
+  { value: 'payee_name', ops: TEXT_OPS },
+  { value: 'imported_payee', ops: TEXT_OPS },
+  { value: 'notes', ops: TEXT_OPS },
+  { value: 'amount', ops: ['is', 'is_not', 'gt', 'gte', 'lt', 'lte', 'between', 'approx'] },
+  { value: 'direction', ops: ['is'] },
+  { value: 'category', ops: [...ID_OPS, 'is_empty', 'is_not_empty'] },
+  { value: 'account', ops: ID_OPS },
+  { value: 'date', ops: ['is', 'before', 'after', 'between'] },
 ];
 
-export const FIELD_HINTS: Partial<Record<RuleConditionField, string>> = {
-  payee_name: 'The payee name as shown on the transaction',
-  imported_payee: 'The original text from your bank or CSV, before any renaming',
-  amount: 'Compares the amount without its sign; add "Inflow / outflow" to tell them apart',
-};
-
-export function opLabel(field: RuleConditionField, op: RuleConditionOp): string {
-  if (field === 'date') {
-    if (op === 'is') return 'is on';
+/** What a field compares, for the fields whose name doesn't say it all */
+export function fieldHint(field: RuleConditionField): string | undefined {
+  switch (field) {
+    case 'payee_name':
+    case 'imported_payee':
+      return t(`rules.fieldHints.${field}`);
+    case 'amount':
+      return t('rules.fieldHints.amount', { direction: t('rules.fields.direction') });
+    default:
+      return undefined;
   }
-  if (field === 'category' && op === 'is_empty') return 'is uncategorized';
-  if (field === 'category' && op === 'is_not_empty') return 'is categorized';
-  const labels: Record<RuleConditionOp, string> = {
-    is: 'is',
-    is_not: 'is not',
-    contains: 'contains',
-    not_contains: "doesn't contain",
-    starts_with: 'starts with',
-    ends_with: 'ends with',
-    regex: 'matches regex',
-    one_of: 'is one of',
-    not_one_of: 'is not one of',
-    is_empty: 'is empty',
-    is_not_empty: 'is not empty',
-    gt: 'is more than',
-    gte: 'is at least',
-    lt: 'is less than',
-    lte: 'is at most',
-    between: 'is between',
-    approx: 'is about',
-    before: 'is before',
-    after: 'is after',
-  };
-  return labels[op];
 }
 
-export const ACTION_TYPES: Array<{ value: RuleAction['type']; label: string }> = [
-  { value: 'set_category', label: 'Set category' },
-  { value: 'set_payee', label: 'Rename payee' },
-  { value: 'set_notes', label: 'Set notes' },
-  { value: 'prepend_notes', label: 'Add text before notes' },
-  { value: 'append_notes', label: 'Add text after notes' },
-  { value: 'split', label: 'Split transaction' },
+export function opLabel(field: RuleConditionField, op: RuleConditionOp): string {
+  if (field === 'date' && op === 'is') return t('rules.ops.isOn');
+  if (field === 'category' && op === 'is_empty') return t('rules.ops.isUncategorized');
+  if (field === 'category' && op === 'is_not_empty') return t('rules.ops.isCategorized');
+  return t(`rules.ops.${op}`);
+}
+
+export const ACTION_TYPES: RuleAction['type'][] = [
+  'set_category',
+  'set_payee',
+  'set_notes',
+  'prepend_notes',
+  'append_notes',
+  'split',
 ];
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -185,68 +167,87 @@ export type RuleLookups = {
   category: (id: string) => string | undefined;
 };
 
-const quote = (s: string) => `"${s}"`;
+const quote = (text: string) => t('rules.summary.quoted', { text });
 const shortDate = (d: string) => (/^\d{4}-\d{2}-\d{2}$/.test(d) ? formatDay(d) : d);
+const deleted = () => t('rules.names.deleted');
 
 function nameOf(field: RuleConditionField, id: string, l: RuleLookups): string {
   const name =
     field === 'payee' ? l.payee(id) : field === 'account' ? l.account(id) : l.category(id);
-  return name ?? '(deleted)';
+  return name ?? deleted();
 }
 
+// Each kind of condition and action is one phrase in en.json, with the field and values in it
 export function conditionText(c: RuleCondition, l: RuleLookups): string {
-  const field = CONDITION_FIELDS.find((f) => f.value === c.field)?.label ?? c.field;
-  if (c.field === 'direction') return c.value === 'inflow' ? 'Is an inflow' : 'Is an outflow';
-  const op = opLabel(c.field, c.op);
-  if (!('value' in c)) return `${field} ${op}`;
+  if (c.field === 'direction') return t(`rules.direction.${c.value}`);
+  const field = t(`rules.fields.${c.field}`);
+  if (!('value' in c)) {
+    if (c.field === 'category') {
+      return t(
+        c.op === 'is_empty'
+          ? 'rules.summary.condition.isUncategorized'
+          : 'rules.summary.condition.isCategorized',
+        { field },
+      );
+    }
+    return t(`rules.summary.condition.${c.op}`, { field });
+  }
   const isId = c.field === 'payee' || c.field === 'account' || c.field === 'category';
   const one = (v: string) => (isId ? nameOf(c.field, v, l) : quote(v));
 
   let value: string;
   if (c.field === 'amount') {
-    value = Array.isArray(c.value)
-      ? `${formatCurrency(c.value[0])} and ${formatCurrency(c.value[1])}`
-      : formatCurrency(c.value);
+    if (Array.isArray(c.value)) {
+      const [from, to] = c.value.map((v) => formatCurrency(v));
+      return t('rules.summary.condition.between', { field, from, to });
+    }
+    value = formatCurrency(c.value);
   } else if (c.field === 'date') {
-    value = Array.isArray(c.value)
-      ? `${shortDate(c.value[0])} and ${shortDate(c.value[1])}`
-      : shortDate(c.value);
+    if (Array.isArray(c.value)) {
+      const [from, to] = c.value.map(shortDate);
+      return t('rules.summary.condition.between', { field, from, to });
+    }
+    value = shortDate(c.value);
+    if (c.op === 'is') return t('rules.summary.condition.isOn', { field, value });
   } else if (Array.isArray(c.value)) {
     value = c.value.map(one).join(', ');
   } else {
     value = c.op === 'regex' ? `/${c.value}/` : one(c.value);
   }
-  return `${field} ${op} ${value}`;
+  return t(`rules.summary.condition.${c.op}`, { field, value });
 }
 
 function splitPartText(p: RuleSplitPart, l: RuleLookups): string {
-  const amount =
-    p.kind === 'fixed'
-      ? formatCurrency(p.value)
-      : p.kind === 'percent'
-        ? `${p.value}%`
-        : 'the rest';
-  return `${amount} to ${p.categoryId ? (l.category(p.categoryId) ?? '(deleted)') : 'uncategorized'}`;
+  const category = p.categoryId
+    ? (l.category(p.categoryId) ?? deleted())
+    : t('rules.summary.action.uncategorized');
+  if (p.kind === 'remainder') return t('rules.summary.action.splitRest', { category });
+  const amount = p.kind === 'fixed' ? formatCurrency(p.value) : `${p.value}%`;
+  return t('rules.summary.action.splitPart', { amount, category });
 }
 
 export function actionText(a: RuleAction, l: RuleLookups): string {
   switch (a.type) {
     case 'set_category':
-      return `Set category to ${l.category(a.value) ?? '(deleted)'}`;
+      return t('rules.summary.action.setCategory', { category: l.category(a.value) ?? deleted() });
     case 'set_payee':
-      return `Rename payee to ${l.payee(a.value) ?? '(deleted)'}`;
+      return t('rules.summary.action.setPayee', { payee: l.payee(a.value) ?? deleted() });
     case 'set_notes':
-      return a.value ? `Set notes to ${quote(a.value)}` : 'Clear notes';
+      return a.value
+        ? t('rules.summary.action.setNotes', { text: a.value })
+        : t('rules.summary.action.clearNotes');
     case 'prepend_notes':
-      return `Add ${quote(a.value)} before notes`;
+      return t('rules.summary.action.prependNotes', { text: a.value });
     case 'append_notes':
-      return `Add ${quote(a.value)} after notes`;
+      return t('rules.summary.action.appendNotes', { text: a.value });
     case 'split':
-      return `Split: ${a.parts.map((p) => splitPartText(p, l)).join(', ')}`;
+      return t('rules.summary.action.split', {
+        parts: a.parts.map((p) => splitPartText(p, l)).join(', '),
+      });
   }
 }
 
-/** Plain text of a whole rule, for search */
+/** Plain text of a whole rule, for search (in the language it's shown in) */
 export function ruleSearchText(r: Rule, l: RuleLookups): string {
   return [
     ...r.conditions.map((c) => conditionText(c, l)),
