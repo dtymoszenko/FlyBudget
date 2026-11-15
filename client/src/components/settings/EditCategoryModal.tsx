@@ -5,6 +5,7 @@ import { Button } from '../ui/Button';
 import { EmojiPickerPopover } from '../ui/EmojiPickerPopover';
 import { useUpdateCategory } from '../../hooks/useCategories';
 import { usePreferencesStore } from '../../store/preferencesStore';
+import { budgetTypeOf } from '../../utils/budgetFigures';
 import type { BudgetType, Category, CategoryGroup } from '../../types';
 
 const BUDGET_TYPE_OPTIONS: { value: BudgetType; label: string; description: string }[] = [
@@ -46,7 +47,7 @@ export function EditCategoryModal({ category, groups, isIncome, onClose, onDelet
     setName(category.name);
     setIcon(category.icon ?? '');
     setGroupId(category.groupId);
-    setBudgetType((category.budgetType as BudgetType) ?? 'flexible');
+    setBudgetType(budgetTypeOf(category));
     setShowEmojiPicker(false);
   });
 
@@ -63,8 +64,7 @@ export function EditCategoryModal({ category, groups, isIncome, onClose, onDelet
     if (name.trim() !== category.name) data.name = name.trim();
     if ((icon || null) !== (category.icon || null)) data.icon = icon || null;
     if (groupId !== category.groupId) data.groupId = groupId;
-    if (!isIncome && budgetType !== (category.budgetType ?? 'flexible'))
-      data.budgetType = budgetType;
+    if (!isIncome && budgetType !== budgetTypeOf(category)) data.budgetType = budgetType;
 
     if (Object.keys(data).length > 0) {
       await updateCategory.mutateAsync({ id: category.id, data });
