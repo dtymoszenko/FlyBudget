@@ -76,6 +76,7 @@ function groupAccountsByType(accounts: Account[], sort: AccountSort) {
     groups.set(group, list);
   }
   return ACCOUNT_GROUPS.filter((g) => groups.has(g.value)).map((g) => ({
+    group: g.value,
     label: g.label,
     accounts: groups.get(g.value)!,
   }));
@@ -279,7 +280,7 @@ export default function AccountsPage() {
           <div className="px-6 pb-6 space-y-4">
             {allGroups.map((g) => (
               <AccountGroup
-                key={g.label}
+                key={g.group}
                 label={g.label}
                 accounts={g.accounts}
                 balancesAgo={balancesAgo}

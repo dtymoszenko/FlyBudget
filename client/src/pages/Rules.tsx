@@ -177,9 +177,9 @@ function RuleRow({
             { icon: Play, label: 'Apply to existing transactions', onClick: onApply },
             { icon: Copy, label: 'Duplicate', onClick: onDuplicate },
             { icon: Pencil, label: 'Edit', onClick: onEdit },
-          ].map(({ icon: Icon, label, onClick }) => (
+          ].map(({ icon: Icon, label, onClick }, i) => (
             <button
-              key={label}
+              key={i}
               onClick={onClick}
               title={label}
               aria-label={label}

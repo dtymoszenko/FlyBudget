@@ -40,8 +40,8 @@ export function CurrencyTooltip({
       <p className="text-xs text-text-tertiary mb-1">
         {labelFormatter ? labelFormatter(label, payload) : label}
       </p>
-      {rows.map((p: any) => (
-        <p key={p.name} className="text-xs font-medium" style={{ color: p.color }}>
+      {rows.map((p: any, i: number) => (
+        <p key={i} className="text-xs font-medium" style={{ color: p.color }}>
           {p.name}: {formatCurrency(p.value)}
         </p>
       ))}
@@ -134,9 +134,9 @@ export function StatCardRow({
   if (variant === 'hero') {
     return (
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {cards.map((c) => (
+        {cards.map((c, i) => (
           <div
-            key={c.label}
+            key={i}
             className="rounded-xl bg-surface border border-border-light shadow-card px-4 py-6 text-center"
           >
             <p
@@ -153,9 +153,9 @@ export function StatCardRow({
   }
   return (
     <div className="flex gap-3 mb-5 flex-wrap">
-      {cards.map((c) => (
+      {cards.map((c, i) => (
         <div
-          key={c.label}
+          key={i}
           className="rounded-lg bg-surface-alt border border-border-light px-4 py-3 min-w-[110px]"
         >
           <p className="text-xs text-text-tertiary">{c.label}</p>

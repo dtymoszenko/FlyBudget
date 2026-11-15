@@ -126,9 +126,9 @@ function SheetBody({
 
       {suggestions.length > 0 && (
         <div className="grid grid-cols-2 gap-2">
-          {suggestions.map((s) => (
+          {suggestions.map((s, i) => (
             <button
-              key={s.label}
+              key={i}
               type="button"
               onClick={() => setRaw(centsToInput(s.cents))}
               className="min-h-11 rounded-lg bg-surface-alt px-3 py-2 text-left"

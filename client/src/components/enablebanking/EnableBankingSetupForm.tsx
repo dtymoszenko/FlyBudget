@@ -127,7 +127,7 @@ export function EnableBankingSetupForm({
           </span>
           {env && <span className="text-xs text-text-tertiary">{env}</span>}
         </div>
-        {env === 'Sandbox' && (
+        {status.environment?.toUpperCase() === 'SANDBOX' && (
           <p className="text-xs text-text-secondary">
             A Sandbox application only reaches Enable Banking&apos;s test banks. Create a Production
             application to connect your real bank (it&apos;s free for your own accounts).

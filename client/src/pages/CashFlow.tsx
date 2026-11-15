@@ -262,10 +262,10 @@ function buildSankeyGraph(
 
   // Assign group colors
   const gColorMap = new Map<string, string>();
-  sortedGroups.forEach(([name], i) => {
+  sortedGroups.forEach(([name, { groupId }], i) => {
     gColorMap.set(
       name,
-      name === 'Uncategorized' ? chartColors.axis : EXPENSE_COLORS[i % EXPENSE_COLORS.length],
+      groupId === null ? chartColors.axis : EXPENSE_COLORS[i % EXPENSE_COLORS.length],
     );
   });
 

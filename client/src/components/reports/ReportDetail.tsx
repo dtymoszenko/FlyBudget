@@ -103,9 +103,9 @@ function BreakdownTable<R>({
       <table className="w-full text-sm">
         <thead className="bg-surface-alt border-y border-border">
           <tr>
-            {columns.map((c) => (
+            {columns.map((c, ci) => (
               <th
-                key={c.label}
+                key={ci}
                 className={`px-4 py-2 text-xs font-medium text-text-tertiary whitespace-nowrap ${align(c)}`}
               >
                 {c.label}
@@ -124,7 +124,7 @@ function BreakdownTable<R>({
             >
               {columns.map((c, ci) => (
                 <td
-                  key={c.label}
+                  key={ci}
                   className={`px-4 py-2 whitespace-nowrap ${align(c)} ${
                     ci === 0 ? 'text-text' : 'tabular-nums text-text-secondary'
                   }`}
@@ -137,8 +137,8 @@ function BreakdownTable<R>({
         </tbody>
         {footer.length > 0 && (
           <tfoot className="border-t border-border">
-            {footer.map((f) => (
-              <tr key={f.label}>
+            {footer.map((f, fi) => (
+              <tr key={fi}>
                 <td className="px-4 py-2 font-semibold text-text">{f.label}</td>
                 {f.cells.map((cell, i) => (
                   <td
@@ -225,9 +225,9 @@ function DetailLayout({
           ? Array.from({ length: 4 }, (_, i) => (
               <div key={i} className="h-[72px] bg-surface-alt rounded-lg animate-pulse" />
             ))
-          : stats.map((s) => (
+          : stats.map((s, si) => (
               <StatTile
-                key={s.label}
+                key={si}
                 label={s.label}
                 value={s.value}
                 sub={s.sub}

@@ -56,9 +56,8 @@ export default function WidgetCard({ widget, report, pages, dashboardRange, edit
   const rangeModal = useModalValue(rangeOpen);
   const renameModal = useModalValue(renameOpen && !isCustom);
   const { range, source } = widgetDateRange(widget.meta.dateRange, dashboardRange);
-  const title = isCustom
-    ? (report?.name ?? '')
-    : widget.meta.name || BUILTIN_REPORTS[widget.type].label;
+  const defaultTitle = isCustom ? '' : BUILTIN_REPORTS[widget.type].label;
+  const title = isCustom ? (report?.name ?? '') : widget.meta.name || defaultTitle;
 
   const openPath = isCustom
     ? `/reports/custom/${widget.customReportId}?dashboard=${widget.pageId}&range=${encodeRangeParam(range)}`
@@ -174,7 +173,9 @@ export default function WidgetCard({ widget, report, pages, dashboardRange, edit
             submitLabel="Rename"
             onClose={() => setRenameOpen(false)}
             onSave={(name) => {
-              updateWidget.mutate({ widget, data: { meta: { ...widget.meta, name } } });
+              // The default title isn't saved as a name, so it keeps following the language
+              const meta = { ...widget.meta, name: name === defaultTitle ? undefined : name };
+              updateWidget.mutate({ widget, data: { meta } });
               setRenameOpen(false);
             }}
           />

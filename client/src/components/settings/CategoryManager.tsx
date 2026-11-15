@@ -351,6 +351,7 @@ function SortableGroupCard(
 }
 
 function Section({
+  section,
   title,
   groups,
   onCreateGroup,
@@ -377,6 +378,7 @@ function Section({
   onAddGroupSubmit,
   onAddGroupCancel,
 }: {
+  section: 'income' | 'expense';
   title: string;
   groups: CategoryGroup[];
   onCreateGroup: () => void;
@@ -408,8 +410,7 @@ function Section({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  const sectionKey = title === 'Income' ? 'income' : 'expense';
-  const isAddingGroup = addingGroupSection === sectionKey;
+  const isAddingGroup = addingGroupSection === section;
 
   function handleGroupDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -642,6 +643,7 @@ export function CategoryManager() {
   return (
     <div className="space-y-10">
       <Section
+        section="income"
         title="Income"
         groups={incomeGroups}
         onCreateGroup={() => setAddingGroupSection('income')}
@@ -651,6 +653,7 @@ export function CategoryManager() {
       />
 
       <Section
+        section="expense"
         title="Expenses"
         groups={expenseGroups}
         onCreateGroup={() => setAddingGroupSection('expense')}
