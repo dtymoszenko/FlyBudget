@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as accountsApi from '../api/accounts';
+import { t } from '../i18n';
 import { useUndoStore } from '../store/undoStore';
 import type { Account } from '../types';
 
@@ -19,7 +20,7 @@ export function useCreateAccount() {
       // The first account given a currency also gives the budget its own
       qc.invalidateQueries({ queryKey: ['currency'] });
       useUndoStore.getState().push({
-        description: `Create account "${created.name}"`,
+        description: t('accounts.undo.create', { name: created.name }),
         undo: async () => {
           await accountsApi.closeAccount(created.id);
           qc.invalidateQueries({ queryKey: ['accounts'] });
@@ -57,7 +58,7 @@ export function useUpdateAccount() {
       if (!ctx?.old) return;
       const snapshot = ctx.old;
       useUndoStore.getState().push({
-        description: `Edit account`,
+        description: t('accounts.undo.edit'),
         undo: async () => {
           await accountsApi.updateAccount(id, {
             name: snapshot.name,
@@ -92,7 +93,7 @@ export function useCloseAccount() {
       refresh();
       if (!snapshot) return;
       useUndoStore.getState().push({
-        description: `Close account "${snapshot.name}"`,
+        description: t('accounts.undo.close', { name: snapshot.name }),
         undo: async () => {
           await accountsApi.updateAccount(snapshot.id, { closedAt: null });
           refresh();
@@ -124,7 +125,7 @@ export function useReorderAccounts() {
     onSuccess: (oldIds, newIds) => {
       qc.invalidateQueries({ queryKey: ['accounts'] });
       useUndoStore.getState().push({
-        description: `Reorder accounts`,
+        description: t('accounts.undo.reorder'),
         undo: async () => {
           await accountsApi.reorderAccounts(oldIds);
           qc.invalidateQueries({ queryKey: ['accounts'] });

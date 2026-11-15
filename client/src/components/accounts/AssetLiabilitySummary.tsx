@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../utils/currency';
 import { balanceValue, unconvertedCurrencies } from '../../utils/accountMoney';
 import { UnconvertedNote } from '../currency/UnconvertedNote';
@@ -9,21 +10,20 @@ import type { Account, AccountGroup } from '../../types';
 
 interface Bucket {
   group: AccountGroup;
-  label: string;
   color: string;
 }
 
 const ASSET_BUCKETS: Bucket[] = [
-  { group: 'investments', label: 'Investments', color: '#7C3AED' },
-  { group: 'cash', label: 'Cash', color: chartColors.positive },
-  { group: 'property', label: 'Property', color: '#0891B2' },
-  { group: 'other', label: 'Other', color: '#78716C' },
+  { group: 'investments', color: '#7C3AED' },
+  { group: 'cash', color: chartColors.positive },
+  { group: 'property', color: '#0891B2' },
+  { group: 'other', color: '#78716C' },
 ];
 
 const LIABILITY_BUCKETS: Bucket[] = [
-  { group: 'credit', label: 'Credit', color: chartColors.negative },
-  { group: 'loans', label: 'Loans', color: '#EA580C' },
-  { group: 'other', label: 'Other', color: '#9F1239' },
+  { group: 'credit', color: chartColors.negative },
+  { group: 'loans', color: '#EA580C' },
+  { group: 'other', color: '#9F1239' },
 ];
 
 interface Props {
@@ -31,6 +31,7 @@ interface Props {
 }
 
 export function AssetLiabilitySummary({ accounts }: Props) {
+  const { t } = useTranslation();
   const { assets, liabilities } = useMemo(() => {
     // Sums per group, and which groups have any accounts at all
     const assetSums = new Map<AccountGroup, number>();
@@ -47,17 +48,17 @@ export function AssetLiabilitySummary({ accounts }: Props) {
   return (
     <div>
       <Section
-        title="Assets"
+        title={t('accounts.summary.assets')}
         buckets={ASSET_BUCKETS}
         sums={assets}
-        emptyText="No bank accounts, investments or property yet."
+        emptyText={t('accounts.summary.noAssets')}
       />
       <div className="border-t border-border-light my-4" />
       <Section
-        title="Liabilities"
+        title={t('accounts.summary.liabilities')}
         buckets={LIABILITY_BUCKETS}
         sums={liabilities}
-        emptyText="No credit cards or loans yet."
+        emptyText={t('accounts.summary.noLiabilities')}
         owed
       />
       <UnconvertedNote currencies={unconvertedCurrencies(accounts)} className="mt-3" />
@@ -80,6 +81,7 @@ interface SectionProps {
  * group you haven't added would read as "you have none", not "not tracked yet".
  */
 function Section({ title, buckets, sums, emptyText, owed = false }: SectionProps) {
+  const { t } = useTranslation();
   const rows = buckets.filter((b) => sums.has(b.group));
   const total = rows.reduce((s, b) => s + (sums.get(b.group) ?? 0), 0);
   // Bar widths use magnitudes; a bucket on the "wrong" side (overpaid card) gets no width
@@ -118,7 +120,7 @@ function Section({ title, buckets, sums, emptyText, owed = false }: SectionProps
             to="/accounts?add=1"
             className="font-medium text-brand-600 hover:text-brand-700 whitespace-nowrap"
           >
-            Add account
+            {t('accounts.summary.add')}
           </Link>
         </p>
       )}
@@ -131,7 +133,7 @@ function Section({ title, buckets, sums, emptyText, owed = false }: SectionProps
                 className="inline-block w-2.5 h-2.5 rounded-full"
                 style={{ backgroundColor: b.color }}
               />
-              <span className="text-sm text-text-secondary">{b.label}</span>
+              <span className="text-sm text-text-secondary">{t(`accounts.groups.${b.group}`)}</span>
             </div>
             <span className="text-sm tabular-nums text-text">
               {formatCurrency(sums.get(b.group) ?? 0)}

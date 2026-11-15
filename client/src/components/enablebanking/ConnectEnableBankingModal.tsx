@@ -23,6 +23,7 @@ import {
   useSyncEnableBankingConnection,
 } from '../../hooks/useEnableBanking';
 import { ACCOUNT_TYPES } from '../../types';
+import { accountTypeLabel } from '../../utils/accountTypes';
 import type {
   Account,
   AccountType,
@@ -727,9 +728,9 @@ function MappingCard({
             aria-label={t('banks.enableBanking.mapping.typeOf', { name: account.name })}
             className={fieldClass}
           >
-            {ACCOUNT_TYPES.map((t) => (
-              <option key={t.value} value={t.value}>
-                {t.label}
+            {ACCOUNT_TYPES.map((type) => (
+              <option key={type.value} value={type.value}>
+                {accountTypeLabel(type.value)}
               </option>
             ))}
           </select>

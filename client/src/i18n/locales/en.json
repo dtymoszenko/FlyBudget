@@ -1,4 +1,221 @@
 {
+  "accounts": {
+    "title": "Accounts",
+    "add": "Add Account",
+    "saving": "Saving…",
+    "empty": {
+      "title": "Add the accounts you want to track",
+      "description": "Checking, savings, credit cards, loans, investments or your home: each account keeps its own balance and transactions, and together they make up your net worth.",
+      "addFirst": "Add your first account",
+      "connectBank": "Connect a bank"
+    },
+    "sort": {
+      "label": "Sort accounts",
+      "current": "Sort: {{sort}}",
+      "manual": "Manual order",
+      "editManual": "Edit manual order…",
+      "balanceDesc": {
+        "label": "Balance: high to low",
+        "short": "Highest balance"
+      },
+      "balanceAsc": {
+        "label": "Balance: low to high",
+        "short": "Lowest balance"
+      },
+      "transactions": {
+        "label": "Most transactions",
+        "short": "Most transactions"
+      },
+      "name": {
+        "label": "Name: A to Z",
+        "short": "Name"
+      }
+    },
+    "pastMonth": "past month",
+    "groups": {
+      "cash": "Cash",
+      "credit": "Credit",
+      "investments": "Investments",
+      "property": "Property",
+      "loans": "Loans",
+      "other": "Other"
+    },
+    "types": {
+      "checking": {
+        "label": "Checking",
+        "hint": "Everyday bank account"
+      },
+      "savings": {
+        "label": "Savings",
+        "hint": "Savings, money market, CDs"
+      },
+      "cash": {
+        "label": "Cash",
+        "hint": "Wallet or petty cash"
+      },
+      "credit": {
+        "label": "Credit Card",
+        "hint": "Credit or charge card"
+      },
+      "line_of_credit": {
+        "label": "Line of Credit",
+        "hint": "Personal line of credit or HELOC"
+      },
+      "investment": {
+        "label": "Brokerage",
+        "hint": "Taxable investment account"
+      },
+      "retirement": {
+        "label": "Retirement",
+        "hint": "401(k), IRA, Roth, pension"
+      },
+      "crypto": {
+        "label": "Crypto",
+        "hint": "Exchange account or wallet"
+      },
+      "real_estate": {
+        "label": "Real Estate",
+        "hint": "Home, rental or land"
+      },
+      "vehicle": {
+        "label": "Vehicle",
+        "hint": "Car, motorcycle, boat, RV"
+      },
+      "valuables": {
+        "label": "Valuables",
+        "hint": "Jewelry, art, collectibles, precious metals"
+      },
+      "mortgage": {
+        "label": "Mortgage",
+        "hint": "Home loan"
+      },
+      "auto_loan": {
+        "label": "Auto Loan",
+        "hint": "Car or vehicle loan"
+      },
+      "student_loan": {
+        "label": "Student Loan",
+        "hint": "Federal or private student loan"
+      },
+      "loan": {
+        "label": "Other Loan",
+        "hint": "Personal, medical or family loan"
+      },
+      "other_asset": {
+        "label": "Other Asset",
+        "hint": "Anything else you own"
+      },
+      "other_liability": {
+        "label": "Other Liability",
+        "hint": "Anything else you owe"
+      }
+    },
+    "summary": {
+      "assets": "Assets",
+      "liabilities": "Liabilities",
+      "noAssets": "No bank accounts, investments or property yet.",
+      "noLiabilities": "No credit cards or loans yet.",
+      "add": "Add account"
+    },
+    "form": {
+      "name": "Account Name",
+      "nameLabel": "Account name",
+      "type": "Account Type",
+      "typeLabel": "Account type",
+      "currency": "Currency",
+      "currencyLocked": "Can't be changed once the account has transactions."
+    },
+    "addModal": {
+      "title": "Add Account",
+      "namePlaceholder": "e.g. Chase Checking",
+      "namePlaceholderProperty": "e.g. 2021 Honda Civic",
+      "currencyBecomesBudget": "This also becomes your budget's currency.",
+      "currencyForeign": "Its amounts stay in {{currency}}; your budget counts them in {{budget}} at each day's rate.",
+      "chooseCurrency": "Choose a currency",
+      "owed": "Amount Owed",
+      "owedHint": "What you owe as of today.",
+      "value": "Current Value",
+      "valueHint": "What it's worth today. You can update it any time from the account page.",
+      "balance": "Current Balance",
+      "balanceHint": "Enter your balance as of today.",
+      "offBudget": "Off budget",
+      "offBudgetHint": "Counts toward net worth but not your budget. Recommended for investments, property and loans.",
+      "adding": "Adding…",
+      "submit": "Add Account"
+    },
+    "editModal": {
+      "title": "Edit Account",
+      "logo": "Logo",
+      "changeImage": "Change image",
+      "uploadImage": "Upload image",
+      "useInitials": "Use initials",
+      "cropped": "Cropped to a square.",
+      "showingInitials": "Showing initials. Upload a bank logo or any image.",
+      "imageError": "Could not use that image.",
+      "iconsOff": "Account icons are turned off in Settings → Preferences.",
+      "currencyFixed": "Its transactions are in this currency, so it stays. For another currency, add a new account and move the money with a transfer.",
+      "startingBalance": "Starting Balance",
+      "startingBalanceLabel": "Starting balance",
+      "offBudget": "Off budget (excluded from budgeting)",
+      "close": "Close Account"
+    },
+    "closeConfirm": {
+      "title": "Close Account",
+      "message": "Are you sure you want to close \"{{name}}\"? It will be hidden from your accounts list.",
+      "confirm": "Close Account"
+    },
+    "updateValue": {
+      "balanceTitle": "Update Balance",
+      "valueTitle": "Update Value",
+      "owedToday": "Amount owed today",
+      "valueToday": "Value today",
+      "current": "Currently {{amount}}.",
+      "adds": "Adds a <change>{{amount}}</change> adjustment dated today.",
+      "balanceNote": "Balance update",
+      "valueNote": "Value update"
+    },
+    "detail": {
+      "edit": "Edit",
+      "updateBalance": "Update balance",
+      "updateValue": "Update value",
+      "reconcile": "Reconcile"
+    },
+    "notFound": {
+      "title": "Account not found",
+      "description": "It may have been closed or deleted, or the link is out of date.",
+      "goToAccounts": "Go to Accounts"
+    },
+    "reconcile": {
+      "title": "Reconcile",
+      "heading": "Reconcile: {{name}}",
+      "enterBalance": "Enter your bank's ending balance",
+      "enterBalanceHint": "Check your bank statement or online banking for the current balance.",
+      "statementBalance": "Statement Balance",
+      "statementBalanceLabel": "Statement balance",
+      "currentSelected": "Current selected balance in app",
+      "start": "Start Reconciliation",
+      "columns": {
+        "date": "Date",
+        "payee": "Payee",
+        "amount": "Amount",
+        "cleared": "C"
+      },
+      "empty": "No unreconciled transactions.",
+      "selectedBalance": "Selected Balance",
+      "difference": "Difference",
+      "ready": "Ready to finish!",
+      "saving": "Saving...",
+      "finish": "Finish",
+      "createAdjustment": "Create Adjustment",
+      "adjustmentNote": "Reconciliation adjustment"
+    },
+    "undo": {
+      "create": "Create account \"{{name}}\"",
+      "edit": "Edit account",
+      "close": "Close account \"{{name}}\"",
+      "reorder": "Reorder accounts"
+    }
+  },
   "auth": {
     "serverAddress": "Server address",
     "insecure": "<strong>Not a secure connection.</strong> Your password would travel unencrypted. Only continue on a network you trust.",

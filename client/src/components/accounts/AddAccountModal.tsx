@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Modal } from '../ui/Modal';
 import { useCanSave } from '../../hooks/useConnection';
 import { SavingPausedHint } from '../connection/SavingPausedHint';
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export function AddAccountModal({ isOpen, onClose }: Props) {
+  const { t } = useTranslation();
   const [name, setName] = useState('');
   const [type, setType] = useState<AccountType>('checking');
   const [amount, setAmount] = useState(0);
@@ -63,31 +65,33 @@ export function AddAccountModal({ isOpen, onClose }: Props) {
   }
 
   const amountLabel = info.liability
-    ? 'Amount Owed'
+    ? t('accounts.addModal.owed')
     : info.group === 'property'
-      ? 'Current Value'
-      : 'Current Balance';
+      ? t('accounts.addModal.value')
+      : t('accounts.addModal.balance');
   const amountHint = info.liability
-    ? 'What you owe as of today.'
+    ? t('accounts.addModal.owedHint')
     : info.group === 'property'
-      ? "What it's worth today. You can update it any time from the account page."
-      : 'Enter your balance as of today.';
+      ? t('accounts.addModal.valueHint')
+      : t('accounts.addModal.balanceHint');
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Add Account" size="sm">
+    <Modal isOpen={isOpen} onClose={handleClose} title={t('accounts.addModal.title')} size="sm">
       <AmountFields report={report}>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-1">
-              Account Name
+              {t('accounts.form.name')}
             </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              aria-label="Account name"
+              aria-label={t('accounts.form.nameLabel')}
               placeholder={
-                info.group === 'property' ? 'e.g. 2021 Honda Civic' : 'e.g. Chase Checking'
+                info.group === 'property'
+                  ? t('accounts.addModal.namePlaceholderProperty')
+                  : t('accounts.addModal.namePlaceholder')
               }
               autoFocus
               className="block w-full rounded-lg border border-border px-3 py-2 text-sm bg-surface text-text placeholder-text-tertiary focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
@@ -102,7 +106,7 @@ export function AddAccountModal({ isOpen, onClose }: Props) {
                 htmlFor="add-account-currency"
                 className="block text-sm font-medium text-text-secondary mb-1"
               >
-                Currency
+                {t('accounts.form.currency')}
               </label>
               <CurrencySelect
                 id="add-account-currency"
@@ -116,10 +120,10 @@ export function AddAccountModal({ isOpen, onClose }: Props) {
               />
               <p id="add-account-currency-hint" className="mt-1 text-xs text-text-secondary">
                 {!budgetCurrency
-                  ? "This also becomes your budget's currency."
+                  ? t('accounts.addModal.currencyBecomesBudget')
                   : currency
-                    ? `Its amounts stay in ${currency}; your budget counts them in ${budgetCurrency} at each day's rate.`
-                    : "Can't be changed once the account has transactions."}
+                    ? t('accounts.addModal.currencyForeign', { currency, budget: budgetCurrency })
+                    : t('accounts.form.currencyLocked')}
               </p>
             </div>
           ) : (
@@ -128,7 +132,7 @@ export function AddAccountModal({ isOpen, onClose }: Props) {
               onClick={() => setCurrency(guessCurrency(legacySymbol))}
               className="text-sm font-medium text-brand-600 hover:underline max-md:min-h-11"
             >
-              Choose a currency
+              {t('accounts.addModal.chooseCurrency')}
             </button>
           )}
 
@@ -154,10 +158,9 @@ export function AddAccountModal({ isOpen, onClose }: Props) {
               className="mt-0.5 h-4 w-4 rounded border-border text-brand-600 focus:ring-brand-500"
             />
             <span className="text-sm text-text-secondary">
-              Off budget
+              {t('accounts.addModal.offBudget')}
               <span className="block text-xs text-text-tertiary">
-                Counts toward net worth but not your budget. Recommended for investments, property
-                and loans.
+                {t('accounts.addModal.offBudgetHint')}
               </span>
             </span>
           </label>
@@ -169,14 +172,14 @@ export function AddAccountModal({ isOpen, onClose }: Props) {
               onClick={handleClose}
               className="px-4 py-2 text-sm font-medium text-text-secondary bg-surface border border-border rounded-lg hover:bg-hover transition-colors"
             >
-              Cancel
+              {t('common.actions.cancel')}
             </button>
             <button
               type="submit"
               disabled={!name.trim() || !amountValid || createAccount.isPending || !canSave}
               className="px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {createAccount.isPending ? 'Adding…' : 'Add Account'}
+              {t(createAccount.isPending ? 'accounts.addModal.adding' : 'accounts.addModal.submit')}
             </button>
           </div>
         </form>

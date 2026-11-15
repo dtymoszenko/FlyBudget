@@ -17,6 +17,7 @@ const LOOSE = process.argv.includes('--loose');
 /** Paths (relative to src/, a folder ends in /) whose text must come from the translations */
 const ENFORCED = [
   'i18n/',
+  'components/accounts/',
   'components/auth/',
   'components/connection/',
   'components/currency/',
@@ -41,16 +42,21 @@ const ENFORCED = [
   'components/settings/ServerSettings.tsx',
   'components/simplefin/',
   'components/ui/',
+  'hooks/useAccounts.ts',
   'hooks/useCustomReports.ts',
   'hooks/useEnableBanking.ts',
   'hooks/useGoals.ts',
   'hooks/usePlaid.ts',
   'hooks/usePlaidHostedLink.ts',
   'hooks/useSimplefin.ts',
+  'pages/AccountTransactions.tsx',
+  'pages/Accounts.tsx',
   'pages/CustomReportBuilder.tsx',
   'pages/Goals.tsx',
+  'pages/ReconcilePage.tsx',
   'pages/Settings.tsx',
   'pages/Welcome.tsx',
+  'utils/accountTypes.ts',
   'utils/connection.ts',
 ];
 
