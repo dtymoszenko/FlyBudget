@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ebApi from '../api/enableBanking';
+import { t } from '../i18n';
 import type { EnableBankingAuthPoll, EnableBankingConnectionResult } from '../types';
 
 export function useEnableBankingStatus() {
@@ -160,7 +161,7 @@ export function useEnableBankingLogin(onSuccess: (result: EnableBankingConnectio
         return true;
       }
       if (res.status === 'expired') {
-        finish({ phase: 'error', message: 'The bank login took too long. Please try again.' });
+        finish({ phase: 'error', message: t('banks.enableBanking.login.expired') });
         return true;
       }
       return false;

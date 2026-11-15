@@ -20,6 +20,127 @@
       "mismatch": "The passwords don't match."
     }
   },
+  "banks": {
+    "enableBanking": {
+      "connect": {
+        "title": "Connect a European bank",
+        "reconnectTitle": "Reconnect {{bank}}",
+        "setupIntro": "FlyBudget connects to European banks through your own free Enable Banking application. Set it up once:",
+        "reconnectIntro": "Log in at {{bank}} again to give FlyBudget access for the next few months. Your accounts and their history stay as they are.",
+        "logIn": "Log in at your bank",
+        "opening": "Opening your bank…",
+        "tryAgain": "Try again",
+        "syncing": "Bringing in your transactions",
+        "syncingHint": "The first sync asks your bank for its whole history, which can take a minute."
+      },
+      "bankPicker": {
+        "country": "Country",
+        "chooseCountry": "Choose…",
+        "bank": "Bank",
+        "search": "Search banks",
+        "banks": "Banks",
+        "countryFirst": "Choose your bank's country.",
+        "noBanks": "No banks to choose from",
+        "noBanksHint": "Free Enable Banking applications only list the banks of accounts you linked. Open your application in the Enable Banking Control Panel and link your accounts first.",
+        "noMatch": "No bank matches “{{search}}”.",
+        "beta": "beta"
+      },
+      "waiting": {
+        "title": "Log in at your bank in your browser",
+        "hint": "Your bank's page opened in your web browser. When you're done there, it sends you back and FlyBudget carries on by itself.",
+        "ownSite": "You log in on your bank's own site, never in FlyBudget.",
+        "reopen": "Open the bank again",
+        "pasteLabel": "After logging in, copy the whole address from your browser's address bar and paste it here:",
+        "continue": "Continue",
+        "notContinued": "Logged in, but FlyBudget didn't continue?"
+      },
+      "mapping": {
+        "hint": "Choose where each account's transactions go. Accounts you already import statements into are picked for you.",
+        "noAccounts": "Your bank didn't share any accounts. If you use a free Enable Banking application, link the accounts in its Control Panel, then connect again.",
+        "save": "Save and sync",
+        "target": "Where {{name}} goes",
+        "create": "New account",
+        "link": "Existing account",
+        "skip": "Don't sync",
+        "nameFor": "Name for {{name}}",
+        "accountName": "Account name",
+        "typeOf": "Type of {{name}}",
+        "accountFor": "Account for {{name}}",
+        "chooseAccount": "Choose an account…",
+        "suggested": "Your last bank statement for this account went here.",
+        "otherCurrency": "This bank account is in {{bankCurrency}}, but {{account}} is in {{accountCurrency}}. Link it to an account in {{bankCurrency}}, or create a new one.",
+        "fullHistory": "Also bring in older transactions the bank has. Without this, syncing starts a week before this account's latest transaction. Transactions you already imported from files are recognised either way."
+      },
+      "done": {
+        "title": "Bank connected",
+        "problems": "Connected, with problems",
+        "added_one": "Brought in {{count, number}} transaction.",
+        "added_other": "Brought in {{count, number}} transactions.",
+        "adopted_one": "{{count, number}} you already had (from files or typed in) is now kept up to date by the bank.",
+        "adopted_other": "{{count, number}} you already had (from files or typed in) are now kept up to date by the bank.",
+        "skipped_one": "Left out {{count, number}} the bank sent without a date or a readable amount.",
+        "skipped_other": "Left out {{count, number}} the bank sent without a date or a readable amount.",
+        "skippedOrCurrency_one": "Left out {{count, number}} the bank sent without a date or a readable amount, or in another currency.",
+        "skippedOrCurrency_other": "Left out {{count, number}} the bank sent without a date or a readable amount, or in another currency.",
+        "howItSyncs": "FlyBudget syncs when it starts and when you click Sync now. Banks allow only a few automatic updates a day.",
+        "howSyncingWorks": "How syncing works"
+      },
+      "card": {
+        "lastSynced": "Last synced {{ago}}",
+        "loginEnded": "Your bank's access for FlyBudget has ended (banks ask again every few months). Reconnect to keep syncing; your accounts and history stay as they are.",
+        "notLinked": "Not linked",
+        "endsToday": "Bank access ends today. Reconnect to keep syncing.",
+        "endsSoon_one": "Bank access ends on {{date}} (in {{count, number}} day). Reconnect to keep syncing.",
+        "endsSoon_other": "Bank access ends on {{date}} (in {{count, number}} days). Reconnect to keep syncing.",
+        "endsOn_one": "Bank access ends on {{date}} (in {{count, number}} day)",
+        "endsOn_other": "Bank access ends on {{date}} (in {{count, number}} days)",
+        "reconnect": "Reconnect",
+        "syncing": "Syncing…",
+        "syncNow": "Sync now",
+        "disconnect": "Disconnect",
+        "synced": "Synced: {{added}}.",
+        "syncedSkipped": "Synced: {{added}}, {{skipped}}.",
+        "newTransactions_one": "{{count, number}} new transaction",
+        "newTransactions_other": "{{count, number}} new transactions",
+        "leftOut_one": "{{count, number}} left out (no date or unreadable amount)",
+        "leftOut_other": "{{count, number}} left out (no date or unreadable amount)",
+        "disconnectTitle": "Disconnect {{bank}}",
+        "disconnectMessage": "FlyBudget will end its access to {{bank}} at Enable Banking and stop syncing. Your accounts and transactions stay in FlyBudget."
+      },
+      "setup": {
+        "copyRedirectUrl": "Copy the redirect URL",
+        "copy": "Copy",
+        "copied": "Copied",
+        "sandbox": "Sandbox",
+        "production": "Production",
+        "yourApplication": "Your application",
+        "sandboxHint": "A Sandbox application only reaches Enable Banking's test banks. Create a Production application to connect your real bank (it's free for your own accounts).",
+        "redirectMissing": "Your application doesn't list the redirect URL below yet. Add it in the Enable Banking Control Panel, or your bank can't send you back to FlyBudget.",
+        "redirectUrl": "Redirect URL",
+        "replace": "Replace application",
+        "remove": "Remove",
+        "signUp": "Sign up at <controlPanel>Enable Banking <icon/></controlPanel> and create a <strong>Production</strong> application. It's free for your own accounts.",
+        "addRedirect": "Add this redirect URL to the application:",
+        "insecureRedirect": "This server is on plain HTTP. Enable Banking needs an https:// redirect URL: put FlyBudget behind HTTPS (see the self-hosting guide), or you'll paste the address back by hand after each bank login.",
+        "saveKey": "Save the <strong>.pem</strong> file your browser downloads: it's the application's private key, and Enable Banking can't show it again.",
+        "linkAccounts": "Click <strong>Activate by linking accounts</strong> and log in to your bank there. Free applications can only use the accounts you link, so link every account you want in FlyBudget.",
+        "enterDetails": "Copy the application ID and choose the .pem file below.",
+        "applicationId": "Application ID",
+        "applicationIdExample": "e.g. 3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "privateKey": "Private key (.pem file)",
+        "chooseKey": "Choose the .pem file…",
+        "keyHint": "The key stays in FlyBudget, encrypted, and is only used to sign requests to Enable Banking.",
+        "keyTooBig": "That file is too big to be a private key. Choose the .pem file from Enable Banking.",
+        "notAKey": "That file isn't a private key. Choose the .pem file Enable Banking downloaded.",
+        "checking": "Checking…",
+        "save": "Check and save",
+        "guide": "Step-by-step guide"
+      },
+      "login": {
+        "expired": "The bank login took too long. Please try again."
+      }
+    }
+  },
   "common": {
     "actions": {
       "cancel": "Cancel",

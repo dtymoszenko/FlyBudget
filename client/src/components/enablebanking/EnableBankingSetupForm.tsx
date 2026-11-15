@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { AlertTriangle, Check, Copy, ExternalLink, FileKey2, Loader2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useCanSave } from '../../hooks/useConnection';
@@ -10,6 +11,7 @@ import {
 } from '../../hooks/useEnableBanking';
 import { docsUrl } from '../../utils/project';
 import type { EnableBankingConfigureResult } from '../../types';
+import { t } from '../../i18n';
 
 const CONTROL_PANEL_URL = 'https://enablebanking.com/cp/applications';
 export const ENABLE_BANKING_GUIDE_URL = `${docsUrl('bank-sync')}#enable-banking`;
@@ -19,6 +21,7 @@ const inputClass =
 
 /** The redirect URL to register in the Enable Banking application, with a copy button. */
 export function RedirectUrlField({ url }: { url: string }) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   return (
     <div className="flex items-center gap-2">
@@ -31,7 +34,7 @@ export function RedirectUrlField({ url }: { url: string }) {
       <Button
         variant="secondary"
         size="sm"
-        aria-label="Copy the redirect URL"
+        aria-label={t('banks.enableBanking.setup.copyRedirectUrl')}
         onClick={() => {
           navigator.clipboard?.writeText(url).then(
             () => {
@@ -42,7 +45,8 @@ export function RedirectUrlField({ url }: { url: string }) {
           );
         }}
       >
-        {copied ? <Check size={12} /> : <Copy size={12} />} {copied ? 'Copied' : 'Copy'}
+        {copied ? <Check size={12} /> : <Copy size={12} />}{' '}
+        {copied ? t('banks.enableBanking.setup.copied') : t('banks.enableBanking.setup.copy')}
       </Button>
     </div>
   );
@@ -51,9 +55,9 @@ export function RedirectUrlField({ url }: { url: string }) {
 const environmentLabel = (env: string | null) =>
   env
     ? env.toUpperCase() === 'SANDBOX'
-      ? 'Sandbox'
+      ? t('banks.enableBanking.setup.sandbox')
       : env.toUpperCase() === 'PRODUCTION'
-        ? 'Production'
+        ? t('banks.enableBanking.setup.production')
         : env
     : null;
 
@@ -66,6 +70,7 @@ export function EnableBankingSetupForm({
 }: {
   onConfigured?: (result: EnableBankingConfigureResult) => void;
 }) {
+  const { t } = useTranslation();
   const { data: status } = useEnableBankingStatus();
   const configure = useConfigureEnableBanking();
   const remove = useRemoveEnableBankingConfig();
@@ -83,16 +88,12 @@ export function EnableBankingSetupForm({
     setKeyFile(null);
     if (!file) return;
     if (file.size > 16_384) {
-      setFileError(
-        'That file is too big to be a private key. Choose the .pem file from Enable Banking.',
-      );
+      setFileError(t('banks.enableBanking.setup.keyTooBig'));
       return;
     }
     const text = await file.text();
     if (!text.includes('PRIVATE KEY')) {
-      setFileError(
-        "That file isn't a private key. Choose the .pem file Enable Banking downloaded.",
-      );
+      setFileError(t('banks.enableBanking.setup.notAKey'));
       return;
     }
     setKeyFile({ name: file.name, text });
@@ -123,32 +124,32 @@ export function EnableBankingSetupForm({
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
           <span className="inline-flex items-center gap-1.5 font-medium text-text">
             <Check size={14} className="text-positive" />
-            {status.applicationName || 'Your application'}
+            {status.applicationName || t('banks.enableBanking.setup.yourApplication')}
           </span>
           {env && <span className="text-xs text-text-tertiary">{env}</span>}
         </div>
         {status.environment?.toUpperCase() === 'SANDBOX' && (
           <p className="text-xs text-text-secondary">
-            A Sandbox application only reaches Enable Banking&apos;s test banks. Create a Production
-            application to connect your real bank (it&apos;s free for your own accounts).
+            {t('banks.enableBanking.setup.sandboxHint')}
           </p>
         )}
         {lastResult?.redirectUrlRegistered === false && redirectUrl && (
           <p className="flex items-start gap-1.5 text-xs text-caution">
             <AlertTriangle size={13} className="mt-0.5 shrink-0" />
-            Your application doesn&apos;t list the redirect URL below yet. Add it in the Enable
-            Banking Control Panel, or your bank can&apos;t send you back to FlyBudget.
+            {t('banks.enableBanking.setup.redirectMissing')}
           </p>
         )}
         {redirectUrl && (
           <div className="space-y-1">
-            <p className="text-xs font-medium text-text-tertiary">Redirect URL</p>
+            <p className="text-xs font-medium text-text-tertiary">
+              {t('banks.enableBanking.setup.redirectUrl')}
+            </p>
             <RedirectUrlField url={redirectUrl} />
           </div>
         )}
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" size="sm" onClick={() => setReplacing(true)}>
-            Replace application
+            {t('banks.enableBanking.setup.replace')}
           </Button>
           {status.connectionCount === 0 && (
             <Button
@@ -157,7 +158,7 @@ export function EnableBankingSetupForm({
               onClick={() => remove.mutate()}
               disabled={remove.isPending || !canSave}
             >
-              Remove
+              {t('banks.enableBanking.setup.remove')}
             </Button>
           )}
         </div>
@@ -169,54 +170,56 @@ export function EnableBankingSetupForm({
     <form onSubmit={handleSubmit} className="space-y-4">
       <ol className="list-decimal pl-5 space-y-2 text-xs text-text-secondary leading-relaxed">
         <li>
-          Sign up at{' '}
-          <a
-            href={CONTROL_PANEL_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-0.5 text-brand-600 hover:text-brand-700 font-medium"
-          >
-            Enable Banking <ExternalLink size={10} />
-          </a>{' '}
-          and create a <strong>Production</strong> application. It&apos;s free for your own
-          accounts.
+          <Trans
+            i18nKey="banks.enableBanking.setup.signUp"
+            components={{
+              controlPanel: (
+                <a
+                  href={CONTROL_PANEL_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-0.5 text-brand-600 hover:text-brand-700 font-medium"
+                />
+              ),
+              icon: <ExternalLink size={10} />,
+              strong: <strong />,
+            }}
+          />
         </li>
         {redirectUrl && (
           <li className="space-y-1.5">
-            <span>Add this redirect URL to the application:</span>
+            <span>{t('banks.enableBanking.setup.addRedirect')}</span>
             <RedirectUrlField url={redirectUrl} />
             {status?.insecureRedirect && (
               <span className="flex items-start gap-1.5 text-caution">
                 <AlertTriangle size={13} className="mt-0.5 shrink-0" />
-                This server is on plain HTTP. Enable Banking needs an https:// redirect URL: put
-                FlyBudget behind HTTPS (see the self-hosting guide), or you&apos;ll paste the
-                address back by hand after each bank login.
+                {t('banks.enableBanking.setup.insecureRedirect')}
               </span>
             )}
           </li>
         )}
         <li>
-          Save the <strong>.pem</strong> file your browser downloads: it&apos;s the
-          application&apos;s private key, and Enable Banking can&apos;t show it again.
+          <Trans i18nKey="banks.enableBanking.setup.saveKey" components={{ strong: <strong /> }} />
         </li>
         <li>
-          Click <strong>Activate by linking accounts</strong> and log in to your bank there. Free
-          applications can only use the accounts you link, so link every account you want in
-          FlyBudget.
+          <Trans
+            i18nKey="banks.enableBanking.setup.linkAccounts"
+            components={{ strong: <strong /> }}
+          />
         </li>
-        <li>Copy the application ID and choose the .pem file below.</li>
+        <li>{t('banks.enableBanking.setup.enterDetails')}</li>
       </ol>
 
       <div>
         <label htmlFor="eb-app-id" className="block text-xs font-medium text-text-tertiary mb-1">
-          Application ID
+          {t('banks.enableBanking.setup.applicationId')}
         </label>
         <input
           id="eb-app-id"
           type="text"
           value={applicationId}
           onChange={(e) => setApplicationId(e.target.value)}
-          placeholder="e.g. 3fa85f64-5717-4562-b3fc-2c963f66afa6"
+          placeholder={t('banks.enableBanking.setup.applicationIdExample')}
           autoComplete="off"
           spellCheck={false}
           className={`${inputClass} font-mono`}
@@ -224,14 +227,16 @@ export function EnableBankingSetupForm({
       </div>
       <div>
         <label htmlFor="eb-key" className="block text-xs font-medium text-text-tertiary mb-1">
-          Private key (.pem file)
+          {t('banks.enableBanking.setup.privateKey')}
         </label>
         <label
           htmlFor="eb-key"
           className="flex items-center gap-2 cursor-pointer border border-dashed border-border rounded-md px-3 py-2 max-md:min-h-11 bg-surface text-sm text-text-secondary hover:bg-surface-alt"
         >
           <FileKey2 size={16} className="shrink-0 text-text-tertiary" />
-          <span className="truncate">{keyFile ? keyFile.name : 'Choose the .pem file…'}</span>
+          <span className="truncate">
+            {keyFile ? keyFile.name : t('banks.enableBanking.setup.chooseKey')}
+          </span>
         </label>
         <input
           id="eb-key"
@@ -242,8 +247,7 @@ export function EnableBankingSetupForm({
         />
         {fileError && <p className="text-xs text-negative mt-1">{fileError}</p>}
         <p className="text-[11px] text-text-tertiary mt-1">
-          The key stays in FlyBudget, encrypted, and is only used to sign requests to Enable
-          Banking.
+          {t('banks.enableBanking.setup.keyHint')}
         </p>
       </div>
 
@@ -255,15 +259,16 @@ export function EnableBankingSetupForm({
         >
           {configure.isPending ? (
             <>
-              <Loader2 size={14} className="animate-spin" /> Checking…
+              <Loader2 size={14} className="animate-spin" />{' '}
+              {t('banks.enableBanking.setup.checking')}
             </>
           ) : (
-            'Check and save'
+            t('banks.enableBanking.setup.save')
           )}
         </Button>
         {replacing && (
           <Button variant="secondary" onClick={() => setReplacing(false)}>
-            Cancel
+            {t('common.actions.cancel')}
           </Button>
         )}
         <a
@@ -272,7 +277,7 @@ export function EnableBankingSetupForm({
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700 font-medium ml-auto"
         >
-          Step-by-step guide <ExternalLink size={11} />
+          {t('banks.enableBanking.setup.guide')} <ExternalLink size={11} />
         </a>
       </div>
       {configure.isError && (
