@@ -11,8 +11,8 @@ import {
   parseISO,
 } from 'date-fns';
 import type { ScheduleOccurrence, OccurrenceDisplayStatus } from '../../types';
+import { weekdayNames } from '../../utils/dates';
 
-const DAY_HEADERS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MAX_CHIPS = 3;
 
 const CHIP_COLORS: Record<OccurrenceDisplayStatus, string> = {
@@ -62,9 +62,9 @@ export default function Calendar({ month, occurrences, onDateClick }: Props) {
 
   return (
     <div className="grid grid-cols-7 gap-px bg-border-light rounded-lg overflow-hidden border border-border-light">
-      {DAY_HEADERS.map((d) => (
+      {weekdayNames().map((d, i) => (
         <div
-          key={d}
+          key={i}
           className="bg-surface-alt py-2 text-center text-xs font-medium text-text-tertiary"
         >
           {d}

@@ -1,0 +1,11 @@
+{
+  "settings": {
+    "preferences": {
+      "language": {
+        "title": "Language",
+        "automatic": "Automatic ({{language}})",
+        "hint": "Automatic uses your device's language when FlyBudget has it, otherwise English."
+      }
+    }
+  }
+}

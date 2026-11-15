@@ -3,8 +3,8 @@ import { createPortal } from 'react-dom';
 import { format, parseISO } from 'date-fns';
 import { CalendarRange, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatMonth } from '../../utils/dateRange';
+import { monthNames } from '../../utils/dates';
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 /** Earliest year the arrows go back to ("All" starts in 2020) */
 const MIN_YEAR = 2000;
 const GAP = 6;
@@ -77,13 +77,13 @@ function MonthGrid({
         </button>
       </div>
       <div className="grid grid-cols-3 gap-1">
-        {MONTHS.map((m, i) => {
+        {monthNames().map((m, i) => {
           const v = ym(year, i);
           const selected = v === value;
           const disabled = isDisabled(v);
           return (
             <button
-              key={m}
+              key={i}
               type="button"
               disabled={disabled}
               aria-pressed={selected}

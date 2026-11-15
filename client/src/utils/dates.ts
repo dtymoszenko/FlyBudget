@@ -49,6 +49,18 @@ export function shortDayPattern(
   return year ? `${day} ''yy` : day;
 }
 
+/** Month names in the app's language, January first: "Jan", or "January" with `long` */
+export function monthNames({ long = false }: { long?: boolean } = {}): string[] {
+  return Array.from({ length: 12 }, (_, m) => format(new Date(2000, m, 1), long ? 'MMMM' : 'MMM'));
+}
+
+/** Weekday names in the app's language, Sunday first: "S", "Sun" or "Sunday" */
+export function weekdayNames(width: 'narrow' | 'short' | 'long' = 'short'): string[] {
+  const pattern = width === 'narrow' ? 'EEEEE' : width === 'long' ? 'EEEE' : 'EEE';
+  // 2 January 2000 was a Sunday
+  return Array.from({ length: 7 }, (_, d) => format(new Date(2000, 0, 2 + d), pattern));
+}
+
 /** A day and month without the year: "Jan 5", "5 Jan", or "5. Jan" (see shortDayPattern) */
 export function formatShortDay(
   date: DateInput,

@@ -6,8 +6,7 @@ import { useDiscoverSchedules, useCreateDiscoveredSchedules } from '../../hooks/
 import { formatScheduleAmount } from './scheduleFormat';
 import { useAccountCurrency } from '../../hooks/useCurrency';
 import type { DiscoveredSchedule } from '../../types';
-
-const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+import { weekdayNames } from '../../utils/dates';
 
 function ordinal(n: number) {
   const s = ['th', 'st', 'nd', 'rd'];
@@ -19,8 +18,9 @@ function ordinal(n: number) {
 function describe(item: DiscoveredSchedule): string {
   const r = item.recurrenceRule;
   const approx = item.exactDate ? '' : ' (approx.)';
-  if (r.type === 'weekly') return `Every week on ${WEEKDAYS[r.anchorDay]}${approx}`;
-  if (r.type === 'biweekly') return `Every 2 weeks on ${WEEKDAYS[r.anchorDay]}${approx}`;
+  if (r.type === 'weekly') return `Every week on ${weekdayNames('long')[r.anchorDay]}${approx}`;
+  if (r.type === 'biweekly')
+    return `Every 2 weeks on ${weekdayNames('long')[r.anchorDay]}${approx}`;
   if (r.type === 'monthly') {
     const day = r.anchorDay >= 31 ? 'the last day' : `the ${ordinal(r.anchorDay)}`;
     return `Every month on ${day}${approx}`;

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   usePreferencesStore,
   type Theme,
@@ -7,6 +8,13 @@ import {
   type AmountFormat,
   type SymbolPosition,
 } from '../../store/preferencesStore';
+import {
+  availableLanguages,
+  deviceLanguages,
+  languageInfo,
+  resolveLanguage,
+  type LanguagePreference,
+} from '../../i18n/languages';
 import { amountStyle, formatAmount, formatMoney, useAmountStyle } from '../../utils/currency';
 import { Link } from 'react-router-dom';
 import { useCurrencySettings } from '../../hooks/useCurrency';
@@ -52,6 +60,56 @@ const choiceClass = (selected: boolean) =>
       : 'border-border bg-surface text-text-secondary hover:border-border'
   }`;
 
+// Changing the language draws the app again (LanguageRoot), so the select it was chosen in is a
+// new element: this puts the focus back on it
+let refocusLanguage = false;
+
+/** Only when there's more than one language to choose from */
+function LanguageSetting() {
+  const { t } = useTranslation();
+  const language = usePreferencesStore((s) => s.language);
+  const setLanguage = usePreferencesStore((s) => s.setLanguage);
+  const languages = availableLanguages();
+  if (languages.length < 2) return null;
+  const automatic = languageInfo(resolveLanguage('auto', deviceLanguages())).name;
+
+  return (
+    <div className="bg-surface-alt rounded-lg p-5 space-y-3">
+      <h3 id="language-heading" className="text-sm font-medium text-text">
+        {t('settings.preferences.language.title')}
+      </h3>
+      <select
+        ref={(el) => {
+          if (el && refocusLanguage) {
+            refocusLanguage = false;
+            el.focus();
+          }
+        }}
+        value={language}
+        onChange={(e) => {
+          refocusLanguage = true;
+          setLanguage(e.target.value as LanguagePreference);
+        }}
+        aria-labelledby="language-heading"
+        aria-describedby="language-hint"
+        className="block w-full sm:w-72 rounded-lg border border-border bg-surface px-3 py-2 max-md:min-h-11 text-sm text-text focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+      >
+        <option value="auto">
+          {t('settings.preferences.language.automatic', { language: automatic })}
+        </option>
+        {languages.map((l) => (
+          <option key={l.code} value={l.code} lang={l.code}>
+            {l.name}
+          </option>
+        ))}
+      </select>
+      <p id="language-hint" className="text-xs text-text-tertiary">
+        {t('settings.preferences.language.hint')}
+      </p>
+    </div>
+  );
+}
+
 export function PreferencesPanel() {
   const {
     theme,
@@ -73,6 +131,7 @@ export function PreferencesPanel() {
     setShowMerchantIcons,
     setShowCategoryIcons,
     setShowAccountIcons,
+    setLanguage,
   } = usePreferencesStore();
   const [resetOpen, setResetOpen] = useState(false);
   const style = useAmountStyle();
@@ -97,6 +156,7 @@ export function PreferencesPanel() {
     setShowMerchantIcons(true);
     setShowCategoryIcons(true);
     setShowAccountIcons(true);
+    setLanguage('auto');
     setResetOpen(false);
   }
 
@@ -128,6 +188,8 @@ export function PreferencesPanel() {
         confirmLabel="Reset"
         danger
       />
+
+      <LanguageSetting />
 
       <div className="bg-surface-alt rounded-lg p-5 space-y-4">
         <h3 className="text-sm font-medium text-text">Theme</h3>

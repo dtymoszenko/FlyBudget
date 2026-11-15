@@ -15,13 +15,11 @@ import {
 import type { HeatmapRow } from '../../utils/calendarLayout';
 import { ChartSkeleton, TOOLTIP_CLASS } from './ChartHelpers';
 import type { DailyFlowPoint } from '../../types';
-import { formatWeekday } from '../../utils/dates';
+import { formatWeekday, weekdayNames } from '../../utils/dates';
 
 // Money in and out on each day. Up to CALENDAR_MONTHS_MAX months show as month grids, each
 // day with a green bar (money in, from the left) and a red one (money out, from the right).
 // Longer ranges show as a heatmap, a square per day colored by that day's net.
-
-const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 // Heatmap intensity per level (1-4), as a share of the positive/negative color
 const LEVEL_MIX = [0, 28, 48, 72, 100];
 const mix = (color: 'positive' | 'negative', pct: number) =>
@@ -231,7 +229,7 @@ function MonthGrids({
               {format(parseISO(`${month}-01`), 'MMMM yyyy')}
             </p>
             <div className="grid grid-cols-7 gap-1 shrink-0 pb-1">
-              {WEEKDAYS.map((d, i) => (
+              {weekdayNames('narrow').map((d, i) => (
                 <span key={i} className="text-center text-[10px] font-medium text-text-tertiary">
                   {d}
                 </span>
@@ -424,7 +422,7 @@ function Heatmap({
               className="flex flex-col text-[10px] text-text-tertiary"
               style={{ width: labelWidth, gap }}
             >
-              {WEEKDAYS.map((d, i) => (
+              {weekdayNames('narrow').map((d, i) => (
                 <span key={i} className="leading-none flex items-center" style={{ height: size }}>
                   {i % 2 === 1 && size >= 7 ? d : ''}
                 </span>
