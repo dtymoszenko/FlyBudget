@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CURRENCY_CODES } from '../../utils/currencies';
 import { currencyName } from '../../utils/currency';
 
@@ -24,10 +25,11 @@ export function CurrencySelect({
   first = [],
   disabled,
   id,
-  'aria-label': ariaLabel = 'Currency',
+  'aria-label': ariaLabel,
   'aria-describedby': describedBy,
   className = '',
 }: Props) {
+  const { t } = useTranslation();
   // Callers pass a new array each render: keyed on its contents, so ~150 names are looked up
   // and sorted once
   const firstKey = first.join(',');
@@ -47,18 +49,18 @@ export function CurrencySelect({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
-      aria-label={ariaLabel}
+      aria-label={ariaLabel ?? t('currency.select.label')}
       aria-describedby={describedBy}
       className={`block w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-60 ${className}`}
     >
-      <optgroup label="Common">
+      <optgroup label={t('currency.select.common')}>
         {groups.top.map((c) => (
           <option key={c.code} value={c.code}>
             {c.code} · {c.name}
           </option>
         ))}
       </optgroup>
-      <optgroup label="All currencies">
+      <optgroup label={t('currency.select.all')}>
         {groups.rest.map((c) => (
           <option key={c.code} value={c.code}>
             {c.code} · {c.name}

@@ -23,7 +23,48 @@
     },
     "opensInNewTab": "(opens in a new tab)",
     "dragToReorder": "Drag to reorder",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "errors": {
+      "generic": "Something went wrong.",
+      "tryAgain": "Something went wrong. Try again."
+    }
+  },
+  "currency": {
+    "addRate": "Add a rate",
+    "missingRates_one": "{{count, number}} {{currencies}} transaction has no {{budget}} value yet: no exchange rate for its day.",
+    "missingRates_other": "{{count, number}} {{currencies}} transactions have no {{budget}} value yet: no exchange rate for their day.",
+    "unconverted": "Without {{currencies}}: no exchange rate yet.",
+    "select": {
+      "label": "Currency",
+      "common": "Common",
+      "all": "All currencies"
+    },
+    "foreign": {
+      "noRate": "No rate",
+      "noRateHint": "No exchange rate for this day yet: the budget counts it as nothing until there is one"
+    },
+    "mainAmount": {
+      "label": "Value in {{currency}}",
+      "noRate": "No rate yet",
+      "useRate": "Use the day's rate",
+      "source": {
+        "rate": "At the day's exchange rate.",
+        "manual": "As you typed it.",
+        "transfer": "What the other side of the transfer is worth.",
+        "missing": "No exchange rate for this day yet, so the budget counts it as nothing. Type what it cost, or add a rate in Settings → Currencies."
+      }
+    },
+    "difference": {
+      "why": "What the change in the exchange rate did to this account's value",
+      "fromRate": "{{amount}} from the rate",
+      "title": "Currency difference",
+      "gain": "At today's rate, {{name}} is worth <strong>{{amount}} more</strong> than your budget counted when the money came in. Record it to bring your budget in step: it adds a correction worth that much as income.",
+      "loss": "At today's rate, {{name}} is worth <strong>{{amount}} less</strong> than your budget counted when the money came in. Record it to bring your budget in step: it adds a correction worth that much as spending.",
+      "category": "Category",
+      "noCategory": "No category (net worth only)",
+      "noCategoryHint": "Without a category it stays out of income and spending, like other balance corrections.",
+      "record": "Record difference"
+    }
   },
   "layout": {
     "accounts": {
@@ -301,6 +342,66 @@
         "title": "Sign out",
         "hint": "Sign out of FlyBudget on this browser.",
         "button": "Sign out"
+      }
+    },
+    "currencies": {
+      "title": "Currencies",
+      "hint": "Your budget has one currency. Accounts can each have their own: their amounts stay in it, and the budget and reports count them in yours at each day's exchange rate.",
+      "learnMore": "How currencies work",
+      "budget": {
+        "title": "Budget currency",
+        "hint": "What your budget, reports and net worth are counted in. It can be corrected while no account in another currency has transactions.",
+        "chooseHint": "Choose the currency your amounts are in. Nothing is converted: it only names the currency, so accounts in other currencies can be added.",
+        "change": "Change",
+        "use": "Use this currency"
+      },
+      "values": {
+        "title": "Values in {{currency}}",
+        "missing_one": "{{count, number}} transaction in {{currencies}} has no exchange rate for its day yet, so the budget counts it as nothing. Add a rate below, or turn on downloading.",
+        "missing_other": "{{count, number}} transactions in {{currencies}} have no exchange rate for their day yet, so the budget counts them as nothing. Add a rate below, or turn on downloading.",
+        "hint": "Every transaction in another currency has its value in {{currency}}. Values stay as they were when a rate changes; recalculate after correcting a rate.",
+        "recalculate": "Recalculate from rates",
+        "updated_one": "{{count, number}} value updated.",
+        "updated_other": "{{count, number}} values updated.",
+        "nothingToUpdate": "Nothing to update.",
+        "typedInStay": "Values you typed in stay."
+      },
+      "rates": {
+        "title": "Exchange rates",
+        "hint": "A day without a rate uses the closest earlier one, up to a month back. A rate you type in wins over a downloaded one for its day.",
+        "typedIn": "typed in",
+        "noRecentRate": "No rate in the last month",
+        "currency": "Currency",
+        "day": "Day",
+        "rate": "1 {{currency}} in {{budget}}",
+        "add": "Add rate",
+        "invalid": "Type the rate as a positive number, like 1.0812.",
+        "typedInTitle": "Rates you typed in",
+        "delete": "Delete the rate for {{currency}} on {{date}}"
+      },
+      "download": {
+        "title": "Download rates",
+        "hint": "The European Central Bank's daily reference rates, from {{host}} (Frankfurter, open source). Only currency codes and dates are sent, never anything about your budget. Off until you turn it on; then it checks every few hours.",
+        "defaultServer": "the rates server",
+        "notInDemo": "Not available in the demo: rates can be typed in above.",
+        "enable": "Download ECB reference rates",
+        "downloading": "Downloading…",
+        "now": "Download now",
+        "last": "Last downloaded {{date}}",
+        "never": "Not downloaded yet",
+        "unsupported": "{{status}}. The ECB has no rates for {{currencies}}: type those in.",
+        "server": "Server (optional, for your own Frankfurter)",
+        "saveServer": "Save server"
+      },
+      "display": {
+        "title": "How amounts are written",
+        "hint": "On this device. Automatic writes each currency as at home: 1 234,56 zł, $1,234.56, CHF 1'234.56 (the number format is in Preferences). {{budget}}'s position is the Preferences one.",
+        "symbol": "{{currency}} symbol",
+        "position": "{{currency}} symbol position",
+        "autoBefore": "Automatic (before)",
+        "autoAfter": "Automatic (after)",
+        "before": "Before",
+        "after": "After"
       }
     }
   },

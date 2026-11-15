@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Download, Trash2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { ExternalLink } from '../ui/ExternalLink';
@@ -27,29 +28,32 @@ import {
 import { parseRate } from '../../utils/money';
 import { formatDay } from '../../utils/dates';
 import { docsUrl } from '../../utils/project';
+import { t } from '../../i18n';
 
 const section = 'bg-surface-alt rounded-lg p-5 space-y-4';
 const inputClass =
   'text-sm border border-border rounded-md px-3 py-1.5 max-md:min-h-11 bg-surface text-text focus:outline-none focus:ring-1 focus:ring-brand-600 focus:border-brand-600';
 
 const errorText = (err: unknown) =>
-  err instanceof Error ? err.message : 'Something went wrong. Try again.';
+  err instanceof Error ? err.message : t('common.errors.tryAgain');
 
 /**
  * Settings → Currencies: the budget's currency, exchange rates (typed in, or downloaded from
  * the ECB when turned on) and how each currency is written on this device
  */
 export function CurrencySettings() {
+  const { t } = useTranslation();
   const { data: settings } = useCurrencySettings();
   if (!settings) return null;
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-sm font-semibold text-text">Currencies</h2>
+        <h2 className="text-sm font-semibold text-text">{t('settings.currencies.title')}</h2>
         <p className="text-xs text-text-tertiary mt-0.5">
-          Your budget has one currency. Accounts can each have their own: their amounts stay in it,
-          and the budget and reports count them in yours at each day&apos;s exchange rate.{' '}
-          <ExternalLink href={docsUrl('currencies')}>How currencies work</ExternalLink>
+          {t('settings.currencies.hint')}{' '}
+          <ExternalLink href={docsUrl('currencies')}>
+            {t('settings.currencies.learnMore')}
+          </ExternalLink>
         </p>
       </div>
       <BudgetCurrency current={settings.currency} />
@@ -66,6 +70,7 @@ export function CurrencySettings() {
 }
 
 function BudgetCurrency({ current }: { current: string | null }) {
+  const { t } = useTranslation();
   const legacySymbol = usePreferencesStore((s) => s.currencySymbol);
   const [choice, setChoice] = useState(current ?? guessCurrency(legacySymbol));
   const save = useSetBudgetCurrency();
@@ -76,12 +81,10 @@ function BudgetCurrency({ current }: { current: string | null }) {
     <section className={section} aria-labelledby="budget-currency-heading">
       <div>
         <h3 id="budget-currency-heading" className="text-sm font-medium text-text">
-          Budget currency
+          {t('settings.currencies.budget.title')}
         </h3>
         <p className="text-xs text-text-tertiary mt-0.5">
-          {current
-            ? 'What your budget, reports and net worth are counted in. It can be corrected while no account in another currency has transactions.'
-            : 'Choose the currency your amounts are in. Nothing is converted: it only names the currency, so accounts in other currencies can be added.'}
+          {t(current ? 'settings.currencies.budget.hint' : 'settings.currencies.budget.chooseHint')}
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-2">
@@ -89,7 +92,7 @@ function BudgetCurrency({ current }: { current: string | null }) {
           value={choice}
           onChange={setChoice}
           first={current ? [current] : []}
-          aria-label="Budget currency"
+          aria-label={t('settings.currencies.budget.title')}
           className="max-w-xs"
         />
         <Button
@@ -97,7 +100,7 @@ function BudgetCurrency({ current }: { current: string | null }) {
           onClick={() => save.mutate(choice)}
           disabled={!changed || save.isPending || !canSave}
         >
-          {current ? 'Change' : 'Use this currency'}
+          {t(current ? 'settings.currencies.budget.change' : 'settings.currencies.budget.use')}
         </Button>
       </div>
       {save.isError && (
@@ -112,6 +115,7 @@ function BudgetCurrency({ current }: { current: string | null }) {
 
 /** Transactions waiting for a rate, and recalculating values after rates were corrected */
 function MissingRates() {
+  const { t } = useTranslation();
   const { data: settings } = useCurrencySettings();
   const recalculate = useRecalculate();
   const canSave = useCanSave();
@@ -122,21 +126,19 @@ function MissingRates() {
     <section className={section} aria-labelledby="missing-heading">
       <div>
         <h3 id="missing-heading" className="text-sm font-medium text-text">
-          Values in {settings.currency}
+          {t('settings.currencies.values.title', { currency: settings.currency })}
         </h3>
         {missing && missing.count > 0 ? (
           <p className="mt-1 flex items-start gap-1.5 text-xs text-caution">
             <AlertTriangle size={13} className="mt-px shrink-0" aria-hidden />
-            {missing.count} transaction{missing.count === 1 ? '' : 's'} in{' '}
-            {missing.currencies.join(', ')} {missing.count === 1 ? 'has' : 'have'} no exchange rate
-            for {missing.count === 1 ? 'its' : 'their'} day yet, so the budget counts{' '}
-            {missing.count === 1 ? 'it' : 'them'} as nothing. Add a rate below, or turn on
-            downloading.
+            {t('settings.currencies.values.missing', {
+              count: missing.count,
+              currencies: missing.currencies.join(', '),
+            })}
           </p>
         ) : (
           <p className="text-xs text-text-tertiary mt-0.5">
-            Every transaction in another currency has its value in {settings.currency}. Values stay
-            as they were when a rate changes; recalculate after correcting a rate.
+            {t('settings.currencies.values.hint', { currency: settings.currency })}
           </p>
         )}
       </div>
@@ -147,14 +149,14 @@ function MissingRates() {
           onClick={() => recalculate.mutate({})}
           disabled={recalculate.isPending || !canSave}
         >
-          Recalculate from rates
+          {t('settings.currencies.values.recalculate')}
         </Button>
         {recalculate.isSuccess && (
           <span role="status" className="text-xs text-text-secondary">
             {recalculate.data.changed
-              ? `${recalculate.data.changed} value${recalculate.data.changed === 1 ? '' : 's'} updated.`
-              : 'Nothing to update.'}{' '}
-            Values you typed in stay.
+              ? t('settings.currencies.values.updated', { count: recalculate.data.changed })
+              : t('settings.currencies.values.nothingToUpdate')}{' '}
+            {t('settings.currencies.values.typedInStay')}
           </span>
         )}
       </div>
@@ -163,6 +165,7 @@ function MissingRates() {
 }
 
 function Rates() {
+  const { t } = useTranslation();
   const { data: settings } = useCurrencySettings();
   const budget = settings?.currency ?? null;
   const foreign = settings?.foreignCurrencies ?? [];
@@ -194,12 +197,9 @@ function Rates() {
     <section className={section} aria-labelledby="rates-heading">
       <div>
         <h3 id="rates-heading" className="text-sm font-medium text-text">
-          Exchange rates
+          {t('settings.currencies.rates.title')}
         </h3>
-        <p className="text-xs text-text-tertiary mt-0.5">
-          A day without a rate uses the closest earlier one, up to a month back. A rate you type in
-          wins over a downloaded one for its day.
-        </p>
+        <p className="text-xs text-text-tertiary mt-0.5">{t('settings.currencies.rates.hint')}</p>
       </div>
 
       {settings!.latestRates.length > 0 && (
@@ -211,8 +211,8 @@ function Rates() {
               </span>
               <span className="text-xs text-text-tertiary">
                 {r.date
-                  ? `${formatDay(r.date)} · ${r.source === 'manual' ? 'typed in' : 'ECB'}`
-                  : 'No rate in the last month'}
+                  ? `${formatDay(r.date)} · ${r.source === 'manual' ? t('settings.currencies.rates.typedIn') : 'ECB'}`
+                  : t('settings.currencies.rates.noRecentRate')}
               </span>
             </li>
           ))}
@@ -225,7 +225,7 @@ function Rates() {
             htmlFor="rate-currency"
             className="block text-xs font-medium text-text-tertiary mb-1"
           >
-            Currency
+            {t('settings.currencies.rates.currency')}
           </label>
           <CurrencySelect
             id="rate-currency"
@@ -237,7 +237,7 @@ function Rates() {
         </div>
         <div>
           <label htmlFor="rate-date" className="block text-xs font-medium text-text-tertiary mb-1">
-            Day
+            {t('settings.currencies.rates.day')}
           </label>
           <input
             id="rate-date"
@@ -249,7 +249,7 @@ function Rates() {
         </div>
         <div>
           <label htmlFor="rate-value" className="block text-xs font-medium text-text-tertiary mb-1">
-            1 {currency} in {budget}
+            {t('settings.currencies.rates.rate', { currency, budget })}
           </label>
           <input
             id="rate-value"
@@ -267,12 +267,12 @@ function Rates() {
           size="sm"
           disabled={!rateValid || currency === budget || add.isPending || !canSave || !date}
         >
-          Add rate
+          {t('settings.currencies.rates.add')}
         </Button>
       </form>
       {rate !== '' && !rateValid && (
         <p role="alert" className="text-xs text-negative">
-          Type the rate as a positive number, like 1.0812.
+          {t('settings.currencies.rates.invalid')}
         </p>
       )}
       {add.isError && (
@@ -283,7 +283,9 @@ function Rates() {
 
       {typedIn.length > 0 && (
         <div>
-          <h4 className="text-xs font-medium text-text-secondary mb-1.5">Rates you typed in</h4>
+          <h4 className="text-xs font-medium text-text-secondary mb-1.5">
+            {t('settings.currencies.rates.typedInTitle')}
+          </h4>
           <ul className="divide-y divide-border-light rounded-md border border-border bg-surface">
             {typedIn.map((r) => (
               <li key={r.id} className="flex items-center gap-3 px-3 py-1.5 text-sm">
@@ -294,7 +296,10 @@ function Rates() {
                   type="button"
                   onClick={() => remove.mutate(r.id)}
                   disabled={!canSave}
-                  aria-label={`Delete the rate for ${r.base} on ${formatDay(r.date)}`}
+                  aria-label={t('settings.currencies.rates.delete', {
+                    currency: r.base,
+                    date: formatDay(r.date),
+                  })}
                   className="p-1.5 rounded text-text-tertiary hover:text-negative max-md:min-h-11 max-md:min-w-11 disabled:opacity-50"
                 >
                   <Trash2 size={14} />
@@ -310,13 +315,17 @@ function Rates() {
 }
 
 function RateDownload() {
+  const { t } = useTranslation();
   const { data: settings } = useCurrencySettings();
   const setDownload = useSetRateDownload();
   const download = useDownloadRates();
   const canSave = useCanSave();
   const [url, setUrl] = useState(settings?.ratesUrl ?? '');
   if (!settings) return null;
-  const server = settings.ratesUrl || settings.defaultRatesUrl || 'the rates server';
+  const server =
+    settings.ratesUrl ||
+    settings.defaultRatesUrl ||
+    t('settings.currencies.download.defaultServer');
   const host = (() => {
     try {
       return new URL(server).host;
@@ -329,18 +338,14 @@ function RateDownload() {
     <section className={section} aria-labelledby="download-heading">
       <div>
         <h3 id="download-heading" className="text-sm font-medium text-text">
-          Download rates
+          {t('settings.currencies.download.title')}
         </h3>
         <p className="text-xs text-text-tertiary mt-0.5">
-          The European Central Bank&apos;s daily reference rates, from {host} (Frankfurter, open
-          source). Only currency codes and dates are sent, never anything about your budget. Off
-          until you turn it on; then it checks every few hours.
+          {t('settings.currencies.download.hint', { host })}
         </p>
       </div>
       {!settings.canDownload ? (
-        <p className="text-xs text-text-secondary">
-          Not available in the demo: rates can be typed in above.
-        </p>
+        <p className="text-xs text-text-secondary">{t('settings.currencies.download.notInDemo')}</p>
       ) : (
         <>
           <label className="flex items-center gap-3 cursor-pointer max-md:min-h-11">
@@ -351,7 +356,9 @@ function RateDownload() {
               disabled={!canSave || setDownload.isPending}
               className="h-4 w-4 rounded border-border text-brand-600 focus:ring-brand-500"
             />
-            <span className="text-sm text-text-secondary">Download ECB reference rates</span>
+            <span className="text-sm text-text-secondary">
+              {t('settings.currencies.download.enable')}
+            </span>
           </label>
           {settings.ratesEnabled && (
             <div className="space-y-3">
@@ -362,15 +369,22 @@ function RateDownload() {
                   onClick={() => download.mutate()}
                   disabled={download.isPending || !canSave}
                 >
-                  <Download size={13} /> {download.isPending ? 'Downloading…' : 'Download now'}
+                  <Download size={13} />{' '}
+                  {t(
+                    download.isPending
+                      ? 'settings.currencies.download.downloading'
+                      : 'settings.currencies.download.now',
+                  )}
                 </Button>
                 <span className="text-xs text-text-tertiary" role="status">
-                  {settings.lastFetchedAt
-                    ? `Last downloaded ${formatDay(settings.lastFetchedAt.slice(0, 10))}`
-                    : 'Not downloaded yet'}
-                  {download.data?.unsupported.length
-                    ? `. The ECB has no rates for ${download.data.unsupported.join(', ')}: type those in.`
-                    : ''}
+                  {downloadStatus(
+                    settings.lastFetchedAt
+                      ? t('settings.currencies.download.last', {
+                          date: formatDay(settings.lastFetchedAt.slice(0, 10)),
+                        })
+                      : t('settings.currencies.download.never'),
+                    download.data?.unsupported ?? [],
+                  )}
                 </span>
               </div>
               {settings.lastError && (
@@ -390,7 +404,7 @@ function RateDownload() {
                     htmlFor="rates-url"
                     className="block text-xs font-medium text-text-tertiary mb-1"
                   >
-                    Server (optional, for your own Frankfurter)
+                    {t('settings.currencies.download.server')}
                   </label>
                   <input
                     id="rates-url"
@@ -407,7 +421,7 @@ function RateDownload() {
                   variant="secondary"
                   disabled={(url.trim() || null) === settings.ratesUrl || !canSave}
                 >
-                  Save server
+                  {t('settings.currencies.download.saveServer')}
                 </Button>
               </form>
               {setDownload.isError && (
@@ -424,14 +438,17 @@ function RateDownload() {
   );
 }
 
-const POSITIONS: { value: SymbolPosition | 'auto'; label: string }[] = [
-  { value: 'auto', label: 'Automatic' },
-  { value: 'before', label: 'Before' },
-  { value: 'after', label: 'After' },
-];
+/** When the download went, and which currencies it has no rates for */
+const downloadStatus = (status: string, unsupported: string[]) =>
+  unsupported.length
+    ? t('settings.currencies.download.unsupported', { status, currencies: unsupported.join(', ') })
+    : status;
+
+const POSITIONS: (SymbolPosition | 'auto')[] = ['auto', 'before', 'after'];
 
 /** How each currency in use is written on this device: its symbol and which side it goes */
 function Display() {
+  const { t } = useTranslation();
   const { data: settings } = useCurrencySettings();
   const styles = usePreferencesStore((s) => s.currencyStyles);
   const setStyle = usePreferencesStore((s) => s.setCurrencyStyle);
@@ -443,12 +460,10 @@ function Display() {
     <section className={section} aria-labelledby="display-heading">
       <div>
         <h3 id="display-heading" className="text-sm font-medium text-text">
-          How amounts are written
+          {t('settings.currencies.display.title')}
         </h3>
         <p className="text-xs text-text-tertiary mt-0.5">
-          On this device. Automatic writes each currency as at home: 1 234,56 zł, $1,234.56, CHF
-          1&apos;234.56 (the number format is in Preferences). {budget}&apos;s position is the
-          Preferences one.
+          {t('settings.currencies.display.hint', { budget })}
         </p>
       </div>
       <ul className="space-y-3">
@@ -462,34 +477,42 @@ function Display() {
               </span>
               <input
                 type="text"
-                aria-label={`${code} symbol`}
+                aria-label={t('settings.currencies.display.symbol', { currency: code })}
                 value={own.symbol ?? ''}
                 placeholder={currencySymbol(code)}
                 maxLength={5}
                 onChange={(e) => setStyle(code, { ...own, symbol: e.target.value || undefined })}
                 className={`${inputClass} w-20 text-center`}
               />
-              <div role="group" aria-label={`${code} symbol position`} className="flex gap-1">
+              <div
+                role="group"
+                aria-label={t('settings.currencies.display.position', { currency: code })}
+                className="flex gap-1"
+              >
                 {POSITIONS.map((p) => (
                   <button
-                    key={p.value}
+                    key={p}
                     type="button"
-                    aria-pressed={position === p.value}
+                    aria-pressed={position === p}
                     onClick={() =>
                       setStyle(code, {
                         ...own,
-                        position: p.value === 'auto' ? undefined : p.value,
+                        position: p === 'auto' ? undefined : p,
                       })
                     }
                     className={`px-2.5 py-1 text-xs rounded-md border max-md:min-h-11 ${
-                      position === p.value
+                      position === p
                         ? 'border-brand-500 bg-brand-50 text-brand-700 font-medium'
                         : 'border-border bg-surface text-text-secondary'
                     }`}
                   >
-                    {p.value === 'auto'
-                      ? `Automatic (${currencyConvention(code).position === 'after' ? 'after' : 'before'})`
-                      : p.label}
+                    {p === 'auto'
+                      ? t(
+                          currencyConvention(code).position === 'after'
+                            ? 'settings.currencies.display.autoAfter'
+                            : 'settings.currencies.display.autoBefore',
+                        )
+                      : t(`settings.currencies.display.${p}`)}
                   </button>
                 ))}
               </div>

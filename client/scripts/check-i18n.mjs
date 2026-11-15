@@ -17,10 +17,12 @@ const LOOSE = process.argv.includes('--loose');
 /** Paths (relative to src/, a folder ends in /) whose text must come from the translations */
 const ENFORCED = [
   'i18n/',
+  'components/currency/',
   'components/layout/',
   'components/ui/',
   'components/settings/AccountReorder.tsx',
   'components/settings/ConnectedAccounts.tsx',
+  'components/settings/CurrencySettings.tsx',
   'components/settings/DataExport.tsx',
   'components/settings/PreferencesPanel.tsx',
   'components/settings/ServerSettings.tsx',
