@@ -139,6 +139,122 @@
       "login": {
         "expired": "The bank login took too long. Please try again."
       }
+    },
+    "status": {
+      "good": "Synced",
+      "syncing": "Syncing...",
+      "error": "Error",
+      "login_required": "Login Required"
+    },
+    "config": {
+      "title": "Set Up Bank Sync"
+    },
+    "mapping": {
+      "hint": "Choose how to set up each discovered account.",
+      "createNew": "Create New",
+      "linkExisting": "Link Existing",
+      "skip": "Skip",
+      "selectAccount": "Select an account...",
+      "accountName": "Account name",
+      "saveAndSync": "Save & Sync"
+    },
+    "syncing": {
+      "title": "Syncing Transactions",
+      "hint": "Importing your transactions. This may take a moment..."
+    },
+    "done": {
+      "title": "Connection Complete",
+      "imported": "Imported {{transactions}} across {{accounts}}.",
+      "transactions_one": "{{count, number}} transaction",
+      "transactions_other": "{{count, number}} transactions",
+      "accounts_one": "{{count, number}} account",
+      "accounts_other": "{{count, number}} accounts"
+    },
+    "card": {
+      "lastSynced": "Last synced {{ago}}",
+      "notLinked": "Not linked",
+      "syncing": "Syncing...",
+      "syncNow": "Sync Now",
+      "disconnect": "Disconnect"
+    },
+    "plaid": {
+      "connect": {
+        "title": "Connect Bank Account",
+        "heading": "Connect Your Financial Institution",
+        "hint": "Securely link your bank accounts to automatically import transactions and keep your balances up to date.",
+        "preparing": "Preparing...",
+        "button": "Connect Bank"
+      },
+      "waiting": {
+        "title": "Finish connecting in your browser",
+        "hint": "Plaid opened in your web browser. Log in to your bank there — FlyBudget will continue automatically when you're done.",
+        "secure": "Your bank login happens on Plaid's secure site, never in FlyBudget.",
+        "reopen": "Open Plaid again"
+      },
+      "link": {
+        "cancelled": "Connection cancelled.",
+        "expired": "The Plaid session expired. Please try again."
+      },
+      "setup": {
+        "title": "Connect via Plaid",
+        "heading": "Connect with Plaid",
+        "intro": "Create a free <accountLink>Plaid developer account</accountLink> to get your API credentials, then enter them below.",
+        "configured": "Plaid Configured",
+        "configuredHint": "Your credentials have been saved. You can now connect your bank."
+      },
+      "config": {
+        "hint": "Connect your bank accounts to automatically import transactions using Plaid. A developer account is free and always includes up to 10 bank connections.",
+        "getCredentials": "Get Plaid credentials"
+      },
+      "credentials": {
+        "clientId": "Client ID",
+        "clientIdPlaceholder": "Enter your Plaid Client ID",
+        "secret": "Secret",
+        "secretPlaceholder": "Enter your Plaid Secret",
+        "saving": "Saving...",
+        "save": "Save Credentials",
+        "error": "Failed to save credentials. Please check your input and try again."
+      },
+      "environment": {
+        "label": "Environment",
+        "production": "Production — your real bank accounts",
+        "sandbox": "Sandbox — test data only (for developers)",
+        "hint": "Use the secret that matches this environment in your Plaid dashboard."
+      },
+      "card": {
+        "loginRequired": "Your bank requires you to re-authenticate. Click \"Reconnect\" to update your credentials.",
+        "reconnect": "Reconnect",
+        "synced": "Synced: {{added, number}} added, {{modified, number}} modified, {{removed, number}} removed."
+      },
+      "disconnect": {
+        "title": "Disconnect Institution",
+        "message": "Are you sure you want to disconnect {{name}}? This revokes FlyBudget's access to this bank at Plaid. Your existing accounts and transactions will not be deleted."
+      }
+    },
+    "simplefin": {
+      "connect": {
+        "title": "Connect via SimpleFIN",
+        "heading": "Connect with SimpleFIN Bridge",
+        "intro": "Visit <bridgeLink>SimpleFIN Bridge</bridgeLink> to create a setup token, then paste it below. SimpleFIN costs $1.50/month paid directly to them.",
+        "placeholder": "Paste your SimpleFIN setup token...",
+        "connecting": "Connecting...",
+        "button": "Connect",
+        "error": "Failed to connect. Check your setup token and try again."
+      },
+      "config": {
+        "hint": "Connect your bank accounts to automatically import transactions using SimpleFIN Bridge. The service costs $1.50/month paid directly to SimpleFIN.",
+        "getToken": "Get a SimpleFIN token",
+        "token": "Setup Token",
+        "placeholder": "Paste your SimpleFIN setup token"
+      },
+      "card": {
+        "synced_one": "Synced: {{count, number}} new transaction imported.",
+        "synced_other": "Synced: {{count, number}} new transactions imported."
+      },
+      "disconnect": {
+        "title": "Disconnect SimpleFIN",
+        "message": "Are you sure you want to disconnect {{name}}? FlyBudget will delete its stored access. To revoke it completely, also remove this app from your SimpleFIN Bridge account at bridge.simplefin.org. Your existing accounts and transactions will not be deleted."
+      }
     }
   },
   "common": {

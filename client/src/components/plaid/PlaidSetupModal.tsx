@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { KeyRound, Loader2, CheckCircle2 } from 'lucide-react';
+import { Trans, useTranslation } from 'react-i18next';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { PlaidEnvironmentSelect, type PlaidEnvironment } from './PlaidEnvironmentSelect';
@@ -23,6 +24,7 @@ export function PlaidSetupModal(props: Props) {
 }
 
 function PlaidSetupModalDialog({ isOpen, onClose, onConfigured }: Props) {
+  const { t } = useTranslation();
   const [clientId, setClientId] = useState('');
   const [secret, setSecret] = useState('');
   const [environment, setEnvironment] = useState<PlaidEnvironment>('production');
@@ -56,46 +58,53 @@ function PlaidSetupModalDialog({ isOpen, onClose, onConfigured }: Props) {
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Connect via Plaid" size="lg">
+    <Modal isOpen={isOpen} onClose={handleClose} title={t('banks.plaid.setup.title')} size="lg">
       {!done ? (
         <div className="space-y-5">
           <div className="text-center py-4">
             <div className="w-16 h-16 rounded-lg bg-brand-50 flex items-center justify-center mx-auto mb-4">
               <KeyRound size={32} className="text-brand-600" />
             </div>
-            <h3 className="text-sm font-semibold text-text">Connect with Plaid</h3>
+            <h3 className="text-sm font-semibold text-text">{t('banks.plaid.setup.heading')}</h3>
             <p className="text-xs text-text-secondary mt-2 max-w-sm mx-auto leading-relaxed">
-              Create a free{' '}
-              <a
-                href="https://dashboard.plaid.com/signup"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-brand-600 underline"
-              >
-                Plaid developer account
-              </a>{' '}
-              to get your API credentials, then enter them below.
+              <Trans
+                i18nKey="banks.plaid.setup.intro"
+                components={{
+                  accountLink: (
+                    <a
+                      href="https://dashboard.plaid.com/signup"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-brand-600 underline"
+                    />
+                  ),
+                }}
+              />
             </p>
           </div>
 
           <div className="space-y-3">
             <div>
-              <label className="block text-xs font-medium text-text-tertiary mb-1">Client ID</label>
+              <label className="block text-xs font-medium text-text-tertiary mb-1">
+                {t('banks.plaid.credentials.clientId')}
+              </label>
               <input
                 type="text"
                 value={clientId}
                 onChange={(e) => setClientId(e.target.value)}
-                placeholder="Enter your Plaid Client ID"
+                placeholder={t('banks.plaid.credentials.clientIdPlaceholder')}
                 className="w-full text-sm border border-border rounded-md px-3 py-2 bg-surface text-text focus:outline-none focus:ring-1 focus:ring-brand-600 focus:border-brand-600"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-text-tertiary mb-1">Secret</label>
+              <label className="block text-xs font-medium text-text-tertiary mb-1">
+                {t('banks.plaid.credentials.secret')}
+              </label>
               <input
                 type="password"
                 value={secret}
                 onChange={(e) => setSecret(e.target.value)}
-                placeholder="Enter your Plaid Secret"
+                placeholder={t('banks.plaid.credentials.secretPlaceholder')}
                 className="w-full text-sm border border-border rounded-md px-3 py-2 bg-surface text-text focus:outline-none focus:ring-1 focus:ring-brand-600 focus:border-brand-600"
               />
             </div>
@@ -107,10 +116,11 @@ function PlaidSetupModalDialog({ isOpen, onClose, onConfigured }: Props) {
               >
                 {configure.isPending ? (
                   <>
-                    <Loader2 size={16} className="animate-spin" /> Saving...
+                    <Loader2 size={16} className="animate-spin" />{' '}
+                    {t('banks.plaid.credentials.saving')}
                   </>
                 ) : (
-                  'Save Credentials'
+                  t('banks.plaid.credentials.save')
                 )}
               </Button>
             </div>
@@ -118,7 +128,7 @@ function PlaidSetupModalDialog({ isOpen, onClose, onConfigured }: Props) {
 
           {configure.isError && (
             <p className="text-xs text-negative text-center">
-              Failed to save credentials. Please check your input and try again.
+              {t('banks.plaid.credentials.error')}
             </p>
           )}
         </div>
@@ -127,12 +137,12 @@ function PlaidSetupModalDialog({ isOpen, onClose, onConfigured }: Props) {
           <div className="w-16 h-16 rounded-full bg-positive-subtle flex items-center justify-center mx-auto mb-4">
             <CheckCircle2 size={32} className="text-positive" />
           </div>
-          <h3 className="text-sm font-semibold text-text">Plaid Configured</h3>
+          <h3 className="text-sm font-semibold text-text">{t('banks.plaid.setup.configured')}</h3>
           <p className="text-xs text-text-secondary mt-1">
-            Your credentials have been saved. You can now connect your bank.
+            {t('banks.plaid.setup.configuredHint')}
           </p>
           <Button onClick={handleContinue} className="mt-6">
-            Connect Bank
+            {t('banks.plaid.connect.button')}
           </Button>
         </div>
       )}

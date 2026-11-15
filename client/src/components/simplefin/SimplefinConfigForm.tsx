@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link2, ExternalLink, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useSetupSimplefin } from '../../hooks/useSimplefin';
 import { Button } from '../ui/Button';
 import type { SimplefinSetupResult } from '../../types';
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export function SimplefinConfigForm({ onSetupComplete }: Props) {
+  const { t } = useTranslation();
   const [token, setToken] = useState('');
   const setup = useSetupSimplefin();
 
@@ -32,10 +34,9 @@ export function SimplefinConfigForm({ onSetupComplete }: Props) {
             <Link2 size={20} className="text-white" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-text">Set Up Bank Sync</h3>
+            <h3 className="text-sm font-semibold text-text">{t('banks.config.title')}</h3>
             <p className="text-xs text-text-secondary mt-1 leading-relaxed">
-              Connect your bank accounts to automatically import transactions using SimpleFIN
-              Bridge. The service costs $1.50/month paid directly to SimpleFIN.
+              {t('banks.simplefin.config.hint')}
             </p>
             <a
               href="https://beta-bridge.simplefin.org/simplefin/create"
@@ -43,7 +44,7 @@ export function SimplefinConfigForm({ onSetupComplete }: Props) {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700 font-medium mt-2"
             >
-              Get a SimpleFIN token <ExternalLink size={11} />
+              {t('banks.simplefin.config.getToken')} <ExternalLink size={11} />
             </a>
           </div>
         </div>
@@ -51,28 +52,29 @@ export function SimplefinConfigForm({ onSetupComplete }: Props) {
 
       <form onSubmit={handleSubmit} className="bg-surface-alt rounded-lg p-5 space-y-4">
         <div>
-          <label className="block text-xs font-medium text-text-tertiary mb-1">Setup Token</label>
+          <label className="block text-xs font-medium text-text-tertiary mb-1">
+            {t('banks.simplefin.config.token')}
+          </label>
           <input
             type="text"
             value={token}
             onChange={(e) => setToken(e.target.value)}
-            placeholder="Paste your SimpleFIN setup token"
+            placeholder={t('banks.simplefin.config.placeholder')}
             className="w-full text-sm border border-border rounded-md px-3 py-2 bg-surface text-text focus:outline-none focus:ring-1 focus:ring-brand-600 focus:border-brand-600 font-mono"
           />
         </div>
         <Button type="submit" disabled={!token.trim() || setup.isPending}>
           {setup.isPending ? (
             <>
-              <Loader2 size={16} className="animate-spin" /> Connecting...
+              <Loader2 size={16} className="animate-spin" />{' '}
+              {t('banks.simplefin.connect.connecting')}
             </>
           ) : (
-            'Connect'
+            t('banks.simplefin.connect.button')
           )}
         </Button>
         {setup.isError && (
-          <p className="text-xs text-negative">
-            Failed to connect. Check your setup token and try again.
-          </p>
+          <p className="text-xs text-negative">{t('banks.simplefin.connect.error')}</p>
         )}
       </form>
     </div>

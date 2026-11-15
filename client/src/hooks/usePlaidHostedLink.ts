@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import * as plaidApi from '../api/plaid';
+import { t } from '../i18n';
 import type { PlaidExchangeResult } from '../types';
 
 const POLL_INTERVAL_MS = 3_000;
@@ -52,11 +53,11 @@ export function usePlaidHostedLink(onSuccess: (result: PlaidExchangeResult | nul
           return;
         }
         if (res.status === 'exited')
-          return finish({ phase: 'idle', message: 'Connection cancelled.' });
+          return finish({ phase: 'idle', message: t('banks.plaid.link.cancelled') });
         if (res.status === 'expired') {
           return finish({
             phase: 'error',
-            message: 'The Plaid session expired. Please try again.',
+            message: t('banks.plaid.link.expired'),
           });
         }
       } catch (err) {
