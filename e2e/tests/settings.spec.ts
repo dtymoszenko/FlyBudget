@@ -261,6 +261,19 @@ test('settings link to the license and the source code', async ({ page, api }) =
   await expect(source).toHaveAttribute('rel', /noopener/);
 });
 
+test.describe('language on a German device', () => {
+  test.use({ locale: 'de-DE' });
+
+  test('a new install stays in English while that is the only language', async ({ page, api }) => {
+    await api.createAccount('Girokonto');
+    await open(page, '/settings?tab=preferences');
+    await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+    // Nothing to choose from yet
+    await expect(page.getByRole('combobox', { name: 'Language' })).toHaveCount(0);
+  });
+});
+
 test.describe('amounts on a German device', () => {
   test.use({ locale: 'de-DE' });
 
