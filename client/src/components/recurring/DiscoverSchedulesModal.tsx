@@ -171,7 +171,7 @@ export default function DiscoverSchedulesModal({ isOpen, onClose }: Props) {
         </div>
       </div>
 
-      <div className="flex items-center justify-between mt-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 mt-4">
         <span className="text-xs text-text-tertiary">
           {selected.size > 0
             ? t('recurring.discover.selected', { count: selected.size })
@@ -179,7 +179,7 @@ export default function DiscoverSchedulesModal({ isOpen, onClose }: Props) {
               ? t('recurring.discover.shiftHint')
               : ''}
         </span>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap justify-end gap-2">
           <Button variant="secondary" size="sm" onClick={onClose}>
             {t('common.actions.cancel')}
           </Button>

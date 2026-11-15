@@ -11,64 +11,75 @@ async function screenshot(page: Page, testInfo: TestInfo, name: string) {
   await page.screenshot({ path: testInfo.outputPath(`phone-${name}.png`), fullPage: true });
 }
 
-test('every page fits a phone screen', async ({ page, api }, testInfo) => {
-  test.setTimeout(120_000);
-  const checking = await api.createAccount('Everyday Checking', 250_000);
-  await api.createAccount('Rainy Day Savings', 1_000_000, 'savings');
-  const groceries = await api.category('Groceries');
-  for (const [i, payee] of ['Corner Grocery', 'Coffee Corner', 'City Power & Light'].entries()) {
-    await api.createTransaction({
-      accountId: checking.id,
-      date: isoDay(-i),
-      amount: -(4_250 + i * 1_000),
-      payeeName: payee,
-      categoryId: i === 0 ? groceries.id : null,
-      notes: i === 2 ? 'Monthly electricity bill with a fairly long note' : undefined,
+// In English and in Dutch, which runs about a third longer
+for (const locale of ['en-US', 'nl-NL']) {
+  test.describe(locale, () => {
+    test.use({ locale });
+
+    test('every page fits a phone screen', async ({ page, api }, testInfo) => {
+      test.setTimeout(120_000);
+      const checking = await api.createAccount('Everyday Checking', 250_000);
+      await api.createAccount('Rainy Day Savings', 1_000_000, 'savings');
+      const groceries = await api.category('Groceries');
+      for (const [i, payee] of [
+        'Corner Grocery',
+        'Coffee Corner',
+        'City Power & Light',
+      ].entries()) {
+        await api.createTransaction({
+          accountId: checking.id,
+          date: isoDay(-i),
+          amount: -(4_250 + i * 1_000),
+          payeeName: payee,
+          categoryId: i === 0 ? groceries.id : null,
+          notes: i === 2 ? 'Monthly electricity bill with a fairly long note' : undefined,
+        });
+      }
+      await api.call('PUT', `/budget/${thisMonth()}/${groceries.id}`, { budgeted: 50_000 });
+      await api.call('POST', '/schedules', {
+        name: 'Rent',
+        amount: -150_000,
+        recurrenceType: 'monthly',
+        startDate: isoDay(2),
+        accountId: checking.id,
+      });
+      await api.call('POST', '/rules', {
+        conditions: [{ field: 'payee_name', op: 'contains', value: 'grocery' }],
+        actions: [{ type: 'set_category', value: groceries.id }],
+      });
+      await api.call('POST', '/goals', { name: 'Vacation', targetAmount: 200_000 });
+
+      const routes: [string, string][] = [
+        ['dashboard', '/dashboard'],
+        ['accounts', '/accounts'],
+        ['account', `/accounts/${checking.id}`],
+        ['reconcile', `/accounts/${checking.id}/reconcile`],
+        ['transactions', '/transactions'],
+        ['budget', '/budget'],
+        ['budget-category', `/budget/category/${groceries.id}`],
+        ['recurring', '/recurring'],
+        ['reports', '/reports'],
+        ['custom-report', '/reports/custom'],
+        ['cash-flow', '/cash-flow'],
+        ['goals', '/goals'],
+        ['payees', '/payees'],
+        ['rules', '/rules'],
+        ['settings', '/settings'],
+      ];
+
+      const problems: string[] = [];
+      for (const [name, route] of routes) {
+        await open(page, route);
+        await expect(page.getByRole('main')).toBeVisible();
+        await page.waitForLoadState('networkidle');
+        await screenshot(page, testInfo, name);
+        const overflow = await sidewaysOverflow(page);
+        if (overflow.length) problems.push(`${route}: ${overflow.join('; ')}`);
+      }
+      expect(problems, 'pages that scroll sideways on a phone').toEqual([]);
     });
-  }
-  await api.call('PUT', `/budget/${thisMonth()}/${groceries.id}`, { budgeted: 50_000 });
-  await api.call('POST', '/schedules', {
-    name: 'Rent',
-    amount: -150_000,
-    recurrenceType: 'monthly',
-    startDate: isoDay(2),
-    accountId: checking.id,
   });
-  await api.call('POST', '/rules', {
-    conditions: [{ field: 'payee_name', op: 'contains', value: 'grocery' }],
-    actions: [{ type: 'set_category', value: groceries.id }],
-  });
-  await api.call('POST', '/goals', { name: 'Vacation', targetAmount: 200_000 });
-
-  const routes: [string, string][] = [
-    ['dashboard', '/dashboard'],
-    ['accounts', '/accounts'],
-    ['account', `/accounts/${checking.id}`],
-    ['reconcile', `/accounts/${checking.id}/reconcile`],
-    ['transactions', '/transactions'],
-    ['budget', '/budget'],
-    ['budget-category', `/budget/category/${groceries.id}`],
-    ['recurring', '/recurring'],
-    ['reports', '/reports'],
-    ['custom-report', '/reports/custom'],
-    ['cash-flow', '/cash-flow'],
-    ['goals', '/goals'],
-    ['payees', '/payees'],
-    ['rules', '/rules'],
-    ['settings', '/settings'],
-  ];
-
-  const problems: string[] = [];
-  for (const [name, route] of routes) {
-    await open(page, route);
-    await expect(page.getByRole('main')).toBeVisible();
-    await page.waitForLoadState('networkidle');
-    await screenshot(page, testInfo, name);
-    const overflow = await sidewaysOverflow(page);
-    if (overflow.length) problems.push(`${route}: ${overflow.join('; ')}`);
-  }
-  expect(problems, 'pages that scroll sideways on a phone').toEqual([]);
-});
+}
 
 test('the welcome screen fits a phone screen', async ({ page }, testInfo) => {
   await open(page, '/dashboard');

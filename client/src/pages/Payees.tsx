@@ -213,9 +213,9 @@ export default function PayeesPage() {
   return (
     <div className="flex flex-col h-full bg-surface">
       <div className="px-6 py-4 border-b border-border shrink-0">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-x-4 gap-y-2 max-md:flex-wrap">
           <h1 className="text-lg font-semibold text-text">{t('payees.title')}</h1>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {selected.size >= 2 && (
               <button
                 onClick={() => setShowMerge(true)}

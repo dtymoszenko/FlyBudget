@@ -124,7 +124,8 @@ export default function RecurringItemRow({
             </p>
             {amount}
           </div>
-          <p className="text-xs text-text-tertiary truncate mt-0.5">
+          {/* Wraps on phones: the frequency and how many days are UI text, not to be cut off */}
+          <p className="text-xs text-text-tertiary truncate max-md:whitespace-normal mt-0.5">
             {formatShortDay(occ.expectedDate)}
             {relative && <span className={relative.tone}> · {relative.text}</span>} · {frequency}
             {accountName ? ` · ${accountName}` : ''}
@@ -164,7 +165,7 @@ export default function RecurringItemRow({
         >
           {occ.scheduleName}
         </p>
-        <p className="text-xs text-text-tertiary truncate">{frequency}</p>
+        <p className="text-xs text-text-tertiary">{frequency}</p>
       </div>
 
       <div className="min-w-0">

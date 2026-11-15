@@ -111,7 +111,7 @@ function AccountGroup({ label, accounts, balancesAgo }: AccountGroupProps) {
           collapsed ? 'rounded-lg' : 'rounded-t-lg border-b border-border'
         }`}
       >
-        <div className="flex items-center gap-2.5">
+        <div className="min-w-0 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-left">
           <span className="text-text-tertiary">
             {collapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
           </span>
@@ -127,7 +127,7 @@ function AccountGroup({ label, accounts, balancesAgo }: AccountGroupProps) {
           )}
           <span className="text-xs text-text-tertiary">{t('accounts.pastMonth')}</span>
         </div>
-        <span className="text-right">
+        <span className="shrink-0 pl-3 text-right">
           <span
             className={`block text-base font-semibold tabular-nums ${groupTotal < 0 ? 'text-negative' : 'text-text'}`}
           >
@@ -212,7 +212,7 @@ export default function AccountsPage() {
     <div className="flex flex-col h-full bg-surface">
       <div className="px-6 py-4 border-b border-border shrink-0 flex items-center justify-between gap-2 max-md:flex-wrap">
         <h1 className="text-lg font-semibold text-text">{t('accounts.title')}</h1>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {accounts.length > 1 && (
             <RowMenu
               label={t('accounts.sort.label')}

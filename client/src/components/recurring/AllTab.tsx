@@ -222,7 +222,8 @@ export default function AllTab({
               </p>
               {amount}
             </div>
-            <p className="text-xs text-text-tertiary truncate mt-0.5">
+            {/* Wraps on phones: the frequency is UI text, not to be cut off */}
+            <p className="text-xs text-text-tertiary truncate max-md:whitespace-normal mt-0.5">
               {[frequency, r.payeeName, r.accountName].filter(Boolean).join(' · ')}
             </p>
             <div className="mt-1.5 flex items-center gap-2 text-xs text-text-secondary">
@@ -258,7 +259,7 @@ export default function AllTab({
           <StatusBadge status={r.status} />
         </div>
         {amount}
-        <span className="text-sm text-text-secondary truncate">{frequency}</span>
+        <span className="text-sm text-text-secondary">{frequency}</span>
         <div onClick={(e) => e.stopPropagation()}>
           <RowMenu label={t('recurring.all.actionsFor', { name: s.name })} items={menu} />
         </div>

@@ -106,7 +106,7 @@ export function DataExport() {
             />
           </p>
         </div>
-        <div className="flex items-end gap-3">
+        <div className="flex flex-wrap items-end gap-3">
           <div>
             <label className="block text-xs font-medium text-text-tertiary mb-1">
               {t('settings.data.export.from')}
