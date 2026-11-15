@@ -17,7 +17,10 @@ const LOOSE = process.argv.includes('--loose');
 /** Paths (relative to src/, a folder ends in /) whose text must come from the translations */
 const ENFORCED = [
   'i18n/',
+  'components/auth/',
   'components/currency/',
+  'components/demo/',
+  'components/goals/',
   'components/layout/',
   'components/ui/',
   'components/settings/AccountReorder.tsx',
@@ -26,7 +29,10 @@ const ENFORCED = [
   'components/settings/DataExport.tsx',
   'components/settings/PreferencesPanel.tsx',
   'components/settings/ServerSettings.tsx',
+  'hooks/useGoals.ts',
+  'pages/Goals.tsx',
   'pages/Settings.tsx',
+  'pages/Welcome.tsx',
 ];
 
 /** JSX attributes and object properties that hold text people read */

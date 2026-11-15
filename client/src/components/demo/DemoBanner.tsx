@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { Trans, useTranslation } from 'react-i18next';
 import { Download, House, Loader2, RotateCcw } from 'lucide-react';
 import { IS_DEMO, resetDemo } from '../../demo/demoApi';
 
@@ -9,11 +10,17 @@ export const DOWNLOAD_URL = '/download';
 /** The website's homepage, which the demo was opened from */
 export const HOME_URL = '/';
 
+const bannerText = {
+  strong: <span className="font-medium" />,
+  muted: <span className="text-text-secondary" />,
+};
+
 /**
  * The demo (website "Try the demo"): says this is a sample budget that isn't saved, and offers
  * to start over, go back to the website's homepage or download the app. Renders nothing outside the demo build.
  */
 export function DemoBanner() {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [resetting, setResetting] = useState(false);
@@ -35,34 +42,33 @@ export function DemoBanner() {
   return (
     <div
       role="region"
-      aria-label="Demo"
+      aria-label={t('demo.banner.label')}
       className="shrink-0 flex items-center gap-3 px-4 py-2 max-md:py-1.5 text-sm bg-brand-50 text-text border-b border-brand-200"
     >
       <p className="min-w-0 flex-1">
-        <span className="font-medium">
-          This is a demo budget<span className="md:hidden">.</span>
+        <span className="md:hidden">
+          <Trans i18nKey="demo.banner.short" components={bannerText} />
         </span>
-        <span className="md:hidden text-text-secondary"> Nothing is saved.</span>
-        <span className="max-md:hidden text-text-secondary">
-          . Change anything you like. Nothing is saved, and closing the tab starts it fresh.
+        <span className="max-md:hidden">
+          <Trans i18nKey="demo.banner.long" components={bannerText} />
         </span>
       </p>
       <div className="flex items-center gap-2 shrink-0">
         <a
           href={HOME_URL}
-          aria-label="Back to home"
-          title="Back to the FlyBudget homepage"
+          aria-label={t('demo.banner.home')}
+          title={t('demo.banner.homeHint')}
           className={`${button} max-md:min-w-11 border border-border bg-surface text-text-secondary hover:text-text hover:bg-surface-alt`}
         >
           <House size={14} aria-hidden />
-          <span className="max-md:hidden">Back to home</span>
+          <span className="max-md:hidden">{t('demo.banner.home')}</span>
         </a>
         <button
           type="button"
           onClick={() => void startOver()}
           disabled={resetting}
-          aria-label="Start over"
-          title="Start over with the original demo budget"
+          aria-label={t('demo.banner.startOver')}
+          title={t('demo.banner.startOverHint')}
           className={`${button} max-md:min-w-11 border border-border bg-surface text-text-secondary hover:text-text hover:bg-surface-alt disabled:opacity-50`}
         >
           {resetting ? (
@@ -70,11 +76,14 @@ export function DemoBanner() {
           ) : (
             <RotateCcw size={14} aria-hidden />
           )}
-          <span className="max-md:hidden">Start over</span>
+          <span className="max-md:hidden">{t('demo.banner.startOver')}</span>
         </button>
         <a href={DOWNLOAD_URL} className={`${button} bg-brand-600 text-white hover:bg-brand-700`}>
           <Download size={14} aria-hidden />
-          Download<span className="max-md:hidden"> FlyBudget</span>
+          <Trans
+            i18nKey="demo.banner.download"
+            components={{ wide: <span className="max-md:hidden" /> }}
+          />
         </a>
       </div>
     </div>

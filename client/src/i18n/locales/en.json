@@ -1,11 +1,34 @@
 {
+  "auth": {
+    "serverAddress": "Server address",
+    "insecure": "<strong>Not a secure connection.</strong> Your password would travel unencrypted. Only continue on a network you trust.",
+    "login": {
+      "title": "Sign in to FlyBudget",
+      "password": "Password",
+      "submit": "Sign in"
+    },
+    "setup": {
+      "title": "Set up your FlyBudget server",
+      "hint": "Create the password that protects this server. Anyone who can reach it will need this password.",
+      "code": "Setup code",
+      "codeHint": "Printed in the server log. With Docker, run <code>docker logs flybudget</code>.",
+      "password": "New password",
+      "confirm": "Confirm password",
+      "submit": "Create password",
+      "tooShort_one": "Use at least {{count, number}} character.",
+      "tooShort_other": "Use at least {{count, number}} characters.",
+      "mismatch": "The passwords don't match."
+    }
+  },
   "common": {
     "actions": {
       "cancel": "Cancel",
       "close": "Close",
       "confirm": "Confirm",
       "done": "Done",
-      "learnMore": "Learn more"
+      "learnMore": "Learn more",
+      "delete": "Delete",
+      "save": "Save"
     },
     "actionsMenu": "Actions",
     "badge": {
@@ -64,6 +87,80 @@
       "noCategory": "No category (net worth only)",
       "noCategoryHint": "Without a category it stays out of income and spending, like other balance corrections.",
       "record": "Record difference"
+    }
+  },
+  "demo": {
+    "download": "Download FlyBudget",
+    "banner": {
+      "label": "Demo",
+      "short": "<strong>This is a demo budget.</strong><muted> Nothing is saved.</muted>",
+      "long": "<strong>This is a demo budget</strong><muted>. Change anything you like. Nothing is saved, and closing the tab starts it fresh.</muted>",
+      "home": "Back to home",
+      "homeHint": "Back to the FlyBudget homepage",
+      "startOver": "Start over",
+      "startOverHint": "Start over with the original demo budget",
+      "download": "Download<wide> FlyBudget</wide>"
+    },
+    "notAvailable": {
+      "title": "Not available in the demo",
+      "connectBank": "Connect a bank",
+      "banks": "Bank connections need the FlyBudget app, so the demo can't connect a bank or take bank credentials. In the app, Plaid, SimpleFIN or Enable Banking (European banks) brings in your transactions automatically, and you can also import CSV files from your bank."
+    }
+  },
+  "goals": {
+    "title": "Goals",
+    "add": "Add Goal",
+    "empty": {
+      "title": "Save for what matters",
+      "description": "Set a target like an emergency fund, a trip or a new car, and see how close you are and how much to set aside each month."
+    },
+    "stats": {
+      "saved": "Saved",
+      "ofTarget": "{{pct}}% of target",
+      "target": "Target",
+      "left": "Left to save",
+      "reached": "Goals reached",
+      "reachedValue": "{{reached}} of {{total}}"
+    },
+    "group": {
+      "inProgress": "In progress",
+      "completed": "Completed",
+      "count_one": "{{count, number}} goal",
+      "count_other": "{{count, number}} goals"
+    },
+    "row": {
+      "target": "Target {{date}}",
+      "of": "of {{amount}}",
+      "edit": "Edit goal",
+      "delete": "Delete goal",
+      "reached": "Goal reached",
+      "overdue": "Past target date · {{amount}} to go",
+      "toGo": "{{amount}} to go",
+      "perMonth": "· {{amount}}/mo to reach it on time"
+    },
+    "delete": {
+      "title": "Delete Goal",
+      "message": "Delete \"{{name}}\"? This cannot be undone."
+    },
+    "form": {
+      "editTitle": "Edit Goal",
+      "name": "Name",
+      "namePlaceholder": "e.g. Emergency Fund",
+      "target": "Target",
+      "saved": "Saved so far",
+      "targetDate": "Target date",
+      "targetDateOptional": "Target date (optional)",
+      "account": "Linked account",
+      "accountOptional": "Linked account (optional)",
+      "noAccount": "None",
+      "icon": "Icon",
+      "color": "Color",
+      "colorOption": "Color {{color}}"
+    },
+    "undo": {
+      "create": "Create goal \"{{name}}\"",
+      "edit": "Edit goal",
+      "delete": "Delete goal \"{{name}}\""
     }
   },
   "layout": {
@@ -412,5 +509,44 @@
       "undo": "Undo",
       "redo": "Redo"
     }
+  },
+  "welcome": {
+    "title": "Welcome to <brand/>!",
+    "intro": "A budget that shows where your money goes and gives every dollar a job. Start by adding the accounts you want to track.",
+    "setupTime": "Setup time:",
+    "options": {
+      "plaid": {
+        "title": "Connect with Plaid",
+        "tag": "Free",
+        "time": "~10 min + approval",
+        "description": "Set it up once and new transactions arrive on their own. Create a free Plaid developer account; Plaid then approves access to your real banks.",
+        "action": "Connect Plaid"
+      },
+      "simplefin": {
+        "title": "Connect with SimpleFIN",
+        "tag": "$1.50/month",
+        "time": "~5 min",
+        "description": "Set it up once and new transactions arrive on their own, through SimpleFIN Bridge (thousands of banks). Paid directly to SimpleFIN.",
+        "action": "Connect SimpleFIN"
+      },
+      "europe": {
+        "title": "Connect a European bank",
+        "tag": "Free",
+        "time": "~15 min",
+        "description": "Set it up once and new transactions arrive on their own, from banks across Europe (PSD2), through your own free Enable Banking application. Log in to your bank again every few months.",
+        "action": "Connect with Enable Banking"
+      },
+      "manual": {
+        "title": "Add accounts manually",
+        "tag": "No bank link",
+        "time": "~1 min each",
+        "description": "You add each account and its balance yourself. Transactions are manual too: download CSV files from your bank and import them yourself, or enter each one by hand. Nothing updates on its own.",
+        "action": "Add manually"
+      }
+    },
+    "privacyServer": "Your budget is stored on your own server. No FlyBudget account, no tracking.",
+    "privacyLocal": "Your budget stays on this computer. No FlyBudget account, no tracking.",
+    "compare": "Compare bank options",
+    "skip": "Skip for now and look around"
   }
 }

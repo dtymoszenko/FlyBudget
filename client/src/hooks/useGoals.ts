@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as goalsApi from '../api/goals';
+import { t } from '../i18n';
 import { useUndoStore } from '../store/undoStore';
 import type { Goal } from '../types';
 
@@ -17,7 +18,7 @@ export function useCreateGoal() {
     onSuccess: (created) => {
       qc.invalidateQueries({ queryKey: ['goals'] });
       useUndoStore.getState().push({
-        description: `Create goal "${created.name}"`,
+        description: t('goals.undo.create', { name: created.name }),
         undo: async () => {
           await goalsApi.deleteGoal(created.id);
           qc.invalidateQueries({ queryKey: ['goals'] });
@@ -53,7 +54,7 @@ export function useUpdateGoal() {
       if (!ctx?.old) return;
       const snapshot = ctx.old;
       useUndoStore.getState().push({
-        description: `Edit goal`,
+        description: t('goals.undo.edit'),
         undo: async () => {
           await goalsApi.updateGoal(id, {
             name: snapshot.name,
@@ -87,7 +88,7 @@ export function useDeleteGoal() {
       qc.invalidateQueries({ queryKey: ['goals'] });
       if (!snapshot) return;
       useUndoStore.getState().push({
-        description: `Delete goal "${snapshot.name}"`,
+        description: t('goals.undo.delete', { name: snapshot.name }),
         undo: async () => {
           await goalsApi.createGoal({
             name: snapshot.name,
