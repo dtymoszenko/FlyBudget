@@ -1,7 +1,6 @@
 // Finds text people see that's written in the code instead of src/i18n/locales/en.json, and
-// checks en.json itself. `npm run check:i18n` lists what's left per file; `-- --list` shows
-// each one. It fails for text in the ENFORCED paths (the ones already translated) and for
-// problems in en.json. Put `// i18n-ignore` on the line above something that isn't text
+// checks en.json itself. It fails for any such text and for problems in en.json; `-- --list`
+// shows every finding. Put `// i18n-ignore` on the line above something that isn't text
 // people read (a date pattern, a brand name).
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
@@ -13,96 +12,6 @@ const LIST = process.argv.includes('--list');
 // Also lists other strings that look like words for people ("Online", 'Demo in this browser'),
 // such as text kept in a variable first. Only a hint: it never fails.
 const LOOSE = process.argv.includes('--loose');
-
-/** Paths (relative to src/, a folder ends in /) whose text must come from the translations */
-const ENFORCED = [
-  'i18n/',
-  'components/accounts/',
-  'components/auth/',
-  'components/budget/BudgetAmountSheet.tsx',
-  'components/budget/PhoneBudget.tsx',
-  'components/connection/',
-  'components/currency/',
-  'components/dashboard/GettingStarted.tsx',
-  'components/dashboard/IncomeExpensesMini.tsx',
-  'components/dashboard/NetWorthMini.tsx',
-  'components/dashboard/RecentTransactions.tsx',
-  'components/dashboard/SpendingBreakdown.tsx',
-  'components/dashboard/SummaryStats.tsx',
-  'components/dashboard/UpcomingBills.tsx',
-  'components/demo/',
-  'components/enablebanking/',
-  'components/goals/',
-  'components/layout/',
-  'components/payees/',
-  'components/plaid/',
-  'components/recurring/',
-  'components/reports/',
-  'components/rules/',
-  'components/settings/AccountReorder.tsx',
-  'components/settings/CategoryManager.tsx',
-  'components/settings/ConnectedAccounts.tsx',
-  'components/settings/CurrencySettings.tsx',
-  'components/settings/DataExport.tsx',
-  'components/settings/DeleteCategoryModal.tsx',
-  'components/settings/PreferencesPanel.tsx',
-  'components/settings/ServerSettings.tsx',
-  'components/simplefin/',
-  'components/transactions/AddTransactionModal.tsx',
-  'components/transactions/CategoryPicker.tsx',
-  'components/transactions/CategorySelect.tsx',
-  'components/transactions/CategorySelectButton.tsx',
-  'components/transactions/ImportModal.tsx',
-  'components/transactions/MerchantSelect.tsx',
-  'components/transactions/PayeeCombobox.tsx',
-  'components/transactions/PayeePicker.tsx',
-  'components/transactions/SplitPartsEditor.tsx',
-  'components/transactions/SplitTransactionModal.tsx',
-  'components/transactions/TransactionCard.tsx',
-  'components/transactions/TransactionDetailPanel.tsx',
-  'components/transactions/TransactionFilters.tsx',
-  'components/transactions/TransactionFormRow.tsx',
-  'components/transactions/TransactionRow.tsx',
-  'components/transactions/TransactionTable.tsx',
-  'components/transactions/TransferSuggestions.tsx',
-  'components/transactions/WaitingTransactions.tsx',
-  'components/ui/',
-  'hooks/useAccounts.ts',
-  'hooks/useBudget.ts',
-  'hooks/useCategories.ts',
-  'hooks/useCustomReports.ts',
-  'hooks/useDashboards.ts',
-  'hooks/useEnableBanking.ts',
-  'hooks/useGoals.ts',
-  'hooks/usePayees.ts',
-  'hooks/usePlaid.ts',
-  'hooks/usePlaidHostedLink.ts',
-  'hooks/useRules.ts',
-  'hooks/useSchedules.ts',
-  'hooks/useSimplefin.ts',
-  'hooks/useTransactions.ts',
-  'hooks/useTransfers.ts',
-  'pages/AccountTransactions.tsx',
-  'pages/Accounts.tsx',
-  'pages/CashFlow.tsx',
-  'pages/CustomReportBuilder.tsx',
-  'pages/Goals.tsx',
-  'pages/Payees.tsx',
-  'pages/ReconcilePage.tsx',
-  'pages/RecurringTransactions.tsx',
-  'pages/ReportWidgetView.tsx',
-  'pages/Reports.tsx',
-  'pages/Rules.tsx',
-  'pages/Settings.tsx',
-  'pages/Transactions.tsx',
-  'pages/Welcome.tsx',
-  'utils/accountTypes.ts',
-  'utils/connection.ts',
-  'utils/csv.ts',
-  'utils/dateRange.ts',
-  'utils/imageResize.ts',
-  'utils/ruleFormat.ts',
-];
 
 /** JSX attributes and object properties that hold text people read */
 const TEXT_ATTRIBUTES = new Set([
@@ -341,7 +250,6 @@ function checkEnglish(english, sources) {
 
 const files = sourceFiles(SRC);
 const sources = files.map((path) => readFileSync(path, 'utf8'));
-let enforcedCount = 0;
 let total = 0;
 const rows = [];
 files.forEach((path, i) => {
@@ -349,16 +257,14 @@ files.forEach((path, i) => {
   const all = check(path, sources[i]);
   const findings = all.filter((f) => f.kind !== 'loose');
   if (!all.length) return;
-  const enforced = ENFORCED.some((p) => (p.endsWith('/') ? rel.startsWith(p) : rel === p));
   total += findings.length;
-  if (enforced) enforcedCount += findings.length;
-  rows.push([rel, findings, enforced, all]);
+  rows.push([rel, findings, all]);
 });
 
 rows.sort((a, b) => b[1].length - a[1].length);
-for (const [rel, findings, enforced, all] of rows) {
-  if (!LIST && !(enforced && findings.length)) continue;
-  console.log(`${enforced && findings.length ? '✗' : ' '} ${rel}: ${findings.length}`);
+for (const [rel, findings, all] of rows) {
+  if (!LIST && !findings.length) continue;
+  console.log(`${findings.length ? '✗' : ' '} ${rel}: ${findings.length}`);
   for (const f of LIST ? all : findings) console.log(`    ${f.line}  ${f.kind}: ${f.text}`);
 }
 
@@ -367,8 +273,7 @@ const problems = checkEnglish(english, sources);
 for (const p of problems) console.log(`✗ en.json ${p}`);
 
 console.log(
-  `\n${total} texts in ${rows.length} files still in the code` +
-    (enforcedCount ? `, ${enforcedCount} in translated files` : '') +
+  `\n${total} ${total === 1 ? 'text' : 'texts'} in the code instead of en.json` +
     (problems.length ? `; ${problems.length} problems in en.json` : ''),
 );
-if (enforcedCount || problems.length) process.exit(1);
+if (total || problems.length) process.exit(1);

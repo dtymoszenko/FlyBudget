@@ -18,7 +18,9 @@ export interface Language {
 
 export const FALLBACK_LANGUAGE = 'en';
 
+// Each language is named in itself (an endonym), whatever language the app is in
 export const LANGUAGES = [
+  // i18n-ignore
   { code: 'en', name: 'English', dateLocale: enUS, resources: en, listed: true },
 ] as const satisfies readonly Language[];
 
@@ -41,6 +43,7 @@ export function availableLanguages(): readonly Language[] {
           ...listed,
           {
             code: PSEUDO_CODE,
+            // i18n-ignore
             name: 'Pseudo (en-XA)',
             dateLocale: pseudoDateLocale(enUS),
             resources: pseudoResources(en),

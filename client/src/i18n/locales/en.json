@@ -671,7 +671,8 @@
     "loading": "Loading...",
     "errors": {
       "generic": "Something went wrong.",
-      "tryAgain": "Something went wrong. Try again."
+      "tryAgain": "Something went wrong. Try again.",
+      "invalidValues": "Some of the values entered are invalid"
     }
   },
   "connection": {
@@ -719,7 +720,9 @@
     "device": {
       "browserOn": "{{browser}} on {{os}}",
       "unknown": "Unknown browser"
-    }
+    },
+    "networkError": "Can't reach FlyBudget right now. Nothing was saved; try again once it reconnects.",
+    "notSaved": "Couldn't be saved"
   },
   "currency": {
     "addRate": "Add a rate",
@@ -943,7 +946,8 @@
       "title": "Not available in the demo",
       "connectBank": "Connect a bank",
       "banks": "Bank connections need the FlyBudget app, so the demo can't connect a bank or take bank credentials. In the app, Plaid, SimpleFIN or Enable Banking (European banks) brings in your transactions automatically, and you can also import CSV files from your bank."
-    }
+    },
+    "error": "Something went wrong"
   },
   "goals": {
     "title": "Goals",

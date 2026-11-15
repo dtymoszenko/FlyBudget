@@ -19,7 +19,7 @@ cd client
 npm run dev          # Vite dev server
 npm run build        # tsc + vite build
 npx vite --mode demo # the website's in-browser demo (server/src/browser/README.md)
-npm run check:i18n   # text that isn't translated yet, and en.json problems
+npm run check:i18n   # UI text written in the code instead of en.json, and en.json problems
 ```
 
 **Server only:**
@@ -235,7 +235,7 @@ The website serves the real app at `/demo/` with a sample budget and no server: 
 - Label maps keep their data and get labels by id at render time (``t(`accounts.types.${type}.label`)``, `accountTypeLabel`, `datePresetLabel`). Never compare or key on displayed text; use ids.
 - Whole sentences only: one key per variant with values (`{{name}}`), never a sentence put together from pieces. Counts are plurals (`key_one`/`key_other` with `{{count, number}}`, `t(key, { count })`). Rich text is `<Trans components={{ … }}>` with named tags; never name a tag after an HTML element that can't hold content (`link`, `source`, `input`, …): its text is dropped.
 - Brand names, CSV headers, file names and data (names, server errors) stay as they are. Put `// i18n-ignore` on the line above anything the checker flags that isn't text.
-- `npm run check:i18n` (`client/scripts/check-i18n.mjs`) lists text that isn't translated and checks en.json (unused keys, plural pairs, tags); it fails on untranslated text in the paths it enforces.
+- `npm run check:i18n` (`client/scripts/check-i18n.mjs`) fails on UI text written in the code instead of en.json and checks en.json (unused keys, plural pairs, tags); `-- --list` shows each finding, `-- --loose` also lists strings that might be text.
 - Languages are registered in `i18n/languages.ts`. `resolveLanguage` picks the saved choice, else the first device language that's available, else English (preference `language`, default `auto`; installs from before it stay English). The Language row in Settings → Preferences appears once there's more than one. A language change remounts the app (`LanguageRoot`), so memoized labels follow. date-fns gets the language for month and day names (`applyLanguage`; weeks still start on Sunday); amounts keep their own format setting.
 - The dev server (and builds with `VITE_I18N_PSEUDO=1`) has a test language, Pseudo (en-XA), that accents and lengthens every text: text that isn't stretched isn't translated, and text that gets cut off won't fit in a longer language.
 
