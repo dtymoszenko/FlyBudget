@@ -15,7 +15,14 @@ const LIST = process.argv.includes('--list');
 const LOOSE = process.argv.includes('--loose');
 
 /** Paths (relative to src/, a folder ends in /) whose text must come from the translations */
-const ENFORCED = ['i18n/'];
+const ENFORCED = [
+  'i18n/',
+  'components/layout/',
+  'components/ui/',
+  'components/settings/DataExport.tsx',
+  'components/settings/PreferencesPanel.tsx',
+  'pages/Settings.tsx',
+];
 
 /** JSX attributes and object properties that hold text people read */
 const TEXT_ATTRIBUTES = new Set([
@@ -195,6 +202,10 @@ function check(path, source) {
 // --- en.json ---------------------------------------------------------------------------------
 
 const PLURAL = /_(zero|one|two|few|many|other)$|_ordinal_(zero|one|two|few|many|other)$/;
+// <Trans> drops what's inside these, because in HTML they can't have content
+const VOID_TAGS = new Set(
+  'area base br col embed hr img input link meta param source track wbr'.split(' '),
+);
 
 function flatten(object, prefix = '') {
   return Object.entries(object).flatMap(([key, value]) =>
@@ -232,6 +243,9 @@ function checkEnglish(english, sources) {
     const open = [...value.matchAll(/<([A-Za-z][A-Za-z0-9]*)>/g)].map((m) => m[1]);
     const close = [...value.matchAll(/<\/([A-Za-z][A-Za-z0-9]*)>/g)].map((m) => m[1]);
     if (open.sort().join() !== close.sort().join()) problems.push(`${key}: unbalanced tags`);
+    for (const tag of open.filter((name) => VOID_TAGS.has(name.toLowerCase()))) {
+      problems.push(`${key}: <${tag}> is an empty HTML element, so its text is lost; rename it`);
+    }
     if (!KEY.test(key.replace(PLURAL, ''))) problems.push(`${key}: not a valid key name`);
   }
   for (const [base, forms] of bases) {

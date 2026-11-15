@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { NavLink } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   LayoutDashboard,
   Landmark,
@@ -102,6 +103,7 @@ export function Sidebar() {
 }
 
 function ResizeHandle({ width }: { width: number }) {
+  const { t } = useTranslation();
   const setWidth = usePreferencesStore((s) => s.setSidebarWidth);
   const drag = useRef<{ startX: number; startWidth: number } | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -142,7 +144,7 @@ function ResizeHandle({ width }: { width: number }) {
       <div
         role="separator"
         aria-orientation="vertical"
-        aria-label="Resize sidebar"
+        aria-label={t('layout.sidebar.resize')}
         aria-valuenow={width}
         aria-valuemin={SIDEBAR_MIN_WIDTH}
         aria-valuemax={SIDEBAR_MAX_WIDTH}
@@ -186,6 +188,7 @@ function SidebarContent({
   onClose?: () => void;
   width?: number | string;
 }) {
+  const { t } = useTranslation();
   const sidebarMode = usePreferencesStore((s) => s.sidebarMode);
   const setSidebarMode = usePreferencesStore((s) => s.setSidebarMode);
   const pinned = sidebarMode === 'persistent';
@@ -216,11 +219,11 @@ function SidebarContent({
             href={DOCS_URL}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="Help & docs (opens in a new tab)"
+            aria-label={t('layout.sidebar.helpLink')}
             className={`group ${headerButton}`}
           >
             <CircleHelp size={16} aria-hidden />
-            <HeaderTooltip>Help &amp; docs</HeaderTooltip>
+            <HeaderTooltip>{t('layout.sidebar.help')}</HeaderTooltip>
           </a>
           {/* The phone drawer closes; the desktop sidebar has a pin instead: pinned stays open,
               unpinned collapses and opens on hover (the Sidebar setting in Preferences) */}
@@ -228,7 +231,7 @@ function SidebarContent({
             <button
               type="button"
               onClick={onClose}
-              aria-label="Close menu"
+              aria-label={t('layout.sidebar.closeMenu')}
               className={headerButton}
             >
               <X size={18} />
@@ -238,7 +241,7 @@ function SidebarContent({
               type="button"
               onClick={() => setSidebarMode(pinned ? 'auto-hide' : 'persistent')}
               aria-pressed={pinned}
-              aria-label="Pin sidebar"
+              aria-label={t('layout.sidebar.pin')}
               className={`group ${headerButton}`}
             >
               <Pin
@@ -247,52 +250,64 @@ function SidebarContent({
                 fill={pinned ? 'currentColor' : 'none'}
                 className={pinned ? 'text-sidebar-text-hi' : undefined}
               />
-              <HeaderTooltip>{pinned ? 'Unpin sidebar' : 'Pin sidebar'}</HeaderTooltip>
+              <HeaderTooltip>
+                {t(pinned ? 'layout.sidebar.unpin' : 'layout.sidebar.pin')}
+              </HeaderTooltip>
             </button>
           )}
         </div>
       </div>
 
       {/* Primary nav */}
-      <nav aria-label="Main" className="pt-3 px-3 space-y-0.5">
+      <nav aria-label={t('layout.nav.main')} className="pt-3 px-3 space-y-0.5">
         <NavItem
           to="/dashboard"
           icon={<LayoutDashboard size={18} />}
-          label="Dashboard"
+          label={t('layout.nav.dashboard')}
           collapsed={!isExpanded}
         />
         <NavItem
           to="/accounts"
           icon={<Landmark size={18} />}
-          label="Accounts"
+          label={t('layout.nav.accounts')}
           collapsed={!isExpanded}
         />
         <NavItem
           to="/transactions"
           icon={<ArrowLeftRight size={18} />}
-          label="Transactions"
+          label={t('layout.nav.transactions')}
           collapsed={!isExpanded}
         />
-        <NavItem to="/budget" icon={<Wallet size={18} />} label="Budget" collapsed={!isExpanded} />
+        <NavItem
+          to="/budget"
+          icon={<Wallet size={18} />}
+          label={t('layout.nav.budget')}
+          collapsed={!isExpanded}
+        />
         <NavItem
           to="/recurring"
           icon={<Repeat size={18} />}
-          label="Recurring"
+          label={t('layout.nav.recurring')}
           collapsed={!isExpanded}
         />
         <NavItem
           to="/reports"
           icon={<BarChart3 size={18} />}
-          label="Reports"
+          label={t('layout.nav.reports')}
           collapsed={!isExpanded}
         />
         <NavItem
           to="/cash-flow"
           icon={<Workflow size={18} />}
-          label="Cash Flow"
+          label={t('layout.nav.cashFlow')}
           collapsed={!isExpanded}
         />
-        <NavItem to="/goals" icon={<Target size={18} />} label="Goals" collapsed={!isExpanded} />
+        <NavItem
+          to="/goals"
+          icon={<Target size={18} />}
+          label={t('layout.nav.goals')}
+          collapsed={!isExpanded}
+        />
       </nav>
 
       {/* Account list */}
@@ -306,13 +321,26 @@ function SidebarContent({
       </div>
 
       {/* Footer nav */}
-      <nav aria-label="Manage" className="py-2 px-3 border-t border-sidebar-border space-y-0.5">
-        <NavItem to="/payees" icon={<Users size={18} />} label="Payees" collapsed={!isExpanded} />
-        <NavItem to="/rules" icon={<Zap size={18} />} label="Rules" collapsed={!isExpanded} />
+      <nav
+        aria-label={t('layout.nav.manage')}
+        className="py-2 px-3 border-t border-sidebar-border space-y-0.5"
+      >
+        <NavItem
+          to="/payees"
+          icon={<Users size={18} />}
+          label={t('layout.nav.payees')}
+          collapsed={!isExpanded}
+        />
+        <NavItem
+          to="/rules"
+          icon={<Zap size={18} />}
+          label={t('layout.nav.rules')}
+          collapsed={!isExpanded}
+        />
         <NavItem
           to="/settings"
           icon={<Settings size={18} />}
-          label="Settings"
+          label={t('layout.nav.settings')}
           collapsed={!isExpanded}
         />
       </nav>

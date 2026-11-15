@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 /** The id of the app's <main>, which SkipToContent jumps to */
 export const MAIN_ID = 'main-content';
 
@@ -6,6 +8,7 @@ export const MAIN_ID = 'main-content';
  * Focuses <main> by hand, since a plain #main-content link would be a route under HashRouter.
  */
 export function SkipToContent() {
+  const { t } = useTranslation();
   return (
     <a
       href={`#${MAIN_ID}`}
@@ -15,7 +18,7 @@ export function SkipToContent() {
       }}
       className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[60] focus:rounded-md focus:bg-surface focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-text focus:shadow-hover"
     >
-      Skip to main content
+      {t('layout.skipToContent')}
     </a>
   );
 }

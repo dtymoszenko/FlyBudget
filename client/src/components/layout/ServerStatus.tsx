@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, RefreshCw, Settings } from 'lucide-react';
 import { useConnection } from '../../hooks/useConnection';
@@ -9,18 +10,13 @@ import { IS_DEMO } from '../../demo/demoApi';
 
 const MENU_W = 248;
 
-const SECURITY_LABEL = {
-  encrypted: 'Encrypted (HTTPS)',
-  local: 'Stays on this computer',
-  unencrypted: 'Not encrypted (HTTP)',
-} as const;
-
 /**
  * Sidebar footer: where FlyBudget's server is and whether it's reachable, like Actual
  * Budget's "Server online". Opens a small menu with details, Server settings and (server
  * mode) Sign out.
  */
 export function ServerStatus({ collapsed }: { collapsed: boolean }) {
+  const { t } = useTranslation();
   const mode = useAppMode();
   const connection = useConnection();
   const { data: info } = useServerInfo();
@@ -33,17 +29,18 @@ export function ServerStatus({ collapsed }: { collapsed: boolean }) {
   const online = connection.status === 'connected';
   // The demo's data lives in this browser tab (its "server" runs in the page)
   const place = IS_DEMO
-    ? 'Demo in this browser'
+    ? t('layout.server.placeDemo')
     : mode === 'server'
       ? window.location.host
-      : 'On this computer';
+      : t('layout.server.placeComputer');
   const address = IS_DEMO
-    ? 'This browser'
+    ? t('layout.server.addressDemo')
     : mode === 'server'
       ? window.location.host
-      : 'This computer';
-  const stateText = online ? 'Online' : 'Reconnecting';
-  const label = `Server status: ${stateText}, ${place}`;
+      : t('layout.server.addressComputer');
+  const label = t(online ? 'layout.server.statusOnline' : 'layout.server.statusReconnecting', {
+    place,
+  });
   const security = connectionSecurity(window.location.protocol, window.location.hostname);
 
   const close = (refocus = true) => {
@@ -118,7 +115,7 @@ export function ServerStatus({ collapsed }: { collapsed: boolean }) {
         <span
           className={`truncate transition-opacity duration-200 ${collapsed ? 'opacity-0' : 'opacity-100'}`}
         >
-          {online ? place : 'Reconnecting…'}
+          {online ? place : t('layout.server.reconnecting')}
         </span>
       </button>
       {pos &&
@@ -126,7 +123,7 @@ export function ServerStatus({ collapsed }: { collapsed: boolean }) {
           <div
             ref={menuRef}
             role="menu"
-            aria-label="Server"
+            aria-label={t('layout.server.menu')}
             data-sidebar-popup
             onKeyDown={onMenuKey}
             className="fixed z-50 bg-surface border border-border rounded-md shadow-hover py-1 animate-menu-in"
@@ -135,14 +132,14 @@ export function ServerStatus({ collapsed }: { collapsed: boolean }) {
             <div role="presentation" className="px-3 pt-1.5 pb-2 space-y-1 text-xs">
               <p className="flex items-center gap-2 text-sm font-medium text-text">
                 {dot}
-                {online ? 'Server online' : 'Reconnecting to the server'}
+                {t(online ? 'layout.server.online' : 'layout.server.reconnectingToServer')}
               </p>
               <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-text-secondary">
-                <dt className="text-text-tertiary">Address</dt>
+                <dt className="text-text-tertiary">{t('layout.server.address')}</dt>
                 <dd className="truncate font-mono text-[11px] leading-5">{address}</dd>
-                <dt className="text-text-tertiary">Connection</dt>
-                <dd>{mode === 'server' ? SECURITY_LABEL[security] : SECURITY_LABEL.local}</dd>
-                <dt className="text-text-tertiary">Version</dt>
+                <dt className="text-text-tertiary">{t('layout.server.connection')}</dt>
+                <dd>{t(`layout.server.security.${mode === 'server' ? security : 'local'}`)}</dd>
+                <dt className="text-text-tertiary">{t('layout.server.version')}</dt>
                 <dd>{info?.version ?? '…'}</dd>
               </dl>
             </div>
@@ -154,7 +151,7 @@ export function ServerStatus({ collapsed }: { collapsed: boolean }) {
                 className={itemClass}
                 onClick={() => void connection.retryNow()}
               >
-                <RefreshCw size={14} /> Retry now
+                <RefreshCw size={14} /> {t('layout.server.retryNow')}
               </button>
             )}
             <button
@@ -166,7 +163,7 @@ export function ServerStatus({ collapsed }: { collapsed: boolean }) {
                 navigate('/settings?tab=server');
               }}
             >
-              <Settings size={14} /> Server settings
+              <Settings size={14} /> {t('layout.server.settings')}
             </button>
             {mode === 'server' && (
               <button
@@ -178,7 +175,7 @@ export function ServerStatus({ collapsed }: { collapsed: boolean }) {
                   void signOut();
                 }}
               >
-                <LogOut size={14} /> Sign out
+                <LogOut size={14} /> {t('layout.server.signOut')}
               </button>
             )}
           </div>,

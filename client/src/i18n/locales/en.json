@@ -1,11 +1,208 @@
 {
+  "common": {
+    "actions": {
+      "cancel": "Cancel",
+      "close": "Close",
+      "confirm": "Confirm",
+      "done": "Done",
+      "learnMore": "Learn more"
+    },
+    "actionsMenu": "Actions",
+    "badge": {
+      "credit": "Credit",
+      "positive": "Positive",
+      "negative": "Negative"
+    },
+    "emojiSearch": "Search emoji...",
+    "monthRange": {
+      "choose": "Choose months",
+      "from": "From",
+      "to": "To",
+      "previousYear": "Previous year",
+      "nextYear": "Next year"
+    },
+    "opensInNewTab": "(opens in a new tab)"
+  },
+  "layout": {
+    "accounts": {
+      "all": "All accounts",
+      "forBudget": "For budget",
+      "offBudget": "Off budget",
+      "none": "No accounts yet",
+      "withoutRate": "Without {{currencies}}: no exchange rate yet",
+      "add": "Add account",
+      "addManual": "Add Manual Account",
+      "connectPlaid": "Connect via Plaid",
+      "connectSimplefin": "Connect via SimpleFIN",
+      "connectEnableBanking": "Connect via Enable Banking"
+    },
+    "helpFooter": {
+      "newHere": "New to FlyBudget?",
+      "guide": "Read the guide",
+      "source": "Source on GitHub",
+      "report": "Report a problem or suggest an idea"
+    },
+    "nav": {
+      "main": "Main",
+      "manage": "Manage",
+      "dashboard": "Dashboard",
+      "accounts": "Accounts",
+      "transactions": "Transactions",
+      "budget": "Budget",
+      "recurring": "Recurring",
+      "reports": "Reports",
+      "cashFlow": "Cash Flow",
+      "goals": "Goals",
+      "payees": "Payees",
+      "rules": "Rules",
+      "settings": "Settings"
+    },
+    "openMenu": "Open menu",
+    "server": {
+      "statusOnline": "Server status: Online, {{place}}",
+      "statusReconnecting": "Server status: Reconnecting, {{place}}",
+      "reconnecting": "Reconnecting…",
+      "placeDemo": "Demo in this browser",
+      "placeComputer": "On this computer",
+      "addressDemo": "This browser",
+      "addressComputer": "This computer",
+      "menu": "Server",
+      "online": "Server online",
+      "reconnectingToServer": "Reconnecting to the server",
+      "address": "Address",
+      "connection": "Connection",
+      "version": "Version",
+      "retryNow": "Retry now",
+      "settings": "Server settings",
+      "signOut": "Sign out",
+      "security": {
+        "encrypted": "Encrypted (HTTPS)",
+        "local": "Stays on this computer",
+        "unencrypted": "Not encrypted (HTTP)"
+      }
+    },
+    "sidebar": {
+      "resize": "Resize sidebar",
+      "help": "Help & docs",
+      "helpLink": "Help & docs (opens in a new tab)",
+      "closeMenu": "Close menu",
+      "pin": "Pin sidebar",
+      "unpin": "Unpin sidebar"
+    },
+    "skipToContent": "Skip to main content"
+  },
   "settings": {
+    "title": "Settings",
+    "tabs": {
+      "categories": "Categories",
+      "accounts": "Accounts",
+      "connections": "Connected Banks",
+      "currencies": "Currencies",
+      "data": "Data",
+      "preferences": "Preferences",
+      "server": "Server"
+    },
+    "footer": "FlyBudget is free software under the <license>GNU AGPL v3</license>. <repo>Source code</repo>",
+    "data": {
+      "title": "Data Export",
+      "hint": "Download your data for backup or analysis.",
+      "export": {
+        "title": "Export Transactions",
+        "hint": "Download all transactions as a CSV file. Optionally filter by date range.",
+        "formatComma": "Amounts are written like -12,50, with semicolons between columns, following your number format in <preferences>Preferences</preferences>. Report exports use the same separator.",
+        "formatDot": "Amounts are written like -12.50, with commas between columns, following your number format in <preferences>Preferences</preferences>. Report exports use the same separator.",
+        "from": "From",
+        "to": "To",
+        "download": "Download CSV"
+      },
+      "backup": {
+        "title": "Full Backup",
+        "hint": "Download a complete JSON backup of all your data — accounts, transactions, budgets, categories, payees, rules, recurring transactions, goals, reports and dashboards. Bank connection credentials are not included.",
+        "download": "Download Backup"
+      },
+      "restore": {
+        "title": "Restore from Backup",
+        "hint": "Replace all of your data with a backup file. A copy of your current data is saved first.",
+        "file": "Backup file",
+        "choose": "Restore Backup…",
+        "restoring": "Restoring…",
+        "notBackup": "{{name}} is not a FlyBudget backup file.",
+        "failed": "Restore failed",
+        "restored_one": "Restored {{name}} ({{count, number}} transaction).",
+        "restored_other": "Restored {{name}} ({{count, number}} transactions).",
+        "safetyCopy": "Your previous data was saved as {{file}} next to the database.",
+        "confirmTitle": "Restore this backup?",
+        "confirmMessage": "All of your current data will be replaced with the contents of {{name}}. Bank connections stay connected.",
+        "confirm": "Replace my data"
+      }
+    },
     "preferences": {
+      "title": "Preferences",
+      "saved": "Settings are saved automatically to your browser.",
+      "savedDemo": "Settings are kept in this tab while you try the demo.",
+      "reset": {
+        "button": "Reset to defaults",
+        "title": "Reset preferences",
+        "message": "Are you sure you want to reset all preferences to their default values?",
+        "confirm": "Reset"
+      },
       "language": {
         "title": "Language",
         "automatic": "Automatic ({{language}})",
         "hint": "Automatic uses your device's language when FlyBudget has it, otherwise English."
+      },
+      "theme": {
+        "title": "Theme",
+        "light": "Light",
+        "dark": "Dark",
+        "system": "System"
+      },
+      "sidebar": {
+        "title": "Sidebar",
+        "pinned": "Pinned",
+        "pinnedHint": "Always open",
+        "autoHide": "Auto-hide",
+        "autoHideHint": "Collapsed, opens on hover"
+      },
+      "icons": {
+        "title": "Icons",
+        "merchant": "Merchant",
+        "merchantHint": "Merchant logos (or colored initials) next to merchant names",
+        "category": "Category",
+        "categoryHint": "Emoji icons next to category names",
+        "account": "Account",
+        "accountHint": "Account logos (or colored initials) next to account names",
+        "show": "Show",
+        "hide": "Hide"
+      },
+      "amounts": {
+        "title": "Amounts",
+        "hint": "How amounts are shown and typed on this device. Automatic follows your device's language. You can always type 12.50 or 12,50.",
+        "numberFormat": "Number format",
+        "automatic": "Automatic",
+        "symbolPosition": "Currency symbol position",
+        "currencySymbol": "Currency symbol",
+        "currencySymbolFor": "{{currency}} symbol",
+        "position": {
+          "auto": "Automatic",
+          "before": "Before",
+          "after": "After"
+        },
+        "automaticHint": "Automatic writes it as {{currency}} is written at home. Symbols of other currencies are in <currencies>Currencies</currencies>.",
+        "symbolHint": "Up to 3 characters (e.g. $, €, EUR, kr). Or choose your budget's currency in <currencies>Currencies</currencies>.",
+        "example": "Example:"
+      },
+      "dateFormat": {
+        "title": "Date Format"
       }
+    }
+  },
+  "undo": {
+    "toast": {
+      "undid": "Undid: {{action}}",
+      "redid": "Redid: {{action}}",
+      "undo": "Undo",
+      "redo": "Redo"
     }
   }
 }

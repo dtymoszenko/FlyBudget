@@ -614,7 +614,7 @@ test.describe('export, backup and restore', () => {
     await expect(confirm).toContainText('All of your current data will be replaced');
     await confirm.getByRole('button', { name: 'Replace my data' }).click();
     await expect(page.getByRole('status')).toContainText('Restored');
-    await expect(page.getByRole('status')).toContainText('1 transactions');
+    await expect(page.getByRole('status')).toContainText('(1 transaction)');
 
     expect((await api.accounts()).map((a) => a.name)).toEqual(['Checking']);
     expect(await api.balance(checking.id)).toBe(47_500);

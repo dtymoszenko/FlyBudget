@@ -1,8 +1,10 @@
+import { useTranslation } from 'react-i18next';
 import { ExternalLink as ExternalLinkIcon } from 'lucide-react';
 
 interface Props {
   href: string;
-  children: React.ReactNode;
+  /** Optional for <Trans components={{ link: <ExternalLink href=… /> }}>, which fills it in */
+  children?: React.ReactNode;
   className?: string;
   /** Show the ↗ icon after the text */
   icon?: boolean;
@@ -10,6 +12,7 @@ interface Props {
 
 /** A link that opens outside the app (a new browser tab, or the system browser in the desktop app) */
 export function ExternalLink({ href, children, className = '', icon = true }: Props) {
+  const { t } = useTranslation();
   return (
     <a
       href={href}
@@ -21,7 +24,7 @@ export function ExternalLink({ href, children, className = '', icon = true }: Pr
     >
       {children}
       {icon && <ExternalLinkIcon size={12} aria-hidden className="shrink-0" />}
-      <span className="sr-only"> (opens in a new tab)</span>
+      <span className="sr-only"> {t('common.opensInNewTab')}</span>
     </a>
   );
 }

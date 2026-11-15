@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Loader2, Menu } from 'lucide-react';
 import { useAccounts } from '../../hooks/useAccounts';
 import { useIsPhone } from '../../hooks/useIsPhone';
@@ -55,6 +56,7 @@ export function AppShell() {
  * menu button. While it's open the page behind is inert.
  */
 function PhoneShell() {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
   const refocusMenuButton = useRef(false);
@@ -95,7 +97,7 @@ function PhoneShell() {
           <button
             ref={menuButton}
             onClick={() => setOpen(true)}
-            aria-label="Open menu"
+            aria-label={t('layout.openMenu')}
             aria-expanded={open}
             aria-controls="app-sidebar"
             className="p-2 max-md:min-w-11 max-md:min-h-11 flex items-center justify-center rounded-md text-sidebar-text-hi hover:bg-sidebar-hover"

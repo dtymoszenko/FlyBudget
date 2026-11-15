@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { format, parseISO } from 'date-fns';
 import { CalendarRange, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatMonth } from '../../utils/dateRange';
@@ -49,6 +50,7 @@ function MonthGrid({
   onPick: (v: string) => void;
   isDisabled: (v: string) => boolean;
 }) {
+  const { t } = useTranslation();
   const [year, setYear] = useState(() => Math.max(MIN_YEAR, parseInt(value.slice(0, 4), 10) || 0));
   const navBtn =
     'p-1 max-md:min-w-11 max-md:min-h-11 flex items-center justify-center rounded text-text-tertiary hover:text-text-secondary hover:bg-hover transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed';
@@ -62,7 +64,7 @@ function MonthGrid({
           className={navBtn}
           disabled={year <= MIN_YEAR}
           onClick={() => setYear(year - 1)}
-          aria-label="Previous year"
+          aria-label={t('common.monthRange.previousYear')}
         >
           <ChevronLeft size={14} />
         </button>
@@ -71,7 +73,7 @@ function MonthGrid({
           type="button"
           className={navBtn}
           onClick={() => setYear(year + 1)}
-          aria-label="Next year"
+          aria-label={t('common.monthRange.nextYear')}
         >
           <ChevronRight size={14} />
         </button>
@@ -117,6 +119,7 @@ export function MonthRangePicker({
   max = format(new Date(), 'yyyy-MM'),
   defaultOpen = false,
 }: Props) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(defaultOpen);
   // Picks are a draft until Done; closing any other way discards them
   const [draftFrom, setDraftFrom] = useState(from);
@@ -221,13 +224,13 @@ export function MonthRangePicker({
           <div
             ref={popRef}
             role="dialog"
-            aria-label="Choose months"
+            aria-label={t('common.monthRange.choose')}
             className="fixed z-[60] max-h-[calc(100dvh-16px)] overflow-y-auto bg-surface border border-border rounded-lg shadow-hover p-4 animate-menu-in"
             style={pos ?? { top: 0, left: 0, visibility: 'hidden' }}
           >
             <div className="flex gap-5 max-md:flex-col max-md:gap-3">
               <MonthGrid
-                title="From"
+                title={t('common.monthRange.from')}
                 value={draftFrom}
                 onPick={(v) => {
                   setDraftFrom(v);
@@ -237,7 +240,7 @@ export function MonthRangePicker({
               />
               <div className="w-px max-md:w-auto max-md:h-px bg-border-light" />
               <MonthGrid
-                title="To"
+                title={t('common.monthRange.to')}
                 value={draftTo}
                 onPick={setDraftTo}
                 isDisabled={(v) => v < draftFrom || v > max}
@@ -253,14 +256,14 @@ export function MonthRangePicker({
                   onClick={() => close(true)}
                   className="px-3 py-1 max-md:min-h-11 max-md:min-w-11 text-xs font-medium text-text-secondary border border-border rounded-md hover:bg-hover transition-colors cursor-pointer"
                 >
-                  Cancel
+                  {t('common.actions.cancel')}
                 </button>
                 <button
                   type="button"
                   onClick={apply}
                   className="px-3 py-1 max-md:min-h-11 max-md:min-w-11 text-xs font-medium text-white bg-brand-600 rounded-md hover:bg-brand-700 transition-colors cursor-pointer"
                 >
-                  Done
+                  {t('common.actions.done')}
                 </button>
               </div>
             </div>

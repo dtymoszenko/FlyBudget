@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 
 interface Props {
@@ -36,6 +37,7 @@ export function useModalValue<T>(value: T | null | undefined | false) {
 }
 
 export function Modal({ isOpen, onClose, title, children, size = 'md' }: Props) {
+  const { t } = useTranslation();
   // Stay mounted briefly after closing so the dialog can fade out
   const [mounted, setMounted] = useState(isOpen);
   if (isOpen && !mounted) setMounted(true);
@@ -89,7 +91,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: Props) 
             </h2>
             <button
               onClick={onClose}
-              aria-label="Close"
+              aria-label={t('common.actions.close')}
               className="p-1 max-md:-mr-2 max-md:min-w-11 max-md:min-h-11 flex items-center justify-center rounded-md text-text-tertiary hover:text-text-secondary hover:bg-surface-alt transition-colors"
             >
               <X size={18} />

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { ExternalLink } from './ExternalLink';
 
 interface Props {
@@ -26,6 +27,7 @@ export function EmptyState({
   compact = false,
   className = '',
 }: Props) {
+  const { t } = useTranslation();
   return (
     <div
       className={`flex flex-col items-center text-center ${compact ? 'py-6 px-2' : 'py-14 px-6'} ${className}`}
@@ -60,7 +62,7 @@ export function EmptyState({
           href={learnMoreHref}
           className={`text-xs font-medium text-brand-600 hover:text-brand-700 ${compact ? 'mt-2' : 'mt-4'}`}
         >
-          Learn more
+          {t('common.actions.learnMore')}
         </ExternalLink>
       )}
     </div>
