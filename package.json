@@ -26,7 +26,7 @@
   },
   "homepage": "https://github.com/dtymoszenko/flybudget#readme",
   "devDependencies": {
-    "concurrently": "^10.0.6",
+    "concurrently": "^10.0.7",
     "cross-env": "^10.1.0",
     "electron": "^44.9.3",
     "electron-builder": "^26.18.0",
