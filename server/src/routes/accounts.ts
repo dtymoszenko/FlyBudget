@@ -169,19 +169,24 @@ accountsRouter.put('/reorder', (req, res) => {
 
 accountsRouter.put('/:id/reconcile', (req, res) => {
   const parsed = z
-    .object({ transactionIds: z.array(z.string().max(64)).min(1).max(100_000) })
+    .object({
+      transactionIds: z.array(z.string().max(64)).min(1).max(100_000),
+      /** false unlocks them again (a mistake found after reconciling) */
+      reconciled: z.boolean().default(true),
+    })
     .safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
   // Only this account's transactions
+  const flag = parsed.data.reconciled ? 1 : 0;
   const result = db
     .update(transactions)
-    .set({ reconciled: 1 })
+    .set({ reconciled: flag })
     .where(
       and(
         eq(transactions.accountId, req.params.id),
         inArray(transactions.id, parsed.data.transactionIds),
-        ne(transactions.reconciled, 1),
+        ne(transactions.reconciled, flag),
       ),
     )
     .run();
