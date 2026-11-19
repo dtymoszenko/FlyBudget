@@ -32,7 +32,7 @@ interface Props {
   onAdd: () => void;
   onFind: () => void;
   allRecurring: Schedule[];
-  onMatchOccurrence?: (occurrenceId: string) => void;
+  onMatchOccurrence?: (occurrence: ScheduleOccurrence) => void;
 }
 
 type View = 'list' | 'calendar';
@@ -191,7 +191,7 @@ export default function MonthlyTab({
               })
             }
             onSkip={() => skipOcc.mutate(occ.id)}
-            onMatch={onMatchOccurrence ? () => onMatchOccurrence(occ.id) : undefined}
+            onMatch={onMatchOccurrence ? () => onMatchOccurrence(occ) : undefined}
             onUnmatch={() => unmatchOcc.mutate(occ.id)}
             onEdit={() => {
               const rec = recMap.get(occ.scheduleId);

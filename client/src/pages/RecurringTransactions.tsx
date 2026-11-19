@@ -9,14 +9,8 @@ import DiscoverSchedulesModal from '../components/recurring/DiscoverSchedulesMod
 import UpcomingLengthModal from '../components/recurring/UpcomingLengthModal';
 import { Button } from '../components/ui/Button';
 import { useOpenFromLink } from '../hooks/useOpenFromLink';
-import {
-  useSchedules,
-  useCreateSchedule,
-  useUpdateSchedule,
-  useScheduleOccurrences,
-} from '../hooks/useSchedules';
-import type { Schedule } from '../types';
-import { format, subDays, addDays } from 'date-fns';
+import { useSchedules, useCreateSchedule, useUpdateSchedule } from '../hooks/useSchedules';
+import type { Schedule, ScheduleOccurrence } from '../types';
 
 const tabs = [
   { id: 'monthly' as const, label: 'Monthly' },
@@ -29,7 +23,7 @@ export default function RecurringTransactionsPage() {
   const [activeTab, setActiveTab] = useState<TabId>('monthly');
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState<Schedule | null>(null);
-  const [matchOccurrenceId, setMatchOccurrenceId] = useState<string | null>(null);
+  const [matchOccurrence, setMatchOccurrence] = useState<ScheduleOccurrence | null>(null);
   const [discoverOpen, setDiscoverOpen] = useState(false);
   const [upcomingOpen, setUpcomingOpen] = useState(false);
   useOpenFromLink('add', () => {
@@ -40,13 +34,6 @@ export default function RecurringTransactionsPage() {
   const { data: allRecurring = [] } = useSchedules();
   const createSchedule = useCreateSchedule();
   const updateSchedule = useUpdateSchedule();
-
-  const matchFrom = format(subDays(new Date(), 30), 'yyyy-MM-dd');
-  const matchTo = format(addDays(new Date(), 90), 'yyyy-MM-dd');
-  const { data: allOccurrences = [] } = useScheduleOccurrences(matchFrom, matchTo);
-  const matchOccurrence = matchOccurrenceId
-    ? (allOccurrences.find((o) => o.id === matchOccurrenceId) ?? null)
-    : null;
 
   function handleEdit(item: Schedule) {
     setEditItem(item);
@@ -123,7 +110,7 @@ export default function RecurringTransactionsPage() {
             onAdd={handleAdd}
             onFind={() => setDiscoverOpen(true)}
             allRecurring={allRecurring}
-            onMatchOccurrence={setMatchOccurrenceId}
+            onMatchOccurrence={setMatchOccurrence}
           />
         )}
         {activeTab === 'all' && (
@@ -148,8 +135,8 @@ export default function RecurringTransactionsPage() {
       <UpcomingLengthModal isOpen={upcomingOpen} onClose={() => setUpcomingOpen(false)} />
 
       <OccurrenceMatchModal
-        isOpen={matchOccurrenceId !== null}
-        onClose={() => setMatchOccurrenceId(null)}
+        isOpen={matchOccurrence !== null}
+        onClose={() => setMatchOccurrence(null)}
         occurrence={matchOccurrence}
       />
     </div>

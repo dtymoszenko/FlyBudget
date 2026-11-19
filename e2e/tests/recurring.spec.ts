@@ -115,6 +115,42 @@ test.describe('recurring', () => {
     expect(paid).toMatchObject({ amount: -150_000, payeeName: 'Rent', date: isoDay(2) });
   });
 
+  test('matching a bill from more than 30 days ago links the transaction', async ({
+    page,
+    api,
+  }) => {
+    const checking = await api.createAccount('Checking', 500_000);
+    // The 15th two months back, always more than 30 days ago
+    const now = new Date();
+    const d = new Date(now.getFullYear(), now.getMonth() - 2, 15);
+    const due = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-15`;
+    await createRent(api, checking.id, { startDate: due });
+    // A payee other than the bill's name, so finding it in the dialog means it's listed
+    const tx = await api.createTransaction({
+      accountId: checking.id,
+      date: due,
+      amount: -150_000,
+      payeeName: 'Landlord',
+    });
+    const occurrence = async () =>
+      (await api.call<any[]>('GET', `/schedules/occurrences?from=${due}&to=${due}`))[0];
+    expect(await occurrence()).toMatchObject({ displayStatus: 'waiting' });
+
+    await open(page, '/recurring');
+    await page.getByRole('button', { name: 'Previous month' }).click();
+    await page.getByRole('button', { name: 'Previous month' }).click();
+    const monthName = d.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+    await expect(page.getByRole('heading', { name: monthName })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Actions for Rent' }).click();
+    await page.getByRole('menuitem', { name: 'Match to transaction' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Match to Transaction' });
+    await expect(dialog).toContainText('Landlord');
+    await dialog.getByRole('button', { name: 'Match', exact: true }).click();
+    await expect(dialog).toBeHidden();
+    await expect.poll(occurrence).toMatchObject({ matchedTransactionId: tx.id });
+  });
+
   test('pausing keeps the schedule settings', async ({ page, api }) => {
     const checking = await api.createAccount('Checking', 0);
     await createRent(api, checking.id, {
