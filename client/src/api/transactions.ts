@@ -140,7 +140,7 @@ export const importPreview = (accountId: string, rows: ImportRow[]) =>
   });
 
 export const importConfirm = (accountId: string, rows: ImportRow[]) =>
-  apiFetch<{ imported: number; skipped: number }>('/transactions/import/confirm', {
+  apiFetch<{ imported: number; skipped: number; ids: string[] }>('/transactions/import/confirm', {
     method: 'POST',
     body: JSON.stringify({ accountId, rows }),
   });

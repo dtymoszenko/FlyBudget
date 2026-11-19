@@ -37,6 +37,7 @@ import {
 import { importPreview } from '../../api/transactions';
 import { getImportSettings, saveImportSettings, saveStatementAccount } from '../../api/accounts';
 import { useImportConfirm } from '../../hooks/useTransactions';
+import { useUndoStore, type UndoCommand } from '../../store/undoStore';
 import { formatMoney } from '../../utils/currency';
 import { minorUnits } from '../../utils/currencies';
 import { useAccountCurrency } from '../../hooks/useCurrency';
@@ -115,6 +116,11 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
   const [excluded, setExcluded] = useState<Set<number>>(new Set());
   const [skippedRows, setSkippedRows] = useState<SkippedRow[]>([]);
   const [result, setResult] = useState<{ imported: number; skipped: number } | null>(null);
+  // This import's undo entry: "Undo import" only takes back the import, never something done after
+  const [importUndo, setImportUndo] = useState<UndoCommand | null>(null);
+  const canUndoImport = useUndoStore(
+    (s) => !!importUndo && s.undoStack[s.undoStack.length - 1] === importUndo,
+  );
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -490,6 +496,8 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
           rememberSettings(); // the import happened, even if the dialog was closed meanwhile
           if (load !== loadId.current) return; // closed: the next opening starts afresh
           setResult(data);
+          // useImportConfirm has just pushed it
+          setImportUndo(data.imported ? (useUndoStore.getState().undoStack.at(-1) ?? null) : null);
           setStep('done');
         },
         onError: (e) => {
@@ -924,7 +932,24 @@ export function ImportModal({ isOpen, onClose, accountId }: Props) {
               {result.imported} imported, {result.skipped} skipped
             </p>
           </div>
-          <Button onClick={handleClose}>Done</Button>
+          <div className="flex gap-2">
+            {canUndoImport && (
+              <Button
+                variant="secondary"
+                onClick={async () => {
+                  setError(null);
+                  await useUndoStore.getState().undo();
+                  // A failed undo stays on top of the stack: say so, and keep the dialog open
+                  if (useUndoStore.getState().undoStack.at(-1) === importUndo) {
+                    setError("Couldn't undo the import. Try again.");
+                  } else handleClose();
+                }}
+              >
+                Undo import
+              </Button>
+            )}
+            <Button onClick={handleClose}>Done</Button>
+          </div>
         </div>
       )}
     </Modal>
