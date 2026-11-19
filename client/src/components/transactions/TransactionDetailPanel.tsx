@@ -7,6 +7,7 @@ import { useSchedules, useUnmatchByTransaction } from '../../hooks/useSchedules'
 import { CategoryPicker } from './CategoryPicker';
 import { PayeeCombobox } from './PayeeCombobox';
 import { Button } from '../ui/Button';
+import { CurrencyInput } from '../ui/CurrencyInput';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { useModalValue } from '../ui/Modal';
 import { RuleEditorFlow } from '../rules/RuleEditorFlow';
@@ -28,7 +29,7 @@ import type {
   RuleInput,
 } from '../../types';
 
-type EditedField = 'date' | 'payee' | 'notes' | 'category';
+type EditedField = 'date' | 'amount' | 'payee' | 'notes' | 'category';
 
 interface Props {
   transaction: Transaction;
@@ -97,6 +98,7 @@ export function TransactionDetailPanel({
     setLocalPayee({ id: tx.payeeId, name: tx.payeeName ?? '' });
     markUnsaved('payee', false);
   }, [tx.id, tx.payeeId, tx.payeeName]);
+  useEffect(() => markUnsaved('amount', false), [tx.id, tx.amount]);
   useEffect(() => setShowCategoryPicker(false), [tx.id]);
   useEffect(() => markUnsaved('category', false), [tx.id, tx.categoryId, tx.transferTransactionId]);
 
@@ -279,6 +281,37 @@ export function TransactionDetailPanel({
           />
           {unsaved.date && <NotSaved />}
         </div>
+
+        {/* A split's amount is its parts' total: changed in the split dialog */}
+        {!isSplitParent && (
+          <div>
+            <label className="text-xs font-medium text-text-secondary mb-1.5 block">Amount</label>
+            <div className="grid grid-cols-2 gap-2">
+              {(['Outflow', 'Inflow'] as const).map((side) => {
+                const out = side === 'Outflow';
+                return (
+                  <div key={side}>
+                    <CurrencyInput
+                      aria-label={side}
+                      value={out ? Math.max(-tx.amount, 0) : Math.max(tx.amount, 0)}
+                      // Saves only a real change: leaving the field as it was, or emptying it
+                      // (an amount of zero is never meant), saves nothing
+                      onChange={(cents) => {
+                        const amount = out ? -cents : cents;
+                        if (cents && amount !== tx.amount) saveField('amount', { amount });
+                      }}
+                      currency={currency}
+                      disabled={isReconciled}
+                      className="text-right tabular-nums"
+                    />
+                    <span className="mt-1 block text-[11px] text-text-tertiary">{side}</span>
+                  </div>
+                );
+              })}
+            </div>
+            {unsaved.amount && <NotSaved />}
+          </div>
+        )}
 
         <MainAmountField tx={tx} disabled={isReconciled} />
 

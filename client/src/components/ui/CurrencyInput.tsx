@@ -15,6 +15,7 @@ interface Props {
   placeholder?: string;
   className?: string;
   allowNegative?: boolean;
+  disabled?: boolean;
   'aria-label'?: string;
   /** The currency the amount is in (an account's); null or left out = the budget's */
   currency?: string | null;
@@ -26,6 +27,7 @@ export function CurrencyInput({
   placeholder,
   className = '',
   allowNegative = false,
+  disabled,
   'aria-label': ariaLabel,
   currency,
 }: Props) {
@@ -100,9 +102,10 @@ export function CurrencyInput({
         onChange={handleChange}
         placeholder={placeholder ?? amountPlaceholder(style)}
         aria-label={ariaLabel}
+        disabled={disabled}
         aria-invalid={invalid || undefined}
         aria-describedby={invalid ? hintId : undefined}
-        className={`block w-full rounded-md border px-3 py-2 text-sm text-text placeholder-text-disabled focus:outline-none focus:ring-1 ${
+        className={`block w-full rounded-md border px-3 py-2 text-sm text-text placeholder-text-disabled focus:outline-none focus:ring-1 disabled:opacity-60 disabled:cursor-not-allowed ${
           invalid
             ? 'border-negative focus:border-negative focus:ring-negative'
             : 'border-border focus:border-brand-600 focus:ring-brand-600'
