@@ -53,6 +53,8 @@ export const categories = sqliteTable('categories', {
   name: text('name').notNull(),
   icon: text('icon'),
   budgetType: text('budget_type'),
+  /** Category budgeting only: 1 = carry over, 0 = start fresh, null = the budget's `carry_over` */
+  carryOver: integer('carry_over'),
   sortOrder: integer('sort_order').notNull().default(0),
   createdAt: text('created_at')
     .notNull()
@@ -501,6 +503,13 @@ export const budgetSettings = sqliteTable('budget_settings', {
   ratesUrl: text('rates_url'),
   ratesLastFetchedAt: text('rates_last_fetched_at'),
   ratesLastError: text('rates_last_error'),
+  /**
+   * How months add up: `zero_based` (envelopes: every category carries over, unassigned money
+   * rolls into "To be budgeted") or `category` (each month's plan on its own, see `carry_over`)
+   */
+  budgetMethod: text('budget_method').notNull().default('zero_based'),
+  /** Category budgeting's default for categories without their own: 1 = carry over, 0 = start fresh */
+  carryOver: integer('carry_over').notNull().default(0),
   updatedAt: text('updated_at')
     .notNull()
     .default(sql`(datetime('now'))`),

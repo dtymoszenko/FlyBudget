@@ -17,6 +17,8 @@ const categorySchema = z.object({
   name: z.string().trim().min(1).max(200),
   icon: z.string().max(32).optional(),
   budgetType: z.enum(['fixed', 'flexible', 'non_monthly', 'savings']).nullable().optional(),
+  /** Category budgeting: 1 = carry over, 0 = start fresh, null = the budget's default */
+  carryOver: z.number().int().min(0).max(1).nullable().optional(),
 });
 
 categoriesRouter.get('/', (_req, res) => {

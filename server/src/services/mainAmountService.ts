@@ -32,6 +32,8 @@ export function getBudgetSettings(): BudgetSettings {
       ratesUrl: null,
       ratesLastFetchedAt: null,
       ratesLastError: null,
+      budgetMethod: 'zero_based',
+      carryOver: 0,
       updatedAt: new Date(0).toISOString(),
     }
   );
