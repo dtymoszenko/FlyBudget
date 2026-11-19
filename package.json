@@ -26,12 +26,12 @@
   },
   "homepage": "https://github.com/dtymoszenko/flybudget#readme",
   "devDependencies": {
-    "concurrently": "^10.0.6",
+    "concurrently": "^10.0.7",
     "cross-env": "^10.1.0",
     "electron": "^44.9.3",
     "electron-builder": "^26.18.0",
     "esbuild": "^0.28.2",
-    "prettier": "^3.9.10",
+    "prettier": "^3.10.0",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "wait-on": "^9.5.1"
