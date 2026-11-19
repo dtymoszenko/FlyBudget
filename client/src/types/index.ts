@@ -247,6 +247,8 @@ export interface Category {
   name: string;
   icon: string | null;
   budgetType: BudgetType | null;
+  /** `#RRGGBB`; null = no color of its own */
+  color: string | null;
   sortOrder: number;
   createdAt: string;
 }

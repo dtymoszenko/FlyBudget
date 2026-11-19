@@ -4,6 +4,7 @@ import { categories, categoryGroups, transactions, budgetMonths } from '../db/sc
 import { eq, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
+import { hexColor } from '../utils/validation.js';
 
 export const categoriesRouter = Router();
 
@@ -17,6 +18,8 @@ const categorySchema = z.object({
   name: z.string().trim().min(1).max(200),
   icon: z.string().max(32).optional(),
   budgetType: z.enum(['fixed', 'flexible', 'non_monthly', 'savings']).nullable().optional(),
+  /** null = no color of its own (the client picks one) */
+  color: hexColor.nullable().optional(),
 });
 
 categoriesRouter.get('/', (_req, res) => {
@@ -97,7 +100,8 @@ categoriesRouter.post('/', (req, res) => {
     createdAt: new Date().toISOString(),
   };
   db.insert(categories).values(category).run();
-  res.status(201).json(category);
+  // The saved row, so fields left out (icon, budget type, color) come back as null like GET's
+  res.status(201).json(db.select().from(categories).where(eq(categories.id, category.id)).get());
 });
 
 categoriesRouter.put('/reorder', (req, res) => {

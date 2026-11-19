@@ -4,7 +4,7 @@ import { goals } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
-import { isoDate } from '../utils/validation.js';
+import { hexColor, isoDate } from '../utils/validation.js';
 
 export const goalsRouter = Router();
 
@@ -15,11 +15,7 @@ const createSchema = z.object({
   targetDate: isoDate.nullable().optional(),
   accountId: z.string().max(64).nullable().optional(),
   icon: z.string().max(32).optional(),
-  // Used in inline styles on the client
-  color: z
-    .string()
-    .regex(/^#[0-9a-fA-F]{6}$/)
-    .optional(),
+  color: hexColor.optional(),
 });
 
 goalsRouter.get('/', (_req, res) => {
