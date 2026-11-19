@@ -84,7 +84,7 @@ function SummarySection({ label, planned, actual, actualLabel, type }: SummarySe
         </div>
         <div className="flex flex-col items-end">
           <span className={`text-sm font-medium tabular-nums ${remainingColor}`}>
-            {displayRemaining === 0 ? '$0' : formatCurrency(displayRemaining)}
+            {formatCurrency(displayRemaining)}
           </span>
           <span className="text-xs text-text-tertiary">remaining</span>
         </div>

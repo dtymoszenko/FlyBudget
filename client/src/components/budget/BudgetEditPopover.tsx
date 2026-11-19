@@ -1,10 +1,15 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useId, useRef } from 'react';
 import { format, parseISO } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, LabelList, ResponsiveContainer } from 'recharts';
 import { useCategoryHistory } from '../../hooks/useBudget';
-import { formatCurrency } from '../../utils/currency';
+import { formatCentsAxis, formatCentsBar, formatCurrency } from '../../utils/currency';
 import { chartColors } from '../../utils/chartColors';
 import { useXAxisLayout } from '../../hooks/useXAxisLayout';
+
+/** Room for axis labels in a currency written with letters, like "999 CHF", and the gap before the bars */
+const Y_AXIS_WIDTH = 52;
+/** Room for the last bar's label, which can be wider than the bar ("1.2k CHF") */
+const RIGHT_MARGIN = 8;
 
 interface BudgetEditPopoverProps {
   categoryId: string;
@@ -22,6 +27,7 @@ export function BudgetEditPopover({
   onApplyBulk,
 }: BudgetEditPopoverProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const titleId = useId();
   const [checked, setChecked] = useState(true);
   const { data } = useCategoryHistory(categoryId, month);
 
@@ -38,26 +44,31 @@ export function BudgetEditPopover({
 
   const chartData = (data?.history ?? []).map((h) => ({
     month: format(parseISO(`${h.month}-01`), 'MMM'),
-    amount: h.amount / 100,
+    amount: h.amount,
   }));
 
   const hasData = chartData.some((d) => d.amount > 0);
   const barColor = isIncome ? chartColors.positive : chartColors.negative;
+  // Inset: y-axis width on the left, chart margin on the right
   const xAxis = useXAxisLayout({
     labels: chartData.map((d) => d.month),
     kind: 'band',
     ordered: true,
     fontSize: 10,
-    inset: { left: 30, right: 2 },
+    inset: { left: Y_AXIS_WIDTH, right: RIGHT_MARGIN },
   });
 
   return (
     <div
       ref={ref}
+      role="group"
+      aria-labelledby={titleId}
       className="absolute right-0 top-full mt-1 z-50 w-72 rounded-lg shadow-card border border-border-light bg-surface p-4 origin-top-right animate-menu-in"
       onMouseDown={(e) => e.preventDefault()}
     >
-      <p className="text-sm font-semibold text-text mb-2">History</p>
+      <p id={titleId} className="text-sm font-semibold text-text mb-2">
+        History
+      </p>
 
       <div className="grid grid-cols-2 gap-2 mb-3">
         <div className="bg-surface-alt rounded-lg p-2.5">
@@ -78,23 +89,24 @@ export function BudgetEditPopover({
         {hasData ? (
           <div ref={xAxis.ref}>
             <ResponsiveContainer width="100%" height={90}>
-              <BarChart data={chartData} margin={{ top: 14, right: 2, left: -10, bottom: 0 }}>
+              <BarChart
+                data={chartData}
+                margin={{ top: 14, right: RIGHT_MARGIN, left: 0, bottom: 0 }}
+              >
                 <XAxis dataKey="month" axisLine={false} tickLine={false} {...xAxis.axisProps} />
                 <YAxis
                   tick={{ fontSize: 9, fill: chartColors.axis }}
                   axisLine={false}
                   tickLine={false}
-                  width={40}
+                  width={Y_AXIS_WIDTH}
                   domain={[0, 'auto']}
-                  tickFormatter={(v: number) =>
-                    v >= 1000 ? `$${(v / 1000).toFixed(1)}k` : `$${v}`
-                  }
+                  tickFormatter={formatCentsAxis}
                 />
                 <Bar dataKey="amount" fill={barColor} radius={[3, 3, 0, 0]}>
                   <LabelList
                     dataKey="amount"
                     position="top"
-                    formatter={(v) => `$${Math.round(Number(v))}`}
+                    formatter={(v) => formatCentsBar(Number(v))}
                     style={{ fontSize: 9, fontWeight: 600, fill: chartColors.label }}
                   />
                 </Bar>
