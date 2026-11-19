@@ -170,3 +170,38 @@ test.describe('payees', () => {
     expect(await api.transactions()).toHaveLength(3);
   });
 });
+
+test('starts a rule from a payee, with its default category filled in (#175)', async ({
+  page,
+  api,
+}) => {
+  const checking = await api.createAccount('Checking', 10_000);
+  const groceries = await api.category('Groceries');
+  const payee = await api.call('POST', '/payees', {
+    name: 'Corner Market',
+    defaultCategoryId: groceries.id,
+  });
+  await api.createTransaction({
+    accountId: checking.id,
+    date: '2026-01-05',
+    amount: -1_000,
+    payeeName: 'Corner Market',
+  });
+  await open(page, '/payees');
+  await row(page, 'Corner Market').hover();
+  await page.getByRole('button', { name: 'Create rule for Corner Market' }).click();
+  const dialog = page.getByRole('dialog', { name: 'New rule for Corner Market' });
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText('Groceries');
+  await dialog.getByRole('button', { name: 'Save rule' }).click();
+  await expect
+    .poll(async () =>
+      (await api.call<any[]>('GET', '/rules')).map((r) => [r.conditions, r.actions]),
+    )
+    .toEqual([
+      [
+        [{ field: 'payee', op: 'is', value: payee.id }],
+        [{ type: 'set_category', value: groceries.id }],
+      ],
+    ]);
+});
