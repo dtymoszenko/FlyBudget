@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, Receipt, SearchX, Upload, Link2 } from 'lucide-react';
+import { CheckSquare, Plus, Receipt, SearchX, Upload, Link2 } from 'lucide-react';
 import { useTransactions } from '../../hooks/useTransactions';
 import { useCategories } from '../../hooks/useCategories';
 import { usePayees } from '../../hooks/usePayees';
@@ -11,6 +11,7 @@ import { TransactionRow } from './TransactionRow';
 import { TransactionCard } from './TransactionCard';
 import { WaitingTransactions } from './WaitingTransactions';
 import { TransferSuggestions } from './TransferSuggestions';
+import { BulkActionBar } from './BulkActionBar';
 import { Modal } from '../ui/Modal';
 import { useIsPhone } from '../../hooks/useIsPhone';
 import { TransactionDetailPanel } from './TransactionDetailPanel';
@@ -68,6 +69,10 @@ export function TransactionTable({
   const [showAdd, setShowAdd] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [showImport, setShowImport] = useState(false);
+  // Multi-select: ticked ids, and on phones whether the cards are in select mode
+  const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set());
+  const [selectMode, setSelectMode] = useState(false);
+  const lastToggled = useRef<string | null>(null);
 
   const showAccountCol = !accountId;
 
@@ -227,6 +232,37 @@ export function TransactionTable({
   }, [groupedByDate, shownRows]);
   const hiddenRows = transactions.length - visibleGroups.reduce((sum, g) => sum + g.txs.length, 0);
 
+  // The selection follows the rows on screen: other filters, another selection
+  useEffect(() => setSelected(new Set()), [params]);
+  const selectedTxs = useMemo(
+    () => transactions.filter((t) => selected.has(t.id)),
+    [transactions, selected],
+  );
+  const selecting = selectMode || selectedTxs.length > 0;
+  const clearSelection = () => {
+    setSelected(new Set());
+    setSelectMode(false);
+  };
+  function toggleSelected(id: string, range = false) {
+    const anchor = lastToggled.current;
+    lastToggled.current = id;
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (range && anchor && anchor !== id) {
+        // Shift-click: everything drawn between the last one ticked and this one
+        const ids = visibleGroups.flatMap((g) => g.txs.map((t) => t.id));
+        const [a, b] = [ids.indexOf(anchor), ids.indexOf(id)];
+        if (a !== -1 && b !== -1) {
+          for (const i of ids.slice(Math.min(a, b), Math.max(a, b) + 1)) next.add(i);
+          return next;
+        }
+      }
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
   function handleCreate(data: CreateTransactionData) {
     if (data.categoryId?.startsWith('transfer:') && accountId) {
       const otherId = data.categoryId.slice('transfer:'.length);
@@ -262,9 +298,28 @@ export function TransactionTable({
         externalMonth={month}
         externalRange={from && to ? `${formatDay(from)} – ${formatDay(to)}` : undefined}
       />
-      <div className="px-4 py-2 border-b border-border-light bg-surface flex flex-wrap gap-2 justify-between items-center">
-        <span className="text-xs text-text-tertiary">{transactions.length} transactions</span>
-        {accountId && (
+      <div className="px-4 py-2 border-b border-border-light bg-surface flex flex-wrap gap-2 justify-between items-center min-h-[49px]">
+        {selecting ? (
+          <BulkActionBar
+            txs={selectedTxs}
+            total={transactions.length}
+            groups={groups as CategoryGroup[]}
+            payees={payees}
+            onSelectAll={() => setSelected(new Set(transactions.map((t) => t.id)))}
+            onDone={clearSelection}
+          />
+        ) : (
+          <>
+            <span className="text-xs text-text-tertiary">{transactions.length} transactions</span>
+            {/* Phones: cards have no hover checkbox, so a button starts selecting */}
+            {isPhone && transactions.length > 0 && (
+              <Button variant="secondary" size="sm" onClick={() => setSelectMode(true)}>
+                <CheckSquare size={13} /> Select
+              </Button>
+            )}
+          </>
+        )}
+        {accountId && !selecting && (
           <div className="flex items-center gap-2">
             <Button variant="secondary" size="sm" onClick={() => setShowImport(true)}>
               <Upload size={13} /> Import CSV
@@ -412,6 +467,9 @@ export function TransactionTable({
                         }
                         isSelected={detailId === tx.id}
                         onOpenDetail={setDetailId}
+                        selecting={selectMode}
+                        checked={selected.has(tx.id)}
+                        onToggle={toggleSelected}
                       />
                     ) : (
                       <TransactionRow
@@ -442,6 +500,9 @@ export function TransactionTable({
                           setFilters((f) => ({ ...f, search, datePreset: 'all' }))
                         }
                         transferAccounts={transferAccounts}
+                        checked={selected.has(tx.id)}
+                        selecting={selecting}
+                        onToggle={toggleSelected}
                       />
                     ),
                   )}

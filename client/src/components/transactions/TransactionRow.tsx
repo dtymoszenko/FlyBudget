@@ -31,6 +31,10 @@ interface Props {
   onFilterSearch?: (search: string) => void;
   /** Open accounts, offered as "Transfer: name" in the category picker (except this one's) */
   transferAccounts?: { id: string; name: string }[];
+  /** Multi-select: the checkbox shows on hover, or always while anything is selected */
+  checked?: boolean;
+  selecting?: boolean;
+  onToggle?: (id: string, range: boolean) => void;
 }
 
 export function TransactionRow({
@@ -48,6 +52,9 @@ export function TransactionRow({
   onFilterCategory,
   onFilterSearch,
   transferAccounts = [],
+  checked = false,
+  selecting = false,
+  onToggle,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
   const currency = useAccountCurrency()(tx.accountId);
@@ -93,8 +100,13 @@ export function TransactionRow({
     <div>
       <div
         // Phones: the payee gets its own line, the other columns wrap below it
-        className={`group/row flex max-md:flex-wrap items-center px-4 py-2 cursor-pointer border-b border-border-light transition-colors ${
-          isSelected ? 'bg-brand-50 border-l-2 border-l-brand-600' : 'bg-surface hover:bg-hover'
+        // The select checkbox sits in the left padding, so rows keep their layout
+        className={`group/row relative flex max-md:flex-wrap items-center py-2 pr-4 ${onToggle ? 'pl-7' : 'pl-4'} cursor-pointer border-b border-border-light transition-colors ${
+          isSelected
+            ? 'bg-brand-50 border-l-2 border-l-brand-600'
+            : checked
+              ? 'bg-brand-50/60 hover:bg-brand-50'
+              : 'bg-surface hover:bg-hover'
         }`}
         onClick={() => onOpenDetail(tx.id)}
         // Keyboard users open the details with Enter or Space, like a button
@@ -107,6 +119,28 @@ export function TransactionRow({
         }}
         data-testid="transaction-row"
       >
+        {onToggle && (
+          <div
+            className={`absolute left-1.5 top-1/2 -translate-y-1/2 flex items-center transition-opacity ${
+              selecting ? '' : 'opacity-0 group-hover/row:opacity-100 focus-within:opacity-100'
+            }`}
+          >
+            <input
+              type="checkbox"
+              aria-label={`Select ${payeeName}`}
+              checked={checked}
+              readOnly
+              // Shift-click selects the range from the last one ticked
+              onMouseDown={(e) => e.shiftKey && e.preventDefault()}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggle(tx.id, e.shiftKey);
+              }}
+              className="h-4 w-4 accent-brand-600 cursor-pointer"
+            />
+          </div>
+        )}
+
         {/* Payee */}
         <div className="group/payee flex items-center gap-1 flex-[3] max-md:basis-full min-w-0 relative mr-3">
           <PayeeIcon
