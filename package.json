@@ -31,7 +31,7 @@
     "electron": "^44.9.3",
     "electron-builder": "^26.18.0",
     "esbuild": "^0.28.2",
-    "prettier": "^3.10.0",
+    "prettier": "^3.10.1",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "wait-on": "^9.5.1"
